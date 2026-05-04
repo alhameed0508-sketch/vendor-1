@@ -1,0 +1,196 @@
+"""
+MuleCatch Security Middleware
+==============================
+Role-based access control, audit logging, and request validation.
+Designed for IOB's on-premise security governance requirements.
+
+Roles:
+  INVESTIGATOR  - view alerts, update status, export STR
+  SUPERVISOR    - all investigator + approve STR batch exports
+  ADMIN         - full access including config changes
+  READONLY      - view-only access for compliance officers
+"""
+
+from fastapi import HTTPException, Request, status
+from functools import wraps
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+import json, os, hashlib
+from pathlib import Path
+from jose import jwt, JWTError
+import logging
+from logging.handlers import RotatingFileHandler
+
+JWT_SECRET  = os.getenv("JWT_SECRET", "CHANGE_ME_NOT_FOR_PRODUCTION")
+JWT_ALGO    = "HS256"
+JWT_EXPIRY  = 480   # minutes
+
+AUDIT_LOG_PATH = Path(os.getenv("AUDIT_LOG_PATH", "/app/logs/audit.jsonl"))
+AUDIT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# ── Rotating audit logger ────────────────────────────────────────────────────
+_audit_logger = logging.getLogger("mulecatch.audit")
+_audit_logger.setLevel(logging.INFO)
+_audit_handler = RotatingFileHandler(
+    str(AUDIT_LOG_PATH),
+    maxBytes=100 * 1024 * 1024,  # 100 MB
+    backupCount=5,
+)
+_audit_handler.setFormatter(logging.Formatter("%(message)s"))
+_audit_logger.addHandler(_audit_handler)
+
+# ── Permissions per role ──────────────────────────────────────────────────────
+ROLE_PERMISSIONS: Dict[str, List[str]] = {
+    "ADMIN": [
+        "alerts:read", "alerts:write", "alerts:delete",
+        "str:export", "str:approve",
+        "config:read", "config:write",
+        "feedback:write",
+        "kpi:read",
+    ],
+    "SUPERVISOR": [
+        "alerts:read", "alerts:write",
+        "str:export", "str:approve",
+        "feedback:write",
+        "kpi:read",
+    ],
+    "INVESTIGATOR": [
+        "alerts:read", "alerts:write",
+        "str:export",
+        "feedback:write",
+        "kpi:read",
+    ],
+    "READONLY": [
+        "alerts:read",
+        "kpi:read",
+    ],
+}
+
+# ── Demo users (replace with LDAP/AD in production) ──────────────────────────
+DEMO_USERS = {
+    "investigator": {
+        "password_hash": hashlib.sha256(b"iob@2024").hexdigest(),
+        "role": "INVESTIGATOR",
+        "display_name": "Fraud Investigator",
+        "branch": "Chennai HO",
+    },
+    "supervisor": {
+        "password_hash": hashlib.sha256(b"supervisor@2024").hexdigest(),
+        "role": "SUPERVISOR",
+        "display_name": "Investigation Supervisor",
+        "branch": "Chennai HO",
+    },
+    "admin": {
+        "password_hash": hashlib.sha256(b"admin@2024").hexdigest(),
+        "role": "ADMIN",
+        "display_name": "System Administrator",
+        "branch": "HO IT",
+    },
+}
+
+
+# ── Token utilities ───────────────────────────────────────────────────────────
+
+def create_token(user_id: str, role: str) -> str:
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRY),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+def decode_token(token: str) -> Optional[Dict]:
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+    except JWTError:
+        return None
+
+
+def authenticate(username: str, password: str) -> Optional[str]:
+    """Returns JWT token if credentials are valid"""
+    user = DEMO_USERS.get(username)
+    if not user:
+        return None
+    pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    if pw_hash != user["password_hash"]:
+        return None
+    return create_token(username, user["role"])
+
+
+def has_permission(token: str, permission: str) -> bool:
+    payload = decode_token(token)
+    if not payload:
+        return False
+    role = payload.get("role", "READONLY")
+    return permission in ROLE_PERMISSIONS.get(role, [])
+
+
+# ── Audit logging ─────────────────────────────────────────────────────────────
+
+def audit_log(
+    user_id: str,
+    action: str,
+    resource: str,
+    resource_id: str = "",
+    outcome: str = "SUCCESS",
+    details: Dict = None,
+):
+    record = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "user_id": user_id,
+        "action": action,
+        "resource": resource,
+        "resource_id": resource_id,
+        "outcome": outcome,
+        "details": details or {},
+    }
+    _audit_logger.info(json.dumps(record))
+
+
+# ── FastAPI middleware ────────────────────────────────────────────────────────
+
+async def audit_middleware(request: Request, call_next):
+    """Logs every API request for RBI audit trail"""
+    start = datetime.utcnow()
+    response = await call_next(request)
+    elapsed_ms = (datetime.utcnow() - start).total_seconds() * 1000
+
+    # Extract user from token header if present
+    auth = request.headers.get("Authorization", "")
+    user_id = "anonymous"
+    if auth.startswith("Bearer "):
+        payload = decode_token(auth[7:])
+        if payload:
+            user_id = payload.get("sub", "anonymous")
+
+    audit_log(
+        user_id=user_id,
+        action=f"{request.method} {request.url.path}",
+        resource="API",
+        outcome="SUCCESS" if response.status_code < 400 else "FAILURE",
+        details={
+            "status_code": response.status_code,
+            "elapsed_ms": round(elapsed_ms, 1),
+            "ip": request.client.host if request.client else "unknown",
+        },
+    )
+    return response
+
+
+# ── Encryption helpers ────────────────────────────────────────────────────────
+
+def mask_account_id(account_id: str) -> str:
+    """Masks account ID for non-admin display"""
+    if len(account_id) <= 4:
+        return "****"
+    return account_id[:2] + "*" * (len(account_id) - 4) + account_id[-2:]
+
+
+def mask_ip(ip: str) -> str:
+    """Masks IP for GDPR-style data minimisation"""
+    parts = ip.split(".")
+    if len(parts) == 4:
+        return f"{parts[0]}.{parts[1]}.*.* "
+    return "***"

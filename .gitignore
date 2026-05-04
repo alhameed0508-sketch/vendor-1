@@ -1,0 +1,49 @@
+# Environment & Secrets
+.env
+.env.local
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Node
+node_modules/
+frontend/build/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & Data
+audit_logs/
+*.log
+data/feedback_log.jsonl
+
+# Docker
+docker-compose.override.yml
+
+# Certificates (generated)
+infra/certs/*.pem
+infra/certs/*.key
+infra/certs/*.crt
+
+# Claude Code
+.claude/
+
+# Model artifacts
+models/gnn/checkpoints/
+*.pt
+*.pth

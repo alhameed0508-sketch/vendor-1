@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@layer base {
+  body {
+    @apply bg-surface-primary text-[var(--text-primary)] font-display text-sm leading-relaxed min-h-screen;
+  }
+}
+
+@layer utilities {
+  /* ── Glassmorphism (dark mode) ── */
+  .glass {
+    background: rgba(12, 14, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: var(--radius, 12px);
+  }
+
+  .glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 12px);
+    box-shadow: var(--shadow);
+    transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .glass-surface {
+    background: rgba(15, 17, 24, 0.8);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius, 12px);
+  }
+
+  /* ── Light mode overrides ── */
+  [data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: var(--border);
+  }
+
+  [data-theme="light"] .glass-card {
+    background: var(--bg-card);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  [data-theme="light"] .glass-surface {
+    background: var(--bg-elevated);
+    border-color: var(--border);
+  }
+
+  /* ── Shimmer skeleton ── */
+  .shimmer-bg {
+    @apply bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:200%_100%] animate-shimmer;
+  }
+
+  /* ── Gradient text ── */
+  .text-gradient-brand {
+    background: var(--gradient-brand);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-cyan {
+    @apply bg-gradient-to-r from-accent-cyan to-blue-400 bg-clip-text text-transparent;
+  }
+
+  /* ── Film grain overlay ── */
+  .grain-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    opacity: var(--grain-opacity, 0.035);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    mix-blend-mode: overlay;
+  }
+
+  /* ── Corner label ── */
+  .corner-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── Slash prefix ── */
+  .slash-prefix::before {
+    content: '// ';
+    color: var(--accent-violet);
+    opacity: 0.5;
+  }
+}
+
+/* ── cmdk Command Palette Styles ── */
+[cmdk-root] {
+  font-family: var(--font-display);
+}
+
+[cmdk-input] {
+  font-family: var(--font-mono);
+}
+
+[cmdk-item] {
+  content-visibility: auto;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.1s ease;
+}
+
+[cmdk-item][data-selected='true'],
+[cmdk-item][aria-selected='true'] {
+  background: rgba(124, 158, 255, 0.08);
+}
+
+[data-theme="light"] [cmdk-item][data-selected='true'],
+[data-theme="light"] [cmdk-item][aria-selected='true'] {
+  background: rgba(0, 122, 255, 0.08);
+}
+
+[cmdk-item]:active {
+  background: rgba(124, 158, 255, 0.14);
+}
+
+[cmdk-group-heading] {
+  user-select: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+[cmdk-separator] {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
