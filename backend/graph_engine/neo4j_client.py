@@ -5,10 +5,11 @@ Connection pooling via the neo4j driver. All queries use parameterized Cypher.
 """
 
 import os
+import time
 import logging
 from typing import List, Dict, Optional
 from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable, AuthError
+from neo4j.exceptions import ServiceUnavailable, SessionExpired, AuthError
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +23,24 @@ class Neo4jClient:
         user: Optional[str] = None,
         password: Optional[str] = None,
         max_connection_pool_size: int = 50,
+        tls_enabled: bool = False,
     ):
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
         self._password = password or os.getenv("NEO4J_PASSWORD", "CHANGE_ME_NOT_FOR_PRODUCTION")
-        self.driver = GraphDatabase.driver(
-            self._uri,
-            auth=(self._user, self._password),
-            max_connection_pool_size=max_connection_pool_size,
-            connection_timeout=5,
-            connection_acquisition_timeout=5,
-        )
+        self._tls_enabled = tls_enabled or os.getenv("NEO4J_TLS_ENABLED", "false").lower() == "true"
+
+        driver_kwargs = {
+            "auth": (self._user, self._password),
+            "max_connection_pool_size": max_connection_pool_size,
+            "connection_timeout": 5,
+            "connection_acquisition_timeout": 5,
+        }
+
+        if self._tls_enabled:
+            driver_kwargs["encrypted"] = True
+
+        self.driver = GraphDatabase.driver(self._uri, **driver_kwargs)
 
     def close(self):
         self.driver.close()
@@ -45,9 +53,31 @@ class Neo4jClient:
             logger.warning("Neo4j connectivity check failed: %s", exc)
             return False
 
+    def run_with_retry(self, query: str, max_retries: int = 3, **params) -> List[Dict]:
+        """Execute a query with exponential backoff retry on transient failures."""
+        for attempt in range(max_retries):
+            try:
+                with self.driver.session() as session:
+                    return [dict(r) for r in session.run(query, **params)]
+            except (ServiceUnavailable, SessionExpired) as exc:
+                if attempt == max_retries - 1:
+                    logger.error(
+                        "Neo4j query failed after %d retries: %s", max_retries, exc
+                    )
+                    raise
+                wait_time = 2 ** attempt  # 1s, 2s, 4s
+                logger.warning(
+                    "Neo4j transient error (attempt %d/%d), retrying in %ds: %s",
+                    attempt + 1,
+                    max_retries,
+                    wait_time,
+                    exc,
+                )
+                time.sleep(wait_time)
+        return []  # unreachable, satisfies type checker
+
     def run(self, query: str, **params) -> List[Dict]:
-        with self.driver.session() as session:
-            return [dict(r) for r in session.run(query, **params)]
+        return self.run_with_retry(query, max_retries=3, **params)
 
     # ── Account CRUD ──────────────────────────────────────────────────────────
 
@@ -91,8 +121,7 @@ class Neo4jClient:
     def create_transaction(self, txn: Dict) -> Dict:
         result = self.run(
             """
-            MATCH (src:Account {account_id: $from_account})
-            MATCH (dst:Account {account_id: $to_account})
+            MATCH (src:Account {account_id: $from_account}), (dst:Account {account_id: $to_account})
             MERGE (t:Transaction {txn_id: $txn_id})
             SET t.amount        = $amount,
                 t.timestamp     = $timestamp,
@@ -315,9 +344,9 @@ class Neo4jClient:
 
     def get_graph_stats(self) -> Dict:
         result = self.run("""
-            MATCH (a:Account) WITH count(a) AS accounts
-            MATCH ()-[r:SENT_TO]->() WITH accounts, count(r) AS txns
-            OPTIONAL MATCH (al:Alert) WITH accounts, txns, count(al) AS alerts
+            CALL { MATCH (a:Account) RETURN count(a) AS accounts }
+            CALL { MATCH ()-[r:SENT_TO]->() RETURN count(r) AS txns }
+            CALL { OPTIONAL MATCH (al:Alert) RETURN count(al) AS alerts }
             RETURN accounts, txns, alerts
         """)
         if result:
@@ -328,3 +357,75 @@ class Neo4jClient:
                 "total_alerts": row["alerts"],
             }
         return {"total_accounts": 0, "total_transactions": 0, "total_alerts": 0}
+
+    # ── Batch operations ───────────────────────────────────────────────────────
+
+    def create_transactions_batch(self, txns: List[Dict]) -> int:
+        """Bulk insert transactions using UNWIND. Returns count created."""
+        result = self.run(
+            """
+            UNWIND $txns AS t
+            MATCH (src:Account {account_id: t.from_account}), (dst:Account {account_id: t.to_account})
+            MERGE (txn:Transaction {txn_id: t.txn_id})
+            SET txn.amount        = t.amount,
+                txn.timestamp     = t.timestamp,
+                txn.txn_type      = coalesce(t.txn_type, 'UPI_PUSH'),
+                txn.is_suspicious = coalesce(t.is_suspicious, false),
+                txn.pattern       = coalesce(t.pattern, 'NORMAL'),
+                txn.device_id     = coalesce(t.device_id, 'UNKNOWN'),
+                txn.ip_address    = coalesce(t.ip_address, '0.0.0.0')
+            MERGE (src)-[:SENT_TO {
+                txn_id:    t.txn_id,
+                amount:    t.amount,
+                timestamp: t.timestamp,
+                pattern:   coalesce(t.pattern, 'NORMAL')
+            }]->(dst)
+            RETURN count(txn) AS created
+            """,
+            txns=txns,
+        )
+        return result[0]["created"] if result else 0
+
+    def link_devices_batch(self, links: List[Dict]) -> int:
+        """Bulk link accounts to devices. Each link: {account_id, device_id}."""
+        result = self.run(
+            """
+            UNWIND $links AS link
+            MATCH (a:Account {account_id: link.account_id})
+            MERGE (d:Device {device_id: link.device_id})
+            MERGE (a)-[:USES_DEVICE]->(d)
+            RETURN count(*) AS linked
+            """,
+            links=links,
+        )
+        return result[0]["linked"] if result else 0
+
+    def link_ips_batch(self, links: List[Dict]) -> int:
+        """Bulk link accounts to IPs. Each link: {account_id, ip_address}."""
+        result = self.run(
+            """
+            UNWIND $links AS link
+            MATCH (a:Account {account_id: link.account_id})
+            MERGE (ip:IPAddress {address: link.ip_address})
+            MERGE (a)-[:FROM_IP]->(ip)
+            RETURN count(*) AS linked
+            """,
+            links=links,
+        )
+        return result[0]["linked"] if result else 0
+
+    def ensure_indexes(self) -> None:
+        """Create Alert indexes if they don't exist."""
+        index_queries = [
+            "CREATE CONSTRAINT alert_id IF NOT EXISTS FOR (al:Alert) REQUIRE al.alert_id IS UNIQUE",
+            "CREATE INDEX alert_severity IF NOT EXISTS FOR (al:Alert) ON (al.severity)",
+            "CREATE INDEX alert_status IF NOT EXISTS FOR (al:Alert) ON (al.status)",
+            "CREATE INDEX alert_risk_score IF NOT EXISTS FOR (al:Alert) ON (al.risk_score)",
+            "CREATE CONSTRAINT watchlist_entry_id IF NOT EXISTS FOR (w:WatchlistEntry) REQUIRE w.entry_id IS UNIQUE",
+            "CREATE CONSTRAINT screening_result_id IF NOT EXISTS FOR (s:ScreeningResult) REQUIRE s.result_id IS UNIQUE",
+        ]
+        for q in index_queries:
+            try:
+                self.run(q)
+            except Exception:
+                pass

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GlassCardMetric } from '../components/ui/GlassCard';
+import { apiFetch } from '../auth/api';
 
 const API = process.env.REACT_APP_API_URL || '';
 
 /* ── Chakravyuha SVG rings ── */
 function ChakravyuhaViz({ activeLayer }) {
   const layers = [
-    { label: 'Rules', color: '#ff3b5c', r: 140 },
+    { label: 'Rules', color: '#EF4444', r: 140 },
     { label: 'Smurf', color: '#f59e0b', r: 110 },
     { label: 'Louvain', color: '#3b82f6', r: 80 },
     { label: 'GNN', color: '#10b981', r: 50 },
@@ -45,7 +46,7 @@ function ChakravyuhaViz({ activeLayer }) {
       })}
       <motion.circle
         cx="150" cy="150" r="18"
-        fill="var(--accent-violet)"
+        fill="var(--accent-gold)"
         opacity={0.9}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
@@ -144,17 +145,17 @@ export default function JudgePresentation() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`${API}/api/alerts?limit=20`).then(r => r.json()),
-      fetch(`${API}/api/graph/stats`).then(r => r.json()),
-      fetch(`${API}/api/kpi`).then(r => r.json()),
+      apiFetch(`${API}/api/v1/alerts?limit=20`).then(r => r.json()).then(body => body?.data || body),
+      apiFetch(`${API}/api/v1/graph/stats`).then(r => r.json()).then(body => body?.data || body),
+      apiFetch(`${API}/api/v1/kpi`).then(r => r.json()).then(body => body?.data || body),
     ]).then(([alertData, statsData, kpiData]) => {
       setAlerts(alertData.alerts || []);
       setStats(statsData);
       setKpi(kpiData);
       if (alertData.alerts?.length > 0) {
-        fetch(`${API}/api/alerts/${alertData.alerts[0].alert_id}/narrative`)
+        apiFetch(`${API}/api/v1/alerts/${alertData.alerts[0].alert_id}/narrative`)
           .then(r => r.json())
-          .then(setNarrative)
+          .then(body => setNarrative(body?.data || body))
           .catch(() => {});
       }
     }).catch(() => {});
@@ -250,7 +251,7 @@ export default function JudgePresentation() {
                 </ul>
               </GlassCard>
               <GlassCard style={{ padding: 24 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: 'var(--accent-violet)' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: 'var(--accent-gold)' }}>
                   Why Existing Tools Fail
                 </h3>
                 <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -288,7 +289,7 @@ export default function JudgePresentation() {
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { name: 'Layer 1: Rule Engine', desc: '20 deterministic behavioral rules (R01-R20) aligned with RBI/RBIH MuleHunter framework + 72-hour BioCatch detection', color: '#ff3b5c' },
+                  { name: 'Layer 1: Rule Engine', desc: '20 deterministic behavioral rules (R01-R20) aligned with RBI/RBIH MuleHunter framework + 72-hour BioCatch detection', color: '#EF4444' },
                   { name: 'Layer 2: Smurf-Weighting', desc: '5-dimensional temporal scoring: velocity, ceiling, fan-out, rhythm, consolidation', color: '#f59e0b' },
                   { name: 'Layer 3: Louvain Detection', desc: 'Graph community detection with device/IP-weighted edges identifying mule clusters', color: '#3b82f6' },
                   { name: 'Layer 4: GraphSAGE GNN', desc: '3-layer graph neural network for pattern recognition beyond human-defined rules', color: '#10b981' },
@@ -323,7 +324,7 @@ export default function JudgePresentation() {
             <SlideTitle title="Live Detection Results" subtitle="Running on synthetic IOB data" />
             {stats && (
               <StatGrid stats={[
-                { label: 'Accounts Scanned', value: stats.total_accounts, color: 'var(--accent-violet)' },
+                { label: 'Accounts Scanned', value: stats.total_accounts, color: 'var(--accent-gold)' },
                 { label: 'Transactions Analyzed', value: stats.total_transactions?.toLocaleString(), color: 'var(--accent-blue)' },
                 { label: 'Alerts Generated', value: stats.total_alerts, color: 'var(--accent-amber)' },
                 { label: 'Critical Alerts', value: stats.critical, color: 'var(--critical)' },
@@ -430,7 +431,7 @@ export default function JudgePresentation() {
                           style={{
                             fontSize: 11, color: 'var(--text-secondary)',
                             padding: '6px 10px', background: 'var(--bg-elevated)',
-                            borderRadius: 6, borderLeft: '2px solid var(--accent-violet)',
+                            borderRadius: 6, borderLeft: '2px solid var(--accent-gold)',
                           }}
                         >
                           {f}
@@ -455,7 +456,7 @@ export default function JudgePresentation() {
             {kpi && (
               <StatGrid stats={[
                 { label: 'Fraud Prevented', value: `₹${(kpi.fraud_prevented_crore || 0).toFixed(1)} Cr`, color: 'var(--accent-green)' },
-                { label: 'Investigation Hours Saved', value: Math.round(kpi.hours_saved || 0), color: 'var(--accent-violet)' },
+                { label: 'Investigation Hours Saved', value: Math.round(kpi.hours_saved || 0), color: 'var(--accent-gold)' },
                 { label: 'STRs Auto-Filed', value: kpi.strs_filed || 0, color: 'var(--accent-blue)' },
                 { label: 'False Positive Reduction', value: '40%', color: 'var(--accent-amber)' },
               ]} />
@@ -646,7 +647,7 @@ export default function JudgePresentation() {
               height: 4,
               borderRadius: 2,
               border: 'none',
-              background: i === slide ? 'var(--accent-violet)' : 'var(--border-bright)',
+              background: i === slide ? 'var(--accent-gold)' : 'var(--border-bright)',
               cursor: 'pointer',
               transition: 'all 0.3s',
             }}

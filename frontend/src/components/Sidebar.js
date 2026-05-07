@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../ThemeContext';
+import { useAuth } from '../auth/AuthContext';
 
 /* ── Minimal SVG icons ── */
 const Icons = {
@@ -26,20 +27,12 @@ const Icons = {
       <line x1="6" y1="12" x2="8" y2="12" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
     </svg>
   ),
-  judge: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-      <path d="M5.5 5L8 2.5 10.5 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  ),
 };
 
 const NAV_ITEMS = [
   { path: '/', label: 'Alert Queue', icon: 'alerts', end: true },
   { path: '/roi', label: 'ROI Analytics', icon: 'roi' },
   { path: '/compliance', label: 'Compliance / STR', icon: 'compliance' },
-  { path: '/presentation', label: 'Presentation', icon: 'judge' },
 ];
 
 const STAT_COLOR = {
@@ -51,6 +44,7 @@ const STAT_COLOR = {
 export default function Sidebar({ stats, onStartDemo, tourActive, demoMode, collapsed, onToggle }) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
 
   const getBadge = (path) => {
     if (!stats) return null;
@@ -238,10 +232,40 @@ export default function Sidebar({ stats, onStartDemo, tourActive, demoMode, coll
           )}
         </AnimatePresence>
 
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.button
+              className="btn btn-ghost"
+              onClick={logout}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                width: '100%',
+                fontSize: 11,
+                padding: '6px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                justifyContent: 'flex-start',
+                color: 'var(--text-muted)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Logout
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         <motion.button
           className={`theme-toggle ${collapsed ? 'theme-toggle-collapsed' : ''}`}
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -263,10 +287,74 @@ export default function Sidebar({ stats, onStartDemo, tourActive, demoMode, coll
           )}
         </motion.button>
 
+        {/* IOB Compliance badges */}
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                padding: '0 2px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid rgba(1, 60, 200, 0.2)',
+                  background: 'rgba(1, 60, 200, 0.06)',
+                  fontSize: 8,
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--iob-blue-light)',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                  <path d="M8 1L2 4v4c0 3.5 2.5 6.5 6 7.5 3.5-1 6-4 6-7.5V4L8 1z" stroke="var(--iob-blue-light)" strokeWidth="1.5" fill="none"/>
+                  <path d="M5.5 8l2 2 3.5-4" stroke="var(--iob-blue-light)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                RBI MuleHunter.AI
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  border: '1px solid rgba(1, 60, 200, 0.2)',
+                  background: 'rgba(1, 60, 200, 0.06)',
+                  fontSize: 8,
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--iob-blue-light)',
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="var(--iob-blue-light)" strokeWidth="1.2"/>
+                  <line x1="5" y1="7" x2="11" y2="7" stroke="var(--iob-blue-light)" strokeWidth="1" strokeLinecap="round"/>
+                  <line x1="5" y1="10" x2="9" y2="10" stroke="var(--iob-blue-light)" strokeWidth="1" strokeLinecap="round"/>
+                </svg>
+                FIU-IND Compliant
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.button
           className="btn btn-ghost sidebar-collapse-btn"
           onClick={onToggle}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           whileHover={{ opacity: 1 }}
           whileTap={{ scale: 0.9 }}
         >

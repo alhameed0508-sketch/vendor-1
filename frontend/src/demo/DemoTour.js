@@ -83,9 +83,10 @@ export default function DemoTour({ onEnd }) {
     if (!current) { endTour(); return; }
 
     if (current.action === 'clickCriticalAlert') {
-      fetch('/api/alerts?limit=10')
+      fetch('/api/v1/alerts?limit=10')
         .then(r => r.json())
-        .then(data => {
+        .then(body => {
+          const data = body?.data || body;
           const critical = (data.alerts || []).find(a => a.severity === 'CRITICAL') || (data.alerts || [])[0];
           if (critical) navigate(`/alert/${critical.alert_id}`);
         })

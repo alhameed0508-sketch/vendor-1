@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimateIn } from '../components/motion/AnimateIn';
+import { apiFetch } from '../auth/api';
 
 /**
  * ExplainabilityPanel
@@ -23,9 +24,10 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
       return;
     }
     if (!alertId) return;
-    fetch(`/api/alerts/${alertId}/explanation`)
+    apiFetch(`/api/v1/alerts/${alertId}/explanation`)
       .then(r => r.json())
-      .then(data => {
+      .then(body => {
+        const data = body?.data || body;
         setExplanation(data);
         setLoading(false);
       })
@@ -94,9 +96,9 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
             style={{
               fontSize: 11, padding: '5px 12px',
               ...(activeTab === tab.key ? {
-                borderColor: 'var(--accent-violet)',
-                color: 'var(--accent-violet)',
-                background: 'rgba(122,0,255,0.08)',
+                borderColor: 'var(--accent-gold)',
+                color: 'var(--accent-gold)',
+                background: 'rgba(245,158,11,0.08)',
               } : {}),
             }}
             onClick={() => setActiveTab(tab.key)}
@@ -148,7 +150,7 @@ function SummaryTab({ explanation }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* AI Summary */}
-      <GlassCard className="p-5" hover={false} style={{ borderLeft: '3px solid var(--accent-violet)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard className="p-5" hover={false} style={{ borderLeft: '3px solid var(--accent-gold)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p className="section-title" style={{ fontSize: 11, marginBottom: 8 }}>AI Summary</p>
         <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)' }}>
           {explanation.summary}

@@ -11,6 +11,7 @@ export default function SplashScreen({ onComplete }) {
   const titleRef     = useRef(null);
   const taglineRef   = useRef(null);
   const iobRef       = useRef(null);
+  const rbiRef       = useRef(null);
   const skipRef      = useRef(null);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function SplashScreen({ onComplete }) {
       tl.fromTo(titleRef.current, { opacity: 0, y: 28 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.3');
       tl.fromTo(taglineRef.current, { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power2.out' }, '-=0.1');
       tl.fromTo(iobRef.current,   { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '+=0.2');
+      tl.fromTo(rbiRef.current,   { opacity: 0, y: 8 }, { opacity: 0.5, y: 0, duration: 0.4, ease: 'power2.out' }, '-=0.1');
       tl.fromTo(skipRef.current,  { opacity: 0 }, { opacity: 1, duration: 0.3 }, '-=0.2');
       tl.to(containerRef.current, { opacity: 0, duration: 0.5, ease: 'power2.inOut', onComplete }, '+=1.2');
     }, containerRef);
@@ -45,7 +47,7 @@ export default function SplashScreen({ onComplete }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'var(--bg-primary)',
+        background: '#0F172A',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -53,7 +55,7 @@ export default function SplashScreen({ onComplete }) {
         overflow: 'hidden',
       }}
     >
-      {/* Radial glow */}
+      {/* Radial glow — IOB gold warmth */}
       <div
         ref={glowRef}
         style={{
@@ -63,13 +65,13 @@ export default function SplashScreen({ onComplete }) {
           borderRadius: '50%',
           opacity: 0,
           background:
-            'radial-gradient(circle at 40% 50%, var(--gradient-brand-glow) 0%, rgba(6,182,212,0.06) 50%, transparent 75%)',
+            'radial-gradient(circle at 40% 50%, rgba(245,158,11,0.18) 0%, rgba(139,92,246,0.06) 50%, transparent 75%)',
           filter: 'blur(40px)',
           pointerEvents: 'none',
         }}
       />
 
-      {/* SVG Hexagon logo mark */}
+      {/* SVG Hexagon logo mark — gold/purple gradient */}
       <div
         ref={logoRef}
         style={{ position: 'relative', marginBottom: 20, opacity: 0 }}
@@ -77,8 +79,8 @@ export default function SplashScreen({ onComplete }) {
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="hexGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="var(--accent-violet)"/>
-              <stop offset="100%" stopColor="var(--accent-indigo)"/>
+              <stop offset="0%" stopColor="#F59E0B"/>
+              <stop offset="100%" stopColor="#8B5CF6"/>
             </linearGradient>
             <filter id="hexGlow">
               <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -94,17 +96,17 @@ export default function SplashScreen({ onComplete }) {
           />
           <polygon
             points="36,14 57,26 57,46 36,58 15,46 15,26"
-            fill="var(--gradient-brand-glow)"
-            stroke="var(--border-glow)"
+            fill="rgba(245,158,11,0.08)"
+            stroke="rgba(245,158,11,0.15)"
             strokeWidth="0.75"
           />
           <text
             x="36" y="40"
             textAnchor="middle"
-            fontFamily="'Inter', system-ui, sans-serif"
+            fontFamily="'IBM Plex Sans', system-ui, sans-serif"
             fontWeight="700"
             fontSize="16"
-            fill="var(--accent-violet)"
+            fill="#F59E0B"
           >MC</text>
         </svg>
       </div>
@@ -114,13 +116,13 @@ export default function SplashScreen({ onComplete }) {
         ref={titleRef}
         style={{
           position: 'relative',
-          fontFamily: "var(--font-display)",
+          fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
           fontSize: 40,
           fontWeight: 700,
           letterSpacing: '-1.5px',
           marginBottom: 22,
           opacity: 0,
-          color: 'var(--text-primary)',
+          color: '#F8FAFC',
         }}
       >
         MuleCatch
@@ -131,9 +133,9 @@ export default function SplashScreen({ onComplete }) {
         ref={taglineRef}
         style={{
           position: 'relative',
-          fontFamily: 'var(--font-mono)',
+          fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 13,
-          color: 'var(--text-secondary)',
+          color: '#94A3B8',
           height: 24,
           opacity: 0,
           display: 'flex',
@@ -141,28 +143,29 @@ export default function SplashScreen({ onComplete }) {
           gap: 2,
         }}
       >
-        <span style={{ color: 'var(--accent-violet)', opacity: 0.55, marginRight: 6 }}>//</span>
+        <span style={{ color: '#F59E0B', opacity: 0.55, marginRight: 6 }}>//</span>
         <span>{TAGLINE.slice(0, typedChars)}</span>
         <span
           style={{
-            borderRight: '2px solid var(--accent-violet)',
+            borderRight: '2px solid #F59E0B',
             animation: 'blink 0.8s step-end infinite',
             marginLeft: 1,
           }}
         >&nbsp;</span>
       </div>
 
-      {/* IOB frosted pill */}
+      {/* IOB frosted pill — uses IOB institutional blue */}
       <div
         ref={iobRef}
         style={{
           position: 'relative',
           marginTop: 36,
           fontSize: 10,
-          fontFamily: 'var(--font-mono)',
-          color: 'var(--text-muted)',
+          fontFamily: "'IBM Plex Mono', monospace",
+          color: '#94A3B8',
           padding: '5px 14px',
-          border: '1px solid var(--border-glow)',
+          border: '1px solid rgba(1, 60, 200, 0.25)',
+          background: 'rgba(1, 60, 200, 0.08)',
           borderRadius: 8,
           opacity: 0,
           backdropFilter: 'blur(8px)',
@@ -170,8 +173,25 @@ export default function SplashScreen({ onComplete }) {
           textTransform: 'uppercase',
         }}
       >
-        <span style={{ color: 'var(--accent-violet)', opacity: 0.45, marginRight: 6 }}>//</span>
+        <span style={{ color: '#1659B1', opacity: 0.7, marginRight: 6 }}>//</span>
         Indian Overseas Bank
+      </div>
+
+      {/* RBI MuleHunter.AI reference */}
+      <div
+        ref={rbiRef}
+        style={{
+          position: 'relative',
+          marginTop: 12,
+          fontSize: 9,
+          fontFamily: "'IBM Plex Mono', monospace",
+          color: '#475569',
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          opacity: 0,
+        }}
+      >
+        Aligned with RBI MuleHunter.AI Framework
       </div>
 
       {/* Skip — bottom-right corner */}
@@ -184,11 +204,11 @@ export default function SplashScreen({ onComplete }) {
           right: 28,
           opacity: 0,
           background: 'transparent',
-          border: '1px solid var(--border)',
-          color: 'var(--text-muted)',
+          border: '1px solid #1E293B',
+          color: '#475569',
           padding: '5px 14px',
           borderRadius: 8,
-          fontFamily: 'var(--font-mono)',
+          fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           letterSpacing: '1px',
           textTransform: 'uppercase',
@@ -196,12 +216,12 @@ export default function SplashScreen({ onComplete }) {
           transition: 'all 0.15s',
         }}
         onMouseOver={e => {
-          e.currentTarget.style.color = 'var(--text-secondary)';
-          e.currentTarget.style.borderColor = 'var(--border-bright)';
+          e.currentTarget.style.color = '#94A3B8';
+          e.currentTarget.style.borderColor = '#334155';
         }}
         onMouseOut={e => {
-          e.currentTarget.style.color = 'var(--text-muted)';
-          e.currentTarget.style.borderColor = 'var(--border)';
+          e.currentTarget.style.color = '#475569';
+          e.currentTarget.style.borderColor = '#1E293B';
         }}
       >
         Skip

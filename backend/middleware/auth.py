@@ -8,7 +8,7 @@ Provides Depends-compatible auth guards and rate limiting setup.
 import os
 import sys
 from typing import Optional
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # Ensure infra is importable
@@ -25,10 +25,14 @@ from infra.security.auth import (
     DEMO_USERS,
 )
 
-# Auth is optional — controlled by AUTH_ENABLED env var
-AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() in ("true", "1", "yes")
+from core.config import get_settings
+from core.exceptions import AuthenticationError, AuthorizationError
 
 _bearer = HTTPBearer(auto_error=False)
+
+
+def _auth_enabled() -> bool:
+    return get_settings().auth_enabled
 
 
 async def get_current_user(
@@ -36,26 +40,24 @@ async def get_current_user(
 ) -> Optional[dict]:
     """Extract and validate JWT from Authorization header.
 
-    When AUTH_ENABLED=false, returns a default investigator user
-    so all endpoints work in demo mode.
+    When AUTH_ENABLED=false (demo mode), returns a default admin user
+    so all endpoints work without authentication.
     """
-    if not AUTH_ENABLED:
+    settings = get_settings()
+    if settings.demo_mode and not settings.auth_enabled:
         return {"sub": "demo_user", "role": "ADMIN"}
 
     if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthenticationError("Missing authentication token")
 
     payload = decode_token(credentials.credentials)
     if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise AuthenticationError("Invalid or expired token")
+
+    # Only accept access tokens for API access (not refresh tokens)
+    if payload.get("type") == "refresh":
+        raise AuthenticationError("Cannot use refresh token for API access")
+
     return payload
 
 
@@ -63,13 +65,12 @@ def require_role(*roles: str):
     """FastAPI dependency: require the user to have one of the given roles."""
 
     async def _guard(user: dict = Depends(get_current_user)):
-        if not AUTH_ENABLED:
+        if not _auth_enabled():
             return user
         user_role = user.get("role", "")
         if user_role not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{user_role}' not authorized. Required: {roles}",
+            raise AuthorizationError(
+                f"Role '{user_role}' not authorized. Required: {roles}"
             )
         return user
 
@@ -80,15 +81,18 @@ def require_permission(permission: str):
     """FastAPI dependency: require a specific permission string."""
 
     async def _guard(user: dict = Depends(get_current_user)):
-        if not AUTH_ENABLED:
+        if not _auth_enabled():
             return user
         user_role = user.get("role", "READONLY")
         allowed = ROLE_PERMISSIONS.get(user_role, [])
         if permission not in allowed:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{permission}' not granted for role '{user_role}'",
+            raise AuthorizationError(
+                f"Permission '{permission}' not granted for role '{user_role}'"
             )
         return user
 
     return _guard
+
+
+# Re-export for backwards compat
+AUTH_ENABLED = os.getenv("AUTH_ENABLED", "false").lower() in ("true", "1", "yes")

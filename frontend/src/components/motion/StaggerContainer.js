@@ -25,7 +25,7 @@ const itemVariants = {
   },
 };
 
-export function StaggerContainer({ children, className, delay = 0.08 }) {
+export function StaggerContainer({ children, className, style, delay = 0.08 }) {
   const variants = {
     ...containerVariants,
     visible: {
@@ -43,15 +43,16 @@ export function StaggerContainer({ children, className, delay = 0.08 }) {
       animate="visible"
       variants={variants}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>
   );
 }
 
-export function StaggerItem({ children, className }) {
+export function StaggerItem({ children, className, style }) {
   return (
-    <motion.div variants={itemVariants} className={className}>
+    <motion.div variants={itemVariants} className={className} style={style}>
       {children}
     </motion.div>
   );

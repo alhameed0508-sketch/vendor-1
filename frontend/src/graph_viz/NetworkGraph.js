@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
 const ROLE_COLORS = {
-  SOURCE:      '#ff3b5c',
+  SOURCE:      '#EF4444',
   AGGREGATOR:  '#ff7c3b',
   MULE:        '#f59e0b',
   LEGITIMATE:  '#3b82f6',
@@ -233,7 +233,7 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
     flowSelRef.current = flowGroup;
 
     const PATTERN_COLOR = {
-      SMURFING:      '#ff3b5c',
+      SMURFING:      '#EF4444',
       CONSOLIDATION: '#f59e0b',
       NORMAL:        '#06b6d4',
     };

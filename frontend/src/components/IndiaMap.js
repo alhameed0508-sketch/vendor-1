@@ -135,14 +135,14 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
                 onMouseLeave={() => setTooltip(null)}
               >
                 {/* Pulse ring for active cities */}
-                <circle r={8} fill="none" stroke={hasHighRisk ? '#ff3b5c' : '#06b6d4'} strokeWidth={1} opacity={0.3}>
+                <circle r={8} fill="none" stroke={hasHighRisk ? '#EF4444' : '#06b6d4'} strokeWidth={1} opacity={0.3}>
                   <animate attributeName="r" from="6" to="14" dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
                 </circle>
                 <circle
                   r={4 + city.count}
-                  fill={hasHighRisk ? 'rgba(255,59,92,0.6)' : 'rgba(6,182,212,0.6)'}
-                  stroke={hasHighRisk ? '#ff3b5c' : '#06b6d4'}
+                  fill={hasHighRisk ? 'rgba(239,68,68,0.6)' : 'rgba(6,182,212,0.6)'}
+                  stroke={hasHighRisk ? '#EF4444' : '#06b6d4'}
                   strokeWidth={1.5}
                   style={{ cursor: 'pointer' }}
                 />
@@ -198,7 +198,7 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
           <span className="font-mono text-[var(--text-muted)]">Consolidation</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,59,92,0.6)', border: '1px solid #ff3b5c' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(239,68,68,0.6)', border: '1px solid #EF4444' }} />
           <span className="font-mono text-[var(--text-muted)]">High Risk</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

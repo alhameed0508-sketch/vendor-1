@@ -6,7 +6,6 @@ import Dashboard from './investigator_dashboard/Dashboard';
 import AlertDetail from './alert_detail/AlertDetail';
 import ROIDashboard from './roi_dashboard/ROIDashboard';
 import CompliancePortal from './compliance_portal/CompliancePortal';
-import JudgePresentation from './judge_view/JudgePresentation';
 import SplashScreen from './splash/SplashScreen';
 import DemoTour from './demo/DemoTour';
 import Sidebar from './components/Sidebar';
@@ -15,6 +14,10 @@ import CommandPalette from './components/CommandPalette';
 import BackgroundGrid from './components/ui/BackgroundGrid';
 import { ShortcutsModal } from './components/KeyboardShortcuts';
 import { ThemeProvider, useTheme } from './ThemeContext';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import ProtectedRoute from './auth/ProtectedRoute';
+import LoginPage from './login/LoginPage';
+import { apiFetch } from './auth/api';
 
 const pageVariants = {
   initial: { opacity: 0, y: 12 },
@@ -64,11 +67,11 @@ function AnimatedRoutes() {
         transition={pageTransition}
       >
         <Routes location={location}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/alert/:alertId" element={<AlertDetail />} />
-          <Route path="/roi" element={<ROIDashboard />} />
-          <Route path="/compliance" element={<CompliancePortal />} />
-          <Route path="/presentation" element={<JudgePresentation />} />
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
+          <Route path="/roi" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
+          <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -76,9 +79,9 @@ function AnimatedRoutes() {
 }
 
 function AppContent() {
+  const { demoMode } = useAuth();
   const [stats, setStats] = useState(null);
   const [alerts, setAlerts] = useState([]);
-  const [demoMode, setDemoMode] = useState(true);
   const [showSplash, setShowSplash] = useState(
     () => !sessionStorage.getItem('splashShown')
   );
@@ -87,25 +90,18 @@ function AppContent() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(r => {
-        if (r.status === 401) setDemoMode(false);
-        return r.json();
-      })
-      .then(data => {
-        if (data?.auth_enabled === false) setDemoMode(true);
-      })
-      .catch(() => setDemoMode(true));
-
-    fetch('/api/graph/stats')
+    apiFetch('/api/v1/graph/stats')
       .then(r => r.json())
-      .then(setStats)
+      .then(body => setStats(body?.data || body))
       .catch(() => {});
 
     // Fetch alerts for command palette
-    fetch('/api/alerts?limit=50')
+    apiFetch('/api/v1/alerts?limit=50')
       .then(r => r.json())
-      .then(data => setAlerts(data.alerts || []))
+      .then(body => {
+        const data = body?.data || body;
+        setAlerts(data.alerts || []);
+      })
       .catch(() => {});
   }, []);
 
@@ -230,9 +226,11 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

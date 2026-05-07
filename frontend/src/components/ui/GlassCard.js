@@ -46,7 +46,7 @@ export function GlassCardMetric({ label, value, icon, color, accent, children, c
   return (
     <GlassCard className={`p-5 text-center ${className}`} accent={accent} glow glowColor={color ? `${color}18` : undefined}>
       {icon && (
-        <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center', color: color || 'var(--accent-violet)' }}>
+        <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center', color: color || 'var(--accent-gold)' }}>
           {icon}
         </div>
       )}

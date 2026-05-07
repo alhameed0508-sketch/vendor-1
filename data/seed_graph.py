@@ -26,9 +26,13 @@ SCHEMA_QUERIES = [
     "CREATE CONSTRAINT device_id IF NOT EXISTS FOR (d:Device) REQUIRE d.device_id IS UNIQUE",
     "CREATE CONSTRAINT ip_addr IF NOT EXISTS FOR (i:IPAddress) REQUIRE i.address IS UNIQUE",
     "CREATE CONSTRAINT txn_id IF NOT EXISTS FOR (t:Transaction) REQUIRE t.txn_id IS UNIQUE",
+    "CREATE CONSTRAINT alert_id IF NOT EXISTS FOR (al:Alert) REQUIRE al.alert_id IS UNIQUE",
     "CREATE INDEX account_cluster IF NOT EXISTS FOR (a:Account) ON (a.cluster_id)",
     "CREATE INDEX txn_suspicious IF NOT EXISTS FOR (t:Transaction) ON (t.is_suspicious)",
     "CREATE INDEX account_role IF NOT EXISTS FOR (a:Account) ON (a.role)",
+    "CREATE INDEX alert_severity IF NOT EXISTS FOR (al:Alert) ON (al.severity)",
+    "CREATE INDEX alert_status IF NOT EXISTS FOR (al:Alert) ON (al.status)",
+    "CREATE INDEX alert_risk_score IF NOT EXISTS FOR (al:Alert) ON (al.risk_score)",
 ]
 
 

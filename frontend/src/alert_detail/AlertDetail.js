@@ -11,6 +11,7 @@ import { AnimateIn } from '../components/motion/AnimateIn';
 import { StaggerContainer, StaggerItem } from '../components/motion/StaggerContainer';
 import { SkeletonGraph, SkeletonCard } from '../components/Skeleton';
 import ExplainabilityPanel from '../explainability/ExplainabilityPanel';
+import { apiFetch } from '../auth/api';
 
 export default function AlertDetail() {
   const { alertId } = useParams();
@@ -29,9 +30,10 @@ export default function AlertDetail() {
   const [timeRange, setTimeRange] = useState(null);
 
   useEffect(() => {
-    fetch(`/api/alerts/${alertId}`)
+    apiFetch(`/api/v1/alerts/${alertId}`)
       .then(r => r.json())
-      .then(data => {
+      .then(body => {
+        const data = body?.data || body;
         setAlert(data);
         setStatus(data.status);
         setNotes(data.investigator_notes || '');
@@ -43,7 +45,7 @@ export default function AlertDetail() {
   const saveUpdate = async () => {
     setSaving(true);
     try {
-      await fetch(`/api/alerts/${alertId}`, {
+      await apiFetch(`/api/v1/alerts/${alertId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, investigator_notes: notes }),
@@ -60,7 +62,7 @@ export default function AlertDetail() {
 
   const markFalsePositive = async () => {
     try {
-      await fetch('/api/feedback', {
+      await apiFetch('/api/v1/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alert_id: alertId, is_true_positive: false }),
@@ -76,7 +78,7 @@ export default function AlertDetail() {
   const escalateAlert = async () => {
     setEscalating(true);
     try {
-      const res = await fetch('/api/escalations', {
+      const res = await apiFetch('/api/v1/escalations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +102,7 @@ export default function AlertDetail() {
     setStrExporting(true);
     try {
       // Download PDF directly
-      const res = await fetch(`/api/compliance/str-pdf/${alertId}`);
+      const res = await apiFetch(`/api/v1/compliance/str-pdf/${alertId}`);
       if (!res.ok) throw new Error('PDF generation failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

@@ -11,8 +11,7 @@ Roles:
   READONLY      - view-only access for compliance officers
 """
 
-from fastapi import HTTPException, Request, status
-from functools import wraps
+from fastapi import Request
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import json, os, hashlib
@@ -21,12 +20,25 @@ from jose import jwt, JWTError
 import logging
 from logging.handlers import RotatingFileHandler
 
-JWT_SECRET  = os.getenv("JWT_SECRET", "CHANGE_ME_NOT_FOR_PRODUCTION")
-JWT_ALGO    = "HS256"
-JWT_EXPIRY  = 480   # minutes
+import bcrypt as _bcrypt
+
+JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_NOT_FOR_PRODUCTION")
+JWT_ALGO = "HS256"
+JWT_EXPIRY = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
+REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 AUDIT_LOG_PATH = Path(os.getenv("AUDIT_LOG_PATH", "/app/logs/audit.jsonl"))
 AUDIT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# Bcrypt password hashing utilities
+def hash_password(password: str) -> str:
+    return _bcrypt.hashpw(password.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return _bcrypt.checkpw(
+        plain_password.encode("utf-8"), hashed_password.encode("utf-8")
+    )
 
 # ── Rotating audit logger ────────────────────────────────────────────────────
 _audit_logger = logging.getLogger("mulecatch.audit")
@@ -47,18 +59,21 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "config:read", "config:write",
         "feedback:write",
         "kpi:read",
+        "screening:read", "screening:write",
     ],
     "SUPERVISOR": [
         "alerts:read", "alerts:write",
         "str:export", "str:approve",
         "feedback:write",
         "kpi:read",
+        "screening:read",
     ],
     "INVESTIGATOR": [
         "alerts:read", "alerts:write",
         "str:export",
         "feedback:write",
         "kpi:read",
+        "screening:read",
     ],
     "READONLY": [
         "alerts:read",
@@ -66,7 +81,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
     ],
 }
 
-# ── Demo users (replace with LDAP/AD in production) ──────────────────────────
+# ── Demo users (only used when ENV != production) ─────────────────────────────
 DEMO_USERS = {
     "investigator": {
         "password_hash": hashlib.sha256(b"iob@2024").hexdigest(),
@@ -92,11 +107,30 @@ DEMO_USERS = {
 # ── Token utilities ───────────────────────────────────────────────────────────
 
 def create_token(user_id: str, role: str) -> str:
+    """Create an access token (short-lived)."""
     payload = {
         "sub": user_id,
         "role": role,
+        "type": "access",
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRY),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+def create_access_token(user_id: str, role: str) -> str:
+    """Alias for create_token — explicit access token."""
+    return create_token(user_id, role)
+
+
+def create_refresh_token(user_id: str, role: str) -> str:
+    """Create a refresh token (long-lived)."""
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "type": "refresh",
+        "iat": datetime.utcnow(),
+        "exp": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -109,7 +143,7 @@ def decode_token(token: str) -> Optional[Dict]:
 
 
 def authenticate(username: str, password: str) -> Optional[str]:
-    """Returns JWT token if credentials are valid"""
+    """Legacy authenticate — uses DEMO_USERS with sha256 (dev only)."""
     user = DEMO_USERS.get(username)
     if not user:
         return None
@@ -192,5 +226,5 @@ def mask_ip(ip: str) -> str:
     """Masks IP for GDPR-style data minimisation"""
     parts = ip.split(".")
     if len(parts) == 4:
-        return f"{parts[0]}.{parts[1]}.*.* "
+        return f"{parts[0]}.{parts[1]}.*.*"
     return "***"

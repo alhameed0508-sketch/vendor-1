@@ -4,6 +4,7 @@ import AnimatedCounter from '../components/AnimatedCounter';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimateIn } from '../components/motion/AnimateIn';
 import { StaggerContainer, StaggerItem } from '../components/motion/StaggerContainer';
+import { apiFetch } from '../auth/api';
 
 export default function CompliancePortal() {
   const [alerts, setAlerts] = useState([]);
@@ -15,9 +16,10 @@ export default function CompliancePortal() {
   const [auditLog, setAuditLog] = useState([]);
 
   useEffect(() => {
-    fetch('/api/alerts?limit=100')
+    apiFetch('/api/v1/alerts?limit=100')
       .then(r => r.json())
-      .then(data => {
+      .then(body => {
+        const data = body?.data || body;
         const open = (data.alerts || []).filter(a =>
           a.risk_score > 0.6 && a.status !== 'FALSE_POSITIVE'
         );
@@ -26,9 +28,12 @@ export default function CompliancePortal() {
       })
       .catch(() => setLoading(false));
     // Fetch audit log
-    fetch('/api/audit-log?limit=20')
+    apiFetch('/api/v1/audit-log?limit=20')
       .then(r => r.json())
-      .then(data => setAuditLog(Array.isArray(data) ? data : []))
+      .then(body => {
+        const data = body?.data || body;
+        setAuditLog(Array.isArray(data) ? data : []);
+      })
       .catch(() => {});
   }, []);
 
@@ -48,12 +53,13 @@ export default function CompliancePortal() {
   const exportSTR = async () => {
     if (!selected.size) return;
     setExporting(true);
-    const res = await fetch('/api/compliance/str-export', {
+    const res = await apiFetch('/api/v1/compliance/str-export', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ alert_ids: [...selected] }),
     });
-    const data = await res.json();
+    const body = await res.json();
+    const data = body?.data || body;
     setStrReports(data.str_reports || []);
     setExported(true);
     setExporting(false);
@@ -77,34 +83,39 @@ export default function CompliancePortal() {
 
       {/* Compliance status bar */}
       <AnimateIn delay={0.05}>
-        <GlassCard className="mb-5 p-5" hover={false} style={{ display: 'flex', gap: 32, alignItems: 'center' }}>
+        <GlassCard className="mb-5 p-5" hover={false} style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
           {[
             { label: 'Reportable Alerts', value: alerts.length, color: 'var(--accent-amber)' },
             { label: 'Selected for STR', value: selected.size, color: 'var(--accent-cyan)' },
             { label: 'Total Amount', value: `₹${(totalSelected / 100000).toFixed(2)}L`, color: 'var(--accent-amber)' },
             { label: 'STRs Exported', value: strReports.length, color: 'var(--accent-green)' },
             { label: 'FIU Format', value: 'v2.1', color: 'var(--text-muted)' },
-          ].map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.05 }}
-            >
-              <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-mono)', color: s.color }}>
-                {typeof s.value === 'number' ? (
-                  <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }} />
-                ) : s.value}
-              </div>
-              <div className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">{s.label}</div>
-            </motion.div>
+          ].map((s, i, arr) => (
+            <React.Fragment key={s.label}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + i * 0.05 }}
+                style={{ padding: '0 20px' }}
+              >
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-mono)', color: s.color }}>
+                  {typeof s.value === 'number' ? (
+                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }} />
+                  ) : s.value}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+              </motion.div>
+              {i < arr.length - 1 && (
+                <div style={{ width: 1, height: 32, background: 'var(--border-bright)', flexShrink: 0 }} />
+              )}
+            </React.Fragment>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
             <motion.button className="btn btn-ghost" onClick={toggleAll} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
               {selected.size === alerts.length ? 'Deselect All' : 'Select All'}
             </motion.button>
             <motion.button
-              className={`btn ${exported ? 'btn-success' : 'btn-primary'}`}
+              className={`btn ${exported ? 'btn-success' : 'btn-primary'} ${selected.size > 0 && !exported && !exporting ? 'btn-pulse' : ''}`}
               onClick={exportSTR}
               disabled={!selected.size || exporting}
               whileHover={{ scale: 1.02 }}
@@ -204,13 +215,18 @@ export default function CompliancePortal() {
               ].map((c, i) => (
                 <motion.div
                   key={i}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 10px', borderBottom: '1px solid var(--border)',
+                    borderRadius: 4,
+                    background: i % 2 === 0 ? 'var(--bg-elevated)' : 'transparent',
+                  }}
                   initial={{ opacity: 0, x: 10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.05 }}
                 >
                   <motion.span
-                    style={{ color: c.done ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 14 }}
+                    style={{ color: c.done ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 14, flexShrink: 0 }}
                     animate={c.done ? { scale: [1, 1.2, 1] } : {}}
                     transition={{ duration: 0.3 }}
                   >
@@ -267,21 +283,31 @@ export default function CompliancePortal() {
                 <p className="text-xs text-[var(--text-muted)] font-mono">No audit entries yet. Actions will be logged here.</p>
               ) : (
                 <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-                  {auditLog.slice(0, 15).map((entry, i) => (
-                    <div key={entry.log_id || i} style={{ padding: '4px 0', borderBottom: '1px solid var(--border)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: entry.action === 'ESCALATION_CREATED' ? 'var(--accent-amber)' : entry.action === 'FEEDBACK' ? 'var(--accent-green)' : 'var(--accent-cyan)' }}>
-                          {entry.action}
-                        </span>
-                        <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-                          {new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                  {auditLog.slice(0, 15).map((entry, i) => {
+                    const actionColor = entry.action === 'ESCALATION_CREATED' ? 'var(--accent-amber)'
+                      : entry.action === 'FEEDBACK' ? 'var(--accent-green)'
+                      : 'var(--accent-cyan)';
+                    return (
+                      <div key={entry.log_id || i} style={{
+                        padding: '6px 0 6px 10px', borderBottom: '1px solid var(--border)',
+                        fontSize: 11, fontFamily: 'var(--font-mono)',
+                        borderLeft: `2px solid ${actionColor}`,
+                        marginBottom: 2,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: actionColor }}>
+                            {entry.action}
+                          </span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                            {new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                          {entry.user} {entry.alert_id ? `· ${entry.alert_id}` : ''} {entry.details ? `· ${entry.details}` : ''}
+                        </div>
                       </div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-                        {entry.user} {entry.alert_id ? `· ${entry.alert_id}` : ''} {entry.details ? `· ${entry.details}` : ''}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </GlassCard>
