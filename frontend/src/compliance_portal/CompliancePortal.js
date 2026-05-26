@@ -34,7 +34,7 @@ export default function CompliancePortal() {
         const data = body?.data || body;
         setAuditLog(Array.isArray(data) ? data : []);
       })
-      .catch(() => {});
+      .catch(err => console.error('[Compliance] Audit log fetch failed:', err));
   }, []);
 
   const toggle = (id) => {

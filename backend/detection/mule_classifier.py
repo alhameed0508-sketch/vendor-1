@@ -22,6 +22,50 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+# ── Scoring weights (tunable constants) ────────────────────────────────────
+# Account age signals
+WEIGHT_AGE_VERY_NEW = 0.20       # < 7 days → complicit
+WEIGHT_AGE_NEW = 0.10            # < 30 days → complicit
+WEIGHT_AGE_ESTABLISHED = 0.15   # > 365 days → exploited
+
+# KYC signals
+WEIGHT_KYC_PENDING = 0.10       # KYC incomplete → complicit
+WEIGHT_KYC_VERIFIED = 0.05      # KYC verified → exploited
+
+# Device sharing
+WEIGHT_DEVICE_SHARED = 0.25     # Shared device with flagged accounts
+
+# Transaction patterns
+WEIGHT_PASSTHROUGH_HIGH = 0.15  # > 90% pass-through ratio
+WEIGHT_PASSTHROUGH_MED = 0.08   # > 70% pass-through ratio
+
+# Night-time activity
+WEIGHT_NIGHT_ACTIVITY = 0.10    # Transactions between 11PM-5AM
+
+# Velocity burst (BioCatch 72-hour indicator)
+WEIGHT_VELOCITY_BURST = 0.20    # High activity within 72h of opening
+WEIGHT_DORMANT_REACTIVATION = 0.20  # Dormant account suddenly active
+
+# Network role
+WEIGHT_ROLE_SOURCE = 0.10       # Fund originator
+WEIGHT_ROLE_AGGREGATOR = 0.15   # Terminal collection point
+
+# Thresholds
+THRESHOLD_PASSTHROUGH_HIGH = 0.90
+THRESHOLD_PASSTHROUGH_MED = 0.70
+THRESHOLD_AGE_VERY_NEW = 7      # days
+THRESHOLD_AGE_NEW = 30          # days
+THRESHOLD_AGE_ESTABLISHED = 365 # days
+THRESHOLD_NIGHT_TXN_COUNT = 3   # min night-time transactions to flag
+THRESHOLD_VELOCITY_BURST_DAYS = 3       # days since opening
+THRESHOLD_VELOCITY_BURST_TXN = 5        # min outgoing transactions
+THRESHOLD_DORMANT_DAYS = 180            # days to consider dormant
+THRESHOLD_DORMANT_REACTIVATION_TXN = 10 # min outgoing for reactivation
+
+# Classification decision thresholds
+THRESHOLD_MIN_TOTAL_SCORE = 0.15        # below → UNKNOWN
+THRESHOLD_CLASSIFICATION_RATIO = 1.5    # score must exceed other by this factor
+
 
 @dataclass(frozen=True)
 class MuleClassification:
@@ -56,22 +100,22 @@ def classify_mule_type(
     signals = []
 
     # Signal 1: Account age
-    if age_days < 7:
-        complicit_score += 0.20
+    if age_days < THRESHOLD_AGE_VERY_NEW:
+        complicit_score += WEIGHT_AGE_VERY_NEW
         signals.append("Account opened <7 days ago - likely opened for fraud purpose")
-    elif age_days < 30:
-        complicit_score += 0.10
+    elif age_days < THRESHOLD_AGE_NEW:
+        complicit_score += WEIGHT_AGE_NEW
         signals.append("Account opened <30 days ago - newly created")
-    elif age_days > 365:
-        exploited_score += 0.15
+    elif age_days > THRESHOLD_AGE_ESTABLISHED:
+        exploited_score += WEIGHT_AGE_ESTABLISHED
         signals.append("Established account (>1 year) - may have been compromised")
 
     # Signal 2: KYC status
     if kyc_status == "PENDING":
-        complicit_score += 0.10
+        complicit_score += WEIGHT_KYC_PENDING
         signals.append("KYC incomplete - avoidance of identity verification")
     elif kyc_status == "VERIFIED":
-        exploited_score += 0.05
+        exploited_score += WEIGHT_KYC_VERIFIED
         signals.append("KYC fully verified - legitimate account holder")
 
     # Signal 3: Device sharing
@@ -83,7 +127,7 @@ def classify_mule_type(
 
         shared_count = sum(1 for d in acct_devices if d in shared_devices)
         if shared_count > 0:
-            complicit_score += 0.25
+            complicit_score += WEIGHT_DEVICE_SHARED
             signals.append(
                 f"Device shared with {shared_count} other flagged account(s) "
                 f"- coordinated operation"
@@ -98,14 +142,14 @@ def classify_mule_type(
         total_out = sum(float(t.get("amount", 0)) for t in outgoing)
         if total_in > 0:
             passthrough_ratio = total_out / total_in
-            if passthrough_ratio > 0.90:
-                complicit_score += 0.15
+            if passthrough_ratio > THRESHOLD_PASSTHROUGH_HIGH:
+                complicit_score += WEIGHT_PASSTHROUGH_HIGH
                 signals.append(
                     f"Pass-through ratio {passthrough_ratio:.0%} - "
                     f"account used purely as conduit"
                 )
-            elif passthrough_ratio > 0.70:
-                complicit_score += 0.08
+            elif passthrough_ratio > THRESHOLD_PASSTHROUGH_MED:
+                complicit_score += WEIGHT_PASSTHROUGH_MED
                 signals.append(f"High forwarding ratio ({passthrough_ratio:.0%})")
 
     # Signal 5: Night-time activity
@@ -116,22 +160,22 @@ def classify_mule_type(
             hour = int(ts[11:13])
             if hour >= 23 or hour < 5:
                 night_txn_count += 1
-    if night_txn_count >= 3:
-        complicit_score += 0.10
+    if night_txn_count >= THRESHOLD_NIGHT_TXN_COUNT:
+        complicit_score += WEIGHT_NIGHT_ACTIVITY
         signals.append(
             f"{night_txn_count} transactions between 11PM-5AM - "
             f"deliberate timing to avoid detection"
         )
 
     # Signal 6: Velocity burst (BioCatch 72-hour indicator)
-    if age_days <= 3 and len(outgoing) >= 5:
-        complicit_score += 0.20
+    if age_days <= THRESHOLD_VELOCITY_BURST_DAYS and len(outgoing) >= THRESHOLD_VELOCITY_BURST_TXN:
+        complicit_score += WEIGHT_VELOCITY_BURST
         signals.append(
             "High activity within 72 hours of account opening - "
             "BioCatch indicator for complicit mules"
         )
-    elif age_days > 180 and len(outgoing) >= 10:
-        exploited_score += 0.20
+    elif age_days > THRESHOLD_DORMANT_DAYS and len(outgoing) >= THRESHOLD_DORMANT_REACTIVATION_TXN:
+        exploited_score += WEIGHT_DORMANT_REACTIVATION
         signals.append(
             "Dormant account suddenly reactivated with high volume - "
             "likely account takeover or social engineering"
@@ -139,15 +183,15 @@ def classify_mule_type(
 
     # Signal 7: Role in network
     if role == "SOURCE":
-        complicit_score += 0.10
+        complicit_score += WEIGHT_ROLE_SOURCE
         signals.append("Acts as fund originator in the mule network")
     elif role == "AGGREGATOR":
-        complicit_score += 0.15
+        complicit_score += WEIGHT_ROLE_AGGREGATOR
         signals.append("Acts as fund aggregator - terminal collection point")
 
     # Classification decision
     total = complicit_score + exploited_score
-    if total < 0.15:
+    if total < THRESHOLD_MIN_TOTAL_SCORE:
         return MuleClassification(
             account_id=account_id,
             classification="UNKNOWN",
@@ -156,7 +200,7 @@ def classify_mule_type(
             signals=signals,
         )
 
-    if complicit_score > exploited_score * 1.5:
+    if complicit_score > exploited_score * THRESHOLD_CLASSIFICATION_RATIO:
         confidence = min(complicit_score / max(total, 0.01), 0.95)
         reasoning = (
             f"Account shows {len([s for s in signals if 'complicit' in s.lower() or 'coordinated' in s.lower() or 'conduit' in s.lower() or 'deliberate' in s.lower()])} "
@@ -170,7 +214,7 @@ def classify_mule_type(
             reasoning=reasoning,
             signals=signals,
         )
-    elif exploited_score > complicit_score * 1.5:
+    elif exploited_score > complicit_score * THRESHOLD_CLASSIFICATION_RATIO:
         confidence = min(exploited_score / max(total, 0.01), 0.95)
         reasoning = (
             f"Account profile suggests the holder may be a victim: "

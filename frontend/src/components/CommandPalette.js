@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const PAGES = [
   { name: 'Alert Queue', path: '/', icon: '\u26A0', category: 'Pages' },
-  { name: 'ROI Dashboard', path: '/roi', icon: '\u25C8', category: 'Pages' },
+  { name: 'ROI Analytics', path: '/analytics', icon: '\u25C8', category: 'Pages' },
   { name: 'Compliance Portal', path: '/compliance', icon: '\u25C9', category: 'Pages' },
+  { name: 'Onboarding Risk', path: '/onboarding', icon: '\u25CB', category: 'Pages' },
+  { name: 'Judge View', path: '/judge', icon: '\u25B6', category: 'Pages' },
 ];
 
 export default function CommandPalette({ alerts = [] }) {

@@ -26,6 +26,7 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Logs & Data
 audit_logs/

@@ -140,8 +140,10 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
             redis: RedisClient = get_redis_client()
             if redis.get(f"{_BLACKLIST_PREFIX}{req.token}"):
                 raise AuthenticationError("Token has been revoked")
-        except Exception:
-            pass  # If Redis is down, allow refresh (graceful degradation)
+        except AuthenticationError:
+            raise
+        except Exception as exc:
+            logger.warning("Redis blacklist check failed (graceful degradation): %s", exc)
 
         user_id = payload.get("sub")
         role = payload.get("role", "READONLY")
@@ -166,8 +168,8 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
                 ttl = max(int(exp - datetime.utcnow().timestamp()), 0)
                 if ttl > 0:
                     redis.setex(f"{_BLACKLIST_PREFIX}{req.token}", ttl, "1")
-            except Exception:
-                pass  # Graceful degradation
+            except Exception as exc:
+                logger.warning("Redis blacklist write failed (graceful degradation): %s", exc)
 
         return success_response({"message": "Logged out successfully"})
 
@@ -178,6 +180,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         settings = get_settings()
         return success_response({
             "user_id": user.get("sub"),
+            "username": user.get("sub"),
             "role": user.get("role"),
             "auth_enabled": settings.auth_enabled,
         })

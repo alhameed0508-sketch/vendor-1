@@ -2,11 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 
 const ROLE_COLORS = {
-  SOURCE:      '#EF4444',
-  AGGREGATOR:  '#ff7c3b',
-  MULE:        '#f59e0b',
-  LEGITIMATE:  '#3b82f6',
-  UNKNOWN:     '#86868B',
+  SOURCE:      '#FF5C7A',
+  AGGREGATOR:  '#FFB020',
+  MULE:        '#FFB020',
+  LEGITIMATE:  '#38BDF8',
+  UNKNOWN:     '#7D8CA3',
 };
 
 const ROLE_RADIUS = {
@@ -29,7 +29,7 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     const container = containerRef.current;
     const width = container.clientWidth || 600;
-    const height = 420;
+    const height = Math.max(300, Math.min(container.clientWidth * 0.6, 420));
 
     // Clear previous render
     d3.select(svgRef.current).selectAll('*').remove();
@@ -117,8 +117,8 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
     // Draw edges with dash animation (draw-in effect)
     const link = g.append('g').selectAll('line')
       .data(graphLinks).enter().append('line')
-      .attr('stroke', l => l.pattern === 'SMURFING' ? 'rgba(255,59,92,0.4)' :
-                            l.pattern === 'CONSOLIDATION' ? 'rgba(245,158,11,0.4)' : 'rgba(42,53,80,0.8)')
+      .attr('stroke', l => l.pattern === 'SMURFING' ? 'rgba(255,92,122,0.4)' :
+                            l.pattern === 'CONSOLIDATION' ? 'rgba(255,176,32,0.4)' : 'rgba(42,53,80,0.8)')
       .attr('stroke-width', l => edgeWidth(l.amount))
       .attr('marker-end', 'url(#arrowhead)')
       .attr('stroke-dasharray', '1000')
@@ -233,9 +233,9 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
     flowSelRef.current = flowGroup;
 
     const PATTERN_COLOR = {
-      SMURFING:      '#EF4444',
-      CONSOLIDATION: '#f59e0b',
-      NORMAL:        '#06b6d4',
+      SMURFING:      '#FF5C7A',
+      CONSOLIDATION: '#FFB020',
+      NORMAL:        '#3EE7FF',
     };
 
     const maxAmountFlow = Math.max(...graphLinks.map(l => l.amount), 1);
@@ -436,12 +436,12 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
-      <svg ref={svgRef} style={{ display: 'block', background: 'transparent' }} />
+      <svg ref={svgRef} role="img" aria-label="Network graph showing account relationships and money flows" style={{ display: 'block', background: 'transparent' }} />
       {/* Zoom controls */}
       <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
-        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 14, lineHeight: 1 }} onClick={() => handleZoom(1.3)} title="Zoom in">+</button>
-        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 14, lineHeight: 1 }} onClick={() => handleZoom(0.7)} title="Zoom out">-</button>
-        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11, lineHeight: 1 }} onClick={handleReset} title="Reset view">Fit</button>
+        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 14, lineHeight: 1 }} onClick={() => handleZoom(1.3)} aria-label="Zoom in">+</button>
+        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 14, lineHeight: 1 }} onClick={() => handleZoom(0.7)} aria-label="Zoom out">-</button>
+        <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11, lineHeight: 1 }} onClick={handleReset} aria-label="Fit graph to view">Fit</button>
       </div>
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, padding: '8px 20px 12px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
@@ -453,19 +453,19 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
         ))}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 20, height: 2, background: 'rgba(255,59,92,0.5)' }} />
+            <div style={{ width: 20, height: 2, background: 'rgba(255,92,122,0.5)' }} />
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Smurfing</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 20, height: 2, background: 'rgba(245,158,11,0.5)' }} />
+            <div style={{ width: 20, height: 2, background: 'rgba(255,176,32,0.5)' }} />
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Consolidation</span>
           </div>
           {/* Flow indicator — shows animated particle trail */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#06b6d4', boxShadow: '0 0 6px #06b6d4' }} />
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#06b6d4', opacity: 0.4 }} />
-              <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#06b6d4', opacity: 0.2 }} />
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3EE7FF', boxShadow: '0 0 6px #3EE7FF' }} />
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#3EE7FF', opacity: 0.4 }} />
+              <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#3EE7FF', opacity: 0.2 }} />
             </div>
             <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Money Flow</span>
           </div>

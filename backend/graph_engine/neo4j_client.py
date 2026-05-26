@@ -427,5 +427,5 @@ class Neo4jClient:
         for q in index_queries:
             try:
                 self.run(q)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Index/constraint creation skipped: %s", exc)

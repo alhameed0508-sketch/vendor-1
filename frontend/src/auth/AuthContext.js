@@ -5,6 +5,7 @@ import {
   getRefreshToken,
   setRefreshToken,
   clearTokens,
+  resolveUrl,
 } from './api';
 
 const AuthContext = createContext(null);
@@ -33,7 +34,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
+  const [authError, setAuthError] = useState(null);
   const refreshIntervalRef = useRef(null);
 
   /**
@@ -44,7 +45,7 @@ export function AuthProvider({ children }) {
     if (!currentRefresh) return false;
 
     try {
-      const res = await fetch('/api/v1/auth/refresh', {
+      const res = await fetch(resolveUrl('/api/v1/auth/refresh'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: currentRefresh }),
@@ -95,7 +96,7 @@ export function AuthProvider({ children }) {
    * Login with username and password.
    */
   const login = useCallback(async (username, password) => {
-    const res = await fetch('/api/v1/auth/login', {
+    const res = await fetch(resolveUrl('/api/v1/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -116,7 +117,7 @@ export function AuthProvider({ children }) {
       }
       setUser(data.user || { username });
       setIsAuthenticated(true);
-      setDemoMode(false);
+      setAuthError(null);
       scheduleRefresh(data.access_token);
       return data;
     }
@@ -131,7 +132,7 @@ export function AuthProvider({ children }) {
     clearTokens();
     setUser(null);
     setIsAuthenticated(false);
-    setDemoMode(false);
+    setAuthError(null);
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
       refreshIntervalRef.current = null;
@@ -146,7 +147,7 @@ export function AuthProvider({ children }) {
       const token = getToken();
 
       try {
-        const res = await fetch('/api/v1/auth/me', {
+        const res = await fetch(resolveUrl('/api/v1/auth/me'), {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
 
@@ -155,20 +156,17 @@ export function AuthProvider({ children }) {
           const data = body?.data || body;
 
           if (data?.auth_enabled === false) {
-            // Auth is disabled on the server — enter demo mode
-            setDemoMode(true);
+            // Auth is disabled on the server — allow access
             setIsAuthenticated(true);
-            setUser(data.user || { username: 'demo' });
-          } else if (token && data?.username) {
+            setUser(data.user || { username: data?.user_id || 'system' });
+          } else if (token && (data?.username || data?.user_id)) {
             // Valid authenticated session
             setUser(data);
             setIsAuthenticated(true);
-            setDemoMode(false);
             scheduleRefresh(token);
           } else {
             // No valid session
             setIsAuthenticated(false);
-            setDemoMode(false);
           }
         } else if (res.status === 401) {
           // Try refreshing
@@ -176,7 +174,7 @@ export function AuthProvider({ children }) {
           if (refreshed) {
             // Retry /me with new token
             const newToken = getToken();
-            const retryRes = await fetch('/api/v1/auth/me', {
+            const retryRes = await fetch(resolveUrl('/api/v1/auth/me'), {
               headers: { Authorization: `Bearer ${newToken}` },
             });
             if (retryRes.ok) {
@@ -194,16 +192,14 @@ export function AuthProvider({ children }) {
             setIsAuthenticated(false);
           }
         } else {
-          // Server error — assume demo mode for resilience
-          setDemoMode(true);
-          setIsAuthenticated(true);
-          setUser({ username: 'demo' });
+          // Server error — require login
+          setIsAuthenticated(false);
+          setAuthError('Server unavailable. Please try again.');
         }
       } catch {
-        // Network error — fall into demo mode
-        setDemoMode(true);
-        setIsAuthenticated(true);
-        setUser({ username: 'demo' });
+        // Network error — require login
+        setIsAuthenticated(false);
+        setAuthError('Cannot connect to server. Please check your connection.');
       }
 
       setIsLoading(false);
@@ -222,7 +218,7 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated,
     isLoading,
-    demoMode,
+    authError,
     login,
     logout,
     refreshToken,

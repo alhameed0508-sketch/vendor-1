@@ -11,11 +11,14 @@ Produces consolidated Alert objects with subgraph data.
 """
 
 from __future__ import annotations
+import logging
 import uuid
 from datetime import datetime
 from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 import sys, os
+
+logger = logging.getLogger(__name__)
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -73,6 +76,7 @@ class Alert:
     status: str = "OPEN"    # OPEN | UNDER_REVIEW | RESOLVED | FALSE_POSITIVE
     investigator_notes: str = ""
     gnn_score: Optional[float] = None
+    genai_triage: Optional[Dict] = None
     explanation: Optional[Dict] = None
     narrative: Optional[Dict] = None
     mule_classification: Optional[Dict] = None
@@ -322,11 +326,11 @@ def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict]) -> bool:
 
 # ── GNN scorer (lazy import, optional) ───────────────────────────────────
 
-def _try_load_gnn_scorer():
+def _try_load_gnn_scorer(model_path: str = None):
     """Attempt to load the GNN scorer; returns None if unavailable."""
     try:
         from models.gnn.gnn_model import GNNScorer
-        scorer = GNNScorer()
+        scorer = GNNScorer(model_path=model_path)
         return scorer
     except Exception:
         return None
@@ -352,11 +356,15 @@ class DetectionPipeline:
         self,
         smurf_threshold: Optional[float] = None,
         suspicion_threshold: Optional[float] = None,
+        gnn_model_path: Optional[str] = None,
+        genai_service=None,
     ):
         self.rule_engine = RuleEngine()
         self.cluster_detector = LouvainClusterDetector()
-        self._gnn_scorer = _try_load_gnn_scorer()
+        self._gnn_model_path = gnn_model_path
+        self._gnn_scorer = _try_load_gnn_scorer(model_path=gnn_model_path)
         self._gnn_available = self._gnn_scorer is not None
+        self._genai_service = genai_service
 
         # Threshold overrides from feedback engine
         self._smurf_threshold = smurf_threshold
@@ -388,10 +396,23 @@ class DetectionPipeline:
         gnn_predictions = {}
         if self._gnn_available and self._gnn_scorer is not None:
             try:
-                preds = self._gnn_scorer.predict(accounts, transactions, smurf_scores)
+                if self._gnn_scorer.is_trained:
+                    # Fast path: model already trained/loaded
+                    preds = self._gnn_scorer.predict(
+                        accounts, transactions, smurf_scores,
+                    )
+                else:
+                    # Train on this data (stratified split), save weights
+                    preds, metrics = self._gnn_scorer.train_and_predict(
+                        accounts, transactions, smurf_scores,
+                    )
+                    logger.info(
+                        "GNN trained: %d epochs, final_loss=%.4f, train_acc=%.3f",
+                        metrics.epochs, metrics.final_loss, metrics.train_accuracy,
+                    )
                 gnn_predictions = {p.account_id: p for p in preds}
             except Exception as exc:
-                print(f"GNN scoring failed (falling back): {exc}")
+                logger.warning("GNN scoring failed (falling back): %s", exc)
 
         # Build alerts from flagged communities
         alerts = []
@@ -411,7 +432,42 @@ class DetectionPipeline:
             )
             alerts.append(alert)
 
-        # Layer 5: Explainability — generate explanations for each alert
+        # Layer 5: GenAI triage — LLM reviews uncertain alerts
+        if self._genai_service is not None:
+            for alert in alerts:
+                if 0.40 <= alert.risk_score <= 0.65:
+                    try:
+                        triage = self._genai_service.triage_cluster(
+                            alert_data={
+                                "cluster_id": alert.cluster_id,
+                                "risk_score": alert.risk_score,
+                                "account_count": alert.account_count,
+                                "txn_count": alert.txn_count,
+                                "total_amount": alert.total_amount,
+                                "reason_codes": alert.reason_codes,
+                                "shared_devices": alert.shared_devices,
+                                "nodes": [vars(n) for n in alert.nodes],
+                                "edges": [vars(e) for e in alert.edges],
+                            }
+                        )
+                        adjusted = alert.risk_score + triage.confidence_adjustment
+                        alert.risk_score = round(
+                            min(max(adjusted, 0.0), 0.99), 3
+                        )
+                        # Recalculate severity after adjustment
+                        alert.severity = (
+                            "CRITICAL" if alert.risk_score >= 0.80 else
+                            "HIGH" if alert.risk_score >= 0.60 else
+                            "MEDIUM"
+                        )
+                        alert.genai_triage = triage.to_dict()
+                    except Exception as exc:
+                        logger.warning(
+                            "GenAI triage failed for %s: %s",
+                            alert.alert_id, exc,
+                        )
+
+        # Layer 6: Explainability — generate explanations for each alert
         for alert in alerts:
             try:
                 alert_dict = {
@@ -429,9 +485,9 @@ class DetectionPipeline:
                 explanation = explain_alert(alert_dict, smurf_scores)
                 alert.explanation = explanation.to_dict()
             except Exception as exc:
-                print(f"Explainability failed for {alert.alert_id}: {exc}")
+                logger.warning("Explainability failed for %s: %s", alert.alert_id, exc)
 
-        # Layer 6: Mule type classification + narrative generation
+        # Layer 7: Mule type classification + narrative generation
         for alert in alerts:
             try:
                 alert_dict = {
@@ -455,12 +511,14 @@ class DetectionPipeline:
                 narrative = generate_narrative(alert_dict, classification)
                 alert.narrative = narrative.to_dict()
             except Exception as exc:
-                print(f"Classification/narrative failed for {alert.alert_id}: {exc}")
+                logger.warning("Classification/narrative failed for %s: %s", alert.alert_id, exc)
 
         elapsed = (datetime.now() - start).total_seconds()
         gnn_status = "with GNN" if gnn_predictions else "without GNN"
-        print(f"Detection pipeline ({gnn_status}): {len(transactions)} txns -> "
-              f"{len(flagged_communities)} alerts in {elapsed:.2f}s")
+        logger.info(
+            "Detection pipeline (%s): %d txns -> %d alerts in %.2fs",
+            gnn_status, len(transactions), len(flagged_communities), elapsed,
+        )
 
         return sorted(alerts, key=lambda a: -a.risk_score)
 

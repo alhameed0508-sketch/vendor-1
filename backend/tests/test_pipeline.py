@@ -140,5 +140,88 @@ def test_pipeline_latency(small_dataset):
     assert elapsed < 30, f"Pipeline too slow: {elapsed:.1f}s"
 
 
+# ── GNN training tests ──────────────────────────────────────────────────────
+
+def test_gnn_score_populated(small_dataset):
+    """GNN should produce non-None scores when torch_geometric is available."""
+    pipeline = DetectionPipeline()
+    alerts = pipeline.run(small_dataset["transactions"], small_dataset["accounts"])
+    gnn_alerts = [a for a in alerts if a.gnn_score is not None]
+    # If GNN is available, all alerts should have a score
+    if pipeline._gnn_available:
+        assert len(gnn_alerts) == len(alerts), (
+            f"Only {len(gnn_alerts)}/{len(alerts)} alerts have GNN scores"
+        )
+        for a in gnn_alerts:
+            assert 0.0 <= a.gnn_score <= 1.0
+
+
+def test_gnn_model_persistence(small_dataset, tmp_path):
+    """GNN should save and load model weights."""
+    try:
+        from models.gnn.gnn_model import GNNScorer
+    except ImportError:
+        pytest.skip("torch/torch_geometric not available")
+
+    model_path = str(tmp_path / "test_model.pt")
+    scorer = GNNScorer(model_path=model_path)
+    if scorer.model is None:
+        pytest.skip("GNN model not available")
+
+    from models.temporal_weighting.smurf_weighting import score_transaction_batch
+    smurf_scores = score_transaction_batch(small_dataset["transactions"])
+
+    # Train and save
+    preds, metrics = scorer.train_and_predict(
+        small_dataset["accounts"],
+        small_dataset["transactions"],
+        smurf_scores,
+        epochs=10,
+    )
+    assert scorer.is_trained
+    assert metrics.epochs == 10
+    assert len(metrics.loss_curve) == 10
+    assert metrics.train_accuracy > 0.0
+    assert os.path.exists(model_path)
+
+    # Load in a new scorer
+    scorer2 = GNNScorer(model_path=model_path)
+    assert scorer2.is_trained
+    preds2 = scorer2.predict(
+        small_dataset["accounts"],
+        small_dataset["transactions"],
+        smurf_scores,
+    )
+    assert len(preds2) == len(preds)
+
+
+# ── GenAI triage tests ──────────────────────────────────────────────────────
+
+def test_pipeline_genai_triage_field(small_dataset):
+    """Alerts should have genai_triage=None when no GenAI service is provided."""
+    pipeline = DetectionPipeline()
+    alerts = pipeline.run(small_dataset["transactions"], small_dataset["accounts"])
+    for a in alerts:
+        # Without genai_service, triage should be None
+        assert a.genai_triage is None
+
+
+def test_pipeline_with_genai_triage(small_dataset):
+    """Pipeline with template GenAI service should set triage on uncertain alerts."""
+    try:
+        from services.genai_service import GenAIService
+    except ImportError:
+        pytest.skip("genai_service not importable")
+
+    genai = GenAIService(provider=None)
+    pipeline = DetectionPipeline(genai_service=genai)
+    alerts = pipeline.run(small_dataset["transactions"], small_dataset["accounts"])
+    # Template fallback on uncertain alerts: triage dict with MEDIUM assessment
+    uncertain = [a for a in alerts if a.genai_triage is not None]
+    for a in uncertain:
+        assert a.genai_triage["llm_assessment"] == "MEDIUM"
+        assert a.genai_triage["confidence_adjustment"] == 0.0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

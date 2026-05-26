@@ -30,6 +30,7 @@ def alert_to_dict(a: Alert) -> Dict:
         "status": a.status,
         "investigator_notes": a.investigator_notes,
         "gnn_score": a.gnn_score,
+        "genai_triage": a.genai_triage,
         "nodes": [vars(n) for n in a.nodes],
         "edges": [vars(e) for e in a.edges],
         "explanation": a.explanation,

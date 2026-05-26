@@ -14,7 +14,7 @@ Roles:
 from fastapi import Request
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-import json, os, hashlib
+import json, os
 from pathlib import Path
 from jose import jwt, JWTError
 import logging
@@ -60,6 +60,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "feedback:write",
         "kpi:read",
         "screening:read", "screening:write",
+        "onboarding:read", "onboarding:write",
     ],
     "SUPERVISOR": [
         "alerts:read", "alerts:write",
@@ -67,6 +68,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "feedback:write",
         "kpi:read",
         "screening:read",
+        "onboarding:read", "onboarding:write",
     ],
     "INVESTIGATOR": [
         "alerts:read", "alerts:write",
@@ -74,29 +76,31 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "feedback:write",
         "kpi:read",
         "screening:read",
+        "onboarding:read",
     ],
     "READONLY": [
         "alerts:read",
         "kpi:read",
+        "onboarding:read",
     ],
 }
 
 # ── Demo users (only used when ENV != production) ─────────────────────────────
 DEMO_USERS = {
     "investigator": {
-        "password_hash": hashlib.sha256(b"iob@2024").hexdigest(),
+        "password_hash": hash_password("iob@2024"),
         "role": "INVESTIGATOR",
         "display_name": "Fraud Investigator",
         "branch": "Chennai HO",
     },
     "supervisor": {
-        "password_hash": hashlib.sha256(b"supervisor@2024").hexdigest(),
+        "password_hash": hash_password("supervisor@2024"),
         "role": "SUPERVISOR",
         "display_name": "Investigation Supervisor",
         "branch": "Chennai HO",
     },
     "admin": {
-        "password_hash": hashlib.sha256(b"admin@2024").hexdigest(),
+        "password_hash": hash_password("admin@2024"),
         "role": "ADMIN",
         "display_name": "System Administrator",
         "branch": "HO IT",
@@ -143,12 +147,11 @@ def decode_token(token: str) -> Optional[Dict]:
 
 
 def authenticate(username: str, password: str) -> Optional[str]:
-    """Legacy authenticate — uses DEMO_USERS with sha256 (dev only)."""
+    """Authenticate against DEMO_USERS using bcrypt (dev only)."""
     user = DEMO_USERS.get(username)
     if not user:
         return None
-    pw_hash = hashlib.sha256(password.encode()).hexdigest()
-    if pw_hash != user["password_hash"]:
+    if not verify_password(password, user["password_hash"]):
         return None
     return create_token(username, user["role"])
 

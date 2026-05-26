@@ -43,7 +43,11 @@ def get_persistence() -> PersistenceLayer:
 
 @lru_cache(maxsize=1)
 def get_pipeline() -> DetectionPipeline:
-    return DetectionPipeline()
+    settings = get_settings()
+    return DetectionPipeline(
+        gnn_model_path=settings.gnn_model_path,
+        genai_service=get_genai_service(),
+    )
 
 
 @lru_cache(maxsize=1)
@@ -216,3 +220,42 @@ def get_screening_repository():
 def get_screening_service():
     from services.screening_service import ScreeningService
     return ScreeningService(get_screening_repository())
+
+
+# ── Onboarding singletons ──────────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_onboarding_repository():
+    from repositories.onboarding_repository import OnboardingRepository
+    return OnboardingRepository()
+
+
+@lru_cache(maxsize=1)
+def get_onboarding_service():
+    from services.onboarding_service import OnboardingService
+    return OnboardingService(get_onboarding_repository())
+
+
+# ── GenAI singletons ──────────────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_llm_provider():
+    from genai.factory import create_llm_provider
+    return create_llm_provider(get_settings())
+
+
+@lru_cache(maxsize=1)
+def get_genai_service():
+    from services.genai_service import GenAIService
+    return GenAIService(provider=get_llm_provider())
+
+
+# ── Benchmark singletons ─────────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_benchmark_service():
+    from benchmark.service import BenchmarkService
+    return BenchmarkService(pipeline=get_pipeline())

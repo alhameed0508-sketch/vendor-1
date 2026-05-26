@@ -287,6 +287,255 @@ def generate_legitimate_transactions(
     return txns
 
 
+def generate_adversarial_accounts(n: int = 30) -> Tuple[List[Dict], List[Dict]]:
+    """
+    Generate hard-to-classify legitimate accounts that mimic mule patterns.
+    Returns (accounts, transactions) for adversarial legit accounts.
+    Tests the pipeline's false positive rate on edge cases.
+    """
+    accounts = []
+    transactions = []
+    base_time = datetime.now() - timedelta(hours=36)
+
+    per_type = max(1, n // 5)
+
+    # Type 1: High-volume merchants — 50+ txns/day, multiple recipients, but LEGIT
+    for i in range(per_type):
+        acc_id = random_account()
+        accounts.append({
+            "account_id": acc_id,
+            "upi_id": random_upi(),
+            "bank": random.choice(BANKS),
+            "city": random.choice(CITIES),
+            "role": "LEGITIMATE",
+            "high_risk": False,
+            "account_age_days": random.randint(365, 2000),
+            "kyc_status": "VERIFIED",
+            "avg_monthly_txn": random.randint(200, 800),
+            "cluster_id": None,
+            "is_suspicious": False,
+        })
+        # Generate many outgoing transactions to different recipients
+        for _ in range(random.randint(50, 80)):
+            recipient = random_account()
+            transactions.append({
+                "txn_id": f"TXN_{uuid.uuid4().hex[:12].upper()}",
+                "from_account": acc_id,
+                "to_account": recipient,
+                "amount": round(random.uniform(500, 25000), 2),
+                "timestamp": make_timestamp(base_time, offset_minutes=random.randint(0, 1440)),
+                "upi_id": random_upi(),
+                "device_id": random_device(),
+                "ip_address": random_ip(),
+                "txn_type": "UPI_PUSH",
+                "cluster_id": None,
+                "is_suspicious": False,
+                "pattern": "NORMAL",
+            })
+
+    # Type 2: Seasonal reactivation — dormant 6+ months, then active burst, but LEGIT
+    for i in range(per_type):
+        acc_id = random_account()
+        accounts.append({
+            "account_id": acc_id,
+            "upi_id": random_upi(),
+            "bank": random.choice(BANKS),
+            "city": random.choice(CITIES),
+            "role": "LEGITIMATE",
+            "high_risk": False,
+            "account_age_days": random.randint(400, 1500),
+            "kyc_status": "VERIFIED",
+            "avg_monthly_txn": random.randint(1, 2),  # Low historical average
+            "cluster_id": None,
+            "is_suspicious": False,
+        })
+        # Burst of activity after dormancy
+        for _ in range(random.randint(10, 20)):
+            transactions.append({
+                "txn_id": f"TXN_{uuid.uuid4().hex[:12].upper()}",
+                "from_account": acc_id,
+                "to_account": random_account(),
+                "amount": round(random.uniform(5000, 45000), 2),
+                "timestamp": make_timestamp(base_time, offset_minutes=random.randint(0, 720)),
+                "upi_id": random_upi(),
+                "device_id": random_device(),
+                "ip_address": random_ip(),
+                "txn_type": "UPI_PUSH",
+                "cluster_id": None,
+                "is_suspicious": False,
+                "pattern": "NORMAL",
+            })
+
+    # Type 3: Small business structuring — amounts near 50k but legit payroll/vendor
+    for i in range(per_type):
+        acc_id = random_account()
+        accounts.append({
+            "account_id": acc_id,
+            "upi_id": random_upi(),
+            "bank": random.choice(BANKS),
+            "city": random.choice(CITIES),
+            "role": "LEGITIMATE",
+            "high_risk": False,
+            "account_age_days": random.randint(180, 1000),
+            "kyc_status": "VERIFIED",
+            "avg_monthly_txn": random.randint(30, 100),
+            "cluster_id": None,
+            "is_suspicious": False,
+        })
+        # Amounts near 50k ceiling — looks like structuring but is payroll
+        for _ in range(random.randint(5, 12)):
+            transactions.append({
+                "txn_id": f"TXN_{uuid.uuid4().hex[:12].upper()}",
+                "from_account": acc_id,
+                "to_account": random_account(),
+                "amount": round(random.uniform(42000, 49500), 2),
+                "timestamp": make_timestamp(base_time, offset_minutes=random.randint(0, 1440)),
+                "upi_id": random_upi(),
+                "device_id": random_device(),
+                "ip_address": random_ip(),
+                "txn_type": "UPI_PUSH",
+                "cluster_id": None,
+                "is_suspicious": False,
+                "pattern": "NORMAL",
+            })
+
+    # Type 4: Shared family devices — 2-3 accounts sharing a device legitimately
+    shared_dev = random_device()
+    shared_ip = random_ip()
+    family_accounts = []
+    for i in range(min(per_type, 3)):
+        acc_id = random_account()
+        family_accounts.append(acc_id)
+        accounts.append({
+            "account_id": acc_id,
+            "upi_id": random_upi(),
+            "bank": random.choice(BANKS),
+            "city": random.choice(CITIES),
+            "role": "LEGITIMATE",
+            "high_risk": False,
+            "account_age_days": random.randint(365, 2500),
+            "kyc_status": "VERIFIED",
+            "avg_monthly_txn": random.randint(20, 100),
+            "cluster_id": None,
+            "is_suspicious": False,
+        })
+        for _ in range(random.randint(8, 15)):
+            transactions.append({
+                "txn_id": f"TXN_{uuid.uuid4().hex[:12].upper()}",
+                "from_account": acc_id,
+                "to_account": random_account(),
+                "amount": round(random.uniform(200, 15000), 2),
+                "timestamp": make_timestamp(base_time, offset_minutes=random.randint(0, 1440)),
+                "upi_id": random_upi(),
+                "device_id": shared_dev,  # Shared device
+                "ip_address": shared_ip,  # Shared IP
+                "txn_type": "UPI_PUSH",
+                "cluster_id": None,
+                "is_suspicious": False,
+                "pattern": "NORMAL",
+            })
+
+    # Type 5: New accounts with high activity — students/gig workers
+    for i in range(per_type):
+        acc_id = random_account()
+        accounts.append({
+            "account_id": acc_id,
+            "upi_id": random_upi(),
+            "bank": random.choice(BANKS),
+            "city": random.choice(CITIES),
+            "role": "LEGITIMATE",
+            "high_risk": False,
+            "account_age_days": random.randint(1, 5),  # Very new
+            "kyc_status": "VERIFIED",
+            "avg_monthly_txn": random.randint(30, 80),
+            "cluster_id": None,
+            "is_suspicious": False,
+        })
+        for _ in range(random.randint(8, 20)):
+            transactions.append({
+                "txn_id": f"TXN_{uuid.uuid4().hex[:12].upper()}",
+                "from_account": acc_id,
+                "to_account": random_account(),
+                "amount": round(random.uniform(100, 10000), 2),
+                "timestamp": make_timestamp(base_time, offset_minutes=random.randint(0, 1440)),
+                "upi_id": random_upi(),
+                "device_id": random_device(),
+                "ip_address": random_ip(),
+                "txn_type": "UPI_PUSH",
+                "cluster_id": None,
+                "is_suspicious": False,
+                "pattern": "NORMAL",
+            })
+
+    return accounts, transactions
+
+
+def build_adversarial_dataset(
+    num_clusters: int = 3,
+    num_legit_accounts: int = 30,
+    num_adversarial: int = 20,
+) -> Dict:
+    """
+    Build a dataset mixing mule clusters, clean legit, and adversarial legit.
+    The adversarial accounts are designed to be hard-to-classify edge cases.
+    """
+    all_accounts = []
+    all_transactions = []
+    clusters = []
+
+    # Generate mule clusters (same as standard)
+    base_time = datetime.now() - timedelta(hours=48)
+    for i in range(num_clusters):
+        profile = CLUSTER_PROFILES[i % len(CLUSTER_PROFILES)]
+        gen = MuleClusterGenerator()
+        cluster = gen.generate(
+            num_mules=profile["num_mules"],
+            base_time=base_time + timedelta(hours=i * 8),
+            profile=profile,
+        )
+        clusters.append({k: v for k, v in cluster.items()
+                         if k not in ("accounts", "transactions")})
+        all_accounts.extend(cluster["accounts"])
+        all_transactions.extend(cluster["transactions"])
+
+    # Clean legitimate accounts
+    legit_accounts = generate_legitimate_accounts(num_legit_accounts)
+    legit_txns = generate_legitimate_transactions(legit_accounts, n=num_legit_accounts * 5)
+    all_accounts.extend(legit_accounts)
+    all_transactions.extend(legit_txns)
+
+    # Adversarial legitimate accounts (hard edge cases)
+    adv_accounts, adv_txns = generate_adversarial_accounts(num_adversarial)
+    all_accounts.extend(adv_accounts)
+    all_transactions.extend(adv_txns)
+
+    random.shuffle(all_transactions)
+
+    suspicious_count = sum(
+        1 for a in all_accounts
+        if a.get("role") in ("MULE", "SOURCE", "AGGREGATOR")
+    )
+    legit_count = len(all_accounts) - suspicious_count
+
+    return {
+        "generated_at": datetime.now().isoformat(),
+        "clusters": clusters,
+        "accounts": all_accounts,
+        "transactions": all_transactions,
+        "stats": {
+            "total_accounts": len(all_accounts),
+            "total_transactions": len(all_transactions),
+            "suspicious_accounts": suspicious_count,
+            "legitimate_accounts": legit_count,
+            "adversarial_accounts": len(adv_accounts),
+            "suspicious_transactions": sum(
+                1 for t in all_transactions if t.get("is_suspicious")
+            ),
+            "mule_clusters": num_clusters,
+        },
+    }
+
+
 def build_full_dataset(
     num_clusters: int = 5, num_legit_accounts: int = 50
 ) -> Dict:

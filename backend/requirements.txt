@@ -24,3 +24,7 @@ shap==0.44.1
 fpdf2==2.8.3
 ldap3==2.9.1
 apscheduler==3.10.4
+# GenAI / LLM providers
+google-generativeai>=0.8.0
+openai>=1.40.0
+anthropic>=0.34.0

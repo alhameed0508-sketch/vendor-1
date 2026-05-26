@@ -51,7 +51,8 @@ class RedisClient:
             if raw is None:
                 return None
             return json.loads(raw)
-        except Exception:
+        except Exception as exc:
+            logger.warning("Redis GET failed for key=%s: %s", key, exc)
             return None
 
     def set(self, key: str, value: Any, ttl: int = 600) -> bool:
@@ -60,7 +61,8 @@ class RedisClient:
         try:
             self._client.setex(key, ttl, json.dumps(value, default=str))
             return True
-        except Exception:
+        except Exception as exc:
+            logger.warning("Redis SET failed for key=%s: %s", key, exc)
             return False
 
     def delete(self, key: str) -> bool:
@@ -69,7 +71,8 @@ class RedisClient:
         try:
             self._client.delete(key)
             return True
-        except Exception:
+        except Exception as exc:
+            logger.warning("Redis DELETE failed for key=%s: %s", key, exc)
             return False
 
     def delete_pattern(self, pattern: str) -> int:
@@ -87,5 +90,6 @@ class RedisClient:
                 if cursor == 0:
                     break
             return count
-        except Exception:
+        except Exception as exc:
+            logger.warning("Redis DELETE_PATTERN failed for pattern=%s: %s", pattern, exc)
             return 0

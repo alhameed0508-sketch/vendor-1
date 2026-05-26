@@ -69,6 +69,19 @@ class Settings(BaseSettings):
 
     # Detection thresholds
     smurf_flag_threshold: float = Field(0.55, alias="SMURF_FLAG_THRESHOLD")
+    onboarding_risk_threshold: float = Field(0.50, alias="ONBOARDING_RISK_THRESHOLD")
+
+    # GNN model persistence
+    gnn_model_path: str = Field("models/gnn/trained_model.pt", alias="GNN_MODEL_PATH")
+
+    # GenAI / LLM
+    genai_enabled: bool = Field(False, alias="GENAI_ENABLED")
+    genai_provider: str = Field("gemini", alias="GENAI_PROVIDER")
+    genai_api_key: str = Field("", alias="GENAI_API_KEY")
+    genai_model: str = Field("", alias="GENAI_MODEL")
+    genai_temperature: float = Field(0.3, alias="GENAI_TEMPERATURE")
+    genai_max_tokens: int = Field(2048, alias="GENAI_MAX_TOKENS")
+    genai_timeout_seconds: float = Field(30.0, alias="GENAI_TIMEOUT_SECONDS")
 
     @computed_field
     @property

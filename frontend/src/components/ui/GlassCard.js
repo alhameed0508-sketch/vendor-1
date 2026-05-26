@@ -10,6 +10,7 @@ export function GlassCard({
   hover = true,
   as = 'div',
   accent,
+  padding = 20,
   style,
   ...props
 }) {
@@ -22,6 +23,7 @@ export function GlassCard({
       style={{
         position: 'relative',
         overflow: 'hidden',
+        padding,
         ...style,
         ...(glow ? {
           boxShadow: `var(--shadow), 0 0 20px ${glowColor}`,
@@ -44,7 +46,7 @@ export function GlassCard({
 
 export function GlassCardMetric({ label, value, icon, color, accent, children, className = '' }) {
   return (
-    <GlassCard className={`p-5 text-center ${className}`} accent={accent} glow glowColor={color ? `${color}18` : undefined}>
+    <GlassCard className={className} style={{ textAlign: 'center' }} accent={accent} glow glowColor={color ? `${color}18` : undefined}>
       {icon && (
         <div style={{ marginBottom: 6, display: 'flex', justifyContent: 'center', color: color || 'var(--accent-gold)' }}>
           {icon}

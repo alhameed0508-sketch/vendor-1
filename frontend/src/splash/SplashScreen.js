@@ -47,7 +47,7 @@ export default function SplashScreen({ onComplete }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: '#0F172A',
+        background: '#0B1020',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -65,7 +65,7 @@ export default function SplashScreen({ onComplete }) {
           borderRadius: '50%',
           opacity: 0,
           background:
-            'radial-gradient(circle at 40% 50%, rgba(245,158,11,0.18) 0%, rgba(139,92,246,0.06) 50%, transparent 75%)',
+            'radial-gradient(circle at 40% 50%, rgba(62,231,255,0.18) 0%, rgba(0,194,168,0.06) 50%, transparent 75%)',
           filter: 'blur(40px)',
           pointerEvents: 'none',
         }}
@@ -79,8 +79,8 @@ export default function SplashScreen({ onComplete }) {
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="hexGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#F59E0B"/>
-              <stop offset="100%" stopColor="#8B5CF6"/>
+              <stop offset="0%" stopColor="#3EE7FF"/>
+              <stop offset="100%" stopColor="#00C2A8"/>
             </linearGradient>
             <filter id="hexGlow">
               <feGaussianBlur stdDeviation="4" result="blur"/>
@@ -96,8 +96,8 @@ export default function SplashScreen({ onComplete }) {
           />
           <polygon
             points="36,14 57,26 57,46 36,58 15,46 15,26"
-            fill="rgba(245,158,11,0.08)"
-            stroke="rgba(245,158,11,0.15)"
+            fill="rgba(62,231,255,0.08)"
+            stroke="rgba(62,231,255,0.15)"
             strokeWidth="0.75"
           />
           <text
@@ -106,7 +106,7 @@ export default function SplashScreen({ onComplete }) {
             fontFamily="'IBM Plex Sans', system-ui, sans-serif"
             fontWeight="700"
             fontSize="16"
-            fill="#F59E0B"
+            fill="#3EE7FF"
           >MC</text>
         </svg>
       </div>
@@ -143,11 +143,11 @@ export default function SplashScreen({ onComplete }) {
           gap: 2,
         }}
       >
-        <span style={{ color: '#F59E0B', opacity: 0.55, marginRight: 6 }}>//</span>
+        <span style={{ color: '#3EE7FF', opacity: 0.55, marginRight: 6 }}>//</span>
         <span>{TAGLINE.slice(0, typedChars)}</span>
         <span
           style={{
-            borderRight: '2px solid #F59E0B',
+            borderRight: '2px solid #3EE7FF',
             animation: 'blink 0.8s step-end infinite',
             marginLeft: 1,
           }}

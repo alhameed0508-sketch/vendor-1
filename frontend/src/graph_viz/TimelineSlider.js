@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { Pause, Play } from 'lucide-react';
 
 /**
  * TimelineSlider — lets investigators scrub through time to see
@@ -115,9 +116,9 @@ export default function TimelineSlider({ edges = [], onChange }) {
             className="btn btn-ghost"
             style={{ padding: '2px 8px', fontSize: 11 }}
             onClick={togglePlay}
-            title={playing ? 'Pause' : 'Play timeline'}
+            aria-label={playing ? 'Pause timeline' : 'Play timeline'}
           >
-            {playing ? '⏸' : '▶'}
+            {playing ? <Pause size={12} /> : <Play size={12} />}
           </button>
           <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
             Timeline

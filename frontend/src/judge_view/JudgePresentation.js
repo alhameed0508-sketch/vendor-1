@@ -3,15 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassCard, GlassCardMetric } from '../components/ui/GlassCard';
 import { apiFetch } from '../auth/api';
 
-const API = process.env.REACT_APP_API_URL || '';
 
 /* ── Chakravyuha SVG rings ── */
 function ChakravyuhaViz({ activeLayer }) {
   const layers = [
-    { label: 'Rules', color: '#EF4444', r: 140 },
-    { label: 'Smurf', color: '#f59e0b', r: 110 },
-    { label: 'Louvain', color: '#3b82f6', r: 80 },
-    { label: 'GNN', color: '#10b981', r: 50 },
+    { label: 'Rules', color: '#FF5C7A', r: 140 },
+    { label: 'Smurf', color: '#FFB020', r: 110 },
+    { label: 'Louvain', color: '#38BDF8', r: 80 },
+    { label: 'GNN', color: '#16C784', r: 50 },
   ];
 
   return (
@@ -145,20 +144,20 @@ export default function JudgePresentation() {
 
   useEffect(() => {
     Promise.all([
-      apiFetch(`${API}/api/v1/alerts?limit=20`).then(r => r.json()).then(body => body?.data || body),
-      apiFetch(`${API}/api/v1/graph/stats`).then(r => r.json()).then(body => body?.data || body),
-      apiFetch(`${API}/api/v1/kpi`).then(r => r.json()).then(body => body?.data || body),
+      apiFetch(`/api/v1/alerts?limit=20`).then(r => r.json()).then(body => body?.data || body),
+      apiFetch(`/api/v1/graph/stats`).then(r => r.json()).then(body => body?.data || body),
+      apiFetch(`/api/v1/kpi`).then(r => r.json()).then(body => body?.data || body),
     ]).then(([alertData, statsData, kpiData]) => {
       setAlerts(alertData.alerts || []);
       setStats(statsData);
       setKpi(kpiData);
       if (alertData.alerts?.length > 0) {
-        apiFetch(`${API}/api/v1/alerts/${alertData.alerts[0].alert_id}/narrative`)
+        apiFetch(`/api/v1/alerts/${alertData.alerts[0].alert_id}/narrative`)
           .then(r => r.json())
           .then(body => setNarrative(body?.data || body))
-          .catch(() => {});
+          .catch(err => console.error('[Judge] Narrative fetch failed:', err));
       }
-    }).catch(() => {});
+    }).catch(err => console.error('[Judge] Initial data fetch failed:', err));
   }, []);
 
   const next = useCallback(() => setSlide(s => Math.min(s + 1, SLIDES.length - 1)), []);
@@ -289,10 +288,10 @@ export default function JudgePresentation() {
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  { name: 'Layer 1: Rule Engine', desc: '20 deterministic behavioral rules (R01-R20) aligned with RBI/RBIH MuleHunter framework + 72-hour BioCatch detection', color: '#EF4444' },
-                  { name: 'Layer 2: Smurf-Weighting', desc: '5-dimensional temporal scoring: velocity, ceiling, fan-out, rhythm, consolidation', color: '#f59e0b' },
-                  { name: 'Layer 3: Louvain Detection', desc: 'Graph community detection with device/IP-weighted edges identifying mule clusters', color: '#3b82f6' },
-                  { name: 'Layer 4: GraphSAGE GNN', desc: '3-layer graph neural network for pattern recognition beyond human-defined rules', color: '#10b981' },
+                  { name: 'Layer 1: Rule Engine', desc: '20 deterministic behavioral rules (R01-R20) aligned with RBI/RBIH MuleHunter framework + 72-hour BioCatch detection', color: '#FF5C7A' },
+                  { name: 'Layer 2: Smurf-Weighting', desc: '5-dimensional temporal scoring: velocity, ceiling, fan-out, rhythm, consolidation', color: '#FFB020' },
+                  { name: 'Layer 3: Louvain Detection', desc: 'Graph community detection with device/IP-weighted edges identifying mule clusters', color: '#38BDF8' },
+                  { name: 'Layer 4: GraphSAGE GNN', desc: '3-layer graph neural network for pattern recognition beyond human-defined rules', color: '#16C784' },
                 ].map((layer, i) => (
                   <motion.div
                     key={i}
@@ -588,7 +587,7 @@ export default function JudgePresentation() {
             <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
               {[
                 { label: 'Alert Queue', path: '/', desc: 'Live detection results' },
-                { label: 'ROI Analytics', path: '/roi', desc: 'Impact metrics' },
+                { label: 'ROI Analytics', path: '/analytics', desc: 'Impact metrics' },
                 { label: 'Compliance', path: '/compliance', desc: 'STR generation' },
               ].map((item, i) => (
                 <motion.a

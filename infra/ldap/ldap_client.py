@@ -34,6 +34,7 @@ def authenticate_ldap(
     """
     try:
         from ldap3 import Server, Connection, ALL, SUBTREE
+        from ldap3.utils.conv import escape_filter_chars
     except ImportError:
         logger.error("ldap3 package not installed. LDAP authentication unavailable.")
         return None
@@ -46,8 +47,8 @@ def authenticate_ldap(
             server, user=bind_dn, password=bind_password, auto_bind=True
         )
 
-        # Search for user
-        search_filter = f"(sAMAccountName={username})"
+        # Search for user — escape to prevent LDAP injection
+        search_filter = f"(sAMAccountName={escape_filter_chars(username)})"
         admin_conn.search(
             search_base,
             search_filter,

@@ -36,7 +36,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
 
   if (loading) {
     return (
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="spinner" />
           <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
@@ -49,7 +49,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
 
   if (!explanation) {
     return (
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           No explanation available for this alert.
         </p>
@@ -150,7 +150,7 @@ function SummaryTab({ explanation }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* AI Summary */}
-      <GlassCard className="p-5" hover={false} style={{ borderLeft: '3px solid var(--accent-gold)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard hover={false} style={{ borderLeft: '3px solid var(--accent-gold)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p className="section-title" style={{ fontSize: 11, marginBottom: 8 }}>AI Summary</p>
         <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)' }}>
           {explanation.summary}
@@ -158,7 +158,7 @@ function SummaryTab({ explanation }) {
       </GlassCard>
 
       {/* Recommendation */}
-      <GlassCard className="p-5" hover={false} style={{
+      <GlassCard hover={false} style={{
         borderLeft: `3px solid ${explanation.severity === 'CRITICAL' ? 'var(--critical)' : explanation.severity === 'HIGH' ? 'var(--high)' : 'var(--accent-cyan)'}`,
         borderRadius: '0 var(--radius) var(--radius) 0',
       }}>
@@ -170,7 +170,7 @@ function SummaryTab({ explanation }) {
 
       {/* Confidence Factors */}
       {explanation.confidence_factors?.length > 0 && (
-        <GlassCard className="p-5" hover={false}>
+        <GlassCard hover={false}>
           <p className="section-title" style={{ fontSize: 11, marginBottom: 10 }}>Confidence Factors</p>
           {explanation.confidence_factors.map((f, i) => (
             <motion.div
@@ -199,14 +199,14 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
-      <GlassCard className="p-4" hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           {narrative}
         </p>
       </GlassCard>
 
       {/* Waterfall bars */}
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <p className="section-title" style={{ fontSize: 11, marginBottom: 14 }}>Feature Contributions</p>
         {breakdown.map((item, i) => (
           <motion.div
@@ -267,7 +267,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
 function FraudChainTab({ chain, narrative }) {
   if (!chain.length) {
     return (
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
           {narrative || 'No clear money flow chain could be traced.'}
         </p>
@@ -278,14 +278,14 @@ function FraudChainTab({ chain, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
-      <GlassCard className="p-4" hover={false} style={{ borderLeft: '3px solid var(--accent-amber)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-amber)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           {narrative}
         </p>
       </GlassCard>
 
       {/* Chain steps */}
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <p className="section-title" style={{ fontSize: 11, marginBottom: 14 }}>Money Flow Chain</p>
         <div style={{ position: 'relative', paddingLeft: 24 }}>
           {/* Vertical line */}
@@ -347,7 +347,7 @@ function FraudChainTab({ chain, narrative }) {
 function CyclesTab({ cycles, narrative }) {
   if (!cycles.length) {
     return (
-      <GlassCard className="p-5" hover={false}>
+      <GlassCard hover={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: 'var(--accent-green)', fontSize: 14 }}>{'\u2713'}</span>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -361,7 +361,7 @@ function CyclesTab({ cycles, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
-      <GlassCard className="p-4" hover={false} style={{ borderLeft: '3px solid var(--critical)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--critical)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
           {narrative}
         </p>
@@ -375,7 +375,7 @@ function CyclesTab({ cycles, narrative }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
         >
-          <GlassCard className="p-5" hover={false} glow glowColor="rgba(255,59,48,0.08)">
+          <GlassCard hover={false} glow glowColor="rgba(255,59,48,0.08)">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{

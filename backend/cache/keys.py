@@ -37,3 +37,11 @@ def subgraph_key(alert_id: str) -> str:
 
 def kpi_key() -> str:
     return "kpi:current"
+
+
+def genai_analysis_key(alert_id: str) -> str:
+    return f"genai:analysis:{alert_id}"
+
+
+def genai_chat_key(session_id: str) -> str:
+    return f"genai:chat:{session_id}"

@@ -1,366 +1,187 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  AlertTriangle, BarChart2, Shield, ChevronLeft, ChevronRight,
+  Activity, Moon, Sun, Zap, FileCheck, UserCheck, Presentation
+} from 'lucide-react';
 import { useTheme } from '../ThemeContext';
-import { useAuth } from '../auth/AuthContext';
-
-/* ── Minimal SVG icons ── */
-const Icons = {
-  alerts: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M8 2L14 13H2L8 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
-      <circle cx="8" cy="10.5" r="0.6" fill="currentColor"/>
-      <line x1="8" y1="6" x2="8" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-    </svg>
-  ),
-  roi: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <polyline points="2,11 5,7 8,9 11,4 14,6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="14" cy="6" r="1" fill="currentColor"/>
-    </svg>
-  ),
-  compliance: (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="6" y1="6" x2="10" y2="6" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-      <line x1="6" y1="9" x2="10" y2="9" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-      <line x1="6" y1="12" x2="8" y2="12" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-    </svg>
-  ),
-};
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Alert Queue', icon: 'alerts', end: true },
-  { path: '/roi', label: 'ROI Analytics', icon: 'roi' },
-  { path: '/compliance', label: 'Compliance / STR', icon: 'compliance' },
+  { path: '/',           label: 'Alert Queue',   icon: AlertTriangle,  end: true },
+  { path: '/analytics',  label: 'ROI Analytics', icon: BarChart2 },
+  { path: '/compliance', label: 'Compliance',    icon: FileCheck },
+  { path: '/onboarding', label: 'Onboarding',    icon: UserCheck },
+  { path: '/judge',      label: 'Judge View',    icon: Presentation },
 ];
 
-const STAT_COLOR = {
-  Critical: 'var(--critical)',
-  High: 'var(--high)',
-  Medium: 'var(--accent-blue)',
-};
-
-export default function Sidebar({ stats, onStartDemo, tourActive, demoMode, collapsed, onToggle }) {
+export default function Sidebar({ stats, collapsed, onToggle }) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { logout } = useAuth();
 
-  const getBadge = (path) => {
-    if (!stats) return null;
-    if (path === '/') return stats.total_alerts;
-    if (path === '/compliance') {
-      const strPending = stats.critical + stats.high;
-      return strPending > 0 ? strPending : null;
-    }
-    return null;
-  };
+  const totalAlerts = stats
+    ? (stats.critical || 0) + (stats.high || 0) + (stats.medium || 0)
+    : 0;
 
   return (
-    <motion.aside
-      className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}
-      layout
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-    >
+    <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
+
       {/* ── Logo ── */}
       <div className="sidebar-logo">
-        <motion.div
-          className="logo-monogram"
-          whileHover={{ scale: 1.08 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-        >
-          MC
-        </motion.div>
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.span
-              className="logo-text"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              MuleCatch
-            </motion.span>
-          )}
-        </AnimatePresence>
+        <div className="logo-monogram">MC</div>
+        {!collapsed && (
+          <div style={{ overflow: 'hidden', minWidth: 0 }}>
+            <div className="logo-text">MuleCatch</div>
+          </div>
+        )}
       </div>
 
-      <AnimatePresence>
-        {!collapsed && (
-          <motion.div
-            className="sidebar-tag"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            IOB Fraud Intelligence
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── System tag ── */}
+      {!collapsed && (
+        <div className="logo-tagline">// IOB Fraud Intelligence</div>
+      )}
 
-      {/* ── Navigation ── */}
+      {/* ── System health indicator ── */}
+      {!collapsed && (
+        <div style={{
+          margin: '0 8px 8px',
+          padding: '8px 10px',
+          background: 'rgba(16,185,129,0.05)',
+          border: '1px solid rgba(16,185,129,0.12)',
+          borderRadius: 6,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+        }}>
+          <div style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#10B981',
+            animation: 'emeraldPulse 2s ease-in-out infinite',
+            flexShrink: 0,
+          }} />
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            color: '#10B981',
+            letterSpacing: '0.8px',
+            textTransform: 'uppercase',
+          }}>System Online</span>
+        </div>
+      )}
+
+      {/* ── Nav ── */}
       <nav className="sidebar-nav">
+        {!collapsed && (
+          <div className="sidebar-section-label">Navigation</div>
+        )}
+
         {NAV_ITEMS.map(item => {
-          const badge = getBadge(item.path);
           const isActive = item.end
             ? location.pathname === item.path
             : location.pathname.startsWith(item.path);
+          const Icon = item.icon;
 
           return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.end}
-              className={({ isActive: active }) =>
-                `sidebar-link ${active ? 'sidebar-link-active' : ''}`
-              }
+              className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
               title={collapsed ? item.label : undefined}
-              style={{ position: 'relative' }}
             >
-              {/* Gradient active indicator */}
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active-indicator"
-                  className="sidebar-active-bar"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-              )}
-
+              {isActive && <div className="sidebar-active-bar" />}
               <span className="sidebar-link-icon">
-                {Icons[item.icon]}
+                <Icon size={14} />
               </span>
-
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    className="sidebar-link-label"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence>
-                {!collapsed && badge != null && (
-                  <motion.span
-                    className="sidebar-badge"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-                  >
-                    {badge}
-                  </motion.span>
-                )}
-              </AnimatePresence>
+              {!collapsed && (
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
+                  {item.label}
+                </span>
+              )}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* ── Stats — dash-separated minimal ── */}
-      <AnimatePresence>
-        {!collapsed && stats && (
-          <motion.div
-            className="sidebar-stats"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+      {/* ── Alert Stats ── */}
+      {!collapsed && stats && totalAlerts > 0 && (
+        <div style={{ padding: '0 8px 8px' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: '10px 12px',
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 9,
+              color: 'var(--text-faint)',
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              marginBottom: 8,
+              fontWeight: 700,
+            }}>Live Queue</div>
+
             {[
-              { label: 'Critical', value: stats.critical },
-              { label: 'High',     value: stats.high },
-              { label: 'Medium',   value: stats.medium },
-            ].map((s, i) => (
-              <motion.div
-                key={s.label}
-                className="sidebar-stat-row"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <span
-                  className="sidebar-stat-dash"
-                  style={{ color: STAT_COLOR[s.label] }}
-                >
-                  —
-                </span>
-                <span className="sidebar-stat-label">
-                  <span style={{ color: STAT_COLOR[s.label], fontWeight: 600 }}>{s.value}</span>
-                  {' '}{s.label}
-                </span>
-              </motion.div>
+              { label: 'Critical', value: stats.critical, color: 'var(--critical)' },
+              { label: 'High',     value: stats.high,     color: 'var(--high)' },
+              { label: 'Medium',   value: stats.medium,   color: 'var(--medium)' },
+            ].map(s => (
+              <div key={s.label} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 5,
+                gap: 8,
+              }}>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  color: 'var(--text-muted)',
+                }}>{s.label}</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 12,
+                  color: s.color,
+                  fontWeight: 700,
+                  background: `${s.color}15`,
+                  padding: '1px 6px',
+                  borderRadius: 4,
+                }}>{s.value}</span>
+              </div>
             ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* ── Footer ── */}
       <div className="sidebar-footer">
-        <AnimatePresence>
-          {!collapsed && !tourActive && (
-            <motion.button
-              className="btn btn-primary sidebar-demo-btn"
-              onClick={onStartDemo}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              ▶ Start Demo
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {!collapsed && demoMode && (
-            <motion.span
-              className="sidebar-demo-tag"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-            >
-              // DEMO MODE
-            </motion.span>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {!collapsed && (
-            <motion.button
-              className="btn btn-ghost"
-              onClick={logout}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 5 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
-              style={{
-                width: '100%',
-                fontSize: 11,
-                padding: '6px 12px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                justifyContent: 'flex-start',
-                color: 'var(--text-muted)',
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Logout
-            </motion.button>
-          )}
-        </AnimatePresence>
-
-        <motion.button
-          className={`theme-toggle ${collapsed ? 'theme-toggle-collapsed' : ''}`}
+        <button
+          className="theme-toggle"
           onClick={toggleTheme}
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.95 }}
+          aria-label="Toggle theme"
         >
-          {theme === 'dark' ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M3.4 12.6l1.06-1.06M11.54 4.46l1.06-1.06" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              </svg>
-              {!collapsed && <span>Light Mode</span>}
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M13.5 9.5a5.5 5.5 0 01-7-7 5.5 5.5 0 107 7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              {!collapsed && <span>Dark Mode</span>}
-            </>
-          )}
-        </motion.button>
-
-        {/* IOB Compliance badges */}
-        <AnimatePresence>
+          {theme === 'dark'
+            ? <Sun size={12} />
+            : <Moon size={12} />
+          }
           {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-                padding: '0 2px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  border: '1px solid rgba(1, 60, 200, 0.2)',
-                  background: 'rgba(1, 60, 200, 0.06)',
-                  fontSize: 8,
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--iob-blue-light)',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1L2 4v4c0 3.5 2.5 6.5 6 7.5 3.5-1 6-4 6-7.5V4L8 1z" stroke="var(--iob-blue-light)" strokeWidth="1.5" fill="none"/>
-                  <path d="M5.5 8l2 2 3.5-4" stroke="var(--iob-blue-light)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                RBI MuleHunter.AI
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 8px',
-                  borderRadius: 6,
-                  border: '1px solid rgba(1, 60, 200, 0.2)',
-                  background: 'rgba(1, 60, 200, 0.06)',
-                  fontSize: 8,
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--iob-blue-light)',
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
-                  <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="var(--iob-blue-light)" strokeWidth="1.2"/>
-                  <line x1="5" y1="7" x2="11" y2="7" stroke="var(--iob-blue-light)" strokeWidth="1" strokeLinecap="round"/>
-                  <line x1="5" y1="10" x2="9" y2="10" stroke="var(--iob-blue-light)" strokeWidth="1" strokeLinecap="round"/>
-                </svg>
-                FIU-IND Compliant
-              </div>
-            </motion.div>
+            <span style={{ letterSpacing: '0.5px' }}>
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </span>
           )}
-        </AnimatePresence>
+        </button>
 
-        <motion.button
+        <button
           className="btn btn-ghost sidebar-collapse-btn"
           onClick={onToggle}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          whileHover={{ opacity: 1 }}
-          whileTap={{ scale: 0.9 }}
         >
-          {collapsed ? '»' : '«'}
-        </motion.button>
+          {collapsed
+            ? <ChevronRight size={13} />
+            : <ChevronLeft  size={13} />
+          }
+        </button>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

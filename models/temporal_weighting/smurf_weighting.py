@@ -48,6 +48,7 @@ class AccountScore:
     velocity_score: float = 0.0
     amount_ceiling_score: float = 0.0
     fan_out_score: float = 0.0
+    fan_in_score: float = 0.0
     rhythm_score: float = 0.0
     consolidation_score: float = 0.0
     reason_codes: List[str] = field(default_factory=list)
@@ -62,13 +63,14 @@ class SmurfWeightingEngine:
     """
 
     WEIGHTS = {
-        "velocity":      0.25,
-        "amount_ceil":   0.25,
-        "fan_out":       0.20,
-        "rhythm":        0.15,
-        "consolidation": 0.15,
+        "velocity":      0.20,
+        "amount_ceil":   0.20,
+        "fan_out":       0.15,
+        "fan_in":        0.15,
+        "rhythm":        0.10,
+        "consolidation": 0.20,
     }
-    FLAG_THRESHOLD = 0.55
+    FLAG_THRESHOLD = 0.45
 
     def score_account(
         self,
@@ -82,18 +84,22 @@ class SmurfWeightingEngine:
             return score
 
         # ── 1. Velocity burst ─────────────────────────────────────────────
-        score.velocity_score = self._velocity_score(outgoing)
+        score.velocity_score = self._velocity_score(outgoing + incoming)
 
         # ── 2. Amount ceiling proximity ───────────────────────────────────
-        score.amount_ceiling_score = self._amount_ceiling_score(outgoing)
+        # Score both incoming and outgoing — mules receive structured amounts
+        score.amount_ceiling_score = self._amount_ceiling_score(outgoing + incoming)
 
         # ── 3. Fan-out ratio ──────────────────────────────────────────────
         score.fan_out_score = self._fan_out_score(outgoing)
 
-        # ── 4. Temporal rhythm (regular spacing = bot) ────────────────────
-        score.rhythm_score = self._rhythm_score(outgoing)
+        # ── 4. Fan-in ratio (mule indicator: receives from many senders) ─
+        score.fan_in_score = self._fan_in_score(incoming)
 
-        # ── 5. Rapid consolidation ────────────────────────────────────────
+        # ── 5. Temporal rhythm (regular spacing = bot) ────────────────────
+        score.rhythm_score = self._rhythm_score(outgoing + incoming)
+
+        # ── 6. Rapid consolidation ────────────────────────────────────────
         score.consolidation_score = self._consolidation_score(outgoing, incoming)
 
         # ── Composite weighted score ──────────────────────────────────────
@@ -102,6 +108,7 @@ class SmurfWeightingEngine:
             w["velocity"]      * score.velocity_score +
             w["amount_ceil"]   * score.amount_ceiling_score +
             w["fan_out"]       * score.fan_out_score +
+            w["fan_in"]        * score.fan_in_score +
             w["rhythm"]        * score.rhythm_score +
             w["consolidation"] * score.consolidation_score
         )
@@ -149,8 +156,39 @@ class SmurfWeightingEngine:
         if not txns:
             return 0.0
         unique_recipients = len(set(t.to_account for t in txns))
-        # >5 unique recipients in 24 h is suspicious
+        # >5 unique recipients is suspicious
         return min(unique_recipients / 8.0, 1.0)
+
+    def _fan_in_score(self, txns: List[Transaction]) -> float:
+        """
+        Mule indicator: receives structured amounts from concentrated sources
+        in a burst window. Pure fan-in count is less useful (merchants also
+        receive from many). The key signal is: many txns from FEW senders
+        in a short window (smurfing from one source).
+        """
+        if not txns:
+            return 0.0
+
+        unique_senders = len(set(t.from_account for t in txns))
+        total_incoming = len(txns)
+
+        if total_incoming < 2:
+            return 0.0
+
+        # Concentration: many txns from few senders = smurfing source
+        # e.g., 5 txns from 1 sender = concentration 5.0
+        # e.g., 10 txns from 10 senders = concentration 1.0 (normal)
+        concentration = total_incoming / unique_senders
+
+        # Temporal burst: are incoming txns clustered in time?
+        timestamps = sorted(t.timestamp for t in txns)
+        total_span_hours = (timestamps[-1] - timestamps[0]).total_seconds() / 3600
+        # Txns arriving within 1 hour = burst pattern
+        burst_factor = max(0.0, 1.0 - total_span_hours / 4.0) if total_span_hours < 4 else 0.0
+
+        # Combine: high concentration + temporal burst = mule receiving smurfed funds
+        score = min(concentration / 4.0, 1.0) * 0.5 + burst_factor * 0.5
+        return min(score, 1.0)
 
     def _rhythm_score(self, txns: List[Transaction]) -> float:
         if len(txns) < 4:
@@ -174,22 +212,55 @@ class SmurfWeightingEngine:
     ) -> float:
         """
         Detects: receives money -> quickly re-sends all of it.
-        Classic mule behavior.
+        Classic mule behavior: receives burst of funds, then forwards
+        within hours. Key signal: outgoing follows incoming closely.
         """
         if not outgoing or not incoming:
             return 0.0
-        first_in  = min(t.timestamp for t in incoming)
-        first_out = min(t.timestamp for t in outgoing)
-        delta_hours = abs((first_out - first_in).total_seconds()) / 3600
+
+        # Sort by timestamp
+        sorted_in = sorted(incoming, key=lambda t: t.timestamp)
+        sorted_out = sorted(outgoing, key=lambda t: t.timestamp)
+
+        last_in = sorted_in[-1].timestamp
+        first_out = sorted_out[0].timestamp
+
+        # Mule pattern: receives first, then forwards shortly after.
+        # If outgoing started BEFORE the bulk of incoming, it's not
+        # a receive→forward cycle (it's normal mixed activity).
+        first_in = sorted_in[0].timestamp
+        if first_out < first_in:
+            # Outgoing precedes incoming — not a mule consolidation pattern
+            return 0.0
+
+        # Time between last receipt and first forward
+        delta_hours = (first_out - last_in).total_seconds() / 3600
+        if delta_hours < 0:
+            # first_out is between first_in and last_in (interleaved)
+            # Mules don't interleave — they receive ALL funds THEN send.
+            # Interleaved incoming/outgoing is normal account behavior.
+            return 0.0
         if delta_hours > CONSOLIDATION_WINDOW_HOURS:
             return 0.0
-        in_sum  = sum(t.amount for t in incoming)
+
+        in_sum = sum(t.amount for t in incoming)
         out_sum = sum(t.amount for t in outgoing)
         if in_sum < 1:
             return 0.0
+
+        # High passthrough ratio (out ≈ in) is the key mule signal
         ratio = min(out_sum / in_sum, 1.0)
-        urgency = max(0, 1.0 - delta_hours / CONSOLIDATION_WINDOW_HOURS)
-        return ratio * urgency
+
+        # Urgency: tighter window = more suspicious
+        urgency = max(0.0, 1.0 - delta_hours / CONSOLIDATION_WINDOW_HOURS)
+
+        # Asymmetry bonus: few outgoing vs many incoming = mule pattern
+        if len(incoming) >= 2 and len(outgoing) <= 2:
+            asymmetry_bonus = 0.3
+        else:
+            asymmetry_bonus = 0.0
+
+        return min(ratio * urgency + asymmetry_bonus, 1.0)
 
     def _build_reason_codes(self, s: AccountScore) -> List[str]:
         codes = []
@@ -199,6 +270,8 @@ class SmurfWeightingEngine:
             codes.append("RC02: Amounts clustered just below ₹50,000 threshold")
         if s.fan_out_score > 0.5:
             codes.append("RC03: High fan-out — funds dispersed to many accounts")
+        if s.fan_in_score > 0.5:
+            codes.append("RC06: High fan-in — receives from many unique senders (mule pattern)")
         if s.rhythm_score > 0.5:
             codes.append("RC04: Regular transaction spacing — potential automation")
         if s.consolidation_score > 0.5:

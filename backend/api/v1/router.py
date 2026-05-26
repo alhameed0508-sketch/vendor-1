@@ -16,22 +16,56 @@ from api.v1.routes.graph import register_graph_routes
 from api.v1.routes.kpi import register_kpi_routes
 from api.v1.routes.audit import register_audit_routes
 from api.v1.routes.screening import register_screening_routes
+from api.v1.routes.onboarding import register_onboarding_routes
+from api.v1.routes.genai import register_genai_routes
+from api.v1.routes.benchmark import register_benchmark_routes
 
 
 def create_v1_router(limiter: Limiter) -> APIRouter:
-    """Create and configure the v1 API router with all sub-routes."""
+    """Create and configure the v1 API router with all sub-routes.
+
+    Some route modules use relative paths (e.g., @r.get("") or @r.get("/stats"))
+    and expect a prefixed sub-router. Others include their full prefix in the
+    decorator path (e.g., @r.get("/onboarding/stats")) and can mount on root.
+    """
     v1 = APIRouter(prefix="/api/v1")
 
-    register_auth_routes(v1, limiter)
-    register_alert_routes(v1, limiter)
-    register_feedback_routes(v1, limiter)
-    register_escalation_routes(v1, limiter)
-    register_compliance_routes(v1, limiter)
+    # --- Modules that use relative paths — need prefixed sub-routers ---
+    auth_router = APIRouter(prefix="/auth", tags=["auth"])
+    register_auth_routes(auth_router, limiter)
+    v1.include_router(auth_router)
+
+    alerts_router = APIRouter(prefix="/alerts", tags=["alerts"])
+    register_alert_routes(alerts_router, limiter)
+    v1.include_router(alerts_router)
+
+    feedback_router = APIRouter(prefix="/feedback", tags=["feedback"])
+    register_feedback_routes(feedback_router, limiter)
+    v1.include_router(feedback_router)
+
+    escalations_router = APIRouter(prefix="/escalations", tags=["escalations"])
+    register_escalation_routes(escalations_router, limiter)
+    v1.include_router(escalations_router)
+
+    compliance_router = APIRouter(prefix="/compliance", tags=["compliance"])
+    register_compliance_routes(compliance_router, limiter)
+    v1.include_router(compliance_router)
+
+    graph_router = APIRouter(prefix="/graph", tags=["graph"])
+    register_graph_routes(graph_router, limiter)
+    v1.include_router(graph_router)
+
+    ingest_router = APIRouter(prefix="/ingest", tags=["ingest"])
+    register_ingest_routes(ingest_router, limiter)
+    v1.include_router(ingest_router)
+
+    # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)
-    register_ingest_routes(v1, limiter)
-    register_graph_routes(v1, limiter)
     register_kpi_routes(v1, limiter)
     register_audit_routes(v1, limiter)
     register_screening_routes(v1, limiter)
+    register_onboarding_routes(v1, limiter)
+    register_genai_routes(v1, limiter)
+    register_benchmark_routes(v1, limiter)
 
     return v1

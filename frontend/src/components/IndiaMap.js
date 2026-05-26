@@ -96,12 +96,12 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
                 <Geography
                   key={geo.rpiKey || geo.properties.ST_NM}
                   geography={geo}
-                  fill="#141824"
-                  stroke="rgba(30,37,53,0.8)"
+                  fill="#121A2B"
+                  stroke="rgba(30,43,66,0.8)"
                   strokeWidth={0.5}
                   style={{
                     default: { outline: 'none' },
-                    hover: { fill: '#1a2030', outline: 'none' },
+                    hover: { fill: '#1E2B42', outline: 'none' },
                     pressed: { outline: 'none' },
                   }}
                 />
@@ -115,7 +115,7 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
               key={i}
               from={arc.from}
               to={arc.to}
-              stroke={arc.pattern === 'SMURFING' ? 'rgba(255,59,92,0.5)' : arc.pattern === 'CONSOLIDATION' ? 'rgba(245,158,11,0.5)' : 'rgba(6,182,212,0.4)'}
+              stroke={arc.pattern === 'SMURFING' ? 'rgba(255,92,122,0.5)' : arc.pattern === 'CONSOLIDATION' ? 'rgba(255,176,32,0.5)' : 'rgba(62,231,255,0.4)'}
               strokeWidth={1.5}
               strokeLinecap="round"
               style={{
@@ -135,14 +135,14 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
                 onMouseLeave={() => setTooltip(null)}
               >
                 {/* Pulse ring for active cities */}
-                <circle r={8} fill="none" stroke={hasHighRisk ? '#EF4444' : '#06b6d4'} strokeWidth={1} opacity={0.3}>
+                <circle r={8} fill="none" stroke={hasHighRisk ? '#FF5C7A' : '#3EE7FF'} strokeWidth={1} opacity={0.3}>
                   <animate attributeName="r" from="6" to="14" dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
                 </circle>
                 <circle
                   r={4 + city.count}
-                  fill={hasHighRisk ? 'rgba(239,68,68,0.6)' : 'rgba(6,182,212,0.6)'}
-                  stroke={hasHighRisk ? '#EF4444' : '#06b6d4'}
+                  fill={hasHighRisk ? 'rgba(255,92,122,0.6)' : 'rgba(62,231,255,0.6)'}
+                  stroke={hasHighRisk ? '#FF5C7A' : '#3EE7FF'}
                   strokeWidth={1.5}
                   style={{ cursor: 'pointer' }}
                 />
@@ -171,7 +171,7 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
               position: 'absolute',
               bottom: 16,
               left: 16,
-              background: 'rgba(20,24,36,0.95)',
+              background: 'rgba(18,26,43,0.95)',
               backdropFilter: 'blur(12px)',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: 8,
@@ -190,19 +190,19 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
       {/* Legend */}
       <div style={{ padding: '8px 20px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16, fontSize: 11 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 20, height: 2, background: 'rgba(255,59,92,0.5)' }} />
+          <div style={{ width: 20, height: 2, background: 'rgba(255,92,122,0.5)' }} />
           <span className="font-mono text-[var(--text-muted)]">Smurfing</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 20, height: 2, background: 'rgba(245,158,11,0.5)' }} />
+          <div style={{ width: 20, height: 2, background: 'rgba(255,176,32,0.5)' }} />
           <span className="font-mono text-[var(--text-muted)]">Consolidation</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(239,68,68,0.6)', border: '1px solid #EF4444' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,92,122,0.6)', border: '1px solid #FF5C7A' }} />
           <span className="font-mono text-[var(--text-muted)]">High Risk</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(6,182,212,0.6)', border: '1px solid #06b6d4' }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(62,231,255,0.6)', border: '1px solid #3EE7FF' }} />
           <span className="font-mono text-[var(--text-muted)]">Other</span>
         </div>
       </div>
