@@ -17,9 +17,26 @@ import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
+import hashlib
+
 from genai.base import LLMMessage, LLMProvider, LLMResponse
 
 logger = logging.getLogger(__name__)
+
+
+def _mask(value) -> str:
+    """Hash-based pseudonymization for account IDs sent to external LLMs.
+
+    Uses a truncated SHA-256 to produce consistent pseudonyms (same input
+    always maps to same output) while preventing re-identification.
+    Stronger than display-level masking since data leaves the org boundary.
+    """
+    if value is None:
+        return "N/A"
+    s = str(value)
+    if not s:
+        return "N/A"
+    return f"ACCT_{hashlib.sha256(s.encode()).hexdigest()[:8]}"
 
 
 # ── System prompts with Indian AML regulatory context ───────────────────────
@@ -283,7 +300,7 @@ class GenAIService:
         node_summary = []
         for n in nodes[:15]:
             node_summary.append(
-                f"  - {n.get('account_id')}: role={n.get('role')}, "
+                f"  - {_mask(n.get('account_id'))}: role={n.get('role')}, "
                 f"smurf_score={n.get('smurf_score', 0):.2f}, "
                 f"bank={n.get('bank')}, city={n.get('city')}, "
                 f"age={n.get('account_age_days')}d, kyc={n.get('kyc_status')}"
@@ -292,7 +309,7 @@ class GenAIService:
         edge_summary = []
         for e in edges[:20]:
             edge_summary.append(
-                f"  - {e.get('from_account')} -> {e.get('to_account')}: "
+                f"  - {_mask(e.get('from_account'))} -> {_mask(e.get('to_account'))}: "
                 f"amount=₹{e.get('total_amount', 0):,.0f}, "
                 f"txns={e.get('txn_count')}, pattern={e.get('pattern')}"
             )
@@ -599,7 +616,7 @@ Generate a forensic analysis with sections:
         reason_codes = assessment.get("reason_codes", [])
         return f"""Explain this onboarding risk assessment in plain English:
 
-Account: {assessment.get('account_id', 'N/A')}
+Account: {_mask(assessment.get('account_id', 'N/A'))}
 Risk Score: {assessment.get('risk_score', 0):.2f}
 Risk Level: {assessment.get('risk_level', 'N/A')}
 Recommendation: {assessment.get('recommendation', 'N/A')}
@@ -702,7 +719,7 @@ in practical terms, and what the bank should do next."""
         node_lines = []
         for n in nodes[:15]:
             node_lines.append(
-                f"  - {n.get('account_id')}: role={n.get('role')}, "
+                f"  - {_mask(n.get('account_id'))}: role={n.get('role')}, "
                 f"smurf={n.get('smurf_score', 0):.2f}, "
                 f"age={n.get('account_age_days')}d, kyc={n.get('kyc_status')}"
             )
@@ -710,7 +727,7 @@ in practical terms, and what the bank should do next."""
         edge_lines = []
         for e in edges[:20]:
             edge_lines.append(
-                f"  - {e.get('from_account')} -> {e.get('to_account')}: "
+                f"  - {_mask(e.get('from_account'))} -> {_mask(e.get('to_account'))}: "
                 f"₹{e.get('total_amount', 0):,.0f} ({e.get('txn_count')} txns, "
                 f"pattern={e.get('pattern')})"
             )
@@ -843,7 +860,7 @@ Summary:
 
 Sample transactions (first 20):
 {chr(10).join(
-    f"  {t['from_account']} -> {t['to_account']}: ₹{float(t['amount']):,.0f} ({t.get('pattern', 'N/A')})"
+    f"  {_mask(t.get('from_account'))} -> {_mask(t.get('to_account'))}: ₹{float(t['amount']):,.0f} ({t.get('pattern', 'N/A')})"
     for t in transactions[:20]
 )}
 

@@ -86,21 +86,27 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
 }
 
 # ── Demo users (only used when ENV != production) ─────────────────────────────
+# Passwords sourced from environment variables with dev-only fallbacks.
+# In production, ENV=production disables demo mode entirely (see core/config.py).
+_DEMO_INVESTIGATOR_PW = os.getenv("DEMO_INVESTIGATOR_PASSWORD", "iob@2024")
+_DEMO_SUPERVISOR_PW = os.getenv("DEMO_SUPERVISOR_PASSWORD", "supervisor@2024")
+_DEMO_ADMIN_PW = os.getenv("DEMO_ADMIN_PASSWORD", "admin@2024")
+
 DEMO_USERS = {
     "investigator": {
-        "password_hash": hash_password("iob@2024"),
+        "password_hash": hash_password(_DEMO_INVESTIGATOR_PW),
         "role": "INVESTIGATOR",
         "display_name": "Fraud Investigator",
         "branch": "Chennai HO",
     },
     "supervisor": {
-        "password_hash": hash_password("supervisor@2024"),
+        "password_hash": hash_password(_DEMO_SUPERVISOR_PW),
         "role": "SUPERVISOR",
         "display_name": "Investigation Supervisor",
         "branch": "Chennai HO",
     },
     "admin": {
-        "password_hash": hash_password("admin@2024"),
+        "password_hash": hash_password(_DEMO_ADMIN_PW),
         "role": "ADMIN",
         "display_name": "System Administrator",
         "branch": "HO IT",

@@ -103,8 +103,11 @@ def create_app() -> FastAPI:
             REQUEST_DURATION.labels(endpoint=endpoint).observe(duration)
             return response
 
+        from fastapi import Depends as _Depends
+        from middleware.auth import require_role as _require_role
+
         @application.get("/metrics", tags=["monitoring"])
-        def metrics():
+        def metrics(user: dict = _Depends(_require_role("ADMIN"))):
             return Response(
                 content=generate_latest(), media_type=CONTENT_TYPE_LATEST
             )

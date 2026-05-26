@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
-from middleware.auth import require_permission, require_role
+from middleware.auth import get_current_user, require_permission, require_role
 from api.deps import (
     get_detection_service,
     get_feedback_service,
@@ -48,6 +48,7 @@ def register_feedback_routes(r: APIRouter, limiter: Limiter) -> None:
     @limiter.limit("100/minute")
     def feedback_stats(
         request: Request,
+        user: dict = Depends(require_permission("kpi:read")),
         feedback_svc: FeedbackService = Depends(get_feedback_service),
     ):
         """Feedback statistics for the ROI dashboard."""

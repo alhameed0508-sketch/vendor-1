@@ -31,7 +31,10 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
         setExplanation(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('[ExplainabilityPanel] Failed to load explanation:', err);
+        setLoading(false);
+      });
   }, [alertId, propExplanation]);
 
   if (loading) {

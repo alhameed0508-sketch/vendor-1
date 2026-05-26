@@ -5,6 +5,7 @@ Wraps infra.security.auth for FastAPI dependency injection.
 Provides Depends-compatible auth guards and rate limiting setup.
 """
 
+import logging
 import os
 import sys
 from typing import Optional
@@ -28,7 +29,9 @@ from infra.security.auth import (
 from core.config import get_settings
 from core.exceptions import AuthenticationError, AuthorizationError
 
+logger = logging.getLogger(__name__)
 _bearer = HTTPBearer(auto_error=False)
+_demo_warning_shown = False
 
 
 def _auth_enabled() -> bool:
@@ -45,6 +48,13 @@ async def get_current_user(
     """
     settings = get_settings()
     if settings.demo_mode and not settings.auth_enabled:
+        global _demo_warning_shown
+        if not _demo_warning_shown:
+            logger.warning("=" * 60)
+            logger.warning("AUTHENTICATION DISABLED — DEMO MODE ACTIVE")
+            logger.warning("All requests granted ADMIN access. DO NOT USE IN PRODUCTION.")
+            logger.warning("=" * 60)
+            _demo_warning_shown = True
         return {"sub": "demo_user", "role": "ADMIN"}
 
     if credentials is None:

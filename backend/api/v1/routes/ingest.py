@@ -7,6 +7,7 @@ from slowapi import Limiter
 
 from core.config import get_settings
 from core.response import success_response
+from middleware.auth import get_current_user, require_permission
 from api.deps import get_ingest_service, get_detection_service
 from services.ingest_service import IngestService
 from services.detection_service import DetectionService
@@ -21,6 +22,7 @@ def register_ingest_routes(r: APIRouter, limiter: Limiter) -> None:
     @limiter.limit("100/minute")
     def ingest_status(
         request: Request,
+        user: dict = Depends(require_permission("alerts:read")),
         ingest_svc: IngestService = Depends(get_ingest_service),
     ):
         """Kafka consumer health and lag metrics."""
@@ -31,6 +33,7 @@ def register_ingest_routes(r: APIRouter, limiter: Limiter) -> None:
     def stream_demo(
         request: Request,
         count: int = 10,
+        user: dict = Depends(get_current_user),
         detection_svc: DetectionService = Depends(get_detection_service),
         ingest_svc: IngestService = Depends(get_ingest_service),
     ):

@@ -31,7 +31,10 @@ export default function AlertDetail() {
         setNotes(data.investigator_notes || '');
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('[AlertDetail] Failed to load alert:', err);
+        setLoading(false);
+      });
   }, [alertId]);
 
   const saveUpdate = async () => {

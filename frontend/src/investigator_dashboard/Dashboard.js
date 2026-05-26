@@ -154,7 +154,8 @@ export default function Dashboard() {
         setAlerts(data.alerts || []);
         setLoading(false);
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('[Dashboard] Failed to load alerts:', err);
         setLoading(false);
         toast.error('Failed to load alerts');
       });

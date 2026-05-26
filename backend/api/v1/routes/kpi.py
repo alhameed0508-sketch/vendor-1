@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
+from middleware.auth import require_permission
 from api.deps import get_detection_service, get_kpi_service
 from services.detection_service import DetectionService
 from services.kpi_service import KPIService
@@ -20,6 +21,7 @@ def register_kpi_routes(r: APIRouter, limiter: Limiter) -> None:
     @limiter.limit("100/minute")
     def get_kpi(
         request: Request,
+        user: dict = Depends(require_permission("kpi:read")),
         detection_svc: DetectionService = Depends(get_detection_service),
         kpi_svc: KPIService = Depends(get_kpi_service),
     ):

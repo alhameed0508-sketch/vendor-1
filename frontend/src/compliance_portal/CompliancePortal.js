@@ -26,7 +26,10 @@ export default function CompliancePortal() {
         setAlerts(open);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(err => {
+        console.error('[Compliance] Failed to load alerts:', err);
+        setLoading(false);
+      });
     // Fetch audit log
     apiFetch('/api/v1/audit-log?limit=20')
       .then(r => r.json())

@@ -71,7 +71,10 @@ export default function InvestigationChat({ alertId, alertData }) {
     apiFetch('/api/v1/genai/status')
       .then(r => r.json())
       .then(body => setStatus(body?.data || body))
-      .catch(() => setStatus({ enabled: false, provider: 'offline', fallback_active: true }));
+      .catch(err => {
+        console.error('[InvestigationChat] GenAI status check failed:', err);
+        setStatus({ enabled: false, provider: 'offline', fallback_active: true });
+      });
   }, []);
 
   // Load initial suggestions

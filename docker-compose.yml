@@ -59,6 +59,9 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    read_only: true
+    tmpfs:
+      - /data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -85,10 +88,13 @@ services:
       KAFKA_ENABLED: ${KAFKA_ENABLED:-false}
       REDIS_URL: redis://redis:6379/0
       ENV: production
+      DEMO_INVESTIGATOR_PASSWORD: ${DEMO_INVESTIGATOR_PASSWORD:-iob@2024}
+      DEMO_SUPERVISOR_PASSWORD: ${DEMO_SUPERVISOR_PASSWORD:-supervisor@2024}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-admin@2024}
     volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-      - ./infra:/app/infra
+      - ./data:/app/data:ro
+      - ./models:/app/models:ro
+      - ./infra:/app/infra:ro
       - audit_logs:/app/logs
     depends_on:
       neo4j:
@@ -100,6 +106,12 @@ services:
     networks:
       - mulecatch_net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   frontend:
     build:

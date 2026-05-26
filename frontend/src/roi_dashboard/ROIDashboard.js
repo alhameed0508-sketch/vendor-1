@@ -132,12 +132,15 @@ export default function ROIDashboard() {
   useEffect(() => {
     Promise.all([
       apiFetch('/api/v1/kpi').then(r => r.json()).then(body => body?.data || body),
-      apiFetch('/api/v1/feedback/stats').then(r => r.json()).then(body => body?.data || body).catch(() => null),
+      apiFetch('/api/v1/feedback/stats').then(r => r.json()).then(body => body?.data || body).catch(err => { console.error('[ROI] Feedback stats fetch failed:', err); return null; }),
     ]).then(([kpiData, fbData]) => {
       setKpi(kpiData);
       setFeedbackStats(fbData);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(err => {
+      console.error('[ROI] Failed to load KPI data:', err);
+      setLoading(false);
+    });
   }, []);
 
   if (loading) return (

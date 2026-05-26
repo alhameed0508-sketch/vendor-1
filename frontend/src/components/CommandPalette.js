@@ -11,7 +11,8 @@ const PAGES = [
   { name: 'Judge View', path: '/judge', icon: '\u25B6', category: 'Pages' },
 ];
 
-export default function CommandPalette({ alerts = [] }) {
+export default function CommandPalette({ alerts: alertsProp }) {
+  const alerts = alertsProp || [];
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 

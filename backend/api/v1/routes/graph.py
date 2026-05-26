@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
+from middleware.auth import require_permission
 from api.deps import get_detection_service, get_graph_service
 from services.detection_service import DetectionService
 from services.graph_service import GraphService
@@ -20,6 +21,7 @@ def register_graph_routes(r: APIRouter, limiter: Limiter) -> None:
     @limiter.limit("100/minute")
     def graph_stats(
         request: Request,
+        user: dict = Depends(require_permission("alerts:read")),
         detection_svc: DetectionService = Depends(get_detection_service),
         graph_svc: GraphService = Depends(get_graph_service),
     ):

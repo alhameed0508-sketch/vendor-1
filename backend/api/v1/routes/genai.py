@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from slowapi import Limiter
 
 from core.response import success_response, error_response
-from middleware.auth import require_permission
+from middleware.auth import get_current_user, require_permission
 from api.deps import (
     get_genai_service,
     get_alert_service,
@@ -50,6 +50,7 @@ def register_genai_routes(r: APIRouter, limiter: Limiter) -> None:
     @limiter.limit("100/minute")
     def genai_status(
         request: Request,
+        user: dict = Depends(get_current_user),
         svc: GenAIService = Depends(get_genai_service),
     ):
         """Return current GenAI status — enabled, provider, fallback state."""

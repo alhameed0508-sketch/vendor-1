@@ -1,6 +1,44 @@
-__pycache__
-*.pyc
-.env
+# Version control
+.git
+.gitignore
+
+# Tests
+tests/
+pytest.ini
+.pytest_cache/
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
 .venv
 venv
-.pytest_cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+docs/
+
+# Docker
+Dockerfile
+Dockerfile.prod
+.dockerignore
+
+# Environment
+.env
+.env.*
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
