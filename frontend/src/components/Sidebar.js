@@ -51,7 +51,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
         <div className="logo-monogram">MC</div>
         {!collapsed && (
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <div className="logo-text">MuleCatch</div>
+            <div className="logo-text logo-text-gradient">MuleCatch</div>
           </div>
         )}
       </div>

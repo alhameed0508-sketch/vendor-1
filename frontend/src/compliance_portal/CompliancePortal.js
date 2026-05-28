@@ -77,7 +77,7 @@ export default function CompliancePortal() {
     <div style={{ padding: 24 }}>
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Compliance Portal</h1>
+          <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Compliance Portal</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
             Suspicious Transaction Report (STR) generation · FIU-IND format · RBI AML/CFT compliance
           </p>

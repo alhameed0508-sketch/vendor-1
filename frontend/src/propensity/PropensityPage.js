@@ -542,12 +542,11 @@ export default function PropensityPage() {
         style={{ marginBottom: 28 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <h1 style={{
+          <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 26,
             fontWeight: 800,
             letterSpacing: '-0.5px',
-            color: 'var(--text-primary)',
             margin: 0,
           }}>
             Mule Propensity

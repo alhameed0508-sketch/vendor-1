@@ -1115,12 +1115,11 @@ export default function IndiaCompliancePage() {
           }}>
             RBI &middot; India Regulatory Compliance
           </div>
-          <h1 style={{
+          <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-sans)',
             fontSize: 28,
             fontWeight: 700,
             letterSpacing: '-1px',
-            color: 'var(--text-primary)',
             margin: 0,
           }}>
             India Compliance

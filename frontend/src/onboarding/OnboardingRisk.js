@@ -94,9 +94,9 @@ export default function OnboardingRisk() {
           }}>
             IOB &middot; Onboarding Risk Assessment
           </div>
-          <h1 style={{
+          <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 700,
-            letterSpacing: '-1px', color: 'var(--text-primary)', margin: 0,
+            letterSpacing: '-1px', margin: 0,
           }}>
             Onboarding Risk Scorer
           </h1>

@@ -838,6 +838,116 @@ body {
 .risk-fill.medium   { background: var(--medium); }
 .risk-val { font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); min-width: 36px; text-align: right; }
 
+/* ══════════════════════════════════════
+   PAGE HEADER — Reusable premium header
+   ══════════════════════════════════════ */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 4px;
+}
+
+.page-header .page-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+}
+
+.page-header .page-meta .comment {
+  color: rgba(99,102,241,0.6);
+}
+
+/* ── Stat Pill — compact inline metric ── */
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 20px;
+  padding: 3px 10px 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #818CF8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.stat-pill .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: emeraldPulse 2s ease-in-out infinite;
+}
+
+/* ── Glass Panel Header ── */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.015);
+}
+
+.panel-header-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* ── Hover Lift Effect ── */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Accent Line Top ── */
+.accent-top {
+  position: relative;
+}
+.accent-top::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(99,102,241,0.5) 20%,
+    rgba(139,92,246,0.4) 50%,
+    rgba(34,211,238,0.3) 80%,
+    transparent 100%
+  );
+  border-radius: inherit;
+}
+
+/* ── Sidebar Logo Gradient Text ── */
+.logo-text-gradient {
+  background: linear-gradient(135deg, #F1F5F9 0%, #A78BFA 50%, #22D3EE 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientText 6s ease infinite;
+}
+
 /* ── Reduced Motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

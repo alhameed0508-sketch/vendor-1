@@ -169,7 +169,7 @@ export default function BenchmarkPage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', color: '#EDF2F7', margin: 0 }}>Model Benchmarks</h1>
+          <h1 className="gradient-text" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', margin: 0 }}>Model Benchmarks</h1>
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: 10, color: '#22D3EE', letterSpacing: '1.5px', textTransform: 'uppercase',
             background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.2)', padding: '2px 8px', borderRadius: 4,

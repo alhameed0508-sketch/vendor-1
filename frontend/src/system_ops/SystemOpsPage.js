@@ -200,7 +200,7 @@ export default function SystemOpsPage() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', color: '#EDF2F7', margin: 0 }}>System Operations</h1>
+          <h1 className="gradient-text" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', margin: 0 }}>System Operations</h1>
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: 10, color: '#A78BFA', letterSpacing: '1.5px', textTransform: 'uppercase',
             background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', padding: '2px 8px', borderRadius: 4,

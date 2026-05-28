@@ -162,11 +162,10 @@ export default function ROIDashboard() {
         style={{ marginBottom: 32 }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-          <h1 style={{
+          <h1 className="gradient-text" style={{
             fontSize: 28,
             fontWeight: 700,
             letterSpacing: '-0.5px',
-            color: '#EDF2F7',
             margin: 0,
           }}>
             ROI Analytics

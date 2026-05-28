@@ -487,12 +487,11 @@ export default function TypologyPage() {
       {/* ── Page Header ── */}
       <AnimateIn>
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{
+          <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 26,
             fontWeight: 800,
             letterSpacing: '-0.5px',
-            color: 'var(--text-primary)',
             margin: 0,
             marginBottom: 4,
           }}>

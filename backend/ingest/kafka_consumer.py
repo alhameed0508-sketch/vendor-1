@@ -58,7 +58,7 @@ class TransactionConsumer:
                 bootstrap_servers=self.bootstrap_servers,
                 group_id=self.group_id,
                 auto_offset_reset="earliest",
-                enable_auto_commit=True,
+                enable_auto_commit=False,
                 value_deserializer=lambda m: json.loads(m.decode("utf-8")),
                 consumer_timeout_ms=self.batch_timeout_ms,
                 max_poll_records=self.batch_size,
@@ -123,6 +123,9 @@ class TransactionConsumer:
                 # Process batch when full or on timeout
                 if batch and (len(batch) >= self.batch_size or not records):
                     self._process_batch(batch, pipeline, persistence)
+                    # Manual commit after successful processing (at-least-once)
+                    if self._consumer:
+                        self._consumer.commit()
                     batch = []
 
             except Exception as exc:
@@ -147,8 +150,8 @@ class TransactionConsumer:
 
             alerts = pipeline.run(transactions, accounts)
             if alerts:
-                from api.main import _alert_to_dict
-                alert_dicts = [_alert_to_dict(a) for a in alerts]
+                from services.detection_service import alert_to_dict
+                alert_dicts = [alert_to_dict(a) for a in alerts]
                 existing = persistence.get_alerts(limit=1000)
                 persistence.store_alerts(existing + alert_dicts)
                 self._stats["alerts_generated"] += len(alerts)
