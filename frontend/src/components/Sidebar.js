@@ -62,8 +62,8 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
         <div style={{
           margin: '0 8px 8px',
           padding: '8px 10px',
-          background: 'rgba(16,185,129,0.05)',
-          border: '1px solid rgba(16,185,129,0.12)',
+          background: 'rgba(99,102,241,0.06)',
+          border: '1px solid rgba(99,102,241,0.15)',
           borderRadius: 6,
           display: 'flex',
           alignItems: 'center',
@@ -71,14 +71,14 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
         }}>
           <div style={{
             width: 6, height: 6, borderRadius: '50%',
-            background: '#10B981',
+            background: '#818CF8',
             animation: 'emeraldPulse 2s ease-in-out infinite',
             flexShrink: 0,
           }} />
           <span style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 10,
-            color: '#10B981',
+            color: '#818CF8',
             letterSpacing: '0.8px',
             textTransform: 'uppercase',
           }}>System Online</span>

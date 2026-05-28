@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../auth/AuthContext';
 import { GlassCard } from '../components/ui/GlassCard';
-import BackgroundGrid from '../components/ui/BackgroundGrid';
+// BackgroundGrid is rendered globally in App.js
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -48,8 +48,6 @@ export default function LoginPage() {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <BackgroundGrid />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -64,12 +62,12 @@ export default function LoginPage() {
                 width: 56,
                 height: 56,
                 borderRadius: 14,
-                background: 'var(--gradient-brand)',
+                background: 'linear-gradient(135deg, #6366F1 0%, #A78BFA 50%, #22D3EE 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 16px',
-                boxShadow: '0 0 40px var(--gradient-brand-glow)',
+                boxShadow: '0 0 40px rgba(99,102,241,0.45), 0 0 80px rgba(139,92,246,0.20)',
               }}
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}

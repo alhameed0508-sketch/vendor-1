@@ -5,7 +5,7 @@ export function GlassCard({
   children,
   className = '',
   glow = false,
-  glowColor = 'var(--gradient-brand-glow)',
+  glowColor = 'rgba(99,102,241,0.15)',
   onClick,
   hover = true,
   as = 'div',

@@ -16,6 +16,7 @@ import ScamDetectionPage from './scam/ScamDetectionPage';
 import IndiaCompliancePage from './india/IndiaCompliancePage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
+import BackgroundGrid from './components/ui/BackgroundGrid';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { AuthProvider } from './auth/AuthContext';
 import ProtectedRoute from './auth/ProtectedRoute';
@@ -57,6 +58,7 @@ function AppContent() {
 
   return (
     <div className="app-layout">
+      <BackgroundGrid />
       <ThemedToaster />
 
       {!isLoginPage && (

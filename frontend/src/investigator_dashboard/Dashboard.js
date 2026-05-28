@@ -103,11 +103,11 @@ function EmptyState({ hasFilters }) {
       <div style={{
         width: 48, height: 48,
         borderRadius: '50%',
-        background: 'rgba(16,185,129,0.08)',
-        border: '1px solid rgba(16,185,129,0.15)',
+        background: 'rgba(99,102,241,0.08)',
+        border: '1px solid rgba(99,102,241,0.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Shield size={20} color="#10B981" />
+        <Shield size={20} color="#818CF8" />
       </div>
       <div>
         <p style={{
@@ -249,20 +249,20 @@ export default function Dashboard() {
             </h1>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(16,185,129,0.08)',
-              border: '1px solid rgba(16,185,129,0.2)',
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.2)',
               borderRadius: 5,
               padding: '2px 8px',
             }}>
               <div style={{
                 width: 5, height: 5, borderRadius: '50%',
-                background: '#10B981',
+                background: '#818CF8',
                 animation: 'emeraldPulse 2s ease-in-out infinite',
               }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 9,
-                color: '#10B981',
+                color: '#818CF8',
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
                 fontWeight: 700,
@@ -275,7 +275,7 @@ export default function Dashboard() {
             color: 'var(--text-muted)',
             letterSpacing: '0.3px',
           }}>
-            <span style={{ color: 'rgba(16,185,129,0.6)' }}>//</span>
+            <span style={{ color: 'rgba(99,102,241,0.6)' }}>//</span>
             {' '}{filtered.length} alerts
             {stats.critical > 0 && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
             {stats.high > 0     && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
