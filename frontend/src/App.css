@@ -750,8 +750,84 @@ body {
   50%       { opacity: 0.15; }
 }
 
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes borderShimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; filter: blur(20px); }
+  50%       { opacity: 0.8; filter: blur(25px); }
+}
+
+@keyframes gradientText {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* ── Skeleton ── */
 .skeleton-pulse { animation: skeletonPulse 1.6s ease-in-out infinite; }
+
+/* ── Premium Effects ── */
+.gradient-text {
+  background: linear-gradient(135deg, #F1F5F9 0%, #A78BFA 40%, #22D3EE 60%, #F1F5F9 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientText 8s ease infinite;
+}
+
+.glow-indicator {
+  position: relative;
+}
+.glow-indicator::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: inherit;
+  opacity: 0;
+  filter: blur(16px);
+  animation: glowPulse 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.card-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(99, 102, 241, 0.03),
+    rgba(139, 92, 246, 0.05),
+    rgba(99, 102, 241, 0.03),
+    transparent
+  );
+  animation: shimmer 8s ease-in-out infinite;
+  pointer-events: none;
+}
 
 /* ── Risk Bar ── */
 .risk-bar { display: flex; align-items: center; gap: 8px; }
