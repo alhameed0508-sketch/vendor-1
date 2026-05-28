@@ -29,7 +29,8 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     const container = containerRef.current;
     const width = container.clientWidth || 600;
-    const height = Math.max(300, Math.min(container.clientWidth * 0.6, 420));
+    const maxH = nodes.length > 30 ? 600 : 420;
+    const height = Math.max(300, Math.min(container.clientWidth * 0.6, maxH));
 
     // Clear previous render
     d3.select(svgRef.current).selectAll('*').remove();
@@ -90,8 +91,19 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
     const nodeMap = {};
     nodes.forEach(n => { nodeMap[n.account_id] = n; });
 
-    // Build D3 nodes & links — start all nodes at center for spawn effect
-    const graphNodes = nodes.map(n => ({ ...n, id: n.account_id, x: width / 2, y: height / 2 }));
+    // Build D3 nodes & links
+    // For small graphs, start at center for spawn effect; for large graphs, spread out
+    // to prevent the force simulation from flinging nodes off-screen
+    const isLargeGraph = nodes.length > 30;
+    const graphNodes = nodes.map((n, i) => {
+      if (isLargeGraph) {
+        // Distribute in a circle around center to give the simulation a stable start
+        const angle = (2 * Math.PI * i) / nodes.length;
+        const radius = Math.min(width, height) * 0.3;
+        return { ...n, id: n.account_id, x: width / 2 + radius * Math.cos(angle), y: height / 2 + radius * Math.sin(angle) };
+      }
+      return { ...n, id: n.account_id, x: width / 2, y: height / 2 };
+    });
     const graphLinks = edges.map(e => ({
       source: e.from_account,
       target: e.to_account,
@@ -101,14 +113,18 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
       timestamps: e.timestamps || [],
     })).filter(e => nodeMap[e.source] && nodeMap[e.target]);
 
-    // Force simulation — start with high alpha for dramatic spawn
+    // Force simulation — scale charge strength with node count to prevent explosion
+    const chargeStrength = isLargeGraph ? Math.max(-120, -3000 / nodes.length) : -300;
+    const linkDistance = isLargeGraph ? 60 : 90;
     const simulation = d3.forceSimulation(graphNodes)
-      .force('link', d3.forceLink(graphLinks).id(d => d.id).distance(90).strength(0.4))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink(graphLinks).id(d => d.id).distance(linkDistance).strength(0.4))
+      .force('charge', d3.forceManyBody().strength(chargeStrength))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(d => ROLE_RADIUS[d.role] + 14))
-      .alpha(1.5)
-      .alphaDecay(0.02);
+      .force('collision', d3.forceCollide().radius(d => ROLE_RADIUS[d.role] + (isLargeGraph ? 6 : 14)))
+      .force('x', d3.forceX(width / 2).strength(isLargeGraph ? 0.08 : 0))
+      .force('y', d3.forceY(height / 2).strength(isLargeGraph ? 0.08 : 0))
+      .alpha(isLargeGraph ? 0.8 : 1.5)
+      .alphaDecay(isLargeGraph ? 0.03 : 0.02);
 
     // Edge width scale
     const maxAmount = Math.max(...graphLinks.map(l => l.amount), 1);
@@ -126,10 +142,11 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     linkSelRef.current = link;
 
-    // Animate edges drawing in with stagger
+    // Animate edges drawing in with stagger (cap total stagger for large graphs)
+    const edgeStagger = isLargeGraph ? Math.min(10, 1500 / graphLinks.length) : 80;
     link.transition()
-      .delay((d, i) => 300 + i * 80)
-      .duration(600)
+      .delay((d, i) => 300 + i * edgeStagger)
+      .duration(isLargeGraph ? 300 : 600)
       .ease(d3.easeCubicOut)
       .attr('stroke-dashoffset', '0');
 
@@ -165,10 +182,11 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
         })
       );
 
-    // Stagger node appearance with spring-like scale
+    // Stagger node appearance with spring-like scale (cap total stagger for large graphs)
+    const nodeStagger = isLargeGraph ? Math.min(15, 1500 / graphNodes.length) : 100;
     nodeGroup.transition()
-      .delay((d, i) => 100 + i * 100)
-      .duration(500)
+      .delay((d, i) => 100 + i * nodeStagger)
+      .duration(isLargeGraph ? 300 : 500)
       .ease(d3.easeBackOut.overshoot(1.5))
       .attr('opacity', 1)
       .attrTween('transform', function(d) {
@@ -248,7 +266,12 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     const activeTimers = [];
 
-    graphLinks.forEach((linkData, i) => {
+    // For large graphs, only animate particles on the most suspicious edges
+    const particleLinks = isLargeGraph
+      ? graphLinks.filter(l => l.pattern === 'SMURFING' || l.pattern === 'CONSOLIDATION').slice(0, 30)
+      : graphLinks;
+
+    particleLinks.forEach((linkData, i) => {
       const color = PATTERN_COLOR[linkData.pattern] || PATTERN_COLOR.NORMAL;
       const count = Math.round(particleCount(linkData.count || 1));
       const r     = particleRadius(linkData.amount);
@@ -312,7 +335,8 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
         };
 
         // Stagger start after initial edge draw-in animation
-        const timerId = setTimeout(animateParticle, 1400 + i * 120 + stagger);
+        const particleDelay = isLargeGraph ? 800 + i * 30 + stagger : 1400 + i * 120 + stagger;
+        const timerId = setTimeout(animateParticle, particleDelay);
         activeTimers.push(timerId);
       }
     });
