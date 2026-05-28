@@ -16,16 +16,16 @@ class Settings(BaseSettings):
     # Neo4j
     neo4j_uri: str = Field("bolt://localhost:7687", alias="NEO4J_URI")
     neo4j_user: str = Field("neo4j", alias="NEO4J_USER")
-    neo4j_password: str = Field("CHANGE_ME_NOT_FOR_PRODUCTION", alias="NEO4J_PASSWORD")
+    neo4j_password: str = Field("INSECURE_DEV_ONLY_REPLACE_IN_PRODUCTION", alias="NEO4J_PASSWORD")
     neo4j_tls_enabled: bool = Field(False, alias="NEO4J_TLS_ENABLED")
 
     # Kafka
     kafka_bootstrap: str = Field("kafka:9092", alias="KAFKA_BOOTSTRAP")
     kafka_enabled: bool = Field(False, alias="KAFKA_ENABLED")
 
-    # Auth
-    jwt_secret: str = Field("change_me_before_deployment", alias="JWT_SECRET")
-    auth_enabled: bool = Field(False, alias="AUTH_ENABLED")
+    # Auth — JWT_SECRET has no safe default; production_validator enforces real secret
+    jwt_secret: str = Field("INSECURE_DEV_ONLY_REPLACE_IN_PRODUCTION", alias="JWT_SECRET")
+    auth_enabled: bool = Field(True, alias="AUTH_ENABLED")
 
     # Token expiry
     access_token_expire_minutes: int = Field(15, alias="ACCESS_TOKEN_EXPIRE_MINUTES")

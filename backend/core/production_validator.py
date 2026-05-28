@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SECRETS = frozenset({
     "change_me_before_deployment",
     "CHANGE_ME_NOT_FOR_PRODUCTION",
+    "INSECURE_DEV_ONLY_REPLACE_IN_PRODUCTION",
+    "local_dev_secret_not_for_prod",
+    "localdev",
     "changeme",
     "secret",
     "password",
