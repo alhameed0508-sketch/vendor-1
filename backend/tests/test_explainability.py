@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 import pytest
 from data.synthetic.generator import build_full_dataset
-from backend.detection.pipeline import DetectionPipeline
+from backend.detection.pipeline import DetectionPipeline, RuleEngine
 
 
 @pytest.fixture(scope="module")

@@ -8,6 +8,12 @@ import LoginPage from './login/LoginPage';
 import CompliancePortal from './compliance_portal/CompliancePortal';
 import JudgePresentation from './judge_view/JudgePresentation';
 import OnboardingRisk from './onboarding/OnboardingRisk';
+import NetworkOverview from './network/NetworkOverview';
+import InvestigationPage from './investigation/InvestigationPage';
+import TypologyPage from './typology/TypologyPage';
+import PropensityPage from './propensity/PropensityPage';
+import ScamDetectionPage from './scam/ScamDetectionPage';
+import IndiaCompliancePage from './india/IndiaCompliancePage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider, useTheme } from './ThemeContext';
@@ -68,6 +74,12 @@ function AppContent() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
+              <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
+              <Route path="/investigation" element={<ProtectedRoute><InvestigationPage /></ProtectedRoute>} />
+              <Route path="/typology" element={<ProtectedRoute><TypologyPage /></ProtectedRoute>} />
+              <Route path="/propensity" element={<ProtectedRoute><PropensityPage /></ProtectedRoute>} />
+              <Route path="/scam" element={<ProtectedRoute><ScamDetectionPage /></ProtectedRoute>} />
+              <Route path="/india" element={<ProtectedRoute><IndiaCompliancePage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
               <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
               <Route path="/judge" element={<ProtectedRoute><JudgePresentation /></ProtectedRoute>} />

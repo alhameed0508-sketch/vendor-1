@@ -116,6 +116,8 @@ export default function AlertDetail() {
 
   const riskPct = (alert.risk_score * 100).toFixed(1);
   const confPct = (alert.confidence * 100).toFixed(1);
+  const classification = alert.mule_classification;
+  const triage = alert.genai_triage;
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
@@ -137,6 +139,28 @@ export default function AlertDetail() {
             {' · '}{alert.account_count} accounts · {alert.txn_count} txns
             {' · ₹'}{(alert.total_amount / 100000).toFixed(2)}L
           </p>
+          {/* Mule classification & GenAI triage */}
+          <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+            {classification?.predicted_type && (
+              <span style={{
+                fontSize: 10, fontFamily: 'var(--font-mono)', padding: '3px 8px', borderRadius: 4,
+                background: 'rgba(139,92,246,0.12)', color: '#8b5cf6', fontWeight: 600,
+              }}>
+                {classification.predicted_type}
+                {classification.confidence != null && ` ${(classification.confidence * 100).toFixed(0)}%`}
+              </span>
+            )}
+            {triage?.recommendation && (
+              <span style={{
+                fontSize: 10, fontFamily: 'var(--font-mono)', padding: '3px 8px', borderRadius: 4,
+                background: triage.recommendation === 'ESCALATE' ? 'rgba(255,59,48,0.12)' : 'rgba(245,158,11,0.12)',
+                color: triage.recommendation === 'ESCALATE' ? 'var(--critical)' : 'var(--high)',
+              }}>
+                AI: {triage.recommendation}
+                {triage.confidence_adjustment != null && ` (${triage.confidence_adjustment > 0 ? '+' : ''}${(triage.confidence_adjustment * 100).toFixed(0)}%)`}
+              </span>
+            )}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-danger" onClick={markFalsePositive}>False Positive</button>
@@ -200,24 +224,50 @@ export default function AlertDetail() {
                 <div
                   key={i}
                   style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '8px 0', borderBottom: '1px solid var(--border)',
                   }}
                 >
-                  <div>
-                    <span className="account-id">{n.account_id}</span>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.bank} · {n.city}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{
-                      fontSize: 11, fontFamily: 'var(--font-mono)', padding: '2px 7px', borderRadius: 4,
-                      background: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'rgba(255,59,92,0.15)' : 'rgba(245,158,11,0.12)',
-                      color: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'var(--critical)' : 'var(--high)',
-                    }}>{n.role}</span>
-                    <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
-                      {(n.smurf_score * 100).toFixed(0)}%
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span className="account-id">{n.account_id}</span>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.bank} · {n.city}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{
+                        fontSize: 11, fontFamily: 'var(--font-mono)', padding: '2px 7px', borderRadius: 4,
+                        background: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'rgba(255,59,92,0.15)' : 'rgba(245,158,11,0.12)',
+                        color: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'var(--critical)' : 'var(--high)',
+                      }}>{n.role}</span>
+                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
+                        {(n.smurf_score * 100).toFixed(0)}%
+                      </div>
                     </div>
                   </div>
+                  {/* Enrichment scores */}
+                  {(n.markov_transition_score > 0 || n.baseline_deviation > 0 || n.device_trust_score > 0 || n.semantics_score > 0) && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      {n.markov_transition_score > 0 && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
+                          MKV {(n.markov_transition_score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {n.baseline_deviation > 0 && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(245,158,11,0.1)', color: 'var(--high)' }}>
+                          BL {(n.baseline_deviation * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {n.device_trust_score > 0 && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(56,189,248,0.1)', color: 'var(--accent-cyan)' }}>
+                          DEV {(n.device_trust_score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {n.semantics_score > 0 && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', color: 'var(--accent-green)' }}>
+                          SEM {(n.semantics_score * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

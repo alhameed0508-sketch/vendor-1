@@ -19,6 +19,12 @@ from api.v1.routes.screening import register_screening_routes
 from api.v1.routes.onboarding import register_onboarding_routes
 from api.v1.routes.genai import register_genai_routes
 from api.v1.routes.benchmark import register_benchmark_routes
+from api.v1.routes.propensity import register_propensity_routes
+from api.v1.routes.device import register_device_routes
+from api.v1.routes.typology import register_typology_routes
+from api.v1.routes.india import register_india_routes
+from api.v1.routes.investigation import register_investigation_routes
+from api.v1.routes.scam import register_scam_routes
 
 
 def create_v1_router(limiter: Limiter) -> APIRouter:
@@ -59,6 +65,18 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     register_ingest_routes(ingest_router, limiter)
     v1.include_router(ingest_router)
 
+    india_router = APIRouter(prefix="/india", tags=["india"])
+    register_india_routes(india_router, limiter)
+    v1.include_router(india_router)
+
+    scam_router = APIRouter(prefix="/scam", tags=["scam"])
+    register_scam_routes(scam_router, limiter)
+    v1.include_router(scam_router)
+
+    investigation_router = APIRouter(prefix="/investigation", tags=["investigation"])
+    register_investigation_routes(investigation_router, limiter)
+    v1.include_router(investigation_router)
+
     # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)
     register_kpi_routes(v1, limiter)
@@ -67,5 +85,8 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     register_onboarding_routes(v1, limiter)
     register_genai_routes(v1, limiter)
     register_benchmark_routes(v1, limiter)
+    register_propensity_routes(v1, limiter)
+    register_typology_routes(v1, limiter)
+    register_device_routes(v1, limiter)
 
     return v1

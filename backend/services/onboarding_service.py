@@ -20,12 +20,20 @@ logger = logging.getLogger(__name__)
 class OnboardingService:
     """Orchestrates onboarding risk assessment."""
 
-    def __init__(self, onboarding_repo: OnboardingRepository):
+    def __init__(self, onboarding_repo: OnboardingRepository, persistence=None):
         self._repo = onboarding_repo
+        self._persistence = persistence
+
+    def _make_graph_checker(self):
+        """Create a graph checker callable if persistence layer is available."""
+        if self._persistence is not None and hasattr(self._persistence, 'find_flagged_neighbors'):
+            return self._persistence.find_flagged_neighbors
+        return None
 
     def assess_account(self, application: Dict) -> Dict:
         """Assess a single account application for mule risk."""
-        result = assess_onboarding_risk(application)
+        graph_checker = self._make_graph_checker()
+        result = assess_onboarding_risk(application, graph_checker=graph_checker)
         result_dict = {
             "assessment_id": result.assessment_id,
             "account_id": result.account_id,

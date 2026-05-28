@@ -2,10 +2,12 @@
 .git
 .gitignore
 
-# Tests
+# Tests (not needed in production image)
 tests/
 pytest.ini
 .pytest_cache/
+.coverage
+htmlcov/
 
 # Python artifacts
 __pycache__/
@@ -26,13 +28,14 @@ venv
 
 # Documentation
 docs/
+*.md
 
-# Docker
+# Docker (don't copy Dockerfile into image)
 Dockerfile
-Dockerfile.prod
+Dockerfile.*
 .dockerignore
 
-# Environment
+# Environment files (secrets — use env vars instead)
 .env
 .env.*
 

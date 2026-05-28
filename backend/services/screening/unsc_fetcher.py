@@ -1,9 +1,13 @@
 """
 UNSC consolidated sanctions list fetcher and parser.
 Downloads XML from UN sanctions website, parses individuals and entities.
+Falls back to bundled snapshot when live fetch fails.
 """
 import logging
-from typing import List, Dict
+import os
+from dataclasses import dataclass
+from datetime import datetime
+from typing import List, Dict, Tuple
 from xml.etree import ElementTree
 
 import httpx
@@ -11,38 +15,90 @@ import httpx
 logger = logging.getLogger(__name__)
 
 DEFAULT_UNSC_URL = "https://scsanctions.un.org/resources/xml/en/consolidated.xml"
+BUNDLED_SNAPSHOT_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "..", "..", "data", "watchlists",
+    "unsc_consolidated_snapshot.xml",
+)
+
+
+@dataclass(frozen=True)
+class UNSCFetchResult:
+    entries: Tuple[Dict, ...]
+    source: str  # "LIVE" | "BUNDLED" | "NONE"
+    last_updated: str
+    entry_count: int
 
 
 def fetch_and_parse_unsc(url: str = DEFAULT_UNSC_URL) -> List[Dict]:
-    """Download and parse UNSC consolidated sanctions XML."""
+    """Download and parse UNSC consolidated sanctions XML.
+
+    Falls back to bundled snapshot if live fetch fails.
+    Returns list of entry dicts for backward compatibility.
+    """
+    result = fetch_unsc_with_fallback(url)
+    return list(result.entries)
+
+
+def fetch_unsc_with_fallback(url: str = DEFAULT_UNSC_URL) -> UNSCFetchResult:
+    """Fetch UNSC list with offline fallback. Returns typed result with source info."""
+    # Try live fetch first
     try:
         response = httpx.get(url, timeout=60, follow_redirects=True)
         response.raise_for_status()
-    except Exception as exc:
-        logger.error("Failed to fetch UNSC list from %s: %s", url, exc)
-        return []
-
-    try:
         root = ElementTree.fromstring(response.content)
-    except ElementTree.ParseError as exc:
-        logger.error("Failed to parse UNSC XML: %s", exc)
-        return []
+        entries = _parse_entries(root)
+        logger.info(
+            "UNSC live fetch: %d entries from %s [source=LIVE]", len(entries), url,
+        )
+        return UNSCFetchResult(
+            entries=tuple(entries),
+            source="LIVE",
+            last_updated=datetime.utcnow().isoformat(),
+            entry_count=len(entries),
+        )
+    except Exception as exc:
+        logger.warning("Live UNSC fetch failed (%s), trying bundled snapshot", exc)
 
+    # Fallback to bundled snapshot
+    snapshot_path = os.path.normpath(BUNDLED_SNAPSHOT_PATH)
+    if os.path.exists(snapshot_path):
+        try:
+            tree = ElementTree.parse(snapshot_path)
+            root = tree.getroot()
+            entries = _parse_entries(root)
+            logger.info(
+                "UNSC bundled snapshot loaded: %d entries [source=BUNDLED]",
+                len(entries),
+            )
+            return UNSCFetchResult(
+                entries=tuple(entries),
+                source="BUNDLED",
+                last_updated=datetime.utcnow().isoformat(),
+                entry_count=len(entries),
+            )
+        except Exception as exc:
+            logger.error("Failed to parse bundled UNSC snapshot: %s", exc)
+
+    logger.error("No UNSC data available (live fetch and bundled snapshot both failed)")
+    return UNSCFetchResult(
+        entries=(),
+        source="NONE",
+        last_updated=datetime.utcnow().isoformat(),
+        entry_count=0,
+    )
+
+
+def _parse_entries(root) -> List[Dict]:
+    """Parse individuals and entities from an UNSC XML root element."""
     entries = []
-
-    # Parse individuals
     for individual in root.iter("INDIVIDUAL"):
         entry = _parse_individual(individual)
         if entry:
             entries.append(entry)
-
-    # Parse entities
     for entity in root.iter("ENTITY"):
         entry = _parse_entity(entity)
         if entry:
             entries.append(entry)
-
-    logger.info("Parsed %d entries from UNSC consolidated list", len(entries))
     return entries
 
 

@@ -1,11 +1,18 @@
 """
 MuleCatch Detection Pipeline
 =============================
-Orchestrates the four-layer detection stack:
+Orchestrates the multi-layer detection stack:
   Layer 1: Rule engine (known patterns, fast)
   Layer 2: Smurf-weighting algorithm (temporal analysis)
+  Layer 2b: Behavioral baseline comparison
+  Layer 2c: Transaction semantics analysis
+  Layer 2d: Device profiling
+  Layer 2e: Markov state transition scoring (temporal lifecycle)
   Layer 3: Louvain community detection (network topology)
   Layer 4: GNN scoring (graph learning, optional)
+  Layer 5: GenAI triage (LLM reviews uncertain alerts)
+  Layer 6: Explainability (SHAP + rule-based explanations)
+  Layer 7: Mule type classification + narrative generation
 
 Produces consolidated Alert objects with subgraph data.
 """
@@ -25,6 +32,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from models.temporal_weighting.smurf_weighting import score_transaction_batch, AccountScore
 from models.community_detection.louvain_detector import LouvainClusterDetector, Community
 from models.behavioral.baseline import compute_baselines, BaselineDeviation
+from models.gnn.lightweight_scorer import LightweightScorer
+from models.semantics.transaction_analyzer import TransactionSemanticsAnalyzer, SemanticsResult
+from models.device.device_profiler import DeviceProfiler, DeviceTrustResult
+from models.temporal.markov_state import MarkovStateScorer, MarkovStateResult
+from models.explainability.shap_explainer import SHAPAlertExplainer
 from explainability.explainer import explain_alert
 from explainability.narrative_generator import generate_narrative
 from detection.mule_classifier import classify_cluster
@@ -45,6 +57,9 @@ class AlertNode:
     betweenness: float = 0.0    # betweenness centrality (0-1, higher = more bridging)
     pagerank: float = 0.0       # PageRank score (higher = more influential)
     baseline_deviation: float = 0.0  # behavioral deviation from historical baseline
+    device_trust_score: float = 0.0  # device profiling risk (0=trusted, 1=untrusted)
+    semantics_score: float = 0.0     # transaction semantics risk (0-1)
+    markov_transition_score: float = 0.0  # Markov state transition risk (0-1)
 
 
 @dataclass
@@ -80,6 +95,8 @@ class Alert:
     explanation: Optional[Dict] = None
     narrative: Optional[Dict] = None
     mule_classification: Optional[Dict] = None
+    shap_explanation: Optional[Dict] = None
+    regulatory_report: Optional[Dict] = None
 
 
 # ── Rule engine ───────────────────────────────────────────────────────────
@@ -364,7 +381,12 @@ class DetectionPipeline:
         self._gnn_model_path = gnn_model_path
         self._gnn_scorer = _try_load_gnn_scorer(model_path=gnn_model_path)
         self._gnn_available = self._gnn_scorer is not None
+        self._lightweight_scorer = LightweightScorer()
         self._genai_service = genai_service
+        self._semantics_analyzer = TransactionSemanticsAnalyzer()
+        self._device_profiler = DeviceProfiler()
+        self._markov_scorer = MarkovStateScorer()
+        self._shap_explainer = SHAPAlertExplainer()
 
         # Threshold overrides from feedback engine
         self._smurf_threshold = smurf_threshold
@@ -385,6 +407,15 @@ class DetectionPipeline:
 
         # Layer 2b: behavioral baseline comparison
         baselines = compute_baselines(accounts, transactions)
+
+        # Layer 2c: transaction semantics analysis
+        semantics = self._semantics_analyzer.analyze_batch(accounts, transactions)
+
+        # Layer 2d: device profiling
+        device_results = self._profile_devices(accounts, transactions)
+
+        # Layer 2e: Markov state transition scoring
+        markov_results = self._markov_scorer.score_batch(accounts, transactions)
 
         # Layer 3: community detection
         communities = self.cluster_detector.detect_clusters(transactions, accounts)
@@ -414,6 +445,18 @@ class DetectionPipeline:
             except Exception as exc:
                 logger.warning("GNN scoring failed (falling back): %s", exc)
 
+        # Layer 4b: Lightweight scorer fallback (when GNN unavailable)
+        if not gnn_predictions and self._lightweight_scorer is not None:
+            try:
+                lw_preds = self._lightweight_scorer.predict(
+                    accounts, transactions, smurf_scores, centrality, baselines,
+                )
+                if lw_preds:
+                    gnn_predictions = {p.account_id: p for p in lw_preds}
+                    logger.info("Lightweight scorer: %d predictions", len(lw_preds))
+            except Exception as exc:
+                logger.warning("Lightweight scorer failed: %s", exc)
+
         # Build alerts from flagged communities
         alerts = []
         acc_map = {a["account_id"]: a for a in accounts}
@@ -429,6 +472,9 @@ class DetectionPipeline:
                 gnn_predictions,
                 centrality,
                 baselines,
+                semantics,
+                device_results,
+                markov_results,
             )
             alerts.append(alert)
 
@@ -487,6 +533,14 @@ class DetectionPipeline:
             except Exception as exc:
                 logger.warning("Explainability failed for %s: %s", alert.alert_id, exc)
 
+            # SHAP-based explanation (RBI FREE-AI compliant)
+            try:
+                shap_explanation = self._shap_explainer.explain_alert(alert_dict, smurf_scores)
+                alert.shap_explanation = shap_explanation.to_dict()
+                alert.regulatory_report = self._shap_explainer.generate_regulatory_report(shap_explanation)
+            except Exception as exc:
+                logger.warning("SHAP explanation failed for %s: %s", alert.alert_id, exc)
+
         # Layer 7: Mule type classification + narrative generation
         for alert in alerts:
             try:
@@ -522,6 +576,29 @@ class DetectionPipeline:
 
         return sorted(alerts, key=lambda a: -a.risk_score)
 
+    def _profile_devices(
+        self,
+        accounts: List[Dict],
+        transactions: List[Dict],
+    ) -> Dict[str, DeviceTrustResult]:
+        """Record device events from transactions and compute trust scores."""
+        results = {}
+        try:
+            for t in transactions:
+                device_id = t.get("device_id", "")
+                if not device_id:
+                    continue
+                self._device_profiler.record_device_event(
+                    account_id=t["from_account"],
+                    device_id=device_id,
+                )
+            for acc in accounts:
+                acc_id = acc["account_id"]
+                results[acc_id] = self._device_profiler.compute_trust(acc_id)
+        except Exception as exc:
+            logger.warning("Device profiling failed: %s", exc)
+        return results
+
     def _build_alert(
         self,
         community: Community,
@@ -532,6 +609,9 @@ class DetectionPipeline:
         gnn_predictions: Dict,
         centrality: Dict[str, Dict[str, float]] = None,
         baselines: Dict[str, BaselineDeviation] = None,
+        semantics: Dict[str, SemanticsResult] = None,
+        device_results: Dict[str, DeviceTrustResult] = None,
+        markov_results: Dict[str, MarkovStateResult] = None,
     ) -> Alert:
         members = community.accounts
 
@@ -544,12 +624,18 @@ class DetectionPipeline:
         # Build nodes
         centrality = centrality or {}
         baselines = baselines or {}
+        semantics = semantics or {}
+        device_results = device_results or {}
+        markov_results = markov_results or {}
         nodes = []
         for acc_id in members:
             acc = acc_map.get(acc_id, {})
             ss  = smurf_scores.get(acc_id)
             cs  = centrality.get(acc_id, {})
             bl  = baselines.get(acc_id)
+            sem = semantics.get(acc_id)
+            dev = device_results.get(acc_id)
+            mk  = markov_results.get(acc_id)
             nodes.append(AlertNode(
                 account_id=acc_id,
                 role=acc.get("role", "UNKNOWN"),
@@ -562,6 +648,9 @@ class DetectionPipeline:
                 betweenness=cs.get("betweenness", 0.0),
                 pagerank=cs.get("pagerank", 0.0),
                 baseline_deviation=bl.composite_score if bl else 0.0,
+                device_trust_score=dev.device_trust_score if dev else 0.0,
+                semantics_score=sem.composite_score if sem else 0.0,
+                markov_transition_score=mk.transition_score if mk else 0.0,
             ))
 
         # Build edges (aggregate multiple txns between same pair)
@@ -591,7 +680,16 @@ class DetectionPipeline:
             bl = baselines.get(acc_id)
             if bl:
                 all_codes.extend(bl.reason_codes)
-        unique_codes = list(dict.fromkeys(all_codes))[:10]   # deduplicate, max 10
+            sem = semantics.get(acc_id)
+            if sem:
+                all_codes.extend(sem.reason_codes)
+            dev = device_results.get(acc_id)
+            if dev:
+                all_codes.extend(dev.reason_codes)
+            mk = markov_results.get(acc_id)
+            if mk:
+                all_codes.extend(mk.reason_codes)
+        unique_codes = list(dict.fromkeys(all_codes))[:15]   # deduplicate, max 15
 
         # Composite risk score with optional GNN layer
         # Use blend of max + avg smurf scores: cluster risk is driven by
@@ -630,6 +728,24 @@ class DetectionPipeline:
         max_baseline_dev = max(member_baselines) if member_baselines else 0
         baseline_boost = min(max_baseline_dev * 0.1, 0.06)
 
+        # Semantics boost: up to +0.05 from transaction semantics
+        _empty_sem = SemanticsResult("", 0.0, 0.0, 0.0, 0.0, 0.0, ())
+        member_semantics = [semantics.get(a, _empty_sem).composite_score for a in members]
+        max_semantics = max(member_semantics) if member_semantics else 0
+        semantics_boost = min(max_semantics * 0.1, 0.05)
+
+        # Device trust boost: up to +0.06 from device profiling
+        _empty_dev = DeviceTrustResult("", 0.0, 0, 0, (), ())
+        member_device = [device_results.get(a, _empty_dev).device_trust_score for a in members]
+        max_device = max(member_device) if member_device else 0
+        device_boost = min(max_device * 0.12, 0.06)
+
+        # Markov transition boost: up to +0.08 from temporal state transitions
+        _empty_mk = MarkovStateResult("", "DORMANT", (), 0.0, 0.0, ())
+        member_markov = [markov_results.get(a, _empty_mk).transition_score for a in members]
+        max_markov = max(member_markov) if member_markov else 0
+        markov_boost = min(max_markov * 0.15, 0.08)
+
         if avg_gnn is not None:
             # 4-layer scoring: 50% Louvain + 30% Smurf + 20% GNN + boosts
             risk_score = (
@@ -637,7 +753,10 @@ class DetectionPipeline:
                 self.DEFAULT_SMURF_WEIGHT * avg_smurf +
                 self.DEFAULT_GNN_WEIGHT * avg_gnn +
                 centrality_boost +
-                baseline_boost
+                baseline_boost +
+                semantics_boost +
+                device_boost +
+                markov_boost
             )
         else:
             # 3-layer fallback: 60% Louvain + 40% Smurf + boosts
@@ -645,7 +764,10 @@ class DetectionPipeline:
                 self.FALLBACK_LOUVAIN_WEIGHT * community.suspicion_score +
                 self.FALLBACK_SMURF_WEIGHT * avg_smurf +
                 centrality_boost +
-                baseline_boost
+                baseline_boost +
+                semantics_boost +
+                device_boost +
+                markov_boost
             )
 
         # Structural risk amplifiers

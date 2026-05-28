@@ -32,6 +32,7 @@ class FeedbackRecord:
     false_positive_accounts: List[str] = field(default_factory=list)
     true_positive_accounts: List[str] = field(default_factory=list)
     notes: str = ""
+    confidence_weight: float = 1.0  # weight based on uncertainty sampling
     created_at: str = ""
 
     def __post_init__(self):
@@ -72,16 +73,25 @@ class FeedbackStore:
         """
         Returns a score delta to apply to detection thresholds
         based on recent feedback. Negative = tighten threshold.
+        Uses confidence_weight for weighted feedback.
         """
         records = self.load_all()
         if len(records) < 5:
             return 0.0
         recent = records[-20:]
-        fp_rate = sum(1 for r in recent if not r.is_true_positive) / len(recent)
-        # If FP rate > 30%, raise the flag threshold slightly
+
+        # Weighted false positive rate
+        total_weight = sum(getattr(r, 'confidence_weight', 1.0) for r in recent)
+        if total_weight == 0:
+            return 0.0
+        fp_weight = sum(
+            getattr(r, 'confidence_weight', 1.0)
+            for r in recent if not r.is_true_positive
+        )
+        fp_rate = fp_weight / total_weight
+
         if fp_rate > 0.30:
             return +0.05
-        # If FP rate < 10%, we can lower threshold to catch more
         elif fp_rate < 0.10:
             return -0.03
         return 0.0
@@ -150,6 +160,20 @@ class ActiveLearningEngine:
     def should_retrain(self) -> bool:
         records = self.store.load_all()
         return len(records) > 0 and len(records) % 20 == 0
+
+    @staticmethod
+    def get_uncertain_alerts(alerts: List[Dict], k: int = 10) -> List[Dict]:
+        """Uncertainty sampling: prioritize alerts near decision boundary.
+
+        Alerts with risk_score closest to 0.5 are most uncertain and
+        benefit most from investigator feedback.
+        """
+        scored = [
+            (abs(a.get("risk_score", 0.5) - 0.5), a)
+            for a in alerts
+        ]
+        scored.sort(key=lambda x: x[0])
+        return [a for _, a in scored[:k]]
 
 
 if __name__ == "__main__":

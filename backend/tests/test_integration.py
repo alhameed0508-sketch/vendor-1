@@ -68,7 +68,7 @@ def test_auth_login(client):
     r = client.post("/api/v1/auth/login", json={"username": "investigator", "password": "iob@2024"})
     assert r.status_code == 200
     data = _data(r)
-    assert "token" in data
+    assert "access_token" in data
 
 
 def test_auth_login_bad_credentials(client):

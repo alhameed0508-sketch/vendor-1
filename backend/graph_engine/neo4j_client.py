@@ -414,6 +414,66 @@ class Neo4jClient:
         )
         return result[0]["linked"] if result else 0
 
+    # ── Cross-check queries (onboarding) ────────────────────────────────────
+
+    def find_accounts_by_device(self, device_id: str) -> List[Dict]:
+        """Find all accounts sharing a device."""
+        return self.run(
+            """
+            MATCH (a:Account)-[:USES_DEVICE]->(d:Device {device_id: $device_id})
+            RETURN a.account_id AS account_id, a.high_risk AS high_risk,
+                   a.cluster_id AS cluster_id
+            """,
+            device_id=device_id,
+        )
+
+    def find_accounts_by_ip(self, ip_address: str) -> List[Dict]:
+        """Find all accounts sharing an IP address."""
+        return self.run(
+            """
+            MATCH (a:Account)-[:FROM_IP]->(ip:IPAddress {address: $ip_address})
+            RETURN a.account_id AS account_id, a.high_risk AS high_risk,
+                   a.cluster_id AS cluster_id
+            """,
+            ip_address=ip_address,
+        )
+
+    def find_flagged_neighbors(
+        self,
+        device_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        phone: Optional[str] = None,
+    ) -> Dict:
+        """Check if device/IP overlaps with flagged mule cluster accounts.
+
+        Returns dict with flagged_count, flagged_accounts, cluster_ids.
+        """
+        flagged_accounts = []
+        cluster_ids = set()
+
+        if device_id:
+            rows = self.find_accounts_by_device(device_id)
+            for r in rows:
+                if r.get("high_risk"):
+                    flagged_accounts.append(r["account_id"])
+                if r.get("cluster_id"):
+                    cluster_ids.add(r["cluster_id"])
+
+        if ip_address:
+            rows = self.find_accounts_by_ip(ip_address)
+            for r in rows:
+                if r.get("high_risk"):
+                    if r["account_id"] not in flagged_accounts:
+                        flagged_accounts.append(r["account_id"])
+                if r.get("cluster_id"):
+                    cluster_ids.add(r["cluster_id"])
+
+        return {
+            "flagged_count": len(flagged_accounts),
+            "flagged_accounts": flagged_accounts,
+            "cluster_ids": list(cluster_ids),
+        }
+
     def ensure_indexes(self) -> None:
         """Create Alert indexes if they don't exist."""
         index_queries = [

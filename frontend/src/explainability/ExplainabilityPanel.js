@@ -16,6 +16,8 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
   const [explanation, setExplanation] = useState(propExplanation || null);
   const [loading, setLoading] = useState(!propExplanation);
   const [activeTab, setActiveTab] = useState('summary');
+  const [shapData, setShapData] = useState(null);
+  const [shapLoading, setShapLoading] = useState(false);
 
   useEffect(() => {
     if (propExplanation) {
@@ -60,11 +62,28 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
     );
   }
 
+  // Fetch SHAP data when the SHAP tab is selected
+  useEffect(() => {
+    if (activeTab !== 'shap' || shapData || shapLoading || !alertId) return;
+    setShapLoading(true);
+    apiFetch(`/api/v1/alerts/${alertId}/shap`)
+      .then(r => r.json())
+      .then(body => {
+        setShapData(body?.data || body);
+        setShapLoading(false);
+      })
+      .catch(err => {
+        console.error('[ExplainabilityPanel] Failed to load SHAP data:', err);
+        setShapLoading(false);
+      });
+  }, [activeTab, alertId, shapData, shapLoading]);
+
   const tabs = [
     { key: 'summary', label: 'AI Summary' },
     { key: 'breakdown', label: 'Score Breakdown' },
     { key: 'chain', label: 'Money Flow' },
     { key: 'cycles', label: 'Cycles' },
+    { key: 'shap', label: 'SHAP Values' },
   ];
 
   return (
@@ -139,6 +158,11 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
         {activeTab === 'cycles' && (
           <motion.div key="cycles" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
             <CyclesTab cycles={explanation.cycles || []} narrative={explanation.cycle_narrative} />
+          </motion.div>
+        )}
+        {activeTab === 'shap' && (
+          <motion.div key="shap" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+            <SHAPTab data={shapData} loading={shapLoading} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -346,6 +370,145 @@ function FraudChainTab({ chain, narrative }) {
 
 
 /* ── Cycles Tab ──────────────────────────────────────────────────────── */
+
+/* ── SHAP Values Tab ────────────────────────────────────────────────── */
+
+function SHAPTab({ data, loading }) {
+  if (loading) {
+    return (
+      <GlassCard hover={false}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="spinner" />
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+            Computing SHAP values...
+          </span>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  if (!data) {
+    return (
+      <GlassCard hover={false}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          SHAP values not available for this alert.
+        </p>
+      </GlassCard>
+    );
+  }
+
+  const results = data.shap_results || [];
+  const regulatory = data.regulatory_report || null;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* SHAP Feature Importance */}
+      {results.length > 0 && (
+        <GlassCard hover={false}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Feature Importance (SHAP)</p>
+            <span style={{
+              fontSize: 9, fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: 3,
+              background: 'rgba(139,92,246,0.12)', color: '#8b5cf6',
+            }}>
+              RBI FREE-AI
+            </span>
+          </div>
+          {results.map((item, i) => {
+            const maxVal = Math.max(...results.map(r => Math.abs(r.shap_value || r.importance || 0)), 0.01);
+            const val = Math.abs(item.shap_value || item.importance || 0);
+            const isPositive = (item.shap_value || item.importance || 0) >= 0;
+            return (
+              <motion.div
+                key={i}
+                style={{ marginBottom: 12 }}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                    {(item.feature || item.feature_name || '').replace(/_/g, ' ')}
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                    color: isPositive ? 'var(--critical)' : 'var(--accent-green)',
+                  }}>
+                    {isPositive ? '+' : ''}{(val * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <div style={{ height: 5, borderRadius: 3, background: 'var(--bg-elevated)', overflow: 'hidden' }}>
+                  <motion.div
+                    style={{
+                      height: '100%', borderRadius: 3,
+                      background: isPositive
+                        ? 'linear-gradient(90deg, var(--high), var(--critical))'
+                        : 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))',
+                    }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(val / maxVal) * 100}%` }}
+                    transition={{ delay: 0.15 + i * 0.05, duration: 0.4, ease: 'easeOut' }}
+                  />
+                </div>
+                {item.description && (
+                  <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+                    {item.description}
+                  </p>
+                )}
+              </motion.div>
+            );
+          })}
+        </GlassCard>
+      )}
+
+      {/* Regulatory Report */}
+      {regulatory && (
+        <GlassCard hover={false} style={{ borderLeft: '3px solid #8b5cf6', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Regulatory Report</p>
+            <span style={{
+              fontSize: 9, fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: 3,
+              background: 'rgba(16,185,129,0.12)', color: 'var(--accent-green)',
+            }}>
+              {regulatory.framework || 'RBI FREE-AI'}
+            </span>
+          </div>
+          {regulatory.model_description && (
+            <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              {regulatory.model_description}
+            </p>
+          )}
+          {regulatory.feature_descriptions && (
+            <div style={{ marginTop: 8 }}>
+              <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Feature Descriptions
+              </p>
+              {Object.entries(regulatory.feature_descriptions).map(([feat, desc], i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 11 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', flexShrink: 0, minWidth: 120 }}>
+                    {feat.replace(/_/g, ' ')}
+                  </span>
+                  <span style={{ color: 'var(--text-muted)' }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {regulatory.bias_assessment && (
+            <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 6 }}>
+              <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Bias Assessment
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
+                {regulatory.bias_assessment}
+              </p>
+            </div>
+          )}
+        </GlassCard>
+      )}
+    </div>
+  );
+}
+
 
 function CyclesTab({ cycles, narrative }) {
   if (!cycles.length) {

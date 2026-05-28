@@ -2,16 +2,33 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   AlertTriangle, BarChart2, Shield, ChevronLeft, ChevronRight,
-  Activity, Moon, Sun, Zap, FileCheck, UserCheck, Presentation
+  Activity, Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
+  Network, Search, Brain, Fingerprint, TrendingUp, ShieldAlert, Flag
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
-const NAV_ITEMS = [
-  { path: '/',           label: 'Alert Queue',   icon: AlertTriangle,  end: true },
-  { path: '/analytics',  label: 'ROI Analytics', icon: BarChart2 },
-  { path: '/compliance', label: 'Compliance',    icon: FileCheck },
-  { path: '/onboarding', label: 'Onboarding',    icon: UserCheck },
-  { path: '/judge',      label: 'Judge View',    icon: Presentation },
+const NAV_SECTIONS = [
+  {
+    label: 'Intelligence',
+    items: [
+      { path: '/',              label: 'Alert Queue',    icon: AlertTriangle,  end: true },
+      { path: '/network',       label: 'Network Graph',  icon: Network },
+      { path: '/investigation', label: 'Investigation',  icon: Search },
+      { path: '/typology',      label: 'Typology',       icon: Fingerprint },
+      { path: '/propensity',    label: 'Propensity',     icon: TrendingUp },
+      { path: '/scam',          label: 'Scam Detection', icon: ShieldAlert },
+      { path: '/india',         label: 'India',          icon: Flag },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { path: '/analytics',     label: 'ROI Analytics',  icon: BarChart2 },
+      { path: '/compliance',    label: 'Compliance',     icon: FileCheck },
+      { path: '/onboarding',    label: 'Onboarding',     icon: UserCheck },
+      { path: '/judge',         label: 'Judge View',     icon: Presentation },
+    ],
+  },
 ];
 
 export default function Sidebar({ stats, collapsed, onToggle }) {
@@ -70,36 +87,39 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
 
       {/* ── Nav ── */}
       <nav className="sidebar-nav">
-        {!collapsed && (
-          <div className="sidebar-section-label">Navigation</div>
-        )}
+        {NAV_SECTIONS.map(section => (
+          <React.Fragment key={section.label}>
+            {!collapsed && (
+              <div className="sidebar-section-label">{section.label}</div>
+            )}
+            {section.items.map(item => {
+              const isActive = item.end
+                ? location.pathname === item.path
+                : location.pathname.startsWith(item.path);
+              const Icon = item.icon;
 
-        {NAV_ITEMS.map(item => {
-          const isActive = item.end
-            ? location.pathname === item.path
-            : location.pathname.startsWith(item.path);
-          const Icon = item.icon;
-
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
-              title={collapsed ? item.label : undefined}
-            >
-              {isActive && <div className="sidebar-active-bar" />}
-              <span className="sidebar-link-icon">
-                <Icon size={14} />
-              </span>
-              {!collapsed && (
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
-                  {item.label}
-                </span>
-              )}
-            </NavLink>
-          );
-        })}
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.end}
+                  className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
+                  title={collapsed ? item.label : undefined}
+                >
+                  {isActive && <div className="sidebar-active-bar" />}
+                  <span className="sidebar-link-icon">
+                    <Icon size={14} />
+                  </span>
+                  {!collapsed && (
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
+                      {item.label}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </React.Fragment>
+        ))}
       </nav>
 
       {/* ── Alert Stats ── */}

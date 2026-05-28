@@ -188,6 +188,24 @@ class PersistenceLayer:
             return self._neo4j.get_graph_stats()
         return None
 
+    # ── Graph cross-check (onboarding) ────────────────────────────────────
+
+    def find_flagged_neighbors(
+        self,
+        device_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        phone: Optional[str] = None,
+    ) -> Dict:
+        """Check graph for flagged neighbors. Returns empty result if Neo4j unavailable."""
+        if self._use_neo4j:
+            try:
+                return self._neo4j.find_flagged_neighbors(
+                    device_id=device_id, ip_address=ip_address, phone=phone,
+                )
+            except Exception as exc:
+                logger.warning("Graph cross-check failed: %s", exc)
+        return {"flagged_count": 0, "flagged_accounts": [], "cluster_ids": []}
+
     def close(self):
         if self._neo4j:
             self._neo4j.close()

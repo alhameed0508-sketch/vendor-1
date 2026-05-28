@@ -21,6 +21,9 @@ class OnboardingAssessRequest(BaseModel):
     similar_name_count: int = Field(0, ge=0)
     high_risk_geography: bool = False
     application_hour: int = Field(0, ge=0, le=23)
+    device_fingerprint: Optional[str] = None
+    ip_address: Optional[str] = None
+    phone_number: Optional[str] = None
 
 
 class OnboardingBatchRequest(BaseModel):

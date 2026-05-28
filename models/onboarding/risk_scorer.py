@@ -66,19 +66,20 @@ class OnboardingRiskResult:
 
 SIGNAL_WEIGHTS: Dict[str, float] = {
     "account_age": 0.10,
-    "kyc_completeness": 0.12,
+    "kyc_completeness": 0.08,
     "document_verification_speed": 0.06,
-    "device_fingerprint_overlap": 0.10,
+    "device_fingerprint_overlap": 0.08,
     "ip_geolocation_mismatch": 0.08,
     "phone_number_age": 0.06,
     "email_age": 0.06,
     "address_verification": 0.05,
     "selfie_match": 0.08,
-    "application_velocity": 0.09,
+    "application_velocity": 0.07,
     "similar_name_accounts": 0.05,
     "high_risk_geography": 0.05,
     "nocturnal_application": 0.04,
     "dormancy_after_onboarding": 0.06,
+    "graph_cross_check": 0.08,
 }
 
 
@@ -217,6 +218,19 @@ def _score_dormancy_after_onboarding(days_inactive: float, total_days: float) ->
     return 0.0
 
 
+def _score_graph_cross_check(flagged_count: int, cluster_count: int = 0) -> float:
+    """Device/IP/phone linked to known mule cluster accounts in graph."""
+    if flagged_count <= 0:
+        return 0.0
+    if flagged_count >= 5:
+        return 1.0
+    score = min(1.0, flagged_count * 0.25)
+    # Boost if connected to multiple clusters
+    if cluster_count >= 2:
+        score = min(1.0, score + 0.15)
+    return score
+
+
 # ── Reason code mappings ────────────────────────────────────────────────────
 
 REASON_CODES = {
@@ -234,15 +248,40 @@ REASON_CODES = {
     "high_risk_geography": ("OB12", "High-risk geographic region"),
     "nocturnal_application": ("OB13", "Application submitted during unusual hours"),
     "dormancy_after_onboarding": ("OB14", "Account dormant after onboarding"),
+    "graph_cross_check": ("OB15", "Device/IP/phone linked to known mule cluster in graph"),
 }
 
 # Threshold above which a signal generates a reason code
 REASON_THRESHOLD = 0.3
 
 
+# ── Helper functions ────────────────────────────────────────────────────────
+
+def _get_graph_check_result(application: Dict, graph_checker=None):
+    """Get flagged count and cluster count from graph checker or application data."""
+    if graph_checker is not None:
+        try:
+            result = graph_checker(
+                device_id=application.get("device_fingerprint"),
+                ip_address=application.get("ip_address"),
+                phone=application.get("phone_number"),
+            )
+            return (result.get("flagged_count", 0), len(result.get("cluster_ids", [])))
+        except Exception:
+            return (0, 0)
+    # Fallback: use pre-computed values from application dict
+    return (
+        application.get("graph_flagged_count", 0),
+        application.get("graph_cluster_count", 0),
+    )
+
+
 # ── Main assessment function ────────────────────────────────────────────────
 
-def assess_onboarding_risk(application: Dict) -> OnboardingRiskResult:
+def assess_onboarding_risk(
+    application: Dict,
+    graph_checker=None,
+) -> OnboardingRiskResult:
     """
     Score an account application for mule risk.
 
@@ -310,6 +349,9 @@ def assess_onboarding_risk(application: Dict) -> OnboardingRiskResult:
         "dormancy_after_onboarding": _score_dormancy_after_onboarding(
             application.get("days_inactive", 0),
             application.get("total_account_days", 0),
+        ),
+        "graph_cross_check": _score_graph_cross_check(
+            *_get_graph_check_result(application, graph_checker)
         ),
     }
 
