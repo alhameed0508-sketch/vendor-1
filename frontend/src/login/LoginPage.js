@@ -51,17 +51,9 @@ function TypewriterText({ texts, speed = 80, pause = 2200 }) {
 function FloatingBadge({ icon: Icon, label, delay, x, y }) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.5 }}
-      animate={{
-        opacity: [0, 0.6, 0.4],
-        scale: [0.5, 1, 0.95],
-        y: [0, -8, 0, 8, 0],
-      }}
-      transition={{
-        opacity: { duration: 1.5, delay },
-        scale: { duration: 1.5, delay },
-        y: { duration: 6, repeat: Infinity, ease: 'easeInOut', delay: delay + 1 },
-      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 0.35 }}
+      transition={{ duration: 1.5, delay }}
       style={{
         position: 'absolute',
         left: x,
@@ -69,21 +61,20 @@ function FloatingBadge({ icon: Icon, label, delay, x, y }) {
         display: 'flex',
         alignItems: 'center',
         gap: 6,
-        padding: '6px 12px',
-        background: 'rgba(99, 102, 241, 0.06)',
-        border: '1px solid rgba(99, 102, 241, 0.12)',
-        borderRadius: 20,
-        backdropFilter: 'blur(12px)',
+        padding: '5px 10px',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
+        borderRadius: 16,
         pointerEvents: 'none',
         zIndex: 1,
       }}
     >
-      <Icon size={11} color="#818CF8" />
+      <Icon size={10} color="var(--text-muted)" />
       <span style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 9,
-        color: 'rgba(129, 140, 248, 0.7)',
-        letterSpacing: '0.8px',
+        color: 'var(--text-muted)',
+        letterSpacing: '0.5px',
         textTransform: 'uppercase',
         whiteSpace: 'nowrap',
       }}>
@@ -149,58 +140,34 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
         style={{ width: '100%', maxWidth: 420, padding: 24, position: 'relative', zIndex: 2 }}
       >
-        {/* Outer glow ring */}
-        <div style={{
-          position: 'absolute',
-          inset: -1,
-          borderRadius: 17,
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.2), rgba(34,211,238,0.15), rgba(99,102,241,0.3))',
-          backgroundSize: '300% 300%',
-          animation: 'borderShimmer 6s ease infinite',
-          filter: 'blur(1px)',
-          zIndex: -1,
-        }} />
-
         <GlassCard className="p-8" hover={false} style={{
-          background: 'rgba(8, 14, 30, 0.88)',
-          backdropFilter: 'blur(40px) saturate(200%)',
-          border: '1px solid rgba(99, 102, 241, 0.12)',
+          background: 'rgba(14, 14, 22, 0.92)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
         }}>
           {/* Logo */}
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <motion.div
               style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                background: 'linear-gradient(135deg, #6366F1 0%, #A78BFA 50%, #22D3EE 100%)',
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #6366F1 0%, #818CF8 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 20px',
-                boxShadow: '0 0 40px rgba(99,102,241,0.45), 0 0 80px rgba(139,92,246,0.20), 0 0 120px rgba(34,211,238,0.10)',
-                position: 'relative',
+                boxShadow: '0 0 24px rgba(99,102,241,0.25), 0 4px 12px rgba(0,0,0,0.4)',
               }}
-              initial={{ scale: 0, rotate: -180 }}
+              initial={{ scale: 0, rotate: -90 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+              transition={{ type: 'spring', stiffness: 180, damping: 14, delay: 0.2 }}
             >
-              {/* Logo shimmer */}
-              <div style={{
-                position: 'absolute',
-                inset: -2,
-                borderRadius: 18,
-                background: 'conic-gradient(from 0deg, transparent 0%, rgba(255,255,255,0.1) 10%, transparent 20%)',
-                animation: 'spin 4s linear infinite',
-              }} />
               <span style={{
                 color: '#fff',
-                fontSize: 22,
-                fontWeight: 800,
+                fontSize: 20,
+                fontWeight: 700,
                 fontFamily: 'var(--font-display)',
                 letterSpacing: '-0.5px',
-                position: 'relative',
-                zIndex: 1,
               }}>
                 MC
               </span>
@@ -211,13 +178,11 @@ export default function LoginPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               style={{
-                fontSize: 26,
+                fontSize: 24,
                 fontWeight: 700,
                 fontFamily: 'var(--font-display)',
-                background: 'linear-gradient(135deg, #F1F5F9 0%, #A78BFA 50%, #22D3EE 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
+                color: 'var(--text-primary)',
+                letterSpacing: '-0.3px',
                 marginBottom: 8,
               }}
             >
@@ -280,17 +245,16 @@ export default function LoginPage() {
                   onBlur={() => setFocused(null)}
                   style={{
                     width: '100%',
-                    padding: '11px 14px',
-                    background: focused === 'username' ? 'rgba(99,102,241,0.06)' : 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'username' ? 'rgba(99,102,241,0.4)' : 'var(--border)'}`,
-                    borderRadius: 10,
+                    padding: '10px 14px',
+                    background: 'var(--bg-elevated)',
+                    border: `1px solid ${focused === 'username' ? 'rgba(99,102,241,0.35)' : 'var(--border-strong)'}`,
+                    borderRadius: 8,
                     color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: 13,
                     outline: 'none',
-                    transition: 'all 0.25s ease',
+                    transition: 'border-color 0.15s ease',
                     boxSizing: 'border-box',
-                    boxShadow: focused === 'username' ? '0 0 20px rgba(99,102,241,0.12)' : 'none',
                   }}
                 />
               </div>
@@ -326,17 +290,16 @@ export default function LoginPage() {
                   onBlur={() => setFocused(null)}
                   style={{
                     width: '100%',
-                    padding: '11px 42px 11px 14px',
-                    background: focused === 'password' ? 'rgba(99,102,241,0.06)' : 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'password' ? 'rgba(99,102,241,0.4)' : 'var(--border)'}`,
-                    borderRadius: 10,
+                    padding: '10px 42px 10px 14px',
+                    background: 'var(--bg-elevated)',
+                    border: `1px solid ${focused === 'password' ? 'rgba(99,102,241,0.35)' : 'var(--border-strong)'}`,
+                    borderRadius: 8,
                     color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: 13,
                     outline: 'none',
-                    transition: 'all 0.25s ease',
+                    transition: 'border-color 0.15s ease',
                     boxSizing: 'border-box',
-                    boxShadow: focused === 'password' ? '0 0 20px rgba(99,102,241,0.12)' : 'none',
                   }}
                 />
                 <button
@@ -399,41 +362,32 @@ export default function LoginPage() {
               transition={{ delay: 0.7 }}
               style={{
                 width: '100%',
-                padding: '13px',
+                padding: '12px',
                 fontSize: 13,
                 fontWeight: 600,
-                letterSpacing: '0.5px',
+                letterSpacing: '0.3px',
                 fontFamily: 'var(--font-sans)',
                 borderRadius: 10,
                 border: 'none',
                 cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
                 background: loading || !username || !password
-                  ? 'rgba(99,102,241,0.2)'
-                  : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A78BFA 100%)',
-                color: loading || !username || !password ? 'rgba(255,255,255,0.4)' : '#fff',
+                  ? 'rgba(99,102,241,0.15)'
+                  : '#6366F1',
+                color: loading || !username || !password ? 'rgba(255,255,255,0.35)' : '#fff',
                 boxShadow: loading || !username || !password
                   ? 'none'
-                  : '0 0 20px rgba(99,102,241,0.35), 0 4px 12px rgba(0,0,0,0.4)',
-                transition: 'all 0.3s ease',
+                  : '0 2px 10px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease',
                 position: 'relative',
                 overflow: 'hidden',
               }}
               whileHover={!loading && username && password ? {
-                boxShadow: '0 0 32px rgba(99,102,241,0.50), 0 0 60px rgba(139,92,246,0.20), 0 4px 16px rgba(0,0,0,0.5)',
+                boxShadow: '0 4px 20px rgba(99,102,241,0.35), 0 2px 8px rgba(0,0,0,0.4)',
                 y: -1,
               } : {}}
               whileTap={!loading && username && password ? { scale: 0.98, y: 0 } : {}}
             >
-              {/* Button shimmer */}
-              {!loading && username && password && (
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 45%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.08) 55%, transparent 60%)',
-                  animation: 'shimmer 3s ease-in-out infinite',
-                }} />
-              )}
-              <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {loading && (
                   <motion.div
                     animate={{ rotate: 360 }}

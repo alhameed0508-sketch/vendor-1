@@ -1119,7 +1119,7 @@ export default function IndiaCompliancePage() {
             fontFamily: 'var(--font-sans)',
             fontSize: 28,
             fontWeight: 700,
-            letterSpacing: '-1px',
+            letterSpacing: '-0.5px',
             margin: 0,
           }}>
             India Compliance

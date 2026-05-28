@@ -37,7 +37,7 @@ const TABLE_HEADER = {
   textTransform: 'uppercase',
   fontWeight: 700,
   color: 'var(--text-muted)',
-  background: 'rgba(15,20,33,0.60)',
+  background: 'var(--bg-card)',
 };
 
 /* ── Priority score color ── */
@@ -394,7 +394,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   marginBottom: 16,
                   padding: '12px 16px',
-                  background: 'rgba(15,20,33,0.50)',
+                  background: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                   borderRadius: 8,
                 }}>
@@ -403,7 +403,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                     <div style={{
                       fontFamily: 'var(--font-mono)',
                       fontSize: 24,
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: getPriorityColor(caseFile.case_strength || 0),
                       letterSpacing: '-0.5px',
                       lineHeight: 1,
@@ -436,7 +436,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                   {/* Account IDs */}
                   <div style={{
                     padding: '12px 16px',
-                    background: 'rgba(15,20,33,0.40)',
+                    background: 'var(--bg-elevated)',
                     border: '1px solid var(--border)',
                     borderRadius: 8,
                   }}>
@@ -465,7 +465,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                   {/* Timeline */}
                   <div style={{
                     padding: '12px 16px',
-                    background: 'rgba(15,20,33,0.40)',
+                    background: 'var(--bg-elevated)',
                     border: '1px solid var(--border)',
                     borderRadius: 8,
                   }}>
@@ -502,7 +502,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                 {/* Evidence items */}
                 <div style={{
                   padding: '12px 16px',
-                  background: 'rgba(15,20,33,0.40)',
+                  background: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                   borderRadius: 8,
                 }}>
@@ -734,7 +734,7 @@ function CopilotSection({ alerts }) {
               marginBottom: 12,
               padding: '12px 4px',
               borderRadius: 8,
-              background: 'rgba(15,20,33,0.30)',
+              background: 'var(--bg-elevated)',
               border: '1px solid var(--border)',
             }}
           >
@@ -940,7 +940,7 @@ export default function InvestigationPage() {
           <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 26,
-            fontWeight: 800,
+            fontWeight: 700,
             letterSpacing: '-0.5px',
             margin: 0,
           }}>

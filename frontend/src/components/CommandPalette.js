@@ -75,7 +75,6 @@ export default function CommandPalette({ alerts: alertsProp }) {
               label="Command Palette"
               style={{
                 background: 'var(--tooltip-bg)',
-                backdropFilter: 'blur(20px)',
                 border: '1px solid var(--tooltip-border)',
                 borderRadius: 'var(--radius-lg)',
                 overflow: 'hidden',

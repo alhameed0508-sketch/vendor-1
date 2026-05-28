@@ -10,8 +10,6 @@ import { apiFetch } from '../auth/api';
 
 const cardStyle = {
   background: 'rgba(12, 18, 32, 0.65)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
   border: '1px solid rgba(255,255,255,0.07)',
   borderRadius: 12,
   padding: '22px 24px',
@@ -34,7 +32,7 @@ function StatCard({ label, value, color, icon: Icon, sub, index }) {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
         {Icon && <div style={{ color, opacity: 0.5 }}><Icon size={13} /></div>}
       </div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color, letterSpacing: '-1px', lineHeight: 1, marginBottom: sub ? 6 : 0 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, letterSpacing: '-0.5px', lineHeight: 1, marginBottom: sub ? 6 : 0 }}>{value}</div>
       {sub && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.3px' }}>{sub}</div>}
     </motion.div>
   );
@@ -330,7 +328,7 @@ export default function SystemOpsPage() {
                     <div key={item.label} style={{
                       background: `${item.color}08`, border: `1px solid ${item.color}15`, borderRadius: 10, padding: '18px 20px',
                     }}>
-                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: item.color, letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 6 }}>{item.value}</div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: item.color, letterSpacing: '-0.5px', lineHeight: 1, marginBottom: 6 }}>{item.value}</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>{item.label}</div>
                     </div>
                   ))}

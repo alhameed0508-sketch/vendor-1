@@ -65,7 +65,7 @@ const labelStyle = {
 const inputStyle = {
   width: '100%',
   padding: '8px 10px',
-  background: 'rgba(15,20,33,0.6)',
+  background: 'var(--bg-card)',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: 6,
   color: 'var(--text-primary)',
@@ -231,7 +231,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
               <tr style={{
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
                 position: 'sticky', top: 0,
-                background: 'rgba(15,20,33,0.95)',
+                background: 'var(--bg-surface)',
                 backdropFilter: 'blur(10px)',
               }}>
                 {['Sender', 'Receiver', 'Victim', 'Mule', 'Combined', 'Recommendation', 'Status'].map(h => (
@@ -1019,7 +1019,7 @@ export default function ScamDetectionPage() {
             <h1 className="gradient-text" style={{
               fontFamily: 'var(--font-display)',
               fontSize: 26,
-              fontWeight: 800,
+              fontWeight: 700,
               letterSpacing: '-0.5px',
               margin: 0,
             }}>

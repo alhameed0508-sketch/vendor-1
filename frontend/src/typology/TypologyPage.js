@@ -30,9 +30,7 @@ function TypologyCard({ typology, count, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
       style={{
-        background: 'rgba(15,20,33,0.70)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: 'var(--bg-card)',
         border: '1px solid rgba(255,255,255,0.06)',
         borderRadius: 10,
         padding: '16px 18px',
@@ -82,9 +80,9 @@ function TypologyCard({ typology, count, index }) {
       <div style={{
         fontFamily: 'var(--font-display)',
         fontSize: 28,
-        fontWeight: 800,
+        fontWeight: 700,
         color: typology.color,
-        letterSpacing: '-1px',
+        letterSpacing: '-0.5px',
         lineHeight: 1,
         marginBottom: 6,
       }}>
@@ -490,7 +488,7 @@ export default function TypologyPage() {
           <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 26,
-            fontWeight: 800,
+            fontWeight: 700,
             letterSpacing: '-0.5px',
             margin: 0,
             marginBottom: 4,
@@ -600,9 +598,7 @@ export default function TypologyPage() {
             transition={{ duration: 0.3, delay: 0.25 }}
           >
             <div style={{
-              background: 'rgba(15,20,33,0.60)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
+              background: 'var(--bg-card)',
               border: '1px solid var(--border)',
               borderRadius: 10,
               overflow: 'hidden',

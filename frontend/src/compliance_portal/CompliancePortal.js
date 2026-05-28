@@ -77,7 +77,7 @@ export default function CompliancePortal() {
     <div style={{ padding: 24 }}>
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
-          <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Compliance Portal</h1>
+          <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Compliance Portal</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
             Suspicious Transaction Report (STR) generation · FIU-IND format · RBI AML/CFT compliance
           </p>
@@ -101,9 +101,9 @@ export default function CompliancePortal() {
                 transition={{ delay: 0.1 + i * 0.05 }}
                 style={{ padding: '0 20px' }}
               >
-                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'var(--font-mono)', color: s.color }}>
+                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)', color: s.color }}>
                   {typeof s.value === 'number' ? (
-                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: 'var(--font-mono)' }} />
+                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }} />
                   ) : s.value}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>

@@ -6,8 +6,6 @@ import { apiFetch } from '../auth/api';
 
 const cardStyle = {
   background: 'rgba(12, 18, 32, 0.65)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
   border: '1px solid rgba(255,255,255,0.07)',
   borderRadius: 12,
   padding: '22px 24px',
@@ -35,7 +33,7 @@ function StatCard({ label, value, color, icon: Icon, index }) {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
         {Icon && <div style={{ color, opacity: 0.5 }}><Icon size={13} /></div>}
       </div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, color, letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, letterSpacing: '-0.5px', lineHeight: 1 }}>{value}</div>
     </motion.div>
   );
 }

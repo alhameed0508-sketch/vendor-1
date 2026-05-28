@@ -64,28 +64,22 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
       {/* ── System health indicator ── */}
       {!collapsed && (
         <div style={{
-          margin: '0 8px 8px',
-          padding: '8px 10px',
-          background: 'rgba(99,102,241,0.06)',
-          border: '1px solid rgba(99,102,241,0.15)',
-          borderRadius: 6,
+          margin: '0 12px 8px',
           display: 'flex',
           alignItems: 'center',
-          gap: 7,
+          gap: 6,
         }}>
           <div style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#818CF8',
-            animation: 'emeraldPulse 2s ease-in-out infinite',
+            width: 5, height: 5, borderRadius: '50%',
+            background: '#10B981',
             flexShrink: 0,
           }} />
           <span style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 10,
-            color: '#818CF8',
-            letterSpacing: '0.8px',
-            textTransform: 'uppercase',
-          }}>System Online</span>
+            color: 'var(--text-muted)',
+            letterSpacing: '0.5px',
+          }}>Online</span>
         </div>
       )}
 
@@ -128,22 +122,20 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
 
       {/* ── Alert Stats ── */}
       {!collapsed && stats && totalAlerts > 0 && (
-        <div style={{ padding: '0 8px 8px' }}>
+        <div style={{ padding: '0 8px 6px' }}>
           <div style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '10px 12px',
+            borderTop: '1px solid var(--border)',
+            padding: '10px 8px 4px',
           }}>
             <div style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 9,
               color: 'var(--text-faint)',
-              letterSpacing: '1.5px',
+              letterSpacing: '1px',
               textTransform: 'uppercase',
-              marginBottom: 8,
-              fontWeight: 700,
-            }}>Live Queue</div>
+              marginBottom: 6,
+              fontWeight: 600,
+            }}>Queue</div>
 
             {[
               { label: 'Critical', value: stats.critical, color: 'var(--critical)' },
@@ -154,7 +146,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 5,
+                marginBottom: 3,
                 gap: 8,
               }}>
                 <span style={{
@@ -164,12 +156,9 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 }}>{s.label}</span>
                 <span style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 12,
+                  fontSize: 11,
                   color: s.color,
-                  fontWeight: 700,
-                  background: `${s.color}15`,
-                  padding: '1px 6px',
-                  borderRadius: 4,
+                  fontWeight: 600,
                 }}>{s.value}</span>
               </div>
             ))}

@@ -54,8 +54,6 @@ function MetricCard({ label, value, sub, color, accent, index }) {
       variants={cardAnim}
       style={{
         background: 'rgba(12, 18, 32, 0.65)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.07)',
         borderRadius: 12,
         padding: '22px 24px',
@@ -87,9 +85,9 @@ function MetricCard({ label, value, sub, color, accent, index }) {
       <div style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 32,
-        fontWeight: 800,
+        fontWeight: 700,
         color,
-        letterSpacing: '-1px',
+        letterSpacing: '-0.5px',
         lineHeight: 1,
         marginBottom: 10,
       }}>{value}</div>
@@ -103,8 +101,6 @@ function ChartPanel({ title, children }) {
   return (
     <div style={{
       background: 'rgba(12, 18, 32, 0.65)',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
       border: '1px solid rgba(255,255,255,0.07)',
       borderRadius: 12,
       padding: '22px 24px',
@@ -340,7 +336,7 @@ export default function ROIDashboard() {
                     borderRadius: 8,
                     padding: '14px 16px',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 800, color: c, letterSpacing: '-0.5px' }}>{v}</div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: c, letterSpacing: '-0.5px' }}>{v}</div>
                     <div style={{ fontSize: 11, color: '#4A5568', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{l}</div>
                   </div>
                 ))}

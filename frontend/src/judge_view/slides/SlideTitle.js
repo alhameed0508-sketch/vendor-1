@@ -12,7 +12,7 @@ export default function SlideTitle({ title, subtitle }) {
         fontFamily: 'var(--font-display)',
         fontSize: 36,
         fontWeight: 700,
-        letterSpacing: '-1px',
+        letterSpacing: '-0.5px',
         background: 'var(--gradient-brand)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',

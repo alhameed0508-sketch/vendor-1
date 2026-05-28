@@ -96,7 +96,7 @@ export default function OnboardingRisk() {
           </div>
           <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-sans)', fontSize: 28, fontWeight: 700,
-            letterSpacing: '-1px', margin: 0,
+            letterSpacing: '-0.5px', margin: 0,
           }}>
             Onboarding Risk Scorer
           </h1>

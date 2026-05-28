@@ -351,7 +351,7 @@ function AccountDetail({ detail, loading, error }) {
             <div style={{
               fontFamily: 'var(--font-display)',
               fontSize: 48,
-              fontWeight: 800,
+              fontWeight: 700,
               color: overallColor,
               letterSpacing: '-2px',
               lineHeight: 1,
@@ -545,7 +545,7 @@ export default function PropensityPage() {
           <h1 className="gradient-text" style={{
             fontFamily: 'var(--font-display)',
             fontSize: 26,
-            fontWeight: 800,
+            fontWeight: 700,
             letterSpacing: '-0.5px',
             margin: 0,
           }}>
@@ -595,8 +595,6 @@ export default function PropensityPage() {
         <AnimateIn delay={0.05}>
           <GlassCard padding={0} hover={false} style={{
             background: 'rgba(12,18,32,0.65)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: 12,
             overflow: 'hidden',
@@ -650,8 +648,6 @@ export default function PropensityPage() {
         <AnimateIn delay={0.12}>
           <GlassCard padding={0} hover={false} style={{
             background: 'rgba(12,18,32,0.65)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255,255,255,0.07)',
             borderRadius: 12,
             overflow: 'hidden',

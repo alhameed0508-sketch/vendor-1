@@ -10,53 +10,35 @@ import { apiFetch } from '../auth/api';
 function StatCard({ label, value, color, icon: Icon, sub, index }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
+      transition={{ delay: index * 0.05, duration: 0.3, ease: 'easeOut' }}
       style={{
-        background: 'rgba(15,20,33,0.70)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
         borderRadius: 10,
         padding: '16px 18px',
         position: 'relative',
-        overflow: 'hidden',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
         cursor: 'default',
+        transition: 'border-color 0.2s ease',
       }}
       whileHover={{
-        borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}18`,
-        y: -1,
-        transition: { duration: 0.2 },
+        borderColor: 'rgba(255,255,255,0.10)',
+        transition: { duration: 0.15 },
       }}
     >
-      {/* Glow behind value */}
-      <div style={{
-        position: 'absolute', top: -20, right: -20,
-        width: 80, height: 80,
-        background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-      {/* Top accent */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, ${color}60, transparent)`,
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
         <div style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: 10,
           color: 'var(--text-muted)',
-          letterSpacing: '1.2px',
+          letterSpacing: '0.5px',
           textTransform: 'uppercase',
-          fontWeight: 700,
+          fontWeight: 500,
         }}>{label}</div>
         {Icon && (
-          <div style={{ color, opacity: 0.5 }}>
-            <Icon size={13} />
+          <div style={{ color: 'var(--text-faint)', opacity: 0.7 }}>
+            <Icon size={14} />
           </div>
         )}
       </div>
@@ -64,19 +46,19 @@ function StatCard({ label, value, color, icon: Icon, sub, index }) {
       <div style={{
         fontFamily: 'var(--font-display)',
         fontSize: 28,
-        fontWeight: 800,
+        fontWeight: 700,
         color,
-        letterSpacing: '-1px',
+        letterSpacing: '-0.5px',
         lineHeight: 1,
-        marginBottom: sub ? 6 : 0,
+        marginBottom: sub ? 8 : 0,
       }}>{value}</div>
 
       {sub && (
         <div style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 10,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.3px',
+          color: 'var(--text-faint)',
+          letterSpacing: '0.2px',
         }}>{sub}</div>
       )}
     </motion.div>
@@ -236,50 +218,30 @@ export default function Dashboard() {
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h1 className="gradient-text" style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 26,
-              fontWeight: 800,
-              letterSpacing: '-0.5px',
-              margin: 0,
-            }}>
-              Alert Queue
-            </h1>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(99,102,241,0.08)',
-              border: '1px solid rgba(99,102,241,0.2)',
-              borderRadius: 5,
-              padding: '2px 8px',
-            }}>
-              <div style={{
-                width: 5, height: 5, borderRadius: '50%',
-                background: '#818CF8',
-                animation: 'emeraldPulse 2s ease-in-out infinite',
-              }} />
-              <span style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: 9,
-                color: '#818CF8',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                fontWeight: 700,
-              }}>Live</span>
-            </div>
-          </div>
+          <h1 className="gradient-text" style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: '-0.3px',
+            margin: '0 0 4px',
+          }}>
+            Alert Queue
+          </h1>
           <p style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 11,
+            fontSize: 12,
             color: 'var(--text-muted)',
-            letterSpacing: '0.3px',
+            letterSpacing: '0.2px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
           }}>
-            <span style={{ color: 'rgba(99,102,241,0.6)' }}>//</span>
-            {' '}{filtered.length} alerts
-            {stats.critical > 0 && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
-            {stats.high > 0     && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
-            {stats.open > 0     && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span>{stats.open} open</span></>}
-            {parseFloat(stats.total) > 0 && <><span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>₹{stats.total}L flagged</span></>}
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
+            {filtered.length} alerts
+            {stats.critical > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
+            {stats.high > 0     && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
+            {stats.open > 0     && <><span style={{ color: 'var(--text-faint)' }}>·</span><span>{stats.open} open</span></>}
+            {parseFloat(stats.total) > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>₹{stats.total}L</span></>}
           </p>
         </div>
 
@@ -306,12 +268,11 @@ export default function Dashboard() {
         display: 'flex',
         alignItems: 'center',
         gap: 0,
-        marginBottom: 16,
+        marginBottom: 0,
         borderBottom: '1px solid var(--border)',
-        background: 'rgba(15,20,33,0.4)',
-        borderRadius: '8px 8px 0 0',
-        padding: '0 4px',
-        backdropFilter: 'blur(10px)',
+        background: 'var(--bg-card)',
+        borderRadius: '10px 10px 0 0',
+        padding: '2px 4px',
         overflow: 'auto',
       }}>
         <span className="filter-label">Severity</span>
@@ -352,14 +313,11 @@ export default function Dashboard() {
           transition={{ duration: 0.3 }}
         >
           <div style={{
-            background: 'rgba(15,20,33,0.60)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            background: 'var(--bg-card)',
             border: '1px solid var(--border)',
             borderTop: 'none',
             borderRadius: '0 0 10px 10px',
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
           }}>
             {filtered.length === 0 ? (
               <EmptyState hasFilters={hasFilters} />
