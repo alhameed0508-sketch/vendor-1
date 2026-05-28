@@ -92,17 +92,16 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
     nodes.forEach(n => { nodeMap[n.account_id] = n; });
 
     // Build D3 nodes & links
-    // For small graphs, start at center for spawn effect; for large graphs, spread out
-    // to prevent the force simulation from flinging nodes off-screen
     const isLargeGraph = nodes.length > 30;
     const graphNodes = nodes.map((n, i) => {
-      if (isLargeGraph) {
-        // Distribute in a circle around center to give the simulation a stable start
-        const angle = (2 * Math.PI * i) / nodes.length;
-        const radius = Math.min(width, height) * 0.3;
-        return { ...n, id: n.account_id, x: width / 2 + radius * Math.cos(angle), y: height / 2 + radius * Math.sin(angle) };
-      }
-      return { ...n, id: n.account_id, x: width / 2, y: height / 2 };
+      // Spread nodes in a circle so the simulation starts stable
+      const angle = (2 * Math.PI * i) / nodes.length;
+      const radius = isLargeGraph ? Math.min(width, height) * 0.35 : 0;
+      return {
+        ...n, id: n.account_id,
+        x: width / 2 + radius * Math.cos(angle),
+        y: height / 2 + radius * Math.sin(angle),
+      };
     });
     const graphLinks = edges.map(e => ({
       source: e.from_account,
@@ -113,18 +112,43 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
       timestamps: e.timestamps || [],
     })).filter(e => nodeMap[e.source] && nodeMap[e.target]);
 
-    // Force simulation — scale charge strength with node count to prevent explosion
-    const chargeStrength = isLargeGraph ? Math.max(-120, -3000 / nodes.length) : -300;
-    const linkDistance = isLargeGraph ? 60 : 90;
+    // Force simulation — tuned for graph size
     const simulation = d3.forceSimulation(graphNodes)
-      .force('link', d3.forceLink(graphLinks).id(d => d.id).distance(linkDistance).strength(0.4))
-      .force('charge', d3.forceManyBody().strength(chargeStrength))
+      .force('link', d3.forceLink(graphLinks).id(d => d.id)
+        .distance(isLargeGraph ? 50 : 90)
+        .strength(0.5))
+      .force('charge', d3.forceManyBody()
+        .strength(isLargeGraph ? -150 : -300))
       .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(d => ROLE_RADIUS[d.role] + (isLargeGraph ? 6 : 14)))
-      .force('x', d3.forceX(width / 2).strength(isLargeGraph ? 0.08 : 0))
-      .force('y', d3.forceY(height / 2).strength(isLargeGraph ? 0.08 : 0))
-      .alpha(isLargeGraph ? 0.8 : 1.5)
-      .alphaDecay(isLargeGraph ? 0.03 : 0.02);
+      .force('collision', d3.forceCollide()
+        .radius(d => ROLE_RADIUS[d.role] + (isLargeGraph ? 4 : 14)))
+      .alpha(1)
+      .alphaDecay(0.025);
+
+    // Auto-fit: after simulation settles, zoom to fit all nodes in the viewport
+    let hasFitted = false;
+    const fitToView = () => {
+      if (hasFitted) return;
+      hasFitted = true;
+      const xs = graphNodes.map(d => d.x);
+      const ys = graphNodes.map(d => d.y);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const pad = 60;
+      const bw = (x1 - x0) + pad * 2;
+      const bh = (y1 - y0) + pad * 2;
+      if (bw <= 0 || bh <= 0) return;
+      const scale = Math.min(width / bw, height / bh, 1.5);
+      const cx = (x0 + x1) / 2;
+      const cy = (y0 + y1) / 2;
+      const tx = width / 2 - cx * scale;
+      const ty = height / 2 - cy * scale;
+      svg.transition().duration(800).ease(d3.easeCubicOut)
+        .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    };
+    simulation.on('end', fitToView);
+    // Also fit after a timeout in case simulation is slow
+    const fitTimer = setTimeout(fitToView, 3000);
 
     // Edge width scale
     const maxAmount = Math.max(...graphLinks.map(l => l.amount), 1);
@@ -142,24 +166,24 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     linkSelRef.current = link;
 
-    // Animate edges drawing in with stagger (cap total stagger for large graphs)
-    const edgeStagger = isLargeGraph ? Math.min(10, 1500 / graphLinks.length) : 80;
+    // Animate edges drawing in
+    const edgeStagger = isLargeGraph ? Math.min(8, 1200 / graphLinks.length) : 80;
     link.transition()
-      .delay((d, i) => 300 + i * edgeStagger)
-      .duration(isLargeGraph ? 300 : 600)
+      .delay((d, i) => 200 + i * edgeStagger)
+      .duration(isLargeGraph ? 250 : 600)
       .ease(d3.easeCubicOut)
       .attr('stroke-dashoffset', '0');
 
-    // Edge amount labels
+    // Edge amount labels — only show on small graphs to avoid clutter
+    const labelData = isLargeGraph ? [] : graphLinks.filter(l => l.amount > 10000);
     const linkLabel = g.append('g').selectAll('text')
-      .data(graphLinks.filter(l => l.amount > 10000)).enter().append('text')
+      .data(labelData).enter().append('text')
       .attr('fill', 'var(--text-muted)')
       .attr('font-size', 9)
       .attr('font-family', 'var(--font-mono)')
       .attr('text-anchor', 'middle')
       .attr('opacity', 0);
 
-    // Fade in labels after edges draw
     linkLabel.transition()
       .delay(800)
       .duration(400)
@@ -182,11 +206,11 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
         })
       );
 
-    // Stagger node appearance with spring-like scale (cap total stagger for large graphs)
-    const nodeStagger = isLargeGraph ? Math.min(15, 1500 / graphNodes.length) : 100;
+    // Stagger node appearance
+    const nodeStagger = isLargeGraph ? Math.min(12, 1200 / graphNodes.length) : 100;
     nodeGroup.transition()
-      .delay((d, i) => 100 + i * nodeStagger)
-      .duration(isLargeGraph ? 300 : 500)
+      .delay((d, i) => 80 + i * nodeStagger)
+      .duration(isLargeGraph ? 250 : 500)
       .ease(d3.easeBackOut.overshoot(1.5))
       .attr('opacity', 1)
       .attrTween('transform', function(d) {
@@ -236,13 +260,13 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
       .attr('font-family', 'var(--font-mono)')
       .attr('font-weight', '500');
 
-    // Account ID label below
+    // Account ID label below — truncated for large graphs to reduce clutter
     nodeGroup.append('text')
-      .text(d => d.account_id)
+      .text(d => isLargeGraph ? '...' + d.account_id.slice(-4) : d.account_id)
       .attr('text-anchor', 'middle')
       .attr('dy', d => ROLE_RADIUS[d.role] + 12)
       .attr('fill', 'var(--text-secondary)')
-      .attr('font-size', 9)
+      .attr('font-size', isLargeGraph ? 7 : 9)
       .attr('font-family', 'var(--font-mono)');
 
     // ── Multi-particle money flow system ────────────────────────────────────
@@ -419,6 +443,7 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
 
     return () => {
       activeTimers.forEach(clearTimeout);
+      clearTimeout(fitTimer);
       simulation.stop();
       d3.select(container).selectAll('div').remove();
     };
@@ -455,6 +480,7 @@ export default function NetworkGraph({ nodes = [], edges = [], timeRange = null 
   const handleReset = () => {
     if (!zoomRef.current) return;
     const { zoom: z, svg: s } = zoomRef.current;
+    // Reset to identity (shows full graph from origin)
     s.transition().duration(500).call(z.transform, d3.zoomIdentity);
   };
 
