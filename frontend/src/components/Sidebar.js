@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   AlertTriangle, BarChart2, Shield, ChevronLeft, ChevronRight,
   Activity, Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
-  Network, Search, Brain, Fingerprint, TrendingUp, ShieldAlert, Flag
+  Network, Search, Brain, Fingerprint, TrendingUp, ShieldAlert, Flag,
+  Scan, Target, Settings
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -18,6 +19,7 @@ const NAV_SECTIONS = [
       { path: '/propensity',    label: 'Propensity',     icon: TrendingUp },
       { path: '/scam',          label: 'Scam Detection', icon: ShieldAlert },
       { path: '/india',         label: 'India',          icon: Flag },
+      { path: '/screening',    label: 'Screening',     icon: Scan },
     ],
   },
   {
@@ -26,7 +28,9 @@ const NAV_SECTIONS = [
       { path: '/analytics',     label: 'ROI Analytics',  icon: BarChart2 },
       { path: '/compliance',    label: 'Compliance',     icon: FileCheck },
       { path: '/onboarding',    label: 'Onboarding',     icon: UserCheck },
+      { path: '/benchmark',    label: 'Benchmarks',    icon: Target },
       { path: '/judge',         label: 'Judge View',     icon: Presentation },
+      { path: '/system',       label: 'System Ops',    icon: Settings },
     ],
   },
 ];

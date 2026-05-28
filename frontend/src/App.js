@@ -14,6 +14,9 @@ import TypologyPage from './typology/TypologyPage';
 import PropensityPage from './propensity/PropensityPage';
 import ScamDetectionPage from './scam/ScamDetectionPage';
 import IndiaCompliancePage from './india/IndiaCompliancePage';
+import ScreeningPage from './screening/ScreeningPage';
+import BenchmarkPage from './benchmark/BenchmarkPage';
+import SystemOpsPage from './system_ops/SystemOpsPage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import BackgroundGrid from './components/ui/BackgroundGrid';
@@ -86,6 +89,9 @@ function AppContent() {
               <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
               <Route path="/judge" element={<ProtectedRoute><JudgePresentation /></ProtectedRoute>} />
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingRisk /></ProtectedRoute>} />
+              <Route path="/screening" element={<ProtectedRoute><ScreeningPage /></ProtectedRoute>} />
+              <Route path="/benchmark" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
+              <Route path="/system" element={<ProtectedRoute><SystemOpsPage /></ProtectedRoute>} />
             </Routes>
           </ErrorBoundary>
         </main>
