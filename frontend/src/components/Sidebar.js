@@ -12,7 +12,8 @@ const NAV_SECTIONS = [
   {
     label: 'Intelligence',
     items: [
-      { path: '/',              label: 'Alert Queue',    icon: AlertTriangle,  end: true },
+      { path: '/',              label: 'Dashboard',      icon: AlertTriangle,  end: true },
+      { path: '/queue',         label: 'Triage Queue',   icon: Zap },
       { path: '/network',       label: 'Network Graph',  icon: Network },
       { path: '/investigation', label: 'Investigation',  icon: Search },
       { path: '/typology',      label: 'Typology',       icon: Fingerprint },

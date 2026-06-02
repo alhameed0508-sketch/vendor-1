@@ -36,7 +36,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
     """Register auth routes on the given router."""
 
     @r.post("/login")
-    @limiter.limit("8/minute")
+    @limiter.limit("10/minute")
     def login(request: Request, req: LoginRequest):
         """Authenticate and return JWT access + refresh tokens."""
         settings = get_settings()

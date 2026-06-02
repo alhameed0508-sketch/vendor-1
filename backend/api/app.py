@@ -41,20 +41,17 @@ def create_app() -> FastAPI:
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
-    # Never allow wildcard origins with credentials (browser security risk)
-    cors_origins = [o for o in settings.cors_origins if o != "*"]
-    if not cors_origins:
-        cors_origins = ["http://localhost:3000"]
-
-    allowed_methods = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-    allowed_headers = ["Authorization", "Content-Type", "Accept", "X-Request-ID"]
+    # In production, reject wildcard origins
+    cors_origins = settings.cors_origins
+    if not settings.demo_mode and "*" in cors_origins:
+        cors_origins = [o for o in cors_origins if o != "*"]
 
     application.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=allowed_methods,
-        allow_headers=allowed_headers,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # ── Rate Limiter ──────────────────────────────────────────────────────────

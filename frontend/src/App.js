@@ -15,6 +15,7 @@ import PropensityPage from './propensity/PropensityPage';
 import ScamDetectionPage from './scam/ScamDetectionPage';
 import IndiaCompliancePage from './india/IndiaCompliancePage';
 import ScreeningPage from './screening/ScreeningPage';
+import AlertQueue from './alert_queue/AlertQueue';
 import BenchmarkPage from './benchmark/BenchmarkPage';
 import SystemOpsPage from './system_ops/SystemOpsPage';
 import Sidebar from './components/Sidebar';
@@ -78,6 +79,7 @@ function AppContent() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
               <Route path="/investigation" element={<ProtectedRoute><InvestigationPage /></ProtectedRoute>} />

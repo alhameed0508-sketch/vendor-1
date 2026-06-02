@@ -22,7 +22,7 @@ from logging.handlers import RotatingFileHandler
 
 import bcrypt as _bcrypt
 
-JWT_SECRET = os.getenv("JWT_SECRET", "INSECURE_DEV_ONLY_REPLACE_IN_PRODUCTION")
+JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME_NOT_FOR_PRODUCTION")
 JWT_ALGO = "HS256"
 JWT_EXPIRY = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
