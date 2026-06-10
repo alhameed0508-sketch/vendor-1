@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Users, ArrowRightLeft, AlertTriangle, Share2 } from 'lucide-react';
+import { RefreshCw, Users, ArrowRightLeft, AlertTriangle, Share2, X } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { apiFetch } from '../auth/api';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimateIn } from '../components/motion/AnimateIn';
+import IndiaMap from '../components/IndiaMap';
+import RegionalStatsPanel from './RegionalStatsPanel';
 import NetworkGraph from '../graph_viz/NetworkGraph';
 import TimelineSlider from '../graph_viz/TimelineSlider';
+import useAlertStream from '../hooks/useAlertStream';
+import { CITY_COORDS, CITY_TO_STATE } from '../constants/cities';
 
 /* ── Stat Card ── */
 function StatCard({ label, value, color, icon: Icon, index }) {
@@ -16,7 +21,7 @@ function StatCard({ label, value, color, icon: Icon, index }) {
       transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
       style={{
         background: 'var(--bg-card)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 10,
         padding: '16px 18px',
         position: 'relative',
@@ -26,7 +31,7 @@ function StatCard({ label, value, color, icon: Icon, index }) {
       }}
       whileHover={{
         borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}18`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`,
         y: -1,
         transition: { duration: 0.2 },
       }}
@@ -88,7 +93,6 @@ function aggregateGraphData(alerts) {
       if (!existing) {
         nodeMap.set(node.account_id, { ...node });
       } else {
-        // Keep the higher smurf_score and more severe role
         const rolePriority = { SOURCE: 4, AGGREGATOR: 3, MULE: 2, LEGITIMATE: 1, UNKNOWN: 0 };
         const existingPriority = rolePriority[existing.role] || 0;
         const newPriority = rolePriority[node.role] || 0;
@@ -120,13 +124,11 @@ function aggregateGraphData(alerts) {
           timestamps: [...(edge.timestamps || [])],
         });
       } else {
-        // Merge: sum amounts and counts, concat timestamps
         edgeMap.set(key, {
           ...existing,
           total_amount: (existing.total_amount || 0) + (edge.total_amount || 0),
           txn_count: (existing.txn_count || 0) + (edge.txn_count || 0),
           timestamps: [...(existing.timestamps || []), ...(edge.timestamps || [])],
-          // Keep the more suspicious pattern
           pattern: pickPattern(existing.pattern, edge.pattern),
         });
       }
@@ -144,6 +146,65 @@ function pickPattern(a, b) {
   return (priority[a] || 0) >= (priority[b] || 0) ? a : b;
 }
 
+/** Aggregate per-city alert/severity stats from alerts array */
+function aggregateCityData(alerts) {
+  const cities = {};
+
+  for (const alert of alerts) {
+    const nodes = alert.nodes || [];
+    const severity = alert.severity || 'MEDIUM';
+    const volume = (alert.edges || []).reduce((s, e) => s + (e.total_amount || 0), 0);
+
+    // Track which accounts we've already counted for this alert
+    const seenAccounts = new Set();
+
+    for (const node of nodes) {
+      const city = node.city;
+      if (!city || !CITY_COORDS[city]) continue;
+
+      if (!cities[city]) {
+        cities[city] = {
+          name: city,
+          coords: CITY_COORDS[city],
+          alertCount: 0,
+          criticalCount: 0,
+          highCount: 0,
+          mediumCount: 0,
+          accountCount: 0,
+          totalVolume: 0,
+          roles: new Set(),
+          _alertIds: new Set(),
+        };
+      }
+
+      const c = cities[city];
+
+      // Count unique accounts
+      if (!seenAccounts.has(node.account_id)) {
+        seenAccounts.add(node.account_id);
+        c.accountCount += 1;
+      }
+      c.roles.add(node.role);
+
+      // Count this alert once per city
+      const alertId = alert.alert_id || alert.id || JSON.stringify({ s: alert.severity, n: nodes.length });
+      if (!c._alertIds.has(alertId)) {
+        c._alertIds.add(alertId);
+        c.alertCount += 1;
+        if (severity === 'CRITICAL') c.criticalCount += 1;
+        else if (severity === 'HIGH') c.highCount += 1;
+        else c.mediumCount += 1;
+        c.totalVolume += volume;
+      }
+    }
+  }
+
+  // Clean up internal tracking field and sort by alertCount desc
+  return Object.values(cities)
+    .map(({ _alertIds, ...rest }) => rest)
+    .sort((a, b) => b.alertCount - a.alertCount);
+}
+
 /* ── Main Component ── */
 
 export default function NetworkOverview() {
@@ -151,6 +212,8 @@ export default function NetworkOverview() {
   const [graphStats, setGraphStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(null);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -178,10 +241,20 @@ export default function NetworkOverview() {
       setAlerts(alertData);
       setGraphStats(statsData);
       setLoading(false);
+      setLastUpdated(Date.now());
     });
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // SSE live updates
+  const { connected } = useAlertStream({
+    enabled: true,
+    onNewAlerts: useCallback(() => {
+      setLastUpdated(Date.now());
+      fetchData();
+    }, [fetchData]),
+  });
 
   const { nodes, edges } = useMemo(() => aggregateGraphData(alerts), [alerts]);
 
@@ -193,6 +266,51 @@ export default function NetworkOverview() {
       a => a.severity === 'CRITICAL' || a.severity === 'HIGH'
     ).length,
   }), [graphStats, nodes.length, edges.length, alerts]);
+
+  // City-level aggregation for map + stats panel
+  const cityData = useMemo(() => aggregateCityData(alerts), [alerts]);
+
+  // State-level alert counts for heatmap coloring
+  const stateAlertCounts = useMemo(() => {
+    const counts = {};
+    for (const city of cityData) {
+      const state = CITY_TO_STATE[city.name];
+      if (state) {
+        counts[state] = (counts[state] || 0) + city.alertCount;
+      }
+    }
+    return counts;
+  }, [cityData]);
+
+  // Filter nodes/edges when a city is selected
+  const filteredData = useMemo(() => {
+    if (!selectedCity) return { nodes, edges };
+
+    const cityNodeIds = new Set(
+      nodes.filter(n => n.city === selectedCity).map(n => n.account_id)
+    );
+
+    const filteredNodes = nodes.filter(n => cityNodeIds.has(n.account_id));
+    const filteredEdges = edges.filter(
+      e => cityNodeIds.has(e.from_account) || cityNodeIds.has(e.to_account)
+    );
+
+    return { nodes: filteredNodes, edges: filteredEdges };
+  }, [selectedCity, nodes, edges]);
+
+  // Handle city click — toggle selection
+  const handleCityClick = useCallback((cityName) => {
+    setSelectedCity(prev => prev === cityName ? null : cityName);
+  }, []);
+
+  // "Updated X ago" text
+  const updatedAgo = useMemo(() => {
+    try {
+      return formatDistanceToNow(lastUpdated, { addSuffix: true });
+    } catch {
+      return '';
+    }
+  }, [lastUpdated]);
 
   if (loading) {
     return (
@@ -236,39 +354,51 @@ export default function NetworkOverview() {
             }}>
               Network Intelligence
             </h1>
+
+            {/* LIVE / OFFLINE badge */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(62,231,255,0.08)',
-              border: '1px solid rgba(62,231,255,0.2)',
+              background: connected ? 'rgba(16,185,129,0.08)' : 'rgba(156,163,175,0.08)',
+              border: `1px solid ${connected ? 'rgba(16,185,129,0.25)' : 'rgba(156,163,175,0.2)'}`,
               borderRadius: 5,
               padding: '2px 8px',
             }}>
               <div style={{
                 width: 5, height: 5, borderRadius: '50%',
-                background: 'var(--accent-cyan)',
-                animation: 'emeraldPulse 2s ease-in-out infinite',
+                background: connected ? '#10B981' : '#9CA3AF',
+                animation: connected ? 'emeraldPulse 2s ease-in-out infinite' : 'none',
               }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: 9,
-                color: 'var(--accent-cyan)',
+                color: connected ? '#10B981' : '#9CA3AF',
                 letterSpacing: '1px',
                 textTransform: 'uppercase',
                 fontWeight: 700,
-              }}>Live</span>
+              }}>{connected ? 'Live' : 'Offline'}</span>
             </div>
           </div>
+
           <p style={{
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
             color: 'var(--text-muted)',
             letterSpacing: '0.3px',
             margin: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
           }}>
             <span style={{ color: 'rgba(62,231,255,0.6)' }}>//</span>
-            {' '}Transaction graph topology
-            <span style={{ margin: '0 8px', color: 'var(--text-faint)' }}>·</span>
+            Transaction graph topology
+            <span style={{ color: 'var(--text-faint)' }}>·</span>
             Real-time cluster detection
+            {updatedAgo && (
+              <>
+                <span style={{ color: 'var(--text-faint)' }}>·</span>
+                <span style={{ color: 'var(--text-faint)' }}>Updated {updatedAgo}</span>
+              </>
+            )}
           </p>
         </div>
 
@@ -314,8 +444,33 @@ export default function NetworkOverview() {
         />
       </div>
 
+      {/* Map + Regional Stats Row */}
+      <AnimateIn delay={0.1}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)',
+          gap: 16,
+          marginBottom: 24,
+        }}
+          className="network-map-grid"
+        >
+          <IndiaMap
+            nodes={nodes}
+            edges={edges}
+            onCityClick={handleCityClick}
+            selectedCity={selectedCity}
+            stateAlertCounts={stateAlertCounts}
+          />
+          <RegionalStatsPanel
+            cityData={cityData}
+            selectedCity={selectedCity}
+            onCityClick={handleCityClick}
+          />
+        </div>
+      </AnimateIn>
+
       {/* Network Graph */}
-      <AnimateIn delay={0.15}>
+      <AnimateIn delay={0.2}>
         <GlassCard
           padding={0}
           hover={false}
@@ -323,7 +478,7 @@ export default function NetworkOverview() {
             border: '1px solid var(--border)',
             borderRadius: 10,
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
           }}
         >
           {/* Graph header */}
@@ -343,8 +498,18 @@ export default function NetworkOverview() {
                 color: 'var(--text-primary)',
                 letterSpacing: '0.3px',
               }}>
-                Combined Network Graph
+                {selectedCity ? `Network Graph — ${selectedCity}` : 'Combined Network Graph'}
               </span>
+              {selectedCity && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setSelectedCity(null)}
+                  style={{ padding: '2px 8px', fontSize: 10, gap: 4 }}
+                >
+                  <X size={10} />
+                  <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.5px' }}>Clear Filter</span>
+                </button>
+              )}
             </div>
             <span style={{
               fontFamily: 'var(--font-mono)',
@@ -352,16 +517,16 @@ export default function NetworkOverview() {
               color: 'var(--text-muted)',
               letterSpacing: '0.5px',
             }}>
-              {nodes.length} nodes
+              {filteredData.nodes.length} nodes
               <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
-              {edges.length} edges
+              {filteredData.edges.length} edges
               <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
               {alerts.length} alerts merged
             </span>
           </div>
 
           {/* Graph body */}
-          {nodes.length === 0 ? (
+          {filteredData.nodes.length === 0 ? (
             <div style={{
               display: 'flex',
               flexDirection: 'column',
@@ -388,7 +553,9 @@ export default function NetworkOverview() {
                   color: 'var(--text-secondary)',
                   marginBottom: 4,
                 }}>
-                  No network data available
+                  {selectedCity
+                    ? `No network data for ${selectedCity}`
+                    : 'No network data available'}
                 </p>
                 <p style={{
                   fontFamily: 'var(--font-mono)',
@@ -396,18 +563,42 @@ export default function NetworkOverview() {
                   color: 'var(--text-muted)',
                   letterSpacing: '0.3px',
                 }}>
-                  // run detection pipeline to populate the graph
+                  {selectedCity
+                    ? '// try selecting a different city or clear the filter'
+                    : '// run detection pipeline to populate the graph'}
                 </p>
               </div>
+              {selectedCity && (
+                <button
+                  className="btn btn-ghost"
+                  onClick={() => setSelectedCity(null)}
+                  style={{ marginTop: 8 }}
+                >
+                  Clear Filter
+                </button>
+              )}
             </div>
           ) : (
             <>
-              <NetworkGraph nodes={nodes} edges={edges} timeRange={timeRange} />
-              <TimelineSlider edges={edges} onChange={setTimeRange} />
+              <NetworkGraph
+                nodes={filteredData.nodes}
+                edges={filteredData.edges}
+                timeRange={timeRange}
+              />
+              <TimelineSlider edges={filteredData.edges} onChange={setTimeRange} />
             </>
           )}
         </GlassCard>
       </AnimateIn>
+
+      {/* Responsive CSS */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .network-map-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

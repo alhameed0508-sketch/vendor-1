@@ -2,34 +2,28 @@ import React, { useState, useMemo } from 'react';
 import { ComposableMap, Geographies, Geography, Marker, Line } from 'react-simple-maps';
 import { motion } from 'framer-motion';
 import { GlassCard } from './ui/GlassCard';
+import { CITY_COORDS } from '../constants/cities';
 
-const INDIA_TOPO_URL = 'https://cdn.jsdelivr.net/npm/india-topojson@1.0.0/india.json';
+// Bundled in public/ — no external CDN dependency
+const INDIA_TOPO_URL = '/india-states.topo.json';
 
-// Major Indian city coordinates
-const CITY_COORDS = {
-  'Mumbai': [72.8777, 19.0760],
-  'Delhi': [77.1025, 28.7041],
-  'Bangalore': [77.5946, 12.9716],
-  'Chennai': [80.2707, 13.0827],
-  'Kolkata': [88.3639, 22.5726],
-  'Hyderabad': [78.4867, 17.3850],
-  'Pune': [73.8567, 18.5204],
-  'Ahmedabad': [72.5714, 23.0225],
-  'Jaipur': [75.7873, 26.9124],
-  'Lucknow': [80.9462, 26.8467],
-  'Surat': [72.8311, 21.1702],
-  'Kochi': [76.2673, 9.9312],
-  'Indore': [75.8577, 22.7196],
-  'Coimbatore': [76.9558, 11.0168],
-  'Nagpur': [79.0882, 21.1458],
-  'Bhopal': [77.4126, 23.2599],
-  'Patna': [85.1376, 25.6093],
-  'Thiruvananthapuram': [76.9366, 8.5241],
-  'Chandigarh': [76.7794, 30.7333],
-  'Guwahati': [91.7362, 26.1445],
-};
+// State heatmap color scale: 0 alerts → base, more alerts → brighter
+function stateHeatColor(count) {
+  if (!count || count <= 0) return '#121A2B';
+  if (count <= 2)  return '#1a2540';
+  if (count <= 5)  return '#1e3050';
+  if (count <= 10) return '#223b5e';
+  if (count <= 20) return '#2a4a70';
+  return '#345a85';
+}
 
-export default function IndiaMap({ nodes = [], edges = [] }) {
+export default function IndiaMap({
+  nodes = [],
+  edges = [],
+  onCityClick,
+  selectedCity = null,
+  stateAlertCounts = {},
+}) {
   const [tooltip, setTooltip] = useState(null);
 
   // Build city data from nodes
@@ -70,42 +64,40 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
       .filter(Boolean);
   }, [nodes, edges]);
 
-  if (cityData.length === 0) {
-    return (
-      <GlassCard className="p-5 text-center" hover={false}>
-        <p className="text-xs font-mono text-[var(--text-muted)]">No geographic data available for this cluster.</p>
-      </GlassCard>
-    );
-  }
-
   return (
     <GlassCard className="overflow-hidden" style={{ padding: 0 }} hover={false}>
       <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontWeight: 700, fontSize: 14 }}>Transaction Flow Map — India</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>{cityData.length} cities · {arcs.length} flows</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+          {cityData.length > 0 ? `${cityData.length} cities · ${arcs.length} flows` : 'Awaiting data'}
+        </span>
       </div>
       <div style={{ position: 'relative' }}>
         <ComposableMap
           projection="geoMercator"
           projectionConfig={{ scale: 1000, center: [80, 22] }}
-          style={{ width: '100%', height: 350, background: 'transparent' }}
+          style={{ width: '100%', height: 400, background: 'transparent' }}
         >
           <Geographies geography={INDIA_TOPO_URL}>
             {({ geographies }) =>
-              geographies.map(geo => (
-                <Geography
-                  key={geo.rpiKey || geo.properties.ST_NM}
-                  geography={geo}
-                  fill="#121A2B"
-                  stroke="rgba(30,43,66,0.8)"
-                  strokeWidth={0.5}
-                  style={{
-                    default: { outline: 'none' },
-                    hover: { fill: '#1E2B42', outline: 'none' },
-                    pressed: { outline: 'none' },
-                  }}
-                />
-              ))
+              geographies.map(geo => {
+                const stateName = geo.properties.st_nm;
+                const alertCount = stateAlertCounts[stateName] || 0;
+                return (
+                  <Geography
+                    key={geo.rsmKey || geo.properties.st_code || stateName}
+                    geography={geo}
+                    fill={stateHeatColor(alertCount)}
+                    stroke="rgba(30,43,66,0.8)"
+                    strokeWidth={0.5}
+                    style={{
+                      default: { outline: 'none' },
+                      hover: { fill: alertCount > 0 ? '#2e5580' : '#1E2B42', outline: 'none' },
+                      pressed: { outline: 'none' },
+                    }}
+                  />
+                );
+              })
             }
           </Geographies>
 
@@ -127,32 +119,53 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
           {/* City markers */}
           {cityData.map(city => {
             const hasHighRisk = city.roles.has('SOURCE') || city.roles.has('AGGREGATOR');
+            const isSelected = selectedCity === city.name;
+            const baseColor = hasHighRisk ? '#FF5C7A' : '#3EE7FF';
+            const markerRadius = isSelected ? 6 + city.count : 4 + city.count;
+
             return (
               <Marker
                 key={city.name}
                 coordinates={city.coords}
                 onMouseEnter={() => setTooltip(city)}
                 onMouseLeave={() => setTooltip(null)}
+                onClick={() => onCityClick?.(city.name)}
+                style={{ cursor: onCityClick ? 'pointer' : 'default' }}
               >
                 {/* Pulse ring for active cities */}
-                <circle r={8} fill="none" stroke={hasHighRisk ? '#FF5C7A' : '#3EE7FF'} strokeWidth={1} opacity={0.3}>
+                <circle r={8} fill="none" stroke={baseColor} strokeWidth={1} opacity={0.3}>
                   <animate attributeName="r" from="6" to="14" dur="2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" from="0.4" to="0" dur="2s" repeatCount="indefinite" />
                 </circle>
+
+                {/* Selection highlight ring */}
+                {isSelected && (
+                  <circle
+                    r={markerRadius + 5}
+                    fill="none"
+                    stroke={baseColor}
+                    strokeWidth={2}
+                    opacity={0.8}
+                  >
+                    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="1.5s" repeatCount="indefinite" />
+                  </circle>
+                )}
+
                 <circle
-                  r={4 + city.count}
+                  r={markerRadius}
                   fill={hasHighRisk ? 'rgba(255,92,122,0.6)' : 'rgba(62,231,255,0.6)'}
-                  stroke={hasHighRisk ? '#FF5C7A' : '#3EE7FF'}
-                  strokeWidth={1.5}
-                  style={{ cursor: 'pointer' }}
+                  stroke={baseColor}
+                  strokeWidth={isSelected ? 2.5 : 1.5}
+                  style={{ cursor: onCityClick ? 'pointer' : 'default' }}
                 />
                 <text
                   textAnchor="middle"
-                  y={-10 - city.count}
+                  y={-10 - markerRadius}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: 9,
-                    fill: 'rgba(136,149,176,0.8)',
+                    fontSize: isSelected ? 10 : 9,
+                    fontWeight: isSelected ? 700 : 400,
+                    fill: isSelected ? '#e8edf5' : 'rgba(136,149,176,0.8)',
                   }}
                 >
                   {city.name}
@@ -188,7 +201,7 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
       </div>
 
       {/* Legend */}
-      <div style={{ padding: '8px 20px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16, fontSize: 11 }}>
+      <div style={{ padding: '8px 20px 12px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 16, fontSize: 11, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 20, height: 2, background: 'rgba(255,92,122,0.5)' }} />
           <span className="font-mono text-[var(--text-muted)]">Smurfing</span>
@@ -204,6 +217,13 @@ export default function IndiaMap({ nodes = [], edges = [] }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(62,231,255,0.6)', border: '1px solid #3EE7FF' }} />
           <span className="font-mono text-[var(--text-muted)]">Other</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{
+            width: 40, height: 6, borderRadius: 3,
+            background: 'linear-gradient(90deg, #121A2B, #345a85)',
+          }} />
+          <span className="font-mono text-[var(--text-muted)]">State Activity</span>
         </div>
       </div>
     </GlassCard>
