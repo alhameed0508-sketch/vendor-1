@@ -5,7 +5,7 @@ export function GlassCard({
   children,
   className = '',
   glow = false,
-  glowColor = 'rgba(99,102,241,0.08)',
+  glowColor = 'rgba(37,99,235,0.08)',
   onClick,
   hover = true,
   as = 'div',
@@ -30,7 +30,12 @@ export function GlassCard({
         } : {}),
         cursor: onClick ? 'pointer' : undefined,
       }}
-      whileHover={hover ? { y: -2, transition: { type: 'spring', stiffness: 400, damping: 30 } } : undefined}
+      whileHover={hover ? {
+        y: -3,
+        scale: 1.01,
+        boxShadow: 'var(--shadow-lg), 0 0 0 1px rgba(37,99,235,0.12), 0 0 20px rgba(37,99,235,0.08)',
+        transition: { type: 'spring', stiffness: 400, damping: 30 },
+      } : undefined}
       {...props}
     >
       {accent && (

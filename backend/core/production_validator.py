@@ -52,6 +52,13 @@ def validate_or_die(settings) -> None:
             "Real-time transaction ingestion is required."
         )
 
+    # PostgreSQL must be configured in production
+    if not settings.postgres_url:
+        violations.append(
+            "POSTGRES_URL must be set in production. "
+            "In-memory repositories lose data on restart."
+        )
+
     if violations:
         logger.critical("=" * 60)
         logger.critical("PRODUCTION CONFIGURATION VALIDATION FAILED")

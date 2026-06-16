@@ -5,13 +5,13 @@ import { toast } from 'sonner';
 import { apiFetch } from '../auth/api';
 
 const cardStyle = {
-  background: 'rgba(12, 18, 32, 0.65)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
   borderRadius: 12,
   padding: '22px 24px',
   position: 'relative',
   overflow: 'hidden',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--shadow)',
 };
 
 function StatCard({ label, value, color, icon: Icon, index }) {
@@ -23,7 +23,7 @@ function StatCard({ label, value, color, icon: Icon, index }) {
       style={cardStyle}
       whileHover={{
         borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}18`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`,
         y: -2,
         transition: { duration: 0.2 },
       }}
@@ -145,7 +145,7 @@ export default function ScreeningPage() {
   if (loading) return (
     <div className="loading">
       <div className="spinner" />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: '#4A5568' }}>LOADING SCREENING...</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: 'var(--text-muted)' }}>LOADING SCREENING...</span>
     </div>
   );
 
@@ -156,11 +156,11 @@ export default function ScreeningPage() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
           <h1 className="gradient-text" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px', margin: 0 }}>Screening</h1>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: '#818CF8', letterSpacing: '1.5px', textTransform: 'uppercase',
-            background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', padding: '2px 8px', borderRadius: 4,
+            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-secondary)', letterSpacing: '1.5px', textTransform: 'uppercase',
+            background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.2)', padding: '2px 8px', borderRadius: 4,
           }}>PEP / SANCTIONS</span>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4A5568', letterSpacing: '0.5px' }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
           // watchlist screening · pep checks · unsc sanctions · ofac
         </p>
       </motion.div>
@@ -168,7 +168,7 @@ export default function ScreeningPage() {
       {/* Stats Row */}
       {stats && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-          <StatCard label="Watchlist Entries" value={stats.total_entries || 0} color="#6366F1" icon={Database} index={0} />
+          <StatCard label="Watchlist Entries" value={stats.total_entries || 0} color="var(--accent-primary)" icon={Database} index={0} />
           <StatCard label="Screens Today" value={stats.screens_today || 0} color="#22D3EE" icon={Search} index={1} />
           <StatCard label="Hits Found" value={stats.hits_today || 0} color="#F43F5E" icon={AlertTriangle} index={2} />
           <StatCard label="Sources" value={stats.source_count || 0} color="#A78BFA" icon={Shield} index={3} />
@@ -188,8 +188,8 @@ export default function ScreeningPage() {
               fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.5px', textTransform: 'uppercase',
               padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              background: activeTab === tab.id ? 'rgba(99,102,241,0.12)' : 'transparent',
-              color: activeTab === tab.id ? '#818CF8' : 'var(--text-muted)',
+              background: activeTab === tab.id ? 'rgba(37,99,235,0.12)' : 'transparent',
+              color: activeTab === tab.id ? 'var(--accent-secondary)' : 'var(--text-muted)',
               transition: 'all 0.2s',
             }}
           >
@@ -283,13 +283,13 @@ export default function ScreeningPage() {
 
           {/* Watchlist Table */}
           <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>
                 // Watchlist Entries ({watchlist.length})
               </span>
             </div>
             {/* Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
               {['Name', 'Source', 'Type', 'Added'].map(h => (
                 <div key={h} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{h}</div>
               ))}
@@ -299,8 +299,8 @@ export default function ScreeningPage() {
               <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>No watchlist entries loaded</div>
             ) : (
               watchlist.slice(0, 50).map((entry, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.04)'}
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.04)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)' }}>{entry.name || entry.entity_name || '—'}</div>

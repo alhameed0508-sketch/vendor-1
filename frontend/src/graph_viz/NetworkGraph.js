@@ -442,7 +442,7 @@ export default function NetworkGraph({
     // Background pill
     clusterLabelEls.append('rect')
       .attr('rx', 4).attr('ry', 4)
-      .attr('fill', 'rgba(8,11,16,0.85)')
+      .attr('fill', 'var(--bg-card)')
       .attr('stroke', d => CLUSTER_PALETTE[d.index % CLUSTER_PALETTE.length].stroke)
       .attr('stroke-width', 0.5);
 
@@ -630,7 +630,7 @@ export default function NetworkGraph({
 
     hubAnnotEls.append('rect')
       .attr('rx', 3).attr('ry', 3)
-      .attr('fill', 'rgba(8,11,16,0.9)')
+      .attr('fill', 'var(--bg-card)')
       .attr('stroke', 'rgba(62,231,255,0.2)')
       .attr('stroke-width', 0.5);
 
@@ -687,19 +687,19 @@ export default function NetworkGraph({
     /* ── Hover interactions ── */
     const tooltip = d3.select(container).append('div')
       .style('position', 'absolute')
-      .style('background', 'rgba(8,11,16,0.94)')
-      .style('border', '1px solid rgba(255,255,255,0.1)')
+      .style('background', 'var(--bg-card)')
+      .style('border', '1px solid var(--border)')
       .style('border-radius', '8px')
       .style('padding', '12px 16px')
       .style('font-family', 'var(--font-mono)')
       .style('font-size', '11px')
-      .style('color', '#F1F5F9')
+      .style('color', 'var(--text-primary)')
       .style('pointer-events', 'none')
       .style('opacity', 0)
       .style('z-index', 10)
       .style('max-width', '240px')
       .style('backdrop-filter', 'blur(12px)')
-      .style('box-shadow', '0 8px 32px rgba(0,0,0,0.6)');
+      .style('box-shadow', '0 8px 32px rgba(0,0,0,0.3)');
 
     nodeGroup
       .on('mouseover', (event, d) => {
@@ -721,18 +721,18 @@ export default function NetworkGraph({
             <div style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[d.role]}"></div>
             <span style="color:${ROLE_COLORS[d.role]};font-weight:700;font-size:12px">${d.role}</span>
           </div>
-          <div style="color:#8B9BB4;font-size:10px;margin-bottom:8px">${d.account_id}</div>
+          <div style="color:var(--text-muted);font-size:10px;margin-bottom:8px">${d.account_id}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:10px">
-            <span style="color:#3D4F6B">Bank</span><span>${d.bank || '—'}</span>
-            <span style="color:#3D4F6B">City</span><span>${d.city || '—'}</span>
-            <span style="color:#3D4F6B">Age</span><span>${d.account_age_days || 0}d</span>
-            <span style="color:#3D4F6B">KYC</span><span>${d.kyc_status || '—'}</span>
+            <span style="color:var(--text-faint)">Bank</span><span>${d.bank || '—'}</span>
+            <span style="color:var(--text-faint)">City</span><span>${d.city || '—'}</span>
+            <span style="color:var(--text-faint)">Age</span><span>${d.account_age_days || 0}d</span>
+            <span style="color:var(--text-faint)">KYC</span><span>${d.kyc_status || '—'}</span>
           </div>
-          <div style="border-top:1px solid rgba(255,255,255,0.06);margin:8px 0;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:10px">
-            <span style="color:#3D4F6B">Risk</span>
+          <div style="border-top:1px solid var(--border-subtle);margin:8px 0;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:10px">
+            <span style="color:var(--text-faint)">Risk</span>
             <span style="color:${rc};font-weight:700">${Math.round((d.smurf_score || 0) * 100)}%</span>
-            ${(d.betweenness || 0) > 0.01 ? `<span style="color:#3D4F6B">Betweenness</span><span style="color:#22D3EE">${(d.betweenness * 100).toFixed(1)}%</span>` : ''}
-            ${(d.pagerank || 0) > 0.01 ? `<span style="color:#3D4F6B">PageRank</span><span style="color:#22D3EE">${(d.pagerank * 100).toFixed(1)}%</span>` : ''}
+            ${(d.betweenness || 0) > 0.01 ? `<span style="color:var(--text-faint)">Betweenness</span><span style="color:var(--accent-cyan)">${(d.betweenness * 100).toFixed(1)}%</span>` : ''}
+            ${(d.pagerank || 0) > 0.01 ? `<span style="color:var(--text-faint)">PageRank</span><span style="color:var(--accent-cyan)">${(d.pagerank * 100).toFixed(1)}%</span>` : ''}
           </div>
         `);
       })
@@ -853,8 +853,8 @@ export default function NetworkGraph({
       {insights && (
         <div style={{
           position: 'absolute', top: 10, left: 12, zIndex: 5,
-          background: 'rgba(8,11,16,0.88)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-subtle)',
           borderRadius: 8, padding: '10px 14px',
           backdropFilter: 'blur(12px)',
           minWidth: 190,
@@ -867,11 +867,11 @@ export default function NetworkGraph({
           <div style={{ display: 'grid', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Clusters</span>
-              <span style={{ color: '#22D3EE', fontWeight: 600 }}>{insights.clusterCount}</span>
+              <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{insights.clusterCount}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Hub Nodes</span>
-              <span style={{ color: '#22D3EE', fontWeight: 600 }}>{insights.hubCount}</span>
+              <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{insights.hubCount}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Suspicious Flow</span>

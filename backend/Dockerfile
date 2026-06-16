@@ -11,7 +11,7 @@ COPY requirements.txt .
 
 # Install CPU-only PyTorch first (avoids pulling 2GB CUDA build)
 RUN pip install --no-cache-dir \
-    torch==2.1.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+    torch==2.2.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install remaining dependencies (skip torch since already installed)
 RUN pip install --no-cache-dir -r requirements.txt

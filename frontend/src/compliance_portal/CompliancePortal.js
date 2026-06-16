@@ -1,10 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedCounter from '../components/AnimatedCounter';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimateIn } from '../components/motion/AnimateIn';
-import { StaggerContainer, StaggerItem } from '../components/motion/StaggerContainer';
 import { apiFetch } from '../auth/api';
+
+const STATUS_COLORS = {
+  DRAFT: '#FB923C',
+  READY_FOR_SUBMISSION: '#22D3EE',
+  SUBMITTED: '#6366F1',
+  ACKNOWLEDGED: '#10B981',
+};
+
+const STATUS_LABELS = {
+  DRAFT: 'Draft',
+  READY_FOR_SUBMISSION: 'Ready',
+  SUBMITTED: 'Submitted',
+  ACKNOWLEDGED: 'Acknowledged',
+};
+
+const NEXT_ACTION = {
+  DRAFT: { label: 'Approve', endpoint: 'approve', body: (user) => ({ approved_by: user || 'demo_user' }) },
+  READY_FOR_SUBMISSION: { label: 'Submit to FIU', endpoint: 'submit', body: () => ({}) },
+  SUBMITTED: { label: 'Acknowledge', endpoint: 'acknowledge', body: () => ({}) },
+};
 
 export default function CompliancePortal() {
   const [alerts, setAlerts] = useState([]);
@@ -14,13 +33,30 @@ export default function CompliancePortal() {
   const [strReports, setStrReports] = useState([]);
   const [exported, setExported] = useState(false);
   const [auditLog, setAuditLog] = useState([]);
+  const [actionLoading, setActionLoading] = useState(null);
+
+  const fetchStrList = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/v1/compliance/strs?limit=100');
+      const body = await res.json();
+      const data = body?.data || body;
+      const records = data?.records || (Array.isArray(data) ? data : []);
+      if (Array.isArray(records)) {
+        setStrReports(records);
+        if (records.length > 0) setExported(true);
+      }
+    } catch (err) {
+      console.error('[Compliance] STR list fetch failed:', err);
+    }
+  }, []);
 
   useEffect(() => {
     apiFetch('/api/v1/alerts?limit=100')
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
-        const open = (data.alerts || []).filter(a =>
+        const alertList = data?.alerts || (Array.isArray(data) ? data : []);
+        const open = (Array.isArray(alertList) ? alertList : []).filter(a =>
           a.risk_score > 0.6 && a.status !== 'FALSE_POSITIVE'
         );
         setAlerts(open);
@@ -30,7 +66,9 @@ export default function CompliancePortal() {
         console.error('[Compliance] Failed to load alerts:', err);
         setLoading(false);
       });
-    // Fetch audit log
+
+    fetchStrList();
+
     apiFetch('/api/v1/audit-log?limit=20')
       .then(r => r.json())
       .then(body => {
@@ -38,7 +76,7 @@ export default function CompliancePortal() {
         setAuditLog(Array.isArray(data) ? data : []);
       })
       .catch(err => console.error('[Compliance] Audit log fetch failed:', err));
-  }, []);
+  }, [fetchStrList]);
 
   const toggle = (id) => {
     setSelected(prev => {
@@ -56,22 +94,73 @@ export default function CompliancePortal() {
   const exportSTR = async () => {
     if (!selected.size) return;
     setExporting(true);
-    const res = await apiFetch('/api/v1/compliance/str-export', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ alert_ids: [...selected] }),
-    });
-    const body = await res.json();
-    const data = body?.data || body;
-    setStrReports(data.str_reports || []);
-    setExported(true);
-    setExporting(false);
+    try {
+      const res = await apiFetch('/api/v1/compliance/str-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alert_ids: [...selected] }),
+      });
+      const body = await res.json();
+      if (body?.success === false) {
+        console.error('[Compliance] STR export failed:', body.error);
+      } else {
+        setExported(true);
+        await fetchStrList();
+      }
+    } catch (err) {
+      console.error('[Compliance] STR export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const advanceStatus = async (strId, action) => {
+    setActionLoading(strId);
+    try {
+      const res = await apiFetch(`/api/v1/compliance/str/${strId}/${action.endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action.body('demo_user')),
+      });
+      const body = await res.json();
+      if (body?.success !== false) {
+        await fetchStrList();
+      }
+    } catch (err) {
+      console.error('[Compliance] STR action failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const downloadPdf = async (alertId) => {
+    try {
+      const res = await apiFetch(`/api/v1/compliance/str-pdf/${alertId}`);
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `STR_${alertId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('[Compliance] PDF download failed:', err);
+    }
   };
 
   const totalSelected = [...selected].reduce((sum, id) => {
     const a = alerts.find(x => x.alert_id === id);
     return sum + (a?.total_amount || 0);
   }, 0);
+
+  const statusCounts = strReports.reduce((acc, r) => {
+    const s = r.status || 'DRAFT';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <div style={{ padding: 24 }}>
@@ -91,7 +180,7 @@ export default function CompliancePortal() {
             { label: 'Reportable Alerts', value: alerts.length, color: 'var(--accent-amber)' },
             { label: 'Selected for STR', value: selected.size, color: 'var(--accent-cyan)' },
             { label: 'Total Amount', value: `₹${(totalSelected / 100000).toFixed(2)}L`, color: 'var(--accent-amber)' },
-            { label: 'STRs Exported', value: strReports.length, color: 'var(--accent-green)' },
+            { label: 'STRs Filed', value: strReports.length, color: 'var(--accent-green)' },
             { label: 'FIU Format', value: 'v2.1', color: 'var(--text-muted)' },
           ].map((s, i, arr) => (
             <React.Fragment key={s.label}>
@@ -124,86 +213,240 @@ export default function CompliancePortal() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              {exporting ? '...' : exported ? `✓ ${strReports.length} STRs Exported` : `↑ Export ${selected.size} STR${selected.size !== 1 ? 's' : ''}`}
+              {exporting ? '...' : exported ? `+ Export ${selected.size || 'More'} STR${selected.size !== 1 ? 's' : ''}` : `Export ${selected.size} STR${selected.size !== 1 ? 's' : ''}`}
             </motion.button>
           </div>
         </GlassCard>
       </AnimateIn>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 16 }}>
-        {/* Alert selection table */}
-        <AnimateIn delay={0.1}>
-          <GlassCard className="overflow-hidden" style={{ padding: 0 }} hover={false}>
-            <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>Alerts Eligible for STR Filing</span>
-            </div>
-            {loading ? (
-              <div className="loading"><div className="spinner" />Loading...</div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 40 }}></th>
-                    <th>Alert ID</th>
-                    <th>Severity</th>
-                    <th>Risk Score</th>
-                    <th>Accounts</th>
-                    <th>Amount</th>
-                    <th>Top Signal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {alerts.map((a, idx) => (
-                    <motion.tr
-                      key={a.alert_id}
-                      className="clickable"
-                      onClick={() => toggle(a.alert_id)}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                    >
-                      <td>
-                        <motion.div
-                          style={{
-                            width: 16, height: 16, borderRadius: 3,
-                            border: `2px solid ${selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'var(--border-bright)'}`,
-                            background: selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'transparent',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 10, color: '#000',
-                          }}
-                          whileTap={{ scale: 0.85 }}
-                          animate={{ scale: selected.has(a.alert_id) ? [1, 1.15, 1] : 1 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {selected.has(a.alert_id) ? '✓' : ''}
-                        </motion.div>
-                      </td>
-                      <td><span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: 12 }}>{a.alert_id}</span></td>
-                      <td><span className={`badge badge-${a.severity}`}>{a.severity}</span></td>
-                      <td>
-                        <div className="risk-bar">
-                          <div className="risk-track">
-                            <div className={`risk-fill ${a.severity === 'CRITICAL' ? 'critical' : a.severity === 'HIGH' ? 'high' : 'medium'}`}
-                              style={{ width: `${a.risk_score * 100}%` }} />
-                          </div>
-                          <span className="risk-val">{(a.risk_score * 100).toFixed(0)}%</span>
-                        </div>
-                      </td>
-                      <td><span className="mono">{a.account_count}</span></td>
-                      <td><span className="amount">₹{a.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></td>
-                      <td className="text-xs font-mono text-[var(--text-secondary)]">
-                        {a.reason_codes?.[0]?.split(':')[0] || '—'}
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </GlassCard>
+      {/* STR pipeline status */}
+      {strReports.length > 0 && (
+        <AnimateIn delay={0.08}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+            {Object.entries(STATUS_COLORS).map(([status, color]) => (
+              <div key={status} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '6px 14px', borderRadius: 6,
+                background: `${color}10`, border: `1px solid ${color}30`,
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color }}>
+                  {STATUS_LABELS[status]}
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)', color }}>
+                  {statusCounts[status] || 0}
+                </span>
+              </div>
+            ))}
+          </div>
         </AnimateIn>
+      )}
 
-        {/* STR preview panel */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 16 }}>
+        {/* Left column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Alert selection table */}
+          <AnimateIn delay={0.1}>
+            <GlassCard className="overflow-hidden" style={{ padding: 0 }} hover={false}>
+              <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>Alerts Eligible for STR Filing</span>
+              </div>
+              {loading ? (
+                <div className="loading"><div className="spinner" />Loading...</div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}></th>
+                      <th>Alert ID</th>
+                      <th>Severity</th>
+                      <th>Risk Score</th>
+                      <th>Accounts</th>
+                      <th>Amount</th>
+                      <th>Top Signal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alerts.map((a, idx) => (
+                      <motion.tr
+                        key={a.alert_id}
+                        className="clickable"
+                        onClick={() => toggle(a.alert_id)}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                      >
+                        <td>
+                          <motion.div
+                            style={{
+                              width: 16, height: 16, borderRadius: 3,
+                              border: `2px solid ${selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'var(--border-bright)'}`,
+                              background: selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'transparent',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 10, color: '#000',
+                            }}
+                            whileTap={{ scale: 0.85 }}
+                            animate={{ scale: selected.has(a.alert_id) ? [1, 1.15, 1] : 1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            {selected.has(a.alert_id) ? '✓' : ''}
+                          </motion.div>
+                        </td>
+                        <td><span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: 12 }}>{a.alert_id}</span></td>
+                        <td><span className={`badge badge-${a.severity}`}>{a.severity}</span></td>
+                        <td>
+                          <div className="risk-bar">
+                            <div className="risk-track">
+                              <div className={`risk-fill ${a.severity === 'CRITICAL' ? 'critical' : a.severity === 'HIGH' ? 'high' : 'medium'}`}
+                                style={{ width: `${a.risk_score * 100}%` }} />
+                            </div>
+                            <span className="risk-val">{(a.risk_score * 100).toFixed(0)}%</span>
+                          </div>
+                        </td>
+                        <td><span className="mono">{a.account_count}</span></td>
+                        <td><span className="amount">{a.total_amount != null ? `₹${a.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—'}</span></td>
+                        <td className="text-xs font-mono text-[var(--text-secondary)]">
+                          {a.reason_codes?.[0]?.split(':')[0] || '—'}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </GlassCard>
+          </AnimateIn>
+        </div>
+
+        {/* Right column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Exported STR list — shown first for prominence */}
+          <AnimateIn delay={0.1} direction="left">
+            <GlassCard className="p-5" hover={false} style={{ borderLeft: `3px solid ${strReports.length > 0 ? 'var(--accent-green)' : 'var(--border)'}`, borderRadius: '0 8px 8px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <p className="section-title" style={{ margin: 0 }}>
+                  STR Reports {strReports.length > 0 ? `(${strReports.length})` : ''}
+                </p>
+                {strReports.length > 0 && (
+                  <span style={{
+                    fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-green)',
+                    background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 4,
+                  }}>
+                    FIU-IND v2.1
+                  </span>
+                )}
+              </div>
+              {strReports.length === 0 ? (
+                <div style={{ padding: '20px 0', textAlign: 'center' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    No STRs filed yet. Select alerts and click Export to generate reports.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ maxHeight: 480, overflowY: 'auto' }}>
+                  <AnimatePresence mode="popLayout">
+                    {strReports.map((r, i) => {
+                      const status = r.status || 'DRAFT';
+                      const statusColor = STATUS_COLORS[status] || '#10B981';
+                      const alertId = r.alert_id || (r.alert_ids && r.alert_ids[0]) || '—';
+                      const action = NEXT_ACTION[status];
+                      const accountCount = r.accounts_involved?.length || r.account_ids?.length || 0;
+
+                      return (
+                        <motion.div
+                          key={r.str_id}
+                          layout
+                          style={{
+                            padding: '10px 12px', marginBottom: 8, borderRadius: 6,
+                            background: 'var(--bg-elevated)',
+                            border: `1px solid ${statusColor}20`,
+                          }}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ delay: i * 0.03 }}
+                        >
+                          {/* Header: STR ID + Status badge */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {r.str_id}
+                            </span>
+                            <span style={{
+                              fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 700,
+                              background: `${statusColor}20`, color: statusColor,
+                              padding: '2px 8px', borderRadius: 4, letterSpacing: '0.5px',
+                              textTransform: 'uppercase',
+                            }}>
+                              {STATUS_LABELS[status] || status}
+                            </span>
+                          </div>
+
+                          {/* Alert + financial data */}
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                            <span style={{ color: 'var(--accent-cyan)' }}>{alertId}</span>
+                            {r.total_amount != null && (
+                              <span> · <span style={{ color: 'var(--accent-amber)' }}>₹{Number(r.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></span>
+                            )}
+                            {r.transaction_count != null && (
+                              <span> · {r.transaction_count} txns</span>
+                            )}
+                            {accountCount > 0 && (
+                              <span> · {accountCount} accts</span>
+                            )}
+                          </div>
+
+                          {/* Risk + entity */}
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
+                            {r.risk_score != null && (
+                              <span style={{ color: r.risk_score > 0.8 ? '#EF4444' : r.risk_score > 0.5 ? '#FB923C' : 'var(--text-muted)' }}>
+                                Risk: {(r.risk_score * 100).toFixed(0)}%
+                              </span>
+                            )}
+                            {r.reporting_entity && <span> · {r.reporting_entity}</span>}
+                            {r.fiu_reference && <span> · Ref: {r.fiu_reference}</span>}
+                          </div>
+
+                          {/* Action buttons */}
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {action && (
+                              <motion.button
+                                className="btn btn-ghost"
+                                style={{
+                                  fontSize: 10, padding: '3px 10px',
+                                  border: `1px solid ${statusColor}40`,
+                                  color: statusColor,
+                                }}
+                                onClick={(e) => { e.stopPropagation(); advanceStatus(r.str_id, action); }}
+                                disabled={actionLoading === r.str_id}
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
+                              >
+                                {actionLoading === r.str_id ? '...' : action.label}
+                              </motion.button>
+                            )}
+                            <motion.button
+                              className="btn btn-ghost"
+                              style={{ fontSize: 10, padding: '3px 10px', color: 'var(--text-muted)' }}
+                              onClick={(e) => { e.stopPropagation(); downloadPdf(alertId); }}
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                            >
+                              PDF
+                            </motion.button>
+                            {status === 'ACKNOWLEDGED' && (
+                              <span style={{ fontSize: 10, color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', alignSelf: 'center', marginLeft: 'auto' }}>
+                                ✓ Complete
+                              </span>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
+            </GlassCard>
+          </AnimateIn>
+
           {/* RBI compliance checklist */}
           <AnimateIn delay={0.2} direction="left">
             <GlassCard className="p-5" hover={false}>
@@ -240,43 +483,6 @@ export default function CompliancePortal() {
               ))}
             </GlassCard>
           </AnimateIn>
-
-          {/* Exported STR list */}
-          <AnimatePresence>
-            {strReports.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <GlassCard className="p-5" hover={false}>
-                  <p className="section-title">Exported STR Reports</p>
-                  <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-                    {strReports.map((r, i) => (
-                      <motion.div
-                        key={r.str_id}
-                        style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                          <span className="font-mono text-xs text-accent-green">{r.str_id}</span>
-                          <span className="text-[10px] bg-green-500/10 text-accent-green px-2 py-0.5 rounded font-mono">READY</span>
-                        </div>
-                        <div className="text-xs text-[var(--text-muted)] font-mono">
-                          {r.alert_id} · ₹{r.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })} · {r.transaction_count} txns
-                        </div>
-                        <div className="text-[10px] text-[var(--text-muted)] mt-0.5">
-                          {r.accounts_involved.length} accounts · FIU v{r.fiu_format_version}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </GlassCard>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Live Audit Log */}
           <AnimateIn delay={0.3} direction="left">

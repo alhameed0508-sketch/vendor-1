@@ -9,13 +9,13 @@ import { toast } from 'sonner';
 import { apiFetch } from '../auth/api';
 
 const cardStyle = {
-  background: 'rgba(12, 18, 32, 0.65)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
   borderRadius: 12,
   padding: '22px 24px',
   position: 'relative',
   overflow: 'hidden',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--shadow)',
 };
 
 function StatCard({ label, value, color, icon: Icon, sub, index }) {
@@ -25,7 +25,7 @@ function StatCard({ label, value, color, icon: Icon, sub, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.35 }}
       style={cardStyle}
-      whileHover={{ borderColor: `${color}30`, boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}18`, y: -2, transition: { duration: 0.2 } }}
+      whileHover={{ borderColor: `${color}30`, boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`, y: -2, transition: { duration: 0.2 } }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color}, transparent)`, opacity: 0.7 }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -48,13 +48,13 @@ function EscalationRow({ esc, onAction }) {
       animate={{ opacity: 1, x: 0 }}
       style={{
         display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px 140px',
-        padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center',
+        padding: '12px 20px', borderBottom: '1px solid var(--border)', alignItems: 'center',
         transition: 'background 0.15s',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.04)'}
+      onMouseEnter={e => e.currentTarget.style.background = 'rgba(37,99,235,0.04)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#818CF8' }}>{esc.alert_id?.slice(0, 10) || '—'}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-secondary)' }}>{esc.alert_id?.slice(0, 10) || '—'}</div>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{esc.reason || '—'}</div>
       <div>
         <span style={{
@@ -89,14 +89,14 @@ function EscalationRow({ esc, onAction }) {
 function AuditRow({ entry }) {
   const actionColors = {
     STATUS_CHANGE: '#22D3EE', FEEDBACK: '#10B981', RETRAIN_TRIGGERED: '#FB923C',
-    STR_EXPORTED: '#8B5CF6', ESCALATION: '#F43F5E', LOGIN: '#6366F1',
+    STR_EXPORTED: '#8B5CF6', ESCALATION: '#F43F5E', LOGIN: 'var(--accent-primary)',
   };
   const color = actionColors[entry.action] || '#4A5568';
 
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: '120px 140px 1fr 160px',
-      padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.03)', alignItems: 'center',
+      padding: '10px 20px', borderBottom: '1px solid var(--border)', alignItems: 'center',
     }}>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
         {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '—'}
@@ -112,7 +112,7 @@ function AuditRow({ entry }) {
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {entry.details || '—'}
       </div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#818CF8' }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-secondary)' }}>
         {entry.user_id || '—'}
       </div>
     </div>
@@ -189,7 +189,7 @@ export default function SystemOpsPage() {
   if (loading) return (
     <div className="loading">
       <div className="spinner" />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: '#4A5568' }}>LOADING SYSTEM OPS...</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: 'var(--text-muted)' }}>LOADING SYSTEM OPS...</span>
     </div>
   );
 
@@ -204,7 +204,7 @@ export default function SystemOpsPage() {
             background: 'rgba(167,139,250,0.08)', border: '1px solid rgba(167,139,250,0.2)', padding: '2px 8px', borderRadius: 4,
           }}>ADMIN</span>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4A5568', letterSpacing: '0.5px' }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
           // escalation queue · device profiling · ingest monitoring · audit trail · model controls
         </p>
       </motion.div>
@@ -225,7 +225,7 @@ export default function SystemOpsPage() {
           className="btn"
           style={{
             padding: '10px 20px', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-            background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#818CF8', borderRadius: 8, cursor: runningDetection ? 'wait' : 'pointer',
+            background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.3)', color: 'var(--accent-secondary)', borderRadius: 8, cursor: runningDetection ? 'wait' : 'pointer',
           }}
           whileHover={!runningDetection ? { scale: 1.02 } : {}}
           whileTap={!runningDetection ? { scale: 0.98 } : {}}
@@ -264,8 +264,8 @@ export default function SystemOpsPage() {
               fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.5px', textTransform: 'uppercase',
               padding: '8px 16px', borderRadius: 6, border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              background: activeTab === tab.id ? 'rgba(99,102,241,0.12)' : 'transparent',
-              color: activeTab === tab.id ? '#818CF8' : 'var(--text-muted)',
+              background: activeTab === tab.id ? 'rgba(37,99,235,0.12)' : 'transparent',
+              color: activeTab === tab.id ? 'var(--accent-secondary)' : 'var(--text-muted)',
               transition: 'all 0.2s',
             }}
           >
@@ -288,12 +288,12 @@ export default function SystemOpsPage() {
         {activeTab === 'escalations' && (
           <motion.div key="esc" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>
                   // Escalation Queue ({escalations.length})
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px 140px', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr 80px 80px 140px', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
                 {['Alert ID', 'Reason', 'Priority', 'Status', 'Actions'].map(h => (
                   <div key={h} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{h}</div>
                 ))}
@@ -318,7 +318,7 @@ export default function SystemOpsPage() {
               {deviceStats ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                   {[
-                    { label: 'Total Devices', value: deviceStats.total_devices ?? '—', color: '#6366F1' },
+                    { label: 'Total Devices', value: deviceStats.total_devices ?? '—', color: 'var(--accent-primary)' },
                     { label: 'Shared Devices', value: deviceStats.shared_devices ?? '—', color: '#F43F5E' },
                     { label: 'Avg Trust Score', value: deviceStats.avg_trust_score ? `${(deviceStats.avg_trust_score * 100).toFixed(1)}%` : '—', color: '#10B981' },
                     { label: 'High Risk Devices', value: deviceStats.high_risk_count ?? '—', color: '#FB923C' },
@@ -349,7 +349,7 @@ export default function SystemOpsPage() {
               {ingestStatus ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                   {Object.entries(ingestStatus).map(([key, value]) => {
-                    const color = key.includes('status') || key.includes('health') ? (value === 'CONNECTED' || value === 'HEALTHY' ? '#10B981' : '#FB923C') : '#6366F1';
+                    const color = key.includes('status') || key.includes('health') ? (value === 'CONNECTED' || value === 'HEALTHY' ? '#10B981' : '#FB923C') : 'var(--accent-primary)';
                     return (
                       <div key={key} style={{ background: `${color}08`, border: `1px solid ${color}15`, borderRadius: 10, padding: '18px 20px' }}>
                         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color, lineHeight: 1, marginBottom: 6 }}>
@@ -364,7 +364,7 @@ export default function SystemOpsPage() {
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                  <Wifi size={24} color="#4A5568" style={{ marginBottom: 8 }} /><br />Ingest monitoring unavailable (Kafka not configured)
+                  <Wifi size={24} color="var(--text-muted)" style={{ marginBottom: 8 }} /><br />Ingest monitoring unavailable (Kafka not configured)
                 </div>
               )}
             </div>
@@ -374,12 +374,12 @@ export default function SystemOpsPage() {
         {activeTab === 'audit' && (
           <motion.div key="aud" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.5px', textTransform: 'uppercase', fontWeight: 700 }}>
                   // Audit Trail ({auditLog.length} entries)
                 </span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '120px 140px 1fr 160px', padding: '10px 20px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '120px 140px 1fr 160px', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}>
                 {['Time', 'Action', 'Details', 'User'].map(h => (
                   <div key={h} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{h}</div>
                 ))}

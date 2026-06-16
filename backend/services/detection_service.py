@@ -127,7 +127,67 @@ class DetectionService:
             hours_saved=len(alerts) * 3.0,
             strs_filed=len([a for a in alerts if a.risk_score > 0.7]),
         )
+
+        # Update detection breakdown counters in PG if available
+        self._update_detection_breakdown(enriched)
+
         return enriched
+
+    def _update_detection_breakdown(self, alerts: List[Dict]) -> None:
+        """Increment detection_breakdown and monthly_trends in PG if available."""
+        try:
+            from api.deps import _get_pg_engine
+            engine = _get_pg_engine()
+            if engine is None:
+                return
+
+            from infra.database.postgres import detection_breakdown, monthly_trends
+            from datetime import datetime, timezone
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+            # Count patterns across all alerts
+            pattern_counts: Dict[str, int] = {}
+            for alert in alerts:
+                for code in alert.get("reason_codes", []):
+                    pattern_counts[code] = pattern_counts.get(code, 0) + 1
+
+            with engine.connect() as conn:
+                # Upsert detection breakdown
+                for pattern, count in pattern_counts.items():
+                    stmt = pg_insert(detection_breakdown).values(
+                        pattern=pattern, count=count
+                    ).on_conflict_do_update(
+                        index_elements=["pattern"],
+                        set_={"count": count},
+                    )
+                    conn.execute(stmt)
+
+                # Upsert monthly trends
+                now = datetime.now(timezone.utc)
+                month_key = now.strftime("%b")
+                total_prevented = sum(
+                    a.get("total_amount", 0) for a in alerts
+                ) / 100_000  # Convert to lakh
+                stmt = pg_insert(monthly_trends).values(
+                    month=month_key,
+                    alerts=len(alerts),
+                    prevented=round(total_prevented, 1),
+                    hours=len(alerts) * 3.0,
+                ).on_conflict_do_update(
+                    index_elements=["month"],
+                    set_={
+                        "alerts": len(alerts),
+                        "prevented": round(total_prevented, 1),
+                        "hours": len(alerts) * 3.0,
+                    },
+                )
+                conn.execute(stmt)
+                conn.commit()
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Failed to update detection breakdown: %s", exc
+            )
 
     def run_fresh_detection(self) -> None:
         """Clear state and re-run detection. Used as a background task."""

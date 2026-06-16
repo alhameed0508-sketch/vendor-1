@@ -1,9 +1,10 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, BarChart2, Shield, ChevronLeft, ChevronRight,
-  Activity, Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
-  Network, Search, Brain, Fingerprint, TrendingUp, ShieldAlert, Flag,
+  AlertTriangle, BarChart2, ChevronLeft,
+  Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
+  Network, Search, Fingerprint, TrendingUp, ShieldAlert, Flag,
   Scan, Target, Settings
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
@@ -36,6 +37,22 @@ const NAV_SECTIONS = [
   },
 ];
 
+// Staggered nav container
+const navContainerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.04 } },
+};
+
+// Individual nav item spring-in
+const navItemVariants = {
+  hidden: { opacity: 0, x: -12 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 24 },
+  },
+};
+
 export default function Sidebar({ stats, collapsed, onToggle }) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
@@ -45,52 +62,104 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
     : 0;
 
   return (
-    <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
+    <motion.aside
+      className="sidebar"
+      animate={{ width: collapsed ? 64 : 236 }}
+      transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+      style={{ overflow: 'hidden' }}
+    >
 
       {/* ── Logo ── */}
       <div className="sidebar-logo">
-        <div className="logo-monogram">MC</div>
-        {!collapsed && (
-          <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <div className="logo-text logo-text-gradient">MuleCatch</div>
-          </div>
-        )}
+        <motion.div
+          className="logo-monogram"
+          whileHover={{ scale: 1.08, boxShadow: '0 0 28px rgba(37,99,235,0.60), 0 4px 12px rgba(0,0,0,0.40)' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        >
+          MC
+        </motion.div>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ overflow: 'hidden', minWidth: 0 }}
+            >
+              <div className="logo-text logo-text-gradient">MuleCatch</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── System tag ── */}
-      {!collapsed && (
-        <div className="logo-tagline">// IOB Fraud Intelligence</div>
-      )}
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.div
+            className="logo-tagline"
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.2 }}
+          >
+            // IOB Fraud Intelligence
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── System health indicator ── */}
-      {!collapsed && (
-        <div style={{
-          margin: '0 12px 8px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-        }}>
-          <div style={{
-            width: 5, height: 5, borderRadius: '50%',
-            background: '#10B981',
-            flexShrink: 0,
-          }} />
-          <span style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 10,
-            color: 'var(--text-muted)',
-            letterSpacing: '0.5px',
-          }}>Online</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {!collapsed && (
+          <motion.div
+            initial={{ opacity: 0, x: -8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -8 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              margin: '0 12px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <div style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: '#10B981',
+              flexShrink: 0,
+            }} />
+            <span style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              letterSpacing: '0.5px',
+            }}>Online</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Nav ── */}
-      <nav className="sidebar-nav">
+      <motion.nav
+        className="sidebar-nav"
+        variants={navContainerVariants}
+        initial="hidden"
+        animate="show"
+      >
         {NAV_SECTIONS.map(section => (
           <React.Fragment key={section.label}>
-            {!collapsed && (
-              <div className="sidebar-section-label">{section.label}</div>
-            )}
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  className="sidebar-section-label"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {section.label}
+                </motion.div>
+              )}
+            </AnimatePresence>
             {section.items.map(item => {
               const isActive = item.end
                 ? location.pathname === item.path
@@ -98,104 +167,162 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
               const Icon = item.icon;
 
               return (
-                <NavLink
+                <motion.div
                   key={item.path}
-                  to={item.path}
-                  end={item.end}
-                  className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
-                  title={collapsed ? item.label : undefined}
+                  variants={navItemVariants}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {isActive && <div className="sidebar-active-bar" />}
-                  <span className="sidebar-link-icon">
-                    <Icon size={14} />
-                  </span>
-                  {!collapsed && (
-                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
-                      {item.label}
+                  <NavLink
+                    to={item.path}
+                    end={item.end}
+                    className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
+                    title={collapsed ? item.label : undefined}
+                    style={{ position: 'relative' }}
+                  >
+                    {/* Shared layout active bar — slides between routes */}
+                    {isActive && (
+                      <motion.div
+                        className="sidebar-active-bar"
+                        layoutId="sidebar-active"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="sidebar-link-icon">
+                      <Icon size={14} />
                     </span>
-                  )}
-                </NavLink>
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.18 }}
+                          style={{ fontFamily: 'var(--font-sans)', fontSize: 13, overflow: 'hidden', whiteSpace: 'nowrap' }}
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </NavLink>
+                </motion.div>
               );
             })}
           </React.Fragment>
         ))}
-      </nav>
+      </motion.nav>
 
       {/* ── Alert Stats ── */}
-      {!collapsed && stats && totalAlerts > 0 && (
-        <div style={{ padding: '0 8px 6px' }}>
-          <div style={{
-            borderTop: '1px solid var(--border)',
-            padding: '10px 8px 4px',
-          }}>
+      <AnimatePresence>
+        {!collapsed && stats && totalAlerts > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25 }}
+            style={{ padding: '0 8px 6px', overflow: 'hidden' }}
+          >
             <div style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 9,
-              color: 'var(--text-faint)',
-              letterSpacing: '1px',
-              textTransform: 'uppercase',
-              marginBottom: 6,
-              fontWeight: 600,
-            }}>Queue</div>
+              borderTop: '1px solid var(--border)',
+              padding: '10px 8px 4px',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: 9,
+                color: 'var(--text-faint)',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                marginBottom: 6,
+                fontWeight: 600,
+              }}>Queue</div>
 
-            {[
-              { label: 'Critical', value: stats.critical, color: 'var(--critical)' },
-              { label: 'High',     value: stats.high,     color: 'var(--high)' },
-              { label: 'Medium',   value: stats.medium,   color: 'var(--medium)' },
-            ].map(s => (
-              <div key={s.label} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: 3,
-                gap: 8,
-              }}>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  color: 'var(--text-muted)',
-                }}>{s.label}</span>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  color: s.color,
-                  fontWeight: 600,
-                }}>{s.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              {[
+                { label: 'Critical', value: stats.critical, color: 'var(--critical)' },
+                { label: 'High',     value: stats.high,     color: 'var(--high)' },
+                { label: 'Medium',   value: stats.medium,   color: 'var(--medium)' },
+              ].map(s => (
+                <div key={s.label} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 3,
+                  gap: 8,
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 11,
+                    color: 'var(--text-muted)',
+                  }}>{s.label}</span>
+                  <motion.span
+                    key={s.value}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      color: s.color,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {s.value}
+                  </motion.span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Footer ── */}
       <div className="sidebar-footer">
-        <button
+        <motion.button
           className="theme-toggle"
           onClick={toggleTheme}
           aria-label="Toggle theme"
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.97 }}
         >
-          {theme === 'dark'
-            ? <Sun size={12} />
-            : <Moon size={12} />
-          }
-          {!collapsed && (
-            <span style={{ letterSpacing: '0.5px' }}>
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </span>
-          )}
-        </button>
+          <motion.div
+            animate={{ rotate: theme === 'dark' ? 0 : 180 }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            {theme === 'dark'
+              ? <Sun size={12} />
+              : <Moon size={12} />
+            }
+          </motion.div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.18 }}
+                style={{ letterSpacing: '0.5px', overflow: 'hidden', whiteSpace: 'nowrap' }}
+              >
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.button>
 
-        <button
+        <motion.button
           className="btn btn-ghost sidebar-collapse-btn"
           onClick={onToggle}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          whileHover={{ opacity: 1, scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          {collapsed
-            ? <ChevronRight size={13} />
-            : <ChevronLeft  size={13} />
-          }
-        </button>
+          <motion.div
+            animate={{ rotate: collapsed ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ChevronLeft size={13} />
+          </motion.div>
+        </motion.button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }

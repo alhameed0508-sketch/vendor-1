@@ -1,4 +1,25 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mulecatch_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: mulecatch
+      POSTGRES_USER: ${POSTGRES_USER:-mulecatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mulecatch_dev_2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mulecatch} -d mulecatch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mulecatch_net
+
   neo4j:
     image: neo4j:5.15
     container_name: mulecatch_neo4j
@@ -89,6 +110,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
       AUTH_ENABLED: ${AUTH_ENABLED:-false}
       KAFKA_ENABLED: ${KAFKA_ENABLED:-false}
+      POSTGRES_URL: postgresql://${POSTGRES_USER:-mulecatch}:${POSTGRES_PASSWORD:-mulecatch_dev_2024}@postgres:5432/mulecatch
       REDIS_URL: redis://redis:6379/0
       ENV: ${ENV:-development}
       DEMO_INVESTIGATOR_PASSWORD: ${DEMO_INVESTIGATOR_PASSWORD:-iob@2024}
@@ -103,6 +125,8 @@ services:
       - ./infra:/app/infra:ro
       - audit_logs:/app/logs
     depends_on:
+      postgres:
+        condition: service_healthy
       neo4j:
         condition: service_healthy
       kafka:
@@ -139,6 +163,43 @@ services:
       retries: 3
       start_period: 10s
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: mulecatch_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mulecatch_net
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: mulecatch_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-mulecatch}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - mulecatch_net
+    restart: unless-stopped
+
   seed:
     build:
       context: ./backend
@@ -163,11 +224,14 @@ services:
       - seed
 
 volumes:
+  postgres_data:
   neo4j_data:
   neo4j_logs:
   kafka_data:
   redis_data:
   audit_logs:
+  prometheus_data:
+  grafana_data:
 
 networks:
   mulecatch_net:

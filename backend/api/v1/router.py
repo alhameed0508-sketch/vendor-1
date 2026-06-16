@@ -25,6 +25,7 @@ from api.v1.routes.typology import register_typology_routes
 from api.v1.routes.india import register_india_routes
 from api.v1.routes.investigation import register_investigation_routes
 from api.v1.routes.scam import register_scam_routes
+from api.v1.routes.roi import register_roi_routes
 
 
 def create_v1_router(limiter: Limiter) -> APIRouter:
@@ -76,6 +77,10 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     investigation_router = APIRouter(prefix="/investigation", tags=["investigation"])
     register_investigation_routes(investigation_router, limiter)
     v1.include_router(investigation_router)
+
+    roi_router = APIRouter(prefix="/roi", tags=["roi"])
+    register_roi_routes(roi_router, limiter)
+    v1.include_router(roi_router)
 
     # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)

@@ -9,28 +9,28 @@ import { toast } from 'sonner';
 import { apiFetch } from '../auth/api';
 
 const cardStyle = {
-  background: 'rgba(12, 18, 32, 0.65)',
-  border: '1px solid rgba(255,255,255,0.07)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
   borderRadius: 12,
   padding: '22px 24px',
   position: 'relative',
   overflow: 'hidden',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+  boxShadow: 'var(--shadow)',
 };
 
 const chartTooltipStyle = {
-  background: 'rgba(8, 12, 20, 0.95)',
-  border: '1px solid rgba(99,102,241,0.25)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
   borderRadius: 6,
   padding: '10px 14px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+  boxShadow: 'var(--shadow-lg)',
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={chartTooltipStyle}>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#4A5568', marginBottom: 6, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</p>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: p.color, margin: 0, fontWeight: 600 }}>
           {p.name}: {typeof p.value === 'number' ? p.value.toFixed(3) : p.value}
@@ -47,7 +47,7 @@ function MetricCard({ label, value, color, icon: Icon, sub, index }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.06, duration: 0.35 }}
       style={cardStyle}
-      whileHover={{ borderColor: `${color}30`, boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}18`, y: -2, transition: { duration: 0.2 } }}
+      whileHover={{ borderColor: `${color}30`, boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`, y: -2, transition: { duration: 0.2 } }}
     >
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color}, transparent)`, opacity: 0.7 }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -63,7 +63,7 @@ function MetricCard({ label, value, color, icon: Icon, sub, index }) {
 function ChartPanel({ title, children }) {
   return (
     <div style={cardStyle}>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#4A5568', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: 18 }}>// {title}</p>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, marginBottom: 18 }}>// {title}</p>
       {children}
     </div>
   );
@@ -158,7 +158,7 @@ export default function BenchmarkPage() {
   if (loading) return (
     <div className="loading">
       <div className="spinner" />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: '#4A5568' }}>LOADING BENCHMARKS...</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: 'var(--text-muted)' }}>LOADING BENCHMARKS...</span>
     </div>
   );
 
@@ -173,7 +173,7 @@ export default function BenchmarkPage() {
             background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.2)', padding: '2px 8px', borderRadius: 4,
           }}>EVALUATION</span>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4A5568', letterSpacing: '0.5px' }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
           // detection pipeline benchmarks · precision/recall · adversarial testing · cross-validation
         </p>
       </motion.div>
@@ -181,7 +181,7 @@ export default function BenchmarkPage() {
       {/* Benchmark Action Buttons */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { id: 'synthetic', label: 'Synthetic', icon: Play, color: '#6366F1' },
+          { id: 'synthetic', label: 'Synthetic', icon: Play, color: 'var(--accent-primary)' },
           { id: 'adversarial', label: 'Adversarial', icon: Zap, color: '#F43F5E' },
           { id: 'cross-val', label: 'Cross-Validation', icon: Layers, color: '#FB923C' },
           { id: 'comparison', label: 'Comparison', icon: BarChart2, color: '#22D3EE' },
@@ -210,7 +210,7 @@ export default function BenchmarkPage() {
       {results && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-            <MetricCard label="Precision" value={`${(precision * 100).toFixed(1)}%`} color="#6366F1" icon={Target} sub="true positive rate" index={0} />
+            <MetricCard label="Precision" value={`${(precision * 100).toFixed(1)}%`} color="var(--accent-primary)" icon={Target} sub="true positive rate" index={0} />
             <MetricCard label="Recall" value={`${(recall * 100).toFixed(1)}%`} color="#22D3EE" icon={Zap} sub="detection coverage" index={1} />
             <MetricCard label="F1 Score" value={`${(f1 * 100).toFixed(1)}%`} color="#10B981" icon={CheckCircle} sub="harmonic mean" index={2} />
             <MetricCard label="Accuracy" value={`${(accuracy * 100).toFixed(1)}%`} color="#FB923C" icon={Shield} sub="overall correctness" index={3} />
@@ -221,9 +221,9 @@ export default function BenchmarkPage() {
             <ChartPanel title="Model Performance Radar">
               <ResponsiveContainer width="100%" height={280}>
                 <RadarChart data={radarData}>
-                  <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                  <PolarGrid stroke="var(--border)" />
                   <PolarAngleAxis dataKey="metric" tick={{ fill: '#94A3B8', fontSize: 11, fontFamily: 'var(--font-mono)' }} />
-                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: '#4A5568', fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
                   <Radar name="Score" dataKey="value" stroke="#6366F1" fill="#6366F1" fillOpacity={0.2} strokeWidth={2} />
                 </RadarChart>
               </ResponsiveContainer>
@@ -233,9 +233,9 @@ export default function BenchmarkPage() {
               <ChartPanel title="Configuration Comparison">
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={comparisonData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                    <XAxis dataKey="name" tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="name" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} domain={[0, 100]} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontFamily: 'var(--font-mono)', fontSize: 11 }} />
                     <Bar dataKey="precision" name="Precision" fill="#6366F1" radius={[3, 3, 0, 0]} />
@@ -291,9 +291,9 @@ export default function BenchmarkPage() {
       {/* No Results */}
       {!results && (
         <div style={{ ...cardStyle, textAlign: 'center', padding: '60px 40px' }}>
-          <BarChart2 size={40} color="#4A5568" style={{ marginBottom: 16 }} />
+          <BarChart2 size={40} color="var(--text-muted)" style={{ marginBottom: 16 }} />
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--text-muted)', marginBottom: 8 }}>No benchmark results yet</div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4A5568' }}>Run a benchmark to evaluate the detection pipeline</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>Run a benchmark to evaluate the detection pipeline</div>
         </div>
       )}
     </div>

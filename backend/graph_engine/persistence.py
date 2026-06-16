@@ -58,7 +58,7 @@ class PersistenceLayer:
             logger.info("Neo4j not reachable at %s:%s — using in-memory fallback", host, port)
             return
         try:
-            from backend.graph_engine.neo4j_client import Neo4jClient
+            from graph_engine.neo4j_client import Neo4jClient
             client = Neo4jClient()
             if client.verify_connectivity():
                 self._neo4j = client

@@ -66,7 +66,7 @@ const inputStyle = {
   width: '100%',
   padding: '8px 10px',
   background: 'var(--bg-card)',
-  border: '1px solid rgba(255,255,255,0.08)',
+  border: '1px solid var(--border)',
   borderRadius: 6,
   color: 'var(--text-primary)',
   fontFamily: 'var(--font-mono)',
@@ -105,7 +105,7 @@ function RecommendationBadge({ recommendation }) {
 }
 
 function StatusBadge({ status }) {
-  const colors = STATUS_COLORS[status] || { bg: 'rgba(255,255,255,0.05)', text: 'var(--text-muted)' };
+  const colors = STATUS_COLORS[status] || { bg: 'var(--bg-input)', text: 'var(--text-muted)' };
   return (
     <span style={{
       display: 'inline-block',
@@ -134,7 +134,7 @@ function RiskBar({ value, label }) {
         </span>
       )}
       <div style={{
-        flex: 1, height: 4, background: 'rgba(255,255,255,0.06)',
+        flex: 1, height: 4, background: 'var(--border-subtle)',
         borderRadius: 2, overflow: 'hidden', minWidth: 40,
       }}>
         <motion.div
@@ -168,7 +168,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
       <GlassCard hover={false} style={{ padding: 0 }}>
         <div style={{
           padding: '14px 18px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <AlertTriangle size={14} color="#F59E0B" />
@@ -190,7 +190,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
     <GlassCard hover={false} style={{ padding: 0, overflow: 'hidden' }}>
       <div style={{
         padding: '14px 18px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid var(--border-subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -229,7 +229,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
           }}>
             <thead>
               <tr style={{
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
+                borderBottom: '1px solid var(--border-subtle)',
                 position: 'sticky', top: 0,
                 background: 'var(--bg-surface)',
                 backdropFilter: 'blur(10px)',
@@ -258,7 +258,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
                       onClick={() => onSelect(alert)}
                       style={{
                         cursor: 'pointer',
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        borderBottom: '1px solid var(--border)',
                         background: isSelected
                           ? 'rgba(59,130,246,0.08)'
                           : idx % 2 === 0
@@ -266,7 +266,7 @@ function VictimAlertFeed({ alerts, loading, onSelect, selectedId }) {
                             : 'rgba(255,255,255,0.015)',
                         transition: 'background 0.15s',
                       }}
-                      whileHover={{ background: 'rgba(255,255,255,0.04)' }}
+                      whileHover={{ background: 'var(--bg-input)' }}
                     >
                       <td style={{ padding: '8px 10px', color: 'var(--accent-cyan)' }}>
                         {alert.sender_account}
@@ -368,8 +368,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
           {/* Sender fields */}
           <div style={{
             padding: '10px 12px', marginBottom: 12,
-            background: 'rgba(255,255,255,0.02)', borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--bg-card)', borderRadius: 6,
+            border: '1px solid var(--border)',
           }}>
             <div style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-cyan)',
@@ -407,8 +407,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
           {/* Receiver fields */}
           <div style={{
             padding: '10px 12px', marginBottom: 12,
-            background: 'rgba(255,255,255,0.02)', borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--bg-card)', borderRadius: 6,
+            border: '1px solid var(--border)',
           }}>
             <div style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, color: '#F59E0B',
@@ -428,8 +428,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
           {/* Transaction fields */}
           <div style={{
             padding: '10px 12px', marginBottom: 12,
-            background: 'rgba(255,255,255,0.02)', borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--bg-card)', borderRadius: 6,
+            border: '1px solid var(--border)',
           }}>
             <div style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-green)',
@@ -466,8 +466,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
           {/* Session context */}
           <div style={{
             padding: '10px 12px', marginBottom: 12,
-            background: 'rgba(255,255,255,0.02)', borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--bg-card)', borderRadius: 6,
+            border: '1px solid var(--border)',
           }}>
             <div style={{
               fontFamily: 'var(--font-mono)', fontSize: 9, color: '#A78BFA',
@@ -508,8 +508,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
           {/* Receiver mule score slider */}
           <div style={{
             padding: '10px 12px', marginBottom: 16,
-            background: 'rgba(255,255,255,0.02)', borderRadius: 6,
-            border: '1px solid rgba(255,255,255,0.04)',
+            background: 'var(--bg-card)', borderRadius: 6,
+            border: '1px solid var(--border)',
           }}>
             <div style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8,
@@ -604,7 +604,7 @@ function TransactionEvaluator({ onEvaluationResult }) {
           }}>
             <div style={{
               width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+              background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Eye size={18} color="var(--text-faint)" />
@@ -707,7 +707,7 @@ function TransactionEvaluator({ onEvaluationResult }) {
                     <div key={key} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       padding: '4px 8px', borderRadius: 4,
-                      background: 'rgba(255,255,255,0.02)',
+                      background: 'var(--bg-card)',
                     }}>
                       <span style={{ ...monoSmall, color: 'var(--text-muted)', fontSize: 10 }}>
                         {key.replace(/_/g, ' ')}
@@ -734,8 +734,8 @@ function TransactionEvaluator({ onEvaluationResult }) {
                   {result.reason_codes.map((code, i) => (
                     <span key={i} style={{
                       padding: '3px 8px', borderRadius: 4,
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.06)',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border-subtle)',
                       fontFamily: 'var(--font-mono)', fontSize: 10,
                       color: 'var(--text-secondary)', letterSpacing: '0.3px',
                     }}>
@@ -806,7 +806,7 @@ function InterventionPanel({ selectedAlert, onActionComplete }) {
         }}>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
+            background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Shield size={16} color="var(--text-faint)" />

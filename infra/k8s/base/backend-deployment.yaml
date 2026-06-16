@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: mulecatch
+  labels:
+    app: mulecatch
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mulecatch
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: mulecatch
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: mulecatch/backend:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: mulecatch-config
+            - secretRef:
+                name: mulecatch-secrets
+          env:
+            - name: POSTGRES_URL
+              value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/mulecatch"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 45
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              readOnly: true
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: models
+          emptyDir: {}

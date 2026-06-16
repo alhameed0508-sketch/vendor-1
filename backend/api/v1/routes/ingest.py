@@ -2,15 +2,30 @@
 Ingest routes — /api/v1/ingest/*
 """
 
+import json
+import time
+import queue
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
 from slowapi import Limiter
 
 from core.config import get_settings
 from core.response import success_response
 from middleware.auth import get_current_user, require_permission
-from api.deps import get_ingest_service, get_detection_service
+from api.deps import (
+    get_ingest_service,
+    get_detection_service,
+    get_dataset_repo,
+    get_kafka_consumer,
+)
 from services.ingest_service import IngestService
 from services.detection_service import DetectionService
+from repositories.dataset_repository import DatasetRepository
+from ingest.kafka_consumer import TransactionConsumer, KAFKA_ENABLED
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ingest", tags=["ingest"])
 
@@ -43,3 +58,74 @@ def register_ingest_routes(r: APIRouter, limiter: Limiter) -> None:
             raise HTTPException(status_code=404, detail="Not available in production")
         dataset = detection_svc.get_or_generate_dataset()
         return success_response(ingest_svc.get_stream_demo(count, dataset))
+
+    @r.get("/stream")
+    async def ingest_stream(
+        request: Request,
+        user: dict = Depends(get_current_user),
+    ):
+        """SSE endpoint — pushes new-alert events to connected clients."""
+        import asyncio
+
+        async def event_generator():
+            while True:
+                # Stop streaming when the client disconnects
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = TransactionConsumer._alert_event_queue.get_nowait()
+                    yield f"data: {json.dumps(event)}\n\n"
+                except queue.Empty:
+                    pass
+                # Send keepalive every 2 seconds
+                yield ": keepalive\n\n"
+                await asyncio.sleep(2)
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
+
+    @r.post("/seed")
+    @limiter.limit("10/minute")
+    def ingest_seed(
+        request: Request,
+        num_clusters: int = 3,
+        num_legit: int = 20,
+        user: dict = Depends(get_current_user),
+        detection_svc: DetectionService = Depends(get_detection_service),
+        dataset_repo: DatasetRepository = Depends(get_dataset_repo),
+    ):
+        """Seed synthetic transactions into Kafka for demo/testing."""
+        if not KAFKA_ENABLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Kafka is not enabled. Set KAFKA_ENABLED=true.",
+            )
+
+        # Ensure dataset (with accounts) is cached so consumer can detect
+        detection_svc.get_or_generate_dataset()
+
+        from ingest.kafka_producer import TransactionProducer
+
+        producer = TransactionProducer()
+        try:
+            count = producer.seed_synthetic(
+                num_clusters=num_clusters,
+                num_legit=num_legit,
+                delay_ms=10,
+                dataset_repo=dataset_repo,
+            )
+        finally:
+            producer.close()
+
+        return success_response({
+            "seeded": count,
+            "topic": producer.topic,
+            "message": f"Sent {count} transactions to Kafka",
+        })

@@ -29,10 +29,30 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
         user: dict = Depends(require_permission("str:export")),
         detection_svc: DetectionService = Depends(get_detection_service),
         compliance_svc: ComplianceService = Depends(get_compliance_service),
+        str_svc: STRService = Depends(get_str_service),
     ):
-        """Generate FIU-compatible STR for selected alerts."""
+        """Generate FIU-compatible STR for selected alerts and persist them."""
         alerts = detection_svc.ensure_alerts()
-        return success_response(compliance_svc.export_str(req.alert_ids, alerts))
+        result = compliance_svc.export_str(req.alert_ids, alerts)
+
+        # Persist each exported STR via the lifecycle service
+        for report in result.get("str_reports", []):
+            str_svc.create_str(
+                alert_ids=[report["alert_id"]],
+                account_ids=report.get("accounts_involved", []),
+                narrative=f"Auto-generated STR for alert {report['alert_id']}",
+                reporting_entity=report.get("reporting_entity", "Indian Overseas Bank"),
+                prepared_by=user.get("sub", "system"),
+                total_amount=report.get("total_amount"),
+                transaction_count=report.get("transaction_count"),
+                risk_score=report.get("risk_score"),
+                reason_codes=report.get("reason_codes", []),
+                ifsc=report.get("ifsc"),
+                fiu_format_version=report.get("fiu_format_version"),
+                transaction_type=report.get("transaction_type"),
+            )
+
+        return success_response(result)
 
     @r.get("/str-pdf/{alert_id}")
     @limiter.limit("30/minute")

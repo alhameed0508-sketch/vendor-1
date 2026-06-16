@@ -55,7 +55,7 @@ function PriorityBadge({ score }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{
         width: 40, height: 3,
-        background: 'rgba(255,255,255,0.06)',
+        background: 'var(--border-subtle)',
         borderRadius: 2,
         overflow: 'hidden',
       }}>
@@ -518,7 +518,7 @@ function CaseAssemblySection({ alerts, loading: globalLoading }) {
                           style={{
                             display: 'flex', alignItems: 'flex-start', gap: 10,
                             padding: '8px 12px',
-                            background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                            background: i % 2 === 0 ? 'var(--bg-card)' : 'transparent',
                             borderRadius: 6,
                             borderLeft: '2px solid var(--accent-amber)',
                           }}

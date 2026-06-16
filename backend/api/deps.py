@@ -2,6 +2,7 @@
 Dependency injection — singleton service getters for FastAPI Depends.
 """
 
+import logging
 from functools import lru_cache
 
 from core.config import get_settings
@@ -31,6 +32,23 @@ from services.feedback_service import FeedbackService
 from services.graph_service import GraphService
 from services.ingest_service import IngestService
 from services.kpi_service import KPIService
+
+_deps_logger = logging.getLogger(__name__)
+
+
+# ── PostgreSQL engine (None if not configured) ───────────────────────────────
+
+@lru_cache(maxsize=1)
+def _get_pg_engine():
+    """Return SQLAlchemy engine if POSTGRES_URL is set, else None."""
+    settings = get_settings()
+    if not settings.postgres_url:
+        return None
+    from infra.database.postgres import get_engine, ensure_tables
+    engine = get_engine(settings.postgres_url)
+    ensure_tables(engine)
+    _deps_logger.info("PostgreSQL persistence enabled")
+    return engine
 
 
 # ── Singleton infrastructure ─────────────────────────────────────────────────
@@ -91,17 +109,29 @@ def get_alert_repo() -> AlertRepository:
 
 
 @lru_cache(maxsize=1)
-def get_escalation_repo() -> EscalationRepository:
+def get_escalation_repo():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_escalation_repository import PgEscalationRepository
+        return PgEscalationRepository(engine)
     return EscalationRepository()
 
 
 @lru_cache(maxsize=1)
-def get_audit_repo() -> AuditRepository:
+def get_audit_repo():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_audit_repository import PgAuditRepository
+        return PgAuditRepository(engine)
     return AuditRepository()
 
 
 @lru_cache(maxsize=1)
-def get_kpi_repo() -> KPIRepository:
+def get_kpi_repo():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_kpi_repository import PgKPIRepository
+        return PgKPIRepository(engine)
     return KPIRepository(get_persistence())
 
 
@@ -188,9 +218,14 @@ def get_graph_service() -> GraphService:
 
 
 @lru_cache(maxsize=1)
-def get_user_db() -> UserDB:
+def get_user_db():
     settings = get_settings()
-    db = UserDB()
+    engine = _get_pg_engine()
+    if engine is not None:
+        from infra.database.pg_user_db import PgUserDB
+        db = PgUserDB(engine)
+    else:
+        db = UserDB()
     # Seed demo users when not in production
     if settings.demo_mode:
         db.seed_demo_users()
@@ -212,6 +247,10 @@ def get_user_repository() -> UserRepository:
 
 @lru_cache(maxsize=1)
 def get_screening_repository():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_screening_repository import PgScreeningRepository
+        return PgScreeningRepository(engine)
     from repositories.screening_repository import ScreeningRepository
     return ScreeningRepository()
 
@@ -227,6 +266,10 @@ def get_screening_service():
 
 @lru_cache(maxsize=1)
 def get_onboarding_repository():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_onboarding_repository import PgOnboardingRepository
+        return PgOnboardingRepository(engine)
     from repositories.onboarding_repository import OnboardingRepository
     return OnboardingRepository()
 
@@ -242,6 +285,10 @@ def get_onboarding_service():
 
 @lru_cache(maxsize=1)
 def get_str_repository():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_str_repository import PgSTRRepository
+        return PgSTRRepository(engine)
     from repositories.str_repository import STRRepository
     return STRRepository()
 

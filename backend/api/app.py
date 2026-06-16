@@ -91,6 +91,30 @@ def create_app() -> FastAPI:
             ["endpoint"],
         )
 
+        # Detection-specific metrics
+        ALERTS_GENERATED = Counter(
+            "mulecatch_alerts_generated_total", "Total alerts generated",
+            ["severity", "pattern"],
+        )
+        DETECTION_DURATION = Histogram(
+            "mulecatch_detection_duration_seconds", "Detection pipeline duration",
+        )
+        STRS_FILED = Counter(
+            "mulecatch_strs_filed_total", "Total STRs filed",
+        )
+        DB_QUERY_DURATION = Histogram(
+            "mulecatch_db_query_duration_seconds", "Database query duration",
+            ["operation"],
+        )
+
+        # Store metrics on app state for access from services
+        application.state.metrics = {
+            "alerts_generated": ALERTS_GENERATED,
+            "detection_duration": DETECTION_DURATION,
+            "strs_filed": STRS_FILED,
+            "db_query_duration": DB_QUERY_DURATION,
+        }
+
         @application.middleware("http")
         async def metrics_middleware(request, call_next):
             start = time.time()
@@ -108,6 +132,14 @@ def create_app() -> FastAPI:
 
         @application.get("/metrics", tags=["monitoring"])
         def metrics(user: dict = _Depends(_require_role("ADMIN"))):
+            return Response(
+                content=generate_latest(), media_type=CONTENT_TYPE_LATEST
+            )
+
+        # Unauthenticated internal metrics endpoint for Prometheus scraping
+        # Only accessible within Docker network (not exposed externally)
+        @application.get("/internal/metrics", tags=["monitoring"], include_in_schema=False)
+        def internal_metrics():
             return Response(
                 content=generate_latest(), media_type=CONTENT_TYPE_LATEST
             )
@@ -139,11 +171,13 @@ def create_app() -> FastAPI:
             validate_or_die(settings)
 
         if KAFKA_ENABLED:
-            persistence = get_persistence()
-            from api.deps import get_pipeline
-            pipeline = get_pipeline()
+            from api.deps import get_pipeline, get_alert_repo, get_dataset_repo
             consumer = get_kafka_consumer()
-            consumer.start(pipeline=pipeline, persistence=persistence)
+            consumer.start(
+                pipeline=get_pipeline(),
+                alert_repo=get_alert_repo(),
+                dataset_repo=get_dataset_repo(),
+            )
 
     return application
 

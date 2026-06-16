@@ -32,17 +32,17 @@ export default function BackgroundGrid() {
       style={{
         position: 'fixed', inset: 0, zIndex: 0,
         pointerEvents: 'none', overflow: 'hidden',
-        background: isLight ? '#F7FAFC' : 'var(--bg-base)',
+        background: isLight ? '#F8FAFC' : 'var(--bg-base)',
         transition: 'background 0.4s ease',
       }}
     >
-      {/* Primary ambient orb — very subtle */}
+      {/* Primary ambient orb — more visible in light mode for glass texture */}
       <div ref={orb1Ref} style={{
         position: 'absolute', top: '-20%', right: '-10%',
         width: '60vw', height: '60vw',
         background: isLight
-          ? 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 60%)'
-          : 'radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 60%)',
+          ? 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 60%)'
+          : 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 60%)',
         borderRadius: '50%', filter: 'blur(100px)',
       }} />
 
@@ -51,8 +51,8 @@ export default function BackgroundGrid() {
         position: 'absolute', bottom: '-25%', left: '-10%',
         width: '50vw', height: '50vw',
         background: isLight
-          ? 'radial-gradient(circle, rgba(99,102,241,0.03) 0%, transparent 60%)'
-          : 'radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 60%)',
+          ? 'radial-gradient(circle, rgba(37,99,235,0.04) 0%, transparent 60%)'
+          : 'radial-gradient(circle, rgba(37,99,235,0.04) 0%, transparent 60%)',
         borderRadius: '50%', filter: 'blur(120px)',
       }} />
 
@@ -67,15 +67,17 @@ export default function BackgroundGrid() {
         }} />
       )}
 
-      {/* Light mode grid */}
+      {/* Light mode grid — faint blue-tinted lines */}
       {isLight && (
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `
-            linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px)
+            linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px)
           `,
-          backgroundSize: '40px 40px',
+          backgroundSize: '48px 48px',
+          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 100%)',
         }} />
       )}
 
@@ -83,7 +85,7 @@ export default function BackgroundGrid() {
       <div style={{
         position: 'absolute', inset: 0,
         background: isLight
-          ? 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.03) 100%)'
+          ? 'radial-gradient(ellipse at center, transparent 70%, rgba(37,99,235,0.02) 100%)'
           : 'radial-gradient(ellipse at center, transparent 40%, rgba(8,8,12,0.85) 100%)',
       }} />
     </div>

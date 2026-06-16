@@ -8,6 +8,7 @@ runs the detection pipeline, and stores new alerts.
 import json
 import logging
 import os
+import queue
 import time
 import threading
 from typing import Dict, Optional, List
@@ -23,6 +24,9 @@ KAFKA_ENABLED = os.getenv("KAFKA_ENABLED", "false").lower() in ("true", "1", "ye
 
 class TransactionConsumer:
     """Kafka consumer that processes transaction batches through the detection pipeline."""
+
+    # Thread-safe queue for SSE alert notifications
+    _alert_event_queue: queue.Queue = queue.Queue(maxsize=1000)
 
     def __init__(
         self,
@@ -69,7 +73,7 @@ class TransactionConsumer:
             self._stats["status"] = f"error: {exc}"
             return False
 
-    def start(self, pipeline=None, persistence=None):
+    def start(self, pipeline=None, alert_repo=None, dataset_repo=None):
         """Start consuming in a background thread."""
         if self._running:
             return
@@ -81,7 +85,7 @@ class TransactionConsumer:
         self._stats["status"] = "running"
         self._thread = threading.Thread(
             target=self._consume_loop,
-            args=(pipeline, persistence),
+            args=(pipeline, alert_repo, dataset_repo),
             daemon=True,
         )
         self._thread.start()
@@ -98,7 +102,7 @@ class TransactionConsumer:
             self._thread = None
         logger.info("Kafka consumer stopped")
 
-    def _consume_loop(self, pipeline, persistence):
+    def _consume_loop(self, pipeline, alert_repo, dataset_repo):
         from ingest.cbs_parser import parse_cbs_log_line
 
         batch: List[Dict] = []
@@ -122,7 +126,7 @@ class TransactionConsumer:
 
                 # Process batch when full or on timeout
                 if batch and (len(batch) >= self.batch_size or not records):
-                    self._process_batch(batch, pipeline, persistence)
+                    self._process_batch(batch, pipeline, alert_repo, dataset_repo)
                     batch = []
 
             except Exception as exc:
@@ -130,15 +134,15 @@ class TransactionConsumer:
                 self._stats["errors"] += 1
                 time.sleep(1)
 
-    def _process_batch(self, transactions: List[Dict], pipeline, persistence):
+    def _process_batch(self, transactions: List[Dict], pipeline, alert_repo, dataset_repo):
         """Run detection on a batch of transactions."""
         try:
-            if pipeline is None or persistence is None:
-                logger.warning("Pipeline or persistence not available, skipping batch")
+            if pipeline is None or alert_repo is None or dataset_repo is None:
+                logger.warning("Pipeline or repositories not available, skipping batch")
                 return
 
-            # We need account data — use what's in persistence or generate
-            dataset = persistence.get_dataset()
+            # We need account data — use what's in the dataset repo
+            dataset = dataset_repo.get()
             accounts = dataset["accounts"] if dataset else []
 
             if not accounts:
@@ -147,11 +151,30 @@ class TransactionConsumer:
 
             alerts = pipeline.run(transactions, accounts)
             if alerts:
-                from api.main import _alert_to_dict
-                alert_dicts = [_alert_to_dict(a) for a in alerts]
-                existing = persistence.get_alerts(limit=1000)
-                persistence.store_alerts(existing + alert_dicts)
+                from services.detection_service import alert_to_dict
+                alert_dicts = [alert_to_dict(a) for a in alerts]
+                alert_repo.store_batch(alert_dicts)
                 self._stats["alerts_generated"] += len(alerts)
+
+                # Push SSE event for live frontend updates
+                event = {
+                    "type": "new_alerts",
+                    "count": len(alerts),
+                    "alert_ids": [getattr(a, "alert_id", str(a)) for a in alerts],
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
+                try:
+                    self._alert_event_queue.put_nowait(event)
+                except queue.Full:
+                    # Drop oldest event to make room
+                    try:
+                        self._alert_event_queue.get_nowait()
+                    except queue.Empty:
+                        pass
+                    try:
+                        self._alert_event_queue.put_nowait(event)
+                    except queue.Full:
+                        pass
 
             self._stats["batches_processed"] += 1
             self._stats["last_processed_at"] = datetime.utcnow().isoformat()

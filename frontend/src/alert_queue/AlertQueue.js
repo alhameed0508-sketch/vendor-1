@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiFetch } from '../auth/api';
+import useAlertStream from '../hooks/useAlertStream';
 
 /* ═══════════════════════════════════════════════════════════════
    AlertQueue — Priority-ranked investigation triage queue
-   Connects to GET /api/v1/alerts  +  POST /api/v1/alerts/:id
+   Connects to GET /api/v1/alerts  +  PATCH /api/v1/alerts/:id
    Falls back to inline demo data if API unavailable.
    ═══════════════════════════════════════════════════════════════ */
-
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
 
 /* ── Demo data (mirrors _StubRepo in alert_service.py) ─────────── */
 
@@ -17,6 +18,7 @@ const DEMO_ALERTS = [
     risk_score: 0.91, total_amount: 1850000, account_count: 6,
     txn_count: 24, priority_score: 0.88, sar_filing_probability: 0.92,
     investigation_complexity: 'HIGH',
+    created_at: new Date(Date.now() - 1800000).toISOString(),
     score_breakdown: { risk_score: 0.91, amount_factor: 1.0, network_centrality: 0.78, evidence_diversity: 0.40, time_sensitivity: 0.90 },
     reason_codes: ['R01: Rapid fund aggregation', 'R02: Structured deposits below ₹2L', 'R03: Shared device fingerprint', 'R04: New account (<7 days)'],
     nodes: [
@@ -39,6 +41,7 @@ const DEMO_ALERTS = [
     risk_score: 0.74, total_amount: 620000, account_count: 4,
     txn_count: 11, priority_score: 0.67, sar_filing_probability: 0.64,
     investigation_complexity: 'MEDIUM',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
     score_breakdown: { risk_score: 0.74, amount_factor: 0.82, network_centrality: 0.55, evidence_diversity: 0.20, time_sensitivity: 0.60 },
     reason_codes: ['R02: Structured deposits below ₹2L', 'R05: UPI velocity spike'],
     nodes: [
@@ -57,6 +60,7 @@ const DEMO_ALERTS = [
     risk_score: 0.52, total_amount: 210000, account_count: 3,
     txn_count: 7, priority_score: 0.44, sar_filing_probability: 0.34,
     investigation_complexity: 'LOW',
+    created_at: new Date(Date.now() - 7200000).toISOString(),
     score_breakdown: { risk_score: 0.52, amount_factor: 0.61, network_centrality: 0.40, evidence_diversity: 0.10, time_sensitivity: 0.50 },
     reason_codes: ['R03: Shared device fingerprint'],
     nodes: [
@@ -74,6 +78,7 @@ const DEMO_ALERTS = [
     risk_score: 0.69, total_amount: 430000, account_count: 3,
     txn_count: 9, priority_score: 0.58, sar_filing_probability: 0.62,
     investigation_complexity: 'MEDIUM',
+    created_at: new Date(Date.now() - 14400000).toISOString(),
     score_breakdown: { risk_score: 0.69, amount_factor: 0.74, network_centrality: 0.48, evidence_diversity: 0.20, time_sensitivity: 0.55 },
     reason_codes: ['R01: Rapid fund aggregation', 'R04: New account (<7 days)'],
     nodes: [
@@ -97,21 +102,32 @@ function formatAmount(v) {
   return `₹${Math.round(v)}`;
 }
 
-const SEV_COLORS = {
-  CRITICAL:     { bg: 'rgba(228,50,50,0.10)',  border: '#E43232', text: '#C42020' },
-  HIGH:         { bg: 'rgba(245,127,23,0.10)', border: '#F57F17', text: '#BF5F00' },
-  MEDIUM:       { bg: 'rgba(249,168,37,0.10)', border: '#F9A825', text: '#9C6E00' },
-  LOW:          { bg: 'rgba(30,150,100,0.10)', border: '#1E9664', text: '#0D6B46' },
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const SEV_CONFIG = {
+  CRITICAL: { color: 'var(--critical)',   bg: 'var(--critical-dim)', cls: 'badge-CRITICAL' },
+  HIGH:     { color: 'var(--high)',       bg: 'var(--high-dim)',     cls: 'badge-HIGH' },
+  MEDIUM:   { color: 'var(--medium)',     bg: 'var(--medium-dim)',   cls: 'badge-MEDIUM' },
+  LOW:      { color: 'var(--accent-green)', bg: 'rgba(16,185,129,0.10)', cls: 'badge-MEDIUM' },
 };
 
-const STATUS_COLORS = {
-  OPEN:         { bg: 'rgba(33,150,243,0.10)', text: '#0D47A1', border: '#1565C0' },
-  UNDER_REVIEW: { bg: 'rgba(156,39,176,0.10)', text: '#6A1B9A', border: '#7B1FA2' },
-  RESOLVED:     { bg: 'rgba(76,175,80,0.10)',  text: '#1B5E20', border: '#2E7D32' },
-  ESCALATED:    { bg: 'rgba(244,67,54,0.10)',  text: '#B71C1C', border: '#C62828' },
+const STATUS_CONFIG = {
+  OPEN:         { cls: 'badge-OPEN' },
+  UNDER_REVIEW: { cls: 'badge-UNDER_REVIEW' },
+  RESOLVED:     { cls: 'badge-RESOLVED' },
+  ESCALATED:    { cls: 'badge-CRITICAL' },
+  FALSE_POSITIVE: { cls: 'badge-FALSE_POSITIVE' },
 };
 
-const COMPLEXITY_COLORS = { HIGH: '#E43232', MEDIUM: '#F57F17', LOW: '#1E9664' };
+const COMPLEXITY_COLORS = { HIGH: 'var(--critical)', MEDIUM: 'var(--high)', LOW: 'var(--accent-green)' };
 
 const BREAKDOWN_LABELS = {
   risk_score:          'Risk',
@@ -121,9 +137,11 @@ const BREAKDOWN_LABELS = {
   time_sensitivity:    'Recency',
 };
 
-function ScoreBar({ value, color = '#378ADD' }) {
+/* ── Sub-components ─────────────────────────────────────────────── */
+
+function ScoreBar({ value, color = 'var(--emerald)' }) {
   return (
-    <div style={{ flex: 1, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+    <div style={{ flex: 1, height: 3, background: 'var(--border-strong)', borderRadius: 2, overflow: 'hidden' }}>
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.round(value * 100)}%` }}
@@ -134,44 +152,17 @@ function ScoreBar({ value, color = '#378ADD' }) {
   );
 }
 
-function SeverityBadge({ severity }) {
-  const c = SEV_COLORS[severity] || SEV_COLORS.LOW;
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 600, letterSpacing: '0.5px',
-      padding: '2px 8px', borderRadius: 4,
-      background: c.bg, border: `1px solid ${c.border}`, color: c.text,
-      fontFamily: 'var(--font-mono)',
-    }}>
-      {severity}
-    </span>
-  );
-}
-
-function StatusBadge({ status }) {
-  const c = STATUS_COLORS[status] || STATUS_COLORS.OPEN;
-  return (
-    <span style={{
-      fontSize: 10, fontWeight: 500, letterSpacing: '0.3px',
-      padding: '2px 8px', borderRadius: 4,
-      background: c.bg, border: `1px solid ${c.border}`, color: c.text,
-      fontFamily: 'var(--font-mono)',
-    }}>
-      {status.replace('_', ' ')}
-    </span>
-  );
-}
-
 function PriorityRing({ score, rank }) {
-  const r = 22, circ = 2 * Math.PI * r;
-  const fill = score >= 0.75 ? '#E43232' : score >= 0.5 ? '#F57F17' : '#1E9664';
+  const r = 20, circ = 2 * Math.PI * r;
+  const pct = Math.round(score * 100);
+  const fill = score >= 0.75 ? 'var(--critical)' : score >= 0.5 ? 'var(--high)' : 'var(--accent-green)';
   return (
-    <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
-      <svg width={56} height={56} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={28} cy={28} r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth={4} />
+    <div style={{ position: 'relative', width: 50, height: 50, flexShrink: 0 }}>
+      <svg width={50} height={50} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={25} cy={25} r={r} fill="none" stroke="var(--border-strong)" strokeWidth={3} />
         <motion.circle
-          cx={28} cy={28} r={r} fill="none"
-          stroke={fill} strokeWidth={4} strokeLinecap="round"
+          cx={25} cy={25} r={r} fill="none"
+          stroke={fill} strokeWidth={3} strokeLinecap="round"
           strokeDasharray={circ}
           initial={{ strokeDashoffset: circ }}
           animate={{ strokeDashoffset: circ * (1 - score) }}
@@ -182,9 +173,9 @@ function PriorityRing({ score, rank }) {
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)' }}>#{rank}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: fill, lineHeight: 1 }}>
-          {Math.round(score * 100)}
+        <span style={{ fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', lineHeight: 1 }}>#{rank}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-mono)', color: fill, lineHeight: 1.2 }}>
+          {pct}
         </span>
       </div>
     </div>
@@ -193,119 +184,123 @@ function PriorityRing({ score, rank }) {
 
 /* ── Expanded detail panel ─────────────────────────────────────── */
 
-function AlertDetail({ alert, onStatusChange, statusLoading }) {
+function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
   const breakdown = alert.score_breakdown || {};
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
-      transition={{ duration: 0.2 }}
-      style={{
-        margin: '0 0 2px',
-        background: 'var(--color-background-secondary)',
-        borderLeft: '3px solid var(--color-border-info)',
-        borderRadius: '0 0 10px 10px',
-        padding: '16px 20px',
-        borderTop: 'none',
-      }}
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      style={{ overflow: 'hidden' }}
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+      <div style={{
+        background: 'var(--bg-elevated)',
+        borderLeft: `2px solid ${SEV_CONFIG[alert.severity]?.color || 'var(--emerald)'}`,
+        borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
+        padding: '18px 22px',
+        borderTop: 'none',
+        margin: '0 0 4px',
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
 
-        {/* Score breakdown */}
-        <div>
-          <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>
-            Score breakdown
-          </p>
-          {Object.entries(breakdown).map(([key, val]) => (
-            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)', width: 60, flexShrink: 0 }}>
-                {BREAKDOWN_LABELS[key] || key}
-              </span>
-              <ScoreBar value={val} color={val >= 0.7 ? '#E43232' : val >= 0.4 ? '#F57F17' : '#1D9E75'} />
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)', width: 28, textAlign: 'right' }}>
-                {Math.round(val * 100)}%
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Reason codes + SAR prob */}
-        <div>
-          <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>
-            Reason codes
-          </p>
-          {(alert.reason_codes || []).map((rc, i) => (
-            <div key={i} style={{
-              fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)',
-              padding: '4px 8px', marginBottom: 4,
-              background: 'var(--color-background-primary)',
-              borderRadius: 4,
-              borderLeft: '2px solid var(--color-border-danger)',
-            }}>
-              {rc}
-            </div>
-          ))}
-          <div style={{ marginTop: 12, padding: '8px 10px', borderRadius: 6, background: 'var(--color-background-primary)', border: '1px solid var(--color-border-tertiary)' }}>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)' }}>SAR probability</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <ScoreBar value={alert.sar_filing_probability || 0} color="#E43232" />
-              <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-mono)', color: '#E43232' }}>
-                {Math.round((alert.sar_filing_probability || 0) * 100)}%
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Network nodes summary + status action */}
-        <div>
-          <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>
-            Accounts involved
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12, maxHeight: 130, overflowY: 'auto' }}>
-            {(alert.nodes || []).map(n => (
-              <div key={n.account_id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '4px 8px', borderRadius: 4,
-                background: 'var(--color-background-primary)',
-                border: '1px solid var(--color-border-tertiary)',
-              }}>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-secondary)' }}>
-                  ···{n.account_id.slice(-4)}
+          {/* Score breakdown */}
+          <div>
+            <p className="section-title" style={{ marginBottom: 12 }}>Score breakdown</p>
+            {Object.entries(breakdown).map(([key, val]) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', width: 64, flexShrink: 0 }}>
+                  {BREAKDOWN_LABELS[key] || key}
                 </span>
-                <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: n.role === 'SOURCE' ? '#E43232' : n.role === 'AGGREGATOR' ? '#F57F17' : n.role === 'MULE' ? '#854F0B' : '#1D9E75' }}>
-                  {n.role}
-                </span>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)' }}>
-                  {Math.round((n.smurf_score || 0) * 100)}%
+                <ScoreBar value={val} color={val >= 0.7 ? 'var(--critical)' : val >= 0.4 ? 'var(--high)' : 'var(--accent-green)'} />
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', width: 32, textAlign: 'right', fontWeight: 600 }}>
+                  {Math.round(val * 100)}
                 </span>
               </div>
             ))}
           </div>
 
-          <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 6 }}>
-            Update status
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {['UNDER_REVIEW', 'ESCALATED', 'RESOLVED'].map(s => (
-              <button
-                key={s}
-                disabled={statusLoading || alert.status === s}
-                onClick={() => onStatusChange(alert.alert_id, s)}
-                style={{
-                  padding: '6px 10px', borderRadius: 6, cursor: alert.status === s ? 'default' : 'pointer',
-                  fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)', letterSpacing: '0.5px',
-                  background: alert.status === s ? 'var(--color-background-primary)' : 'transparent',
-                  border: `1px solid ${STATUS_COLORS[s]?.border || '#888'}`,
-                  color: STATUS_COLORS[s]?.text || '#333',
-                  opacity: alert.status === s ? 0.5 : 1,
-                  transition: 'opacity 0.2s',
-                }}
-              >
-                {statusLoading === s ? 'Updating...' : s.replace('_', ' ')}
-              </button>
+          {/* Reason codes + SAR prob */}
+          <div>
+            <p className="section-title" style={{ marginBottom: 12 }}>Reason codes</p>
+            {(alert.reason_codes || []).map((rc, i) => (
+              <div key={i} className="reason-code" style={{ fontSize: 11 }}>
+                {rc}
+              </div>
             ))}
+            <div style={{
+              marginTop: 14, padding: '10px 12px', borderRadius: 'var(--radius)',
+              background: 'var(--bg-card)', border: '1px solid var(--border)',
+            }}>
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                SAR filing probability
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                <ScoreBar value={alert.sar_filing_probability || 0} color="var(--critical)" />
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--critical)' }}>
+                  {Math.round((alert.sar_filing_probability || 0) * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Network nodes summary + status action */}
+          <div>
+            <p className="section-title" style={{ marginBottom: 12 }}>Accounts involved</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 14, maxHeight: 120, overflowY: 'auto' }}>
+              {(alert.nodes || []).slice(0, 6).map(n => {
+                const roleColor = {
+                  SOURCE: 'var(--critical)', AGGREGATOR: 'var(--high)',
+                  MULE: 'var(--accent-amber)', LEGITIMATE: 'var(--accent-green)',
+                }[n.role] || 'var(--text-muted)';
+                return (
+                  <div key={n.account_id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '5px 10px', borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
+                  }}>
+                    <span className="account-id">···{n.account_id.slice(-4)}</span>
+                    <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: roleColor, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                      {n.role}
+                    </span>
+                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                      {Math.round((n.smurf_score || 0) * 100)}%
+                    </span>
+                  </div>
+                );
+              })}
+              {(alert.nodes || []).length > 6 && (
+                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textAlign: 'center', padding: 4 }}>
+                  +{alert.nodes.length - 6} more
+                </span>
+              )}
+            </div>
+
+            <p className="section-title" style={{ marginBottom: 8 }}>Update status</p>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {['UNDER_REVIEW', 'ESCALATED', 'RESOLVED'].map(s => {
+                const isActive = alert.status === s;
+                const cfg = STATUS_CONFIG[s] || {};
+                return (
+                  <button
+                    key={s}
+                    disabled={statusLoading || isActive}
+                    onClick={(e) => { e.stopPropagation(); onStatusChange(alert.alert_id, s); }}
+                    className={`badge ${cfg.cls || ''}`}
+                    style={{
+                      cursor: isActive ? 'default' : 'pointer',
+                      opacity: isActive ? 0.5 : 1,
+                      padding: '4px 10px',
+                      fontSize: 10,
+                      transition: 'opacity 0.15s',
+                    }}
+                  >
+                    {statusLoading === s ? 'Updating...' : s.replace(/_/g, ' ')}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -318,29 +313,29 @@ function AlertDetail({ alert, onStatusChange, statusLoading }) {
 export default function AlertQueue({ onSelectAlert }) {
   const [alerts, setAlerts]           = useState([]);
   const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState(null);
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [filterStatus,   setFilterStatus]   = useState('ALL');
   const [expandedId, setExpandedId]   = useState(null);
   const [statusLoading, setStatusLoading]   = useState(null);
   const [usingDemo, setUsingDemo]     = useState(false);
+  const [newAlertCount, setNewAlertCount] = useState(0);
+  const [seeding, setSeeding]         = useState(false);
+  const flashTimer = useRef(null);
 
-  /* ── Fetch alerts ── */
-  useEffect(() => {
+  /* ── Reusable fetch ── */
+  const fetchAlerts = useCallback(() => {
     const params = new URLSearchParams();
     if (filterSeverity !== 'ALL') params.set('severity', filterSeverity);
     if (filterStatus   !== 'ALL') params.set('status',   filterStatus);
     params.set('limit', '50');
 
-    setLoading(true);
-    fetch(`${API_BASE}/alerts?${params}`)
+    return apiFetch(`/api/v1/alerts?${params}`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then(data => {
-        const raw = data.alerts || data || [];
-        // Client-side priority scoring if not pre-scored by backend
+      .then(body => {
+        const raw = body?.data?.alerts || body?.alerts || (Array.isArray(body) ? body : []);
         const scored = raw.map(a => ({
           ...a,
           priority_score: a.priority_score ?? scorePriority(a),
@@ -352,9 +347,9 @@ export default function AlertQueue({ onSelectAlert }) {
         setAlerts(scored);
         setUsingDemo(false);
         setLoading(false);
+        return scored;
       })
       .catch(() => {
-        // Fall back to demo data
         const demo = DEMO_ALERTS
           .filter(a => filterSeverity === 'ALL' || a.severity === filterSeverity)
           .filter(a => filterStatus   === 'ALL' || a.status   === filterStatus);
@@ -362,14 +357,63 @@ export default function AlertQueue({ onSelectAlert }) {
         setAlerts(demo);
         setUsingDemo(true);
         setLoading(false);
+        return demo;
       });
   }, [filterSeverity, filterStatus]);
+  const fetchRef = useRef(fetchAlerts);
+  useEffect(() => { fetchRef.current = fetchAlerts; }, [fetchAlerts]);
+
+  /* ── Initial fetch ── */
+  useEffect(() => {
+    setLoading(true);
+    fetchAlerts();
+  }, [fetchAlerts]);
+
+  /* ── SSE live stream ── */
+  const fetchDebounce = useRef(null);
+  const handleNewAlerts = useCallback((event) => {
+    setNewAlertCount(prev => prev + (event.count || 1));
+    // Clear flash after 4 seconds
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setNewAlertCount(0), 4000);
+    // Debounce re-fetch to avoid hammering API on rapid events
+    if (fetchDebounce.current) clearTimeout(fetchDebounce.current);
+    fetchDebounce.current = setTimeout(() => fetchRef.current(), 500);
+  }, []);
+
+  const { connected: sseConnected } = useAlertStream({
+    onNewAlerts: handleNewAlerts,
+    enabled: !usingDemo,
+  });
+
+  /* ── Polling fallback when SSE is not connected ── */
+  useEffect(() => {
+    if (sseConnected || usingDemo) return;
+    const interval = setInterval(() => fetchRef.current(), 10000);
+    return () => clearInterval(interval);
+  }, [sseConnected, usingDemo]);
+
+  /* ── Seed transactions ── */
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      const r = await apiFetch('/api/v1/ingest/seed', { method: 'POST' });
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        console.warn('Seed failed:', body);
+      }
+    } catch (err) {
+      console.warn('Seed error:', err);
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   /* ── Status update ── */
   const handleStatusChange = async (alertId, newStatus) => {
     setStatusLoading(newStatus);
     try {
-      const r = await fetch(`${API_BASE}/alerts/${alertId}`, {
+      const r = await apiFetch(`/api/v1/alerts/${alertId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -377,7 +421,6 @@ export default function AlertQueue({ onSelectAlert }) {
       if (!r.ok) throw new Error();
       setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status: newStatus } : a));
     } catch {
-      // Optimistic update even if API fails (demo mode)
       setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status: newStatus } : a));
     } finally {
       setStatusLoading(null);
@@ -396,175 +439,274 @@ export default function AlertQueue({ onSelectAlert }) {
   const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'ESCALATED', 'RESOLVED'];
 
   return (
-    <div style={{ fontFamily: 'var(--font-sans)', padding: '20px 0' }}>
+    <div style={{ padding: '28px 32px', maxWidth: 1200, position: 'relative', zIndex: 1 }}>
 
       {/* ── Header ── */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div className="page-header">
         <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 500, color: 'var(--color-text-primary)' }}>
-            Investigation queue
-          </h2>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-text-secondary)' }}>
-            ML-ranked by priority score · {alerts.length} alerts
-            {usingDemo && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>[demo data]</span>}
+          <h1>Triage Queue</h1>
+          <p className="page-meta">
+            <span className="comment">// </span>
+            ML-ranked by priority score
+            <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
+            {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
+            {usingDemo && (
+              <span className="stat-pill" style={{ marginLeft: 10 }}>
+                <span className="dot" />
+                demo data
+              </span>
+            )}
+            {sseConnected && (
+              <span style={{
+                marginLeft: 10, display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-green)',
+              }}>
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: 'var(--accent-green)',
+                  boxShadow: '0 0 6px var(--accent-green)',
+                  animation: 'pulse 2s infinite',
+                }} />
+                Live
+              </span>
+            )}
+            {newAlertCount > 0 && (
+              <span style={{
+                marginLeft: 10, padding: '2px 8px', borderRadius: 12,
+                background: 'var(--critical)', color: '#fff',
+                fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                animation: 'flash 0.5s ease-out',
+              }}>
+                +{newAlertCount} new
+              </span>
+            )}
           </p>
         </div>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ fontSize: 12, padding: '6px 14px', borderRadius: 6, cursor: 'pointer', background: 'transparent', border: '1px solid var(--color-border-secondary)', color: 'var(--color-text-secondary)' }}
-        >
-          Refresh
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            disabled={seeding}
+            onClick={handleSeed}
+            title="Send synthetic transactions to Kafka"
+          >
+            {seeding ? 'Seeding...' : 'Seed Transactions'}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => { setLoading(true); fetchRef.current(); }}
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {/* ── Summary cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+      {/* ── Summary stat cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
         {[
-          { label: 'Open alerts',        value: stats.open,                  color: '#185FA5' },
-          { label: 'Critical severity',  value: stats.critical,              color: '#C42020' },
-          { label: 'High SAR risk',       value: stats.highSAR,               color: '#854F0B' },
-          { label: 'Suspicious flow',     value: formatAmount(stats.totalAmt), color: '#0F6E56' },
+          { label: 'Open alerts',       value: stats.open,                  color: 'var(--emerald-light)', icon: '⊕' },
+          { label: 'Critical severity', value: stats.critical,              color: 'var(--critical)',      icon: '⚠' },
+          { label: 'High SAR risk',     value: stats.highSAR,              color: 'var(--high)',          icon: '◉' },
+          { label: 'Suspicious flow',   value: formatAmount(stats.totalAmt), color: 'var(--accent-cyan)',  icon: '₹' },
         ].map(s => (
-          <div key={s.label} style={{
-            background: 'var(--color-background-secondary)',
-            borderRadius: 10, padding: '12px 14px',
-          }}>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-              {s.label}
-            </p>
-            <p style={{ margin: '4px 0 0', fontSize: 22, fontWeight: 500, color: s.color, fontFamily: 'var(--font-mono)' }}>
+          <div key={s.label} className="glass-card" style={{ padding: '16px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                {s.label}
+              </span>
+              <span style={{ fontSize: 12, opacity: 0.3 }}>{s.icon}</span>
+            </div>
+            <span style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', color: s.color, letterSpacing: '-0.5px' }}>
               {s.value}
-            </p>
+            </span>
           </div>
         ))}
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)', marginRight: 4 }}>Severity</span>
-          {severities.map(s => (
-            <button key={s} onClick={() => setFilterSeverity(s)} style={{
-              fontSize: 10, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
-              fontFamily: 'var(--font-mono)', letterSpacing: '0.3px',
-              background: filterSeverity === s ? 'var(--color-background-info)' : 'transparent',
-              border: `1px solid ${filterSeverity === s ? 'var(--color-border-info)' : 'var(--color-border-tertiary)'}`,
-              color: filterSeverity === s ? 'var(--color-text-info)' : 'var(--color-text-secondary)',
-            }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 20 }}>
+        <span className="filter-label">Severity</span>
+        {severities.map(s => {
+          const isActive = filterSeverity === s;
+          const activeCls = s === 'CRITICAL' ? 'active-critical' : s === 'HIGH' ? 'active-high' : s === 'MEDIUM' ? 'active-medium' : 'active';
+          return (
+            <button
+              key={s}
+              onClick={() => setFilterSeverity(s)}
+              className={`filter-tab ${isActive ? activeCls : ''}`}
+            >
               {s}
             </button>
-          ))}
-        </div>
-        <div style={{ width: 1, background: 'var(--color-border-tertiary)', margin: '0 4px' }} />
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)', fontFamily: 'var(--font-mono)', marginRight: 4 }}>Status</span>
-          {statuses.map(s => (
-            <button key={s} onClick={() => setFilterStatus(s)} style={{
-              fontSize: 10, padding: '4px 10px', borderRadius: 4, cursor: 'pointer',
-              fontFamily: 'var(--font-mono)', letterSpacing: '0.3px',
-              background: filterStatus === s ? 'var(--color-background-info)' : 'transparent',
-              border: `1px solid ${filterStatus === s ? 'var(--color-border-info)' : 'var(--color-border-tertiary)'}`,
-              color: filterStatus === s ? 'var(--color-text-info)' : 'var(--color-text-secondary)',
-            }}>
-              {s.replace('_', ' ')}
-            </button>
-          ))}
-        </div>
+          );
+        })}
+
+        <div className="filter-divider" />
+
+        <span className="filter-label">Status</span>
+        {statuses.map(s => (
+          <button
+            key={s}
+            onClick={() => setFilterStatus(s)}
+            className={`filter-tab ${filterStatus === s ? 'active' : ''}`}
+          >
+            {s.replace(/_/g, ' ')}
+          </button>
+        ))}
       </div>
 
       {/* ── Queue rows ── */}
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-          Loading queue…
+        <div className="loading">
+          <div className="spinner" />
+          Loading queue...
         </div>
       ) : alerts.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: 13 }}>
-          No alerts match current filters
+        <div className="glass-card" style={{ padding: '48px 32px', textAlign: 'center' }}>
+          <p style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 4 }}>No alerts match current filters</p>
+          <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+            Try adjusting severity or status filters above
+          </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Table header */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '56px 1fr 100px 90px 80px 80px 24px',
+            gap: 12,
+            padding: '0 18px 8px',
+            alignItems: 'center',
+          }}>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Score</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Alert</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Breakdown</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'right' }}>Amount</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>SAR</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'right' }}>Time</span>
+            <span />
+          </div>
+
           <AnimatePresence>
             {alerts.map((alert, idx) => {
               const expanded = expandedId === alert.alert_id;
-              const sev = SEV_COLORS[alert.severity] || SEV_COLORS.LOW;
+              const sevCfg = SEV_CONFIG[alert.severity] || SEV_CONFIG.MEDIUM;
+              const sarPct = Math.round((alert.sar_filing_probability || 0) * 100);
+
               return (
-                <div key={alert.alert_id}>
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.04, duration: 0.25 }}
+                <motion.div
+                  key={alert.alert_id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03, duration: 0.2 }}
+                >
+                  {/* Alert row */}
+                  <div
                     onClick={() => {
                       setExpandedId(expanded ? null : alert.alert_id);
                       if (onSelectAlert) onSelectAlert(alert);
                     }}
+                    className="glass-card"
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 14,
-                      padding: '12px 16px', cursor: 'pointer',
-                      background: 'var(--color-background-primary)',
-                      border: `0.5px solid ${expanded ? sev.border : 'var(--color-border-tertiary)'}`,
-                      borderRadius: expanded ? '10px 10px 0 0' : 10,
-                      borderBottom: expanded ? 'none' : undefined,
-                      transition: 'border-color 0.2s, background 0.2s',
+                      display: 'grid',
+                      gridTemplateColumns: '56px 1fr 100px 90px 80px 80px 24px',
+                      gap: 12,
+                      padding: '14px 18px',
+                      cursor: 'pointer',
+                      alignItems: 'center',
+                      borderColor: expanded ? sevCfg.color : undefined,
+                      borderRadius: expanded ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)',
+                      transition: 'border-color 0.2s, box-shadow 0.2s',
                     }}
-                    whileHover={{ background: 'var(--color-background-secondary)' }}
                   >
                     {/* Priority ring */}
                     <PriorityRing score={alert.priority_score} rank={idx + 1} />
 
                     {/* Main info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-mono)', color: 'var(--color-text-primary)' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
                           {alert.alert_id}
                         </span>
-                        <SeverityBadge severity={alert.severity} />
-                        <StatusBadge   status={alert.status} />
-                        <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: COMPLEXITY_COLORS[alert.investigation_complexity], marginLeft: 'auto' }}>
-                          {alert.investigation_complexity} complexity
+                        <span className={`badge ${sevCfg.cls}`}>{alert.severity}</span>
+                        <span className={`badge ${(STATUS_CONFIG[alert.status] || {}).cls || ''}`}>
+                          {alert.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 16, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)' }}>
-                        <span>{formatAmount(alert.total_amount)}</span>
+                      <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
                         <span>{alert.account_count} accounts</span>
                         <span>{alert.txn_count} txns</span>
-                        <span style={{ color: '#E43232' }}>SAR {Math.round((alert.sar_filing_probability || 0) * 100)}%</span>
+                        <span style={{ color: COMPLEXITY_COLORS[alert.investigation_complexity] }}>
+                          {alert.investigation_complexity}
+                        </span>
                       </div>
                     </div>
 
                     {/* Score breakdown mini-bars */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 100 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {Object.entries(alert.score_breakdown || {}).slice(0, 3).map(([key, val]) => (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--color-text-tertiary)', width: 32, flexShrink: 0 }}>
-                            {BREAKDOWN_LABELS[key]?.slice(0, 4)}
+                          <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', width: 28, flexShrink: 0 }}>
+                            {(BREAKDOWN_LABELS[key] || key).slice(0, 4)}
                           </span>
-                          <ScoreBar value={val} color={val >= 0.7 ? '#E43232' : val >= 0.4 ? '#F57F17' : '#1D9E75'} />
+                          <ScoreBar value={val} color={val >= 0.7 ? 'var(--critical)' : val >= 0.4 ? 'var(--high)' : 'var(--accent-green)'} />
                         </div>
                       ))}
                     </div>
 
+                    {/* Amount */}
+                    <span className="amount" style={{ textAlign: 'right', fontSize: 13 }}>
+                      {formatAmount(alert.total_amount)}
+                    </span>
+
+                    {/* SAR probability */}
+                    <div style={{ textAlign: 'center' }}>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                        color: sarPct >= 70 ? 'var(--critical)' : sarPct >= 40 ? 'var(--high)' : 'var(--text-muted)',
+                      }}>
+                        {sarPct}%
+                      </span>
+                    </div>
+
+                    {/* Time ago */}
+                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textAlign: 'right' }}>
+                      {timeAgo(alert.created_at)}
+                    </span>
+
                     {/* Chevron */}
                     <motion.span
                       animate={{ rotate: expanded ? 180 : 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginLeft: 4 }}
+                      transition={{ duration: 0.15 }}
+                      style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center' }}
                     >
                       ▾
                     </motion.span>
-                  </motion.div>
+                  </div>
 
                   {/* Expanded detail */}
                   <AnimatePresence>
                     {expanded && (
-                      <AlertDetail
+                      <AlertExpandedDetail
                         alert={alert}
                         onStatusChange={handleStatusChange}
                         statusLoading={statusLoading}
                       />
                     )}
                   </AnimatePresence>
-                </div>
+
+                  {/* Open investigation link */}
+                  {expanded && (
+                    <div style={{ textAlign: 'right', padding: '4px 0 8px' }}>
+                      <Link
+                        to={`/alert/${alert.alert_id}`}
+                        className="btn btn-primary btn-sm"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ textDecoration: 'none' }}
+                      >
+                        Open full investigation →
+                      </Link>
+                    </div>
+                  )}
+                </motion.div>
               );
             })}
           </AnimatePresence>
@@ -580,7 +722,7 @@ function scorePriority(a) {
   const risk   = Math.min(1, a.risk_score || 0);
   const amt    = Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(1000000));
   const nodes  = (a.nodes || []);
-  const cent   = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || 0)) : 0;
+  const cent   = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || n.betweenness || 0)) : 0;
   const evid   = Math.min(1, (a.reason_codes || []).length / 10);
   const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
   const time   = Math.min(1, 0.5 + 0.5 * (newAcc / Math.max(nodes.length, 1)));
@@ -599,7 +741,7 @@ function complexity(a) {
 
 function breakdown(a) {
   const nodes = a.nodes || [];
-  const cent  = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || 0)) : 0;
+  const cent  = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || n.betweenness || 0)) : 0;
   const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
   return {
     risk_score:         Math.min(1, a.risk_score || 0),

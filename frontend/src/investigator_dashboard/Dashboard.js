@@ -23,7 +23,7 @@ function StatCard({ label, value, color, icon: Icon, sub, index }) {
         transition: 'border-color 0.2s ease',
       }}
       whileHover={{
-        borderColor: 'rgba(255,255,255,0.10)',
+        borderColor: 'var(--border-strong)',
         transition: { duration: 0.15 },
       }}
     >
@@ -85,8 +85,8 @@ function EmptyState({ hasFilters }) {
       <div style={{
         width: 48, height: 48,
         borderRadius: '50%',
-        background: 'rgba(99,102,241,0.08)',
-        border: '1px solid rgba(99,102,241,0.15)',
+        background: 'var(--accent-dim)',
+        border: '1px solid rgba(37,99,235,0.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <Shield size={20} color="#818CF8" />
@@ -369,7 +369,7 @@ export default function Dashboard() {
                           </td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 36, height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{ width: 36, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
                                 <div style={{
                                   height: '100%',
                                   width: `${alert.risk_score * 100}%`,
@@ -450,7 +450,7 @@ export default function Dashboard() {
             {[['j/k', 'navigate'], ['Enter', 'open alert'], ['click header', 'sort']].map(([k, v]) => (
               <span key={k}>
                 <span style={{
-                  background: 'rgba(255,255,255,0.05)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border)',
                   borderRadius: 3,
                   padding: '1px 5px',

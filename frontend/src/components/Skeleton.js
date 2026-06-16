@@ -8,7 +8,7 @@ export function Skeleton({ width, height, borderRadius = 4, style = {}, classNam
         width: width || '100%',
         height: height || 16,
         borderRadius,
-        background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)',
+        background: 'linear-gradient(90deg, var(--bg-card) 0%, var(--bg-input) 50%, var(--bg-card) 100%)',
         backgroundSize: '200% 100%',
         animation: 'shimmer 2s linear infinite',
         ...style,
@@ -62,14 +62,14 @@ export function SkeletonTable({ rows = 6, columns = 9 }) {
 export function SkeletonGraph() {
   return (
     <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between' }}>
         <Skeleton width={200} height={14} />
         <Skeleton width={100} height={10} />
       </div>
       <div style={{ height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{
           width: 200, height: 200, borderRadius: '50%',
-          background: 'linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 100%)',
+          background: 'linear-gradient(90deg, var(--bg-card) 0%, var(--bg-input) 50%, var(--bg-card) 100%)',
           backgroundSize: '200% 100%',
           animation: 'shimmer 2s linear infinite',
         }} />

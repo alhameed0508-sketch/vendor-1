@@ -26,6 +26,7 @@ class STRService:
         narrative: str,
         reporting_entity: str = "Indian Overseas Bank",
         prepared_by: str = "MuleCatch System",
+        **extra_fields,
     ) -> Dict:
         """Create a new STR in DRAFT status."""
         str_id = f"STR-{uuid.uuid4().hex[:10].upper()}"
@@ -39,6 +40,7 @@ class STRService:
             "fiu_reference": None,
             "submitted_at": None,
             "acknowledged_at": None,
+            **extra_fields,
         }
         result = self._repo.create(record)
         logger.info("STR created: %s (alerts=%s)", str_id, alert_ids)

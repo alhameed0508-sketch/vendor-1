@@ -6,7 +6,7 @@ import {
 import { motion } from 'framer-motion';
 import { apiFetch } from '../auth/api';
 
-const MONTHLY_TREND = [
+const FALLBACK_MONTHLY_TREND = [
   { month: 'Aug', alerts: 12, prevented: 18.2, hours: 36 },
   { month: 'Sep', alerts: 18, prevented: 27.4, hours: 54 },
   { month: 'Oct', alerts: 14, prevented: 22.1, hours: 42 },
@@ -15,7 +15,7 @@ const MONTHLY_TREND = [
   { month: 'Jan', alerts: 28, prevented: 44.2, hours: 84 },
 ];
 
-const DETECTION_BREAKDOWN = [
+const FALLBACK_DETECTION_BREAKDOWN = [
   { name: 'Smurfing',      count: 34, color: '#F43F5E', pct: 100 },
   { name: 'Consolidation', count: 21, color: '#FB923C', pct: 61.7 },
   { name: 'Shared Device', count: 18, color: '#38BDF8', pct: 52.9 },
@@ -23,19 +23,32 @@ const DETECTION_BREAKDOWN = [
   { name: 'Fan-out',       count: 9,  color: '#22D3EE', pct: 26.5 },
 ];
 
+const PATTERN_COLORS = {
+  'Smurfing': '#F43F5E',
+  'Consolidation': '#FB923C',
+  'Shared Device': '#38BDF8',
+  'Bot Pattern': '#10B981',
+  'Fan-out': '#22D3EE',
+  'SMURF': '#F43F5E',
+  'CONSOLIDATION': '#FB923C',
+  'SHARED_DEVICE': '#38BDF8',
+  'BOT_PATTERN': '#10B981',
+  'FAN_OUT': '#22D3EE',
+};
+
 const chartTooltipStyle = {
-  background: 'rgba(8, 12, 20, 0.95)',
-  border: '1px solid rgba(16,185,129,0.25)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
   borderRadius: 6,
   padding: '10px 14px',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
+  boxShadow: 'var(--shadow)',
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={chartTooltipStyle}>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#4A5568', marginBottom: 6, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</p>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: p.color, margin: 0, fontWeight: 600 }}>
           {p.name}: {p.value}
@@ -53,18 +66,18 @@ function MetricCard({ label, value, sub, color, accent, index }) {
     <motion.div
       variants={cardAnim}
       style={{
-        background: 'rgba(12, 18, 32, 0.65)',
-        border: '1px solid rgba(255,255,255,0.07)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
         borderRadius: 12,
         padding: '22px 24px',
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+        boxShadow: 'var(--shadow)',
         transition: 'border-color 0.25s, box-shadow 0.25s',
       }}
       whileHover={{
         borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${color}25, inset 0 1px 0 rgba(255,255,255,0.07)`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px ${color}25`,
         y: -2,
         transition: { duration: 0.2 },
       }}
@@ -91,8 +104,8 @@ function MetricCard({ label, value, sub, color, accent, index }) {
         lineHeight: 1,
         marginBottom: 10,
       }}>{value}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#EDF2F7', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 11, color: '#4A5568', fontFamily: 'var(--font-mono)', letterSpacing: '0.3px' }}>{sub}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.3px' }}>{sub}</div>
     </motion.div>
   );
 }
@@ -100,16 +113,16 @@ function MetricCard({ label, value, sub, color, accent, index }) {
 function ChartPanel({ title, children }) {
   return (
     <div style={{
-      background: 'rgba(12, 18, 32, 0.65)',
-      border: '1px solid rgba(255,255,255,0.07)',
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       padding: '22px 24px',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+      boxShadow: 'var(--shadow)',
     }}>
       <p style={{
         fontFamily: 'var(--font-mono)',
         fontSize: 10,
-        color: '#4A5568',
+        color: 'var(--text-muted)',
         textTransform: 'uppercase',
         letterSpacing: '1.5px',
         fontWeight: 700,
@@ -123,15 +136,31 @@ function ChartPanel({ title, children }) {
 export default function ROIDashboard() {
   const [kpi, setKpi] = useState(null);
   const [feedbackStats, setFeedbackStats] = useState(null);
+  const [monthlyTrend, setMonthlyTrend] = useState(FALLBACK_MONTHLY_TREND);
+  const [detectionBreakdown, setDetectionBreakdown] = useState(FALLBACK_DETECTION_BREAKDOWN);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       apiFetch('/api/v1/kpi').then(r => r.json()).then(body => body?.data || body),
       apiFetch('/api/v1/feedback/stats').then(r => r.json()).then(body => body?.data || body).catch(err => { console.error('[ROI] Feedback stats fetch failed:', err); return null; }),
-    ]).then(([kpiData, fbData]) => {
+      apiFetch('/api/v1/roi').then(r => r.json()).then(body => body?.data || body).catch(err => { console.error('[ROI] ROI data fetch failed:', err); return null; }),
+    ]).then(([kpiData, fbData, roiData]) => {
       setKpi(kpiData);
       setFeedbackStats(fbData);
+      // Use API data if available, fall back to hardcoded demo data
+      if (roiData?.monthly_trends?.length) {
+        setMonthlyTrend(roiData.monthly_trends);
+      }
+      if (roiData?.detection_breakdown?.length) {
+        const maxCount = Math.max(...roiData.detection_breakdown.map(d => d.count));
+        setDetectionBreakdown(roiData.detection_breakdown.map(d => ({
+          name: d.pattern || d.name,
+          count: d.count,
+          color: PATTERN_COLORS[d.pattern || d.name] || '#94A3B8',
+          pct: maxCount > 0 ? (d.count / maxCount) * 100 : 0,
+        })));
+      }
       setLoading(false);
     }).catch(err => {
       console.error('[ROI] Failed to load KPI data:', err);
@@ -142,7 +171,7 @@ export default function ROIDashboard() {
   if (loading) return (
     <div className="loading">
       <div className="spinner" />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: '#4A5568' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: 'var(--text-muted)' }}>
         LOADING ANALYTICS...
       </span>
     </div>
@@ -180,7 +209,7 @@ export default function ROIDashboard() {
             LIVE
           </span>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#4A5568', letterSpacing: '0.5px' }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
           // detection metrics · roi tracking · active learning feedback
         </p>
       </motion.div>
@@ -254,16 +283,16 @@ export default function ROIDashboard() {
       >
         <ChartPanel title="Fraud Prevention Trend (₹ Lakh)">
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={MONTHLY_TREND} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={monthlyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="prevGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#FB923C" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#FB923C" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="month" tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="prevented" name="₹ Lakh" stroke="#FB923C" strokeWidth={2} fill="url(#prevGrad)" dot={false} activeDot={{ r: 4, fill: '#FB923C', stroke: '#0A0A0F', strokeWidth: 2 }} />
             </AreaChart>
@@ -272,16 +301,16 @@ export default function ROIDashboard() {
 
         <ChartPanel title="Hours Saved per Month">
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={MONTHLY_TREND} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={monthlyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="hoursGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%"   stopColor="#22D3EE" stopOpacity={0.9} />
                   <stop offset="100%" stopColor="#22D3EE" stopOpacity={0.3} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="month" tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#4A5568', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="hours" name="Hours" fill="url(#hoursGrad)" radius={[3, 3, 0, 0]} />
             </BarChart>
@@ -298,13 +327,13 @@ export default function ROIDashboard() {
       >
         <ChartPanel title="Detection by Pattern">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {DETECTION_BREAKDOWN.map(d => (
+            {detectionBreakdown.map(d => (
               <div key={d.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94A3B8' }}>{d.name}</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: d.color, fontWeight: 700 }}>{d.count}</span>
                 </div>
-                <div style={{ height: 4, background: 'rgba(255,255,255,0.05)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 4, background: 'var(--bg-input)', borderRadius: 2, overflow: 'hidden' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${d.pct}%` }}
@@ -331,13 +360,13 @@ export default function ROIDashboard() {
                   { v: `${(feedbackStats.false_positive_rate * 100).toFixed(1)}%`, l: 'FP Rate', c: feedbackStats.false_positive_rate > 0.3 ? '#F43F5E' : '#10B981' },
                 ].map(({ v, l, c }) => (
                   <div key={l} style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: 8,
                     padding: '14px 16px',
                   }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: c, letterSpacing: '-0.5px' }}>{v}</div>
-                    <div style={{ fontSize: 11, color: '#4A5568', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{l}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{l}</div>
                   </div>
                 ))}
               </div>
@@ -347,22 +376,22 @@ export default function ROIDashboard() {
                   { v: feedbackStats.false_positives, l: 'False Positives',  c: '#FB923C' },
                 ].map(({ v, l, c }) => (
                   <div key={l} style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.06)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-subtle)',
                     borderRadius: 8,
                     padding: '12px 16px',
                   }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: c }}>{v}</div>
-                    <div style={{ fontSize: 11, color: '#4A5568', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{l}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{l}</div>
                   </div>
                 ))}
               </div>
               <div style={{
                 paddingTop: 12,
-                borderTop: '1px solid rgba(255,255,255,0.05)',
+                borderTop: '1px solid var(--border)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: 11,
-                color: '#4A5568',
+                color: 'var(--text-muted)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
@@ -373,10 +402,10 @@ export default function ROIDashboard() {
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180, flexDirection: 'column', gap: 8 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#4A5568', fontSize: 14 }}>—</span>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>—</span>
               </div>
-              <p style={{ color: '#4A5568', fontSize: 12, fontFamily: 'var(--font-mono)' }}>No feedback data yet.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>No feedback data yet.</p>
             </div>
           )}
         </ChartPanel>

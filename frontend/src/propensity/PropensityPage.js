@@ -57,7 +57,7 @@ function ScoreBar({ value, label, height = 6, showLabel = true, animate = true }
       <div style={{
         flex: 1,
         height,
-        background: 'rgba(255,255,255,0.05)',
+        background: 'var(--bg-input)',
         borderRadius: height / 2,
         overflow: 'hidden',
         position: 'relative',
@@ -137,7 +137,7 @@ function TopRiskAccounts({ accounts, loading, total }) {
         gridTemplateColumns: '36px 1fr 2fr 80px',
         gap: 12,
         padding: '0 16px 10px',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        borderBottom: '1px solid var(--border-subtle)',
         marginBottom: 4,
       }}>
         <span style={colHeaderStyle}>#</span>
@@ -161,12 +161,12 @@ function TopRiskAccounts({ accounts, loading, total }) {
               gap: 12,
               alignItems: 'center',
               padding: '10px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.03)',
+              borderBottom: '1px solid var(--border)',
               transition: 'background 0.15s',
               borderRadius: 4,
             }}
             whileHover={{
-              background: 'rgba(255,255,255,0.03)',
+              background: 'var(--bg-card)',
             }}
           >
             {/* Rank */}
@@ -197,7 +197,7 @@ function TopRiskAccounts({ accounts, loading, total }) {
               <div style={{
                 flex: 1,
                 height: 4,
-                background: 'rgba(255,255,255,0.05)',
+                background: 'var(--bg-input)',
                 borderRadius: 2,
                 overflow: 'hidden',
               }}>
@@ -335,7 +335,7 @@ function AccountDetail({ detail, loading, error }) {
           alignItems: 'center',
           gap: 20,
           paddingBottom: 20,
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid var(--border-subtle)',
         }}>
           <div>
             <div style={{
@@ -437,7 +437,7 @@ function AccountDetail({ detail, loading, error }) {
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     padding: '8px 0',
-                    borderBottom: '1px solid rgba(255,255,255,0.03)',
+                    borderBottom: '1px solid var(--border)',
                   }}
                 >
                   <span style={{
@@ -594,16 +594,16 @@ export default function PropensityPage() {
         {/* ── Left: Top Risk Accounts ── */}
         <AnimateIn delay={0.05}>
           <GlassCard padding={0} hover={false} style={{
-            background: 'rgba(12,18,32,0.65)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: 'var(--shadow)',
           }}>
             {/* Section header */}
             <div style={{
               padding: '16px 20px 14px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid var(--border-subtle)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -647,16 +647,16 @@ export default function PropensityPage() {
         {/* ── Right: Account Detail Lookup ── */}
         <AnimateIn delay={0.12}>
           <GlassCard padding={0} hover={false} style={{
-            background: 'rgba(12,18,32,0.65)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             borderRadius: 12,
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: 'var(--shadow)',
           }}>
             {/* Section header */}
             <div style={{
               padding: '16px 20px 14px',
-              borderBottom: '1px solid rgba(255,255,255,0.06)',
+              borderBottom: '1px solid var(--border-subtle)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Search size={14} color="var(--accent-cyan)" />
@@ -697,8 +697,8 @@ export default function PropensityPage() {
                     onKeyDown={handleKeyDown}
                     style={{
                       width: '100%',
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'var(--bg-input)',
+                      border: '1px solid var(--border)',
                       borderRadius: 6,
                       padding: '8px 12px 8px 32px',
                       fontFamily: 'var(--font-mono)',
@@ -713,7 +713,7 @@ export default function PropensityPage() {
                       e.target.style.boxShadow = '0 0 0 2px rgba(34,211,238,0.08)';
                     }}
                     onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                      e.target.style.borderColor = 'var(--border)';
                       e.target.style.boxShadow = 'none';
                     }}
                   />
@@ -724,7 +724,7 @@ export default function PropensityPage() {
                   style={{
                     background: lookupId.trim()
                       ? 'linear-gradient(135deg, rgba(34,211,238,0.15), rgba(34,211,238,0.08))'
-                      : 'rgba(255,255,255,0.03)',
+                      : 'var(--bg-card)',
                     border: '1px solid rgba(34,211,238,0.2)',
                     borderRadius: 6,
                     padding: '8px 16px',

@@ -31,7 +31,7 @@ function TypologyCard({ typology, count, index }) {
       transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
       style={{
         background: 'var(--bg-card)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 10,
         padding: '16px 18px',
         position: 'relative',
@@ -40,7 +40,7 @@ function TypologyCard({ typology, count, index }) {
       }}
       whileHover={{
         borderColor: `${typology.color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px ${typology.color}18`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${typology.color}18`,
         y: -1,
         transition: { duration: 0.2 },
       }}
@@ -111,7 +111,7 @@ function ConfidenceBar({ value, color }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120 }}>
       <div style={{
         flex: 1, height: 4, borderRadius: 2,
-        background: 'rgba(255,255,255,0.06)',
+        background: 'var(--border-subtle)',
         overflow: 'hidden',
       }}>
         <motion.div
@@ -311,8 +311,8 @@ function AccountDetailPanel({ accountId, onClose }) {
                     fontFamily: 'var(--font-mono)',
                     fontSize: 10,
                     color: 'var(--text-secondary)',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'var(--bg-input)',
+                    border: '1px solid var(--border)',
                     borderRadius: 4,
                     padding: '3px 8px',
                     letterSpacing: '0.3px',
@@ -369,8 +369,8 @@ function ResponseActionCard({ action, index }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.06 }}
       style={{
-        background: 'rgba(255,255,255,0.02)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
         borderRadius: 8,
         padding: 12,
       }}
@@ -435,7 +435,7 @@ function ResponseActionCard({ action, index }) {
             <span key={j} style={{
               fontFamily: 'var(--font-mono)', fontSize: 10,
               color: 'var(--accent-cyan)',
-              background: 'rgba(90,200,250,0.08)',
+              background: 'var(--accent-dim)',
               borderRadius: 3, padding: '1px 6px',
             }}>
               {target}
@@ -544,8 +544,8 @@ export default function TypologyPage() {
             <span style={{
               fontFamily: 'var(--font-mono)', fontSize: 10,
               color: 'var(--accent-cyan)',
-              background: 'rgba(90,200,250,0.08)',
-              border: '1px solid rgba(90,200,250,0.15)',
+              background: 'var(--accent-dim)',
+              border: '1px solid rgba(37,99,235,0.15)',
               borderRadius: 4, padding: '2px 8px',
             }}>
               {totalFlagged} flagged
@@ -602,7 +602,7 @@ export default function TypologyPage() {
               border: '1px solid var(--border)',
               borderRadius: 10,
               overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              boxShadow: 'var(--shadow)',
             }}>
               {accounts.length === 0 ? (
                 <div style={{
@@ -709,7 +709,7 @@ export default function TypologyPage() {
               {[['click row', 'expand detail'], ['Esc / close', 'collapse']].map(([k, v]) => (
                 <span key={k}>
                   <span style={{
-                    background: 'rgba(255,255,255,0.05)',
+                    background: 'var(--bg-input)',
                     border: '1px solid var(--border)',
                     borderRadius: 3, padding: '1px 5px',
                     marginRight: 5, fontWeight: 700,

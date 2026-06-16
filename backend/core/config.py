@@ -49,6 +49,9 @@ class Settings(BaseSettings):
         alias="UNSC_URL",
     )
 
+    # PostgreSQL (set to enable persistent storage for STRs, audit, etc.)
+    postgres_url: str = Field("", alias="POSTGRES_URL")
+
     # Redis / Cache
     redis_url: str = Field("redis://localhost:6379/0", alias="REDIS_URL")
     cache_l1_max_size: int = Field(1000, alias="CACHE_L1_MAX_SIZE")
