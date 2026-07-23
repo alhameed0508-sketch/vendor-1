@@ -18,6 +18,7 @@ import ScreeningPage from './screening/ScreeningPage';
 import AlertQueue from './alert_queue/AlertQueue';
 import BenchmarkPage from './benchmark/BenchmarkPage';
 import SystemOpsPage from './system_ops/SystemOpsPage';
+import DataImportPage from './data_import/DataImportPage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import BackgroundGrid from './components/ui/BackgroundGrid';
@@ -94,6 +95,7 @@ function AppContent() {
               <Route path="/screening" element={<ProtectedRoute><ScreeningPage /></ProtectedRoute>} />
               <Route path="/benchmark" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
               <Route path="/system" element={<ProtectedRoute><SystemOpsPage /></ProtectedRoute>} />
+              <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
             </Routes>
           </ErrorBoundary>
         </main>

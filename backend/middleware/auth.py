@@ -39,9 +39,14 @@ def _auth_enabled() -> bool:
 
 
 async def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> Optional[dict]:
-    """Extract and validate JWT from Authorization header.
+    """Extract and validate JWT from Authorization header or query parameter.
+
+    Falls back to a ``token`` query parameter so that browser-native
+    EventSource (SSE) connections can authenticate — EventSource cannot
+    send custom headers.
 
     When AUTH_ENABLED=false (demo mode), returns a default admin user
     so all endpoints work without authentication.
@@ -57,10 +62,17 @@ async def get_current_user(
             _demo_warning_shown = True
         return {"sub": "demo_user", "role": "ADMIN"}
 
-    if credentials is None:
+    # Prefer Authorization header; fall back to ?token= query param (SSE)
+    raw_token: Optional[str] = None
+    if credentials is not None:
+        raw_token = credentials.credentials
+    else:
+        raw_token = request.query_params.get("token")
+
+    if raw_token is None:
         raise AuthenticationError("Missing authentication token")
 
-    payload = decode_token(credentials.credentials)
+    payload = decode_token(raw_token)
     if payload is None:
         raise AuthenticationError("Invalid or expired token")
 

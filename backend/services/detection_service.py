@@ -71,8 +71,13 @@ class DetectionService:
             self._dataset_repo.set(ds)
         return ds
 
-    def ensure_alerts(self) -> List[Dict]:
-        """Lazy-init: return existing alerts or run detection pipeline."""
+    def ensure_alerts(self, skip_demo_statuses: bool = False) -> List[Dict]:
+        """Lazy-init: return existing alerts or run detection pipeline.
+
+        Args:
+            skip_demo_statuses: If True, skip demo status assignment even in
+                demo mode. Used when processing real uploaded data.
+        """
         existing = self._alert_repo.find_all(limit=200)
         if existing:
             return existing
@@ -88,9 +93,9 @@ class DetectionService:
         alert_dicts = [alert_to_dict(a) for a in alerts]
 
         settings = get_settings()
-        if settings.demo_mode:
+        if settings.demo_mode and not skip_demo_statuses:
             # Assign diverse statuses for realistic demo
-            alert_dicts.sort(key=lambda a: -a["risk_score"])
+            alert_dicts = sorted(alert_dicts, key=lambda a: -a["risk_score"])
             demo_statuses = [
                 "OPEN", "OPEN", "UNDER_REVIEW", "OPEN", "RESOLVED",
                 "UNDER_REVIEW", "OPEN", "FALSE_POSITIVE",
@@ -115,7 +120,7 @@ class DetectionService:
                     )
                 enriched.append({**ad, **updates})
         else:
-            # Production: no demo statuses, all alerts start as OPEN
+            # Production or skip_demo: all alerts start as OPEN
             enriched = alert_dicts
 
         self._alert_repo.store_batch(enriched)

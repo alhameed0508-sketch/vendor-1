@@ -232,7 +232,58 @@ class LouvainClusterDetector:
         if c.size >= 10:
             score += 0.05
 
+        # CBS behavioral features (compensate when device/IP data is absent)
+        # These features are set by MuleCSVAdapter for CBS transaction data.
+        has_cbs_features = any(
+            "pass_through_ratio" in a for a in acc_map.values()
+        )
+        if has_cbs_features:
+            score += self._score_cbs_features(acc_map)
+
         return min(score, 1.0)
+
+    @staticmethod
+    def _score_cbs_features(acc_map: Dict[str, Dict]) -> float:
+        """Score CBS-specific behavioral features (0-0.35).
+
+        Compensates for missing device/IP data in CBS exports by using
+        transaction-derived features: pass-through ratio, debit/credit
+        ratio, balance volatility, and negative balances.
+        """
+        if not acc_map:
+            return 0.0
+
+        boost = 0.0
+        n = len(acc_map)
+
+        # Pass-through ratio: accounts where money enters and leaves same day
+        # High ratio across cluster = coordinated pass-through (0-0.12)
+        pt_ratios = [a.get("pass_through_ratio", 0.0) for a in acc_map.values()]
+        avg_pt = sum(pt_ratios) / n
+        if avg_pt >= 0.5:
+            boost += min(avg_pt * 0.15, 0.12)
+
+        # Debit/credit ratio near 1.0: in ≈ out = pass-through behavior (0-0.10)
+        dc_ratios = [a.get("debit_credit_ratio", 0.0) for a in acc_map.values()]
+        near_one = sum(1 for r in dc_ratios if 0.7 <= r <= 1.3)
+        near_one_ratio = near_one / n
+        boost += min(near_one_ratio * 0.10, 0.10)
+
+        # Negative balances: overdraft abuse is a mule indicator (0-0.08)
+        neg_counts = [a.get("negative_balance_count", 0) for a in acc_map.values()]
+        accts_with_neg = sum(1 for c in neg_counts if c > 0)
+        neg_ratio = accts_with_neg / n
+        boost += min(neg_ratio * 0.10, 0.08)
+
+        # Balance volatility: high avg volatility = funds rapidly moving (0-0.05)
+        vols = [a.get("balance_volatility", 0.0) for a in acc_map.values()]
+        avg_vol = sum(vols) / n if vols else 0
+        if avg_vol > 5000:
+            boost += 0.05
+        elif avg_vol > 1000:
+            boost += 0.03
+
+        return boost
 
     def _reason_codes(self, c: Community) -> List[str]:
         codes = []

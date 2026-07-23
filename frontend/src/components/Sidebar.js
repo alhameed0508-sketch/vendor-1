@@ -5,7 +5,7 @@ import {
   AlertTriangle, BarChart2, ChevronLeft,
   Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
   Network, Search, Fingerprint, TrendingUp, ShieldAlert, Flag,
-  Scan, Target, Settings
+  Scan, Target, Settings, Upload
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -32,6 +32,7 @@ const NAV_SECTIONS = [
       { path: '/onboarding',    label: 'Onboarding',     icon: UserCheck },
       { path: '/benchmark',    label: 'Benchmarks',    icon: Target },
       { path: '/judge',         label: 'Judge View',     icon: Presentation },
+      { path: '/data-import',  label: 'Data Import',   icon: Upload },
       { path: '/system',       label: 'System Ops',    icon: Settings },
     ],
   },
