@@ -2,10 +2,9 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  AlertTriangle, BarChart2, ChevronLeft,
-  Moon, Sun, Zap, FileCheck, UserCheck, Presentation,
-  Network, Search, Fingerprint, TrendingUp, ShieldAlert, Flag,
-  Scan, Target, Settings, Upload
+  AlertTriangle, BarChart2,
+  Moon, Sun, Zap, FileCheck,
+  Network, Upload
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -16,12 +15,6 @@ const NAV_SECTIONS = [
       { path: '/',              label: 'Dashboard',      icon: AlertTriangle,  end: true },
       { path: '/queue',         label: 'Triage Queue',   icon: Zap },
       { path: '/network',       label: 'Network Graph',  icon: Network },
-      { path: '/investigation', label: 'Investigation',  icon: Search },
-      { path: '/typology',      label: 'Typology',       icon: Fingerprint },
-      { path: '/propensity',    label: 'Propensity',     icon: TrendingUp },
-      { path: '/scam',          label: 'Scam Detection', icon: ShieldAlert },
-      { path: '/india',         label: 'India',          icon: Flag },
-      { path: '/screening',    label: 'Screening',     icon: Scan },
     ],
   },
   {
@@ -29,14 +22,14 @@ const NAV_SECTIONS = [
     items: [
       { path: '/analytics',     label: 'ROI Analytics',  icon: BarChart2 },
       { path: '/compliance',    label: 'Compliance',     icon: FileCheck },
-      { path: '/onboarding',    label: 'Onboarding',     icon: UserCheck },
-      { path: '/benchmark',    label: 'Benchmarks',    icon: Target },
-      { path: '/judge',         label: 'Judge View',     icon: Presentation },
       { path: '/data-import',  label: 'Data Import',   icon: Upload },
-      { path: '/system',       label: 'System Ops',    icon: Settings },
     ],
   },
 ];
+
+// ── Animation constants ──────────────────────────────────────────────
+const SIDEBAR_SPRING = { type: 'spring', stiffness: 280, damping: 28 };
+const CONTENT_SPRING = { type: 'spring', stiffness: 300, damping: 28 };
 
 // Staggered nav container
 const navContainerVariants = {
@@ -54,6 +47,63 @@ const navItemVariants = {
   },
 };
 
+// ── Hamburger bar component — 3 bars that morph into X ───────────────
+function HamburgerIcon({ isOpen }) {
+  const barStyle = {
+    display: 'block',
+    width: 14,
+    height: 1.5,
+    borderRadius: 1,
+    backgroundColor: '#fff',
+    transformOrigin: 'center',
+  };
+
+  return (
+    <motion.div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 0,
+        width: 14,
+        height: 14,
+        position: 'relative',
+      }}
+    >
+      {/* Top bar → rotates 45° down to form X */}
+      <motion.span
+        style={{ ...barStyle, position: 'absolute' }}
+        animate={{
+          rotate: isOpen ? 45 : 0,
+          y: isOpen ? 0 : -4,
+          width: isOpen ? 12 : 14,
+        }}
+        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+      />
+      {/* Middle bar → fades and scales out */}
+      <motion.span
+        style={{ ...barStyle, position: 'absolute' }}
+        animate={{
+          opacity: isOpen ? 0 : 1,
+          scaleX: isOpen ? 0.3 : 1,
+        }}
+        transition={{ duration: 0.15, ease: 'easeInOut' }}
+      />
+      {/* Bottom bar → rotates -45° up to form X */}
+      <motion.span
+        style={{ ...barStyle, position: 'absolute' }}
+        animate={{
+          rotate: isOpen ? -45 : 0,
+          y: isOpen ? 0 : 4,
+          width: isOpen ? 12 : 14,
+        }}
+        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+      />
+    </motion.div>
+  );
+}
+
 export default function Sidebar({ stats, collapsed, onToggle }) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
@@ -62,30 +112,37 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
     ? (stats.critical || 0) + (stats.high || 0) + (stats.medium || 0)
     : 0;
 
+  // Flatten nav items for stagger index
+  let itemIndex = 0;
+
   return (
     <motion.aside
       className="sidebar"
       animate={{ width: collapsed ? 64 : 236 }}
-      transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+      transition={SIDEBAR_SPRING}
       style={{ overflow: 'hidden' }}
     >
 
-      {/* ── Logo ── */}
+      {/* ── Hamburger + Logo ── */}
       <div className="sidebar-logo">
-        <motion.div
-          className="logo-monogram"
-          whileHover={{ scale: 1.08, boxShadow: '0 0 28px rgba(37,99,235,0.60), 0 4px 12px rgba(0,0,0,0.40)' }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+        <motion.button
+          className="sidebar-hamburger"
+          onClick={onToggle}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
         >
-          MC
-        </motion.div>
+          <HamburgerIcon isOpen={!collapsed} />
+        </motion.button>
+
         <AnimatePresence>
           {!collapsed && (
             <motion.div
-              initial={{ opacity: 0, width: 0 }}
-              animate={{ opacity: 1, width: 'auto' }}
-              exit={{ opacity: 0, width: 0 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, width: 0, x: -10 }}
+              animate={{ opacity: 1, width: 'auto', x: 0 }}
+              exit={{ opacity: 0, width: 0, x: -10 }}
+              transition={{ ...CONTENT_SPRING, delay: 0.06 }}
               style={{ overflow: 'hidden', minWidth: 0 }}
             >
               <div className="logo-text logo-text-gradient">MuleCatch</div>
@@ -99,10 +156,10 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
         {!collapsed && (
           <motion.div
             className="logo-tagline"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, x: -10, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, x: 0, height: 'auto', marginBottom: 0 }}
+            exit={{ opacity: 0, x: -10, height: 0, marginBottom: 0 }}
+            transition={{ ...CONTENT_SPRING, delay: 0.1 }}
           >
             // IOB Fraud Intelligence
           </motion.div>
@@ -113,22 +170,19 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
       <AnimatePresence>
         {!collapsed && (
           <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, x: -10, height: 0 }}
+            animate={{ opacity: 1, x: 0, height: 'auto' }}
+            exit={{ opacity: 0, x: -10, height: 0 }}
+            transition={{ ...CONTENT_SPRING, delay: 0.14 }}
             style={{
               margin: '0 12px 8px',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
+              overflow: 'hidden',
             }}
           >
-            <div style={{
-              width: 5, height: 5, borderRadius: '50%',
-              background: '#10B981',
-              flexShrink: 0,
-            }} />
+            <div className="sidebar-health-dot" />
             <span style={{
               fontFamily: 'var(--font-mono)',
               fontSize: 10,
@@ -138,6 +192,9 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Divider ── */}
+      <div className="sidebar-divider" />
 
       {/* ── Nav ── */}
       <motion.nav
@@ -152,10 +209,10 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
               {!collapsed && (
                 <motion.div
                   className="sidebar-section-label"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, x: -10, height: 0, paddingTop: 0, paddingBottom: 0 }}
+                  animate={{ opacity: 1, x: 0, height: 'auto', paddingTop: 12, paddingBottom: 6 }}
+                  exit={{ opacity: 0, x: -10, height: 0, paddingTop: 0, paddingBottom: 0 }}
+                  transition={{ ...CONTENT_SPRING, delay: 0.06 }}
                 >
                   {section.label}
                 </motion.div>
@@ -166,6 +223,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 ? location.pathname === item.path
                 : location.pathname.startsWith(item.path);
               const Icon = item.icon;
+              const staggerDelay = 0.03 * itemIndex++;
 
               return (
                 <motion.div
@@ -178,7 +236,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                     end={item.end}
                     className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''}`}
                     title={collapsed ? item.label : undefined}
-                    style={{ position: 'relative' }}
+                    style={{ position: 'relative', justifyContent: collapsed ? 'center' : 'flex-start' }}
                   >
                     {/* Shared layout active bar — slides between routes */}
                     {isActive && (
@@ -188,16 +246,20 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                       />
                     )}
-                    <span className="sidebar-link-icon">
-                      <Icon size={14} />
-                    </span>
+                    <motion.span
+                      className="sidebar-link-icon"
+                      animate={{ scale: collapsed && isActive ? 1.15 : 1 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    >
+                      <Icon size={collapsed ? 16 : 14} />
+                    </motion.span>
                     <AnimatePresence>
                       {!collapsed && (
                         <motion.span
-                          initial={{ opacity: 0, width: 0 }}
-                          animate={{ opacity: 1, width: 'auto' }}
-                          exit={{ opacity: 0, width: 0 }}
-                          transition={{ duration: 0.18 }}
+                          initial={{ opacity: 0, width: 0, x: -8 }}
+                          animate={{ opacity: 1, width: 'auto', x: 0 }}
+                          exit={{ opacity: 0, width: 0, x: -8 }}
+                          transition={{ ...CONTENT_SPRING, delay: staggerDelay }}
                           style={{ fontFamily: 'var(--font-sans)', fontSize: 13, overflow: 'hidden', whiteSpace: 'nowrap' }}
                         >
                           {item.label}
@@ -219,7 +281,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ ...CONTENT_SPRING, delay: 0.12 }}
             style={{ padding: '0 8px 6px', overflow: 'hidden' }}
           >
             <div style={{
@@ -280,7 +342,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
           className="theme-toggle"
           onClick={toggleTheme}
           aria-label="Toggle theme"
-          whileHover={{ y: -1 }}
+          whileHover={{ y: -1, borderColor: 'var(--accent-primary)' }}
           whileTap={{ scale: 0.97 }}
         >
           <motion.div
@@ -296,32 +358,16 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
           <AnimatePresence>
             {!collapsed && (
               <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.18 }}
+                initial={{ opacity: 0, width: 0, x: -6 }}
+                animate={{ opacity: 1, width: 'auto', x: 0 }}
+                exit={{ opacity: 0, width: 0, x: -6 }}
+                transition={CONTENT_SPRING}
                 style={{ letterSpacing: '0.5px', overflow: 'hidden', whiteSpace: 'nowrap' }}
               >
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </motion.span>
             )}
           </AnimatePresence>
-        </motion.button>
-
-        <motion.button
-          className="btn btn-ghost sidebar-collapse-btn"
-          onClick={onToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          whileHover={{ opacity: 1, scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <motion.div
-            animate={{ rotate: collapsed ? 180 : 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <ChevronLeft size={13} />
-          </motion.div>
         </motion.button>
       </div>
     </motion.aside>

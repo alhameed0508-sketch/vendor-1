@@ -3,6 +3,25 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
 import useAlertStream from '../hooks/useAlertStream';
+import StatCard from '../components/StatCard';
+import {
+  API_ALERTS_QUEUE_LIMIT,
+  ALERT_POLL_INTERVAL_MS,
+  PRIORITY_CRITICAL_THRESHOLD,
+  PRIORITY_HIGH_THRESHOLD,
+  SCORE_BAR_CRITICAL,
+  SCORE_BAR_HIGH,
+  PRIORITY_WEIGHT_RISK,
+  PRIORITY_WEIGHT_AMOUNT,
+  PRIORITY_WEIGHT_CENTRALITY,
+  PRIORITY_WEIGHT_EVIDENCE,
+  PRIORITY_WEIGHT_TIME,
+  SEVERITY_PRIORITY,
+  SAR_PROBABILITY_THRESHOLD,
+  AMOUNT_NORMALIZATION_BASE,
+  FLASH_ANIMATION_MS,
+  DEBOUNCE_MS,
+} from '../config';
 
 /* ═══════════════════════════════════════════════════════════════
    AlertQueue — Priority-ranked investigation triage queue
@@ -155,7 +174,7 @@ function ScoreBar({ value, color = 'var(--emerald)' }) {
 function PriorityRing({ score, rank }) {
   const r = 20, circ = 2 * Math.PI * r;
   const pct = Math.round(score * 100);
-  const fill = score >= 0.75 ? 'var(--critical)' : score >= 0.5 ? 'var(--high)' : 'var(--accent-green)';
+  const fill = score >= PRIORITY_CRITICAL_THRESHOLD ? 'var(--critical)' : score >= PRIORITY_HIGH_THRESHOLD ? 'var(--high)' : 'var(--accent-green)';
   return (
     <div style={{ position: 'relative', width: 50, height: 50, flexShrink: 0 }}>
       <svg width={50} height={50} style={{ transform: 'rotate(-90deg)' }}>
@@ -213,7 +232,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                 <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', width: 64, flexShrink: 0 }}>
                   {BREAKDOWN_LABELS[key] || key}
                 </span>
-                <ScoreBar value={val} color={val >= 0.7 ? 'var(--critical)' : val >= 0.4 ? 'var(--high)' : 'var(--accent-green)'} />
+                <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
                 <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', width: 32, textAlign: 'right', fontWeight: 600 }}>
                   {Math.round(val * 100)}
                 </span>
@@ -327,7 +346,7 @@ export default function AlertQueue({ onSelectAlert }) {
     const params = new URLSearchParams();
     if (filterSeverity !== 'ALL') params.set('severity', filterSeverity);
     if (filterStatus   !== 'ALL') params.set('status',   filterStatus);
-    params.set('limit', '50');
+    params.set('limit', String(API_ALERTS_QUEUE_LIMIT));
 
     return apiFetch(`/api/v1/alerts?${params}`)
       .then(r => {
@@ -375,10 +394,10 @@ export default function AlertQueue({ onSelectAlert }) {
     setNewAlertCount(prev => prev + (event.count || 1));
     // Clear flash after 4 seconds
     if (flashTimer.current) clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setNewAlertCount(0), 4000);
+    flashTimer.current = setTimeout(() => setNewAlertCount(0), FLASH_ANIMATION_MS);
     // Debounce re-fetch to avoid hammering API on rapid events
     if (fetchDebounce.current) clearTimeout(fetchDebounce.current);
-    fetchDebounce.current = setTimeout(() => fetchRef.current(), 500);
+    fetchDebounce.current = setTimeout(() => fetchRef.current(), DEBOUNCE_MS);
   }, []);
 
   const { connected: sseConnected } = useAlertStream({
@@ -389,7 +408,7 @@ export default function AlertQueue({ onSelectAlert }) {
   /* ── Polling fallback when SSE is not connected ── */
   useEffect(() => {
     if (sseConnected || usingDemo) return;
-    const interval = setInterval(() => fetchRef.current(), 10000);
+    const interval = setInterval(() => fetchRef.current(), ALERT_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [sseConnected, usingDemo]);
 
@@ -431,7 +450,7 @@ export default function AlertQueue({ onSelectAlert }) {
   const stats = useMemo(() => ({
     open:     alerts.filter(a => a.status === 'OPEN').length,
     critical: alerts.filter(a => a.severity === 'CRITICAL').length,
-    highSAR:  alerts.filter(a => (a.sar_filing_probability || 0) > 0.6).length,
+    highSAR:  alerts.filter(a => (a.sar_filing_probability || 0) > SAR_PROBABILITY_THRESHOLD).length,
     totalAmt: alerts.reduce((s, a) => s + (a.total_amount || 0), 0),
   }), [alerts]);
 
@@ -502,24 +521,10 @@ export default function AlertQueue({ onSelectAlert }) {
 
       {/* ── Summary stat cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Open alerts',       value: stats.open,                  color: 'var(--emerald-light)', icon: '⊕' },
-          { label: 'Critical severity', value: stats.critical,              color: 'var(--critical)',      icon: '⚠' },
-          { label: 'High SAR risk',     value: stats.highSAR,              color: 'var(--high)',          icon: '◉' },
-          { label: 'Suspicious flow',   value: formatAmount(stats.totalAmt), color: 'var(--accent-cyan)',  icon: '₹' },
-        ].map(s => (
-          <div key={s.label} className="glass-card" style={{ padding: '16px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                {s.label}
-              </span>
-              <span style={{ fontSize: 12, opacity: 0.3 }}>{s.icon}</span>
-            </div>
-            <span style={{ fontSize: 26, fontWeight: 700, fontFamily: 'var(--font-display)', color: s.color, letterSpacing: '-0.5px' }}>
-              {s.value}
-            </span>
-          </div>
-        ))}
+        <StatCard label="Open alerts"       value={stats.open}                    color="var(--emerald-light)" />
+        <StatCard label="Critical severity" value={stats.critical}                color="var(--critical)" />
+        <StatCard label="High SAR risk"     value={stats.highSAR}                color="var(--high)" />
+        <StatCard label="Suspicious flow"   value={formatAmount(stats.totalAmt)} color="var(--accent-cyan)" />
       </div>
 
       {/* ── Filters ── */}
@@ -592,12 +597,7 @@ export default function AlertQueue({ onSelectAlert }) {
               const sarPct = Math.round((alert.sar_filing_probability || 0) * 100);
 
               return (
-                <motion.div
-                  key={alert.alert_id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.03, duration: 0.2 }}
-                >
+                <div key={alert.alert_id}>
                   {/* Alert row */}
                   <div
                     onClick={() => {
@@ -647,7 +647,7 @@ export default function AlertQueue({ onSelectAlert }) {
                           <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', width: 28, flexShrink: 0 }}>
                             {(BREAKDOWN_LABELS[key] || key).slice(0, 4)}
                           </span>
-                          <ScoreBar value={val} color={val >= 0.7 ? 'var(--critical)' : val >= 0.4 ? 'var(--high)' : 'var(--accent-green)'} />
+                          <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
                         </div>
                       ))}
                     </div>
@@ -661,7 +661,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     <div style={{ textAlign: 'center' }}>
                       <span style={{
                         fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)',
-                        color: sarPct >= 70 ? 'var(--critical)' : sarPct >= 40 ? 'var(--high)' : 'var(--text-muted)',
+                        color: sarPct >= SCORE_BAR_CRITICAL * 100 ? 'var(--critical)' : sarPct >= SCORE_BAR_HIGH * 100 ? 'var(--high)' : 'var(--text-muted)',
                       }}>
                         {sarPct}%
                       </span>
@@ -706,7 +706,7 @@ export default function AlertQueue({ onSelectAlert }) {
                       </Link>
                     </div>
                   )}
-                </motion.div>
+                </div>
               );
             })}
           </AnimatePresence>
@@ -720,17 +720,17 @@ export default function AlertQueue({ onSelectAlert }) {
 
 function scorePriority(a) {
   const risk   = Math.min(1, a.risk_score || 0);
-  const amt    = Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(1000000));
+  const amt    = Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(AMOUNT_NORMALIZATION_BASE));
   const nodes  = (a.nodes || []);
   const cent   = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || n.betweenness || 0)) : 0;
   const evid   = Math.min(1, (a.reason_codes || []).length / 10);
   const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
   const time   = Math.min(1, 0.5 + 0.5 * (newAcc / Math.max(nodes.length, 1)));
-  return 0.30 * risk + 0.20 * amt + 0.20 * cent + 0.15 * evid + 0.15 * time;
+  return PRIORITY_WEIGHT_RISK * risk + PRIORITY_WEIGHT_AMOUNT * amt + PRIORITY_WEIGHT_CENTRALITY * cent + PRIORITY_WEIGHT_EVIDENCE * evid + PRIORITY_WEIGHT_TIME * time;
 }
 
 function sarProbability(a) {
-  const base = { CRITICAL: 0.9, HIGH: 0.6, MEDIUM: 0.3, LOW: 0.1 }[a.severity?.toUpperCase()] || 0.1;
+  const base = SEVERITY_PRIORITY[a.severity?.toUpperCase()] || 0.1;
   return Math.min(1, base + Math.min((a.reason_codes || []).length * 0.02, 0.1));
 }
 
@@ -745,7 +745,7 @@ function breakdown(a) {
   const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
   return {
     risk_score:         Math.min(1, a.risk_score || 0),
-    amount_factor:      Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(1000000)),
+    amount_factor:      Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(AMOUNT_NORMALIZATION_BASE)),
     network_centrality: cent,
     evidence_diversity: Math.min(1, (a.reason_codes || []).length / 10),
     time_sensitivity:   Math.min(1, 0.5 + 0.5 * (newAcc / Math.max(nodes.length, 1))),

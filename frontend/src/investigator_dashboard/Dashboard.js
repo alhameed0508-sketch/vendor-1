@@ -5,73 +5,13 @@ import { toast } from 'sonner';
 import { RefreshCw, ArrowUp, ArrowDown, AlertTriangle, Activity, Shield, DollarSign, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
-
-/* ── Metric Stat Card ── */
-function StatCard({ label, value, color, icon: Icon, sub, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.3, ease: 'easeOut' }}
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 10,
-        padding: '16px 18px',
-        position: 'relative',
-        cursor: 'default',
-        transition: 'border-color 0.2s ease',
-      }}
-      whileHover={{
-        borderColor: 'var(--border-strong)',
-        transition: { duration: 0.15 },
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
-          fontWeight: 500,
-        }}>{label}</div>
-        {Icon && (
-          <div style={{ color: 'var(--text-faint)', opacity: 0.7 }}>
-            <Icon size={14} />
-          </div>
-        )}
-      </div>
-
-      <div style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 28,
-        fontWeight: 700,
-        color,
-        letterSpacing: '-0.5px',
-        lineHeight: 1,
-        marginBottom: sub ? 8 : 0,
-      }}>{value}</div>
-
-      {sub && (
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 10,
-          color: 'var(--text-faint)',
-          letterSpacing: '0.2px',
-        }}>{sub}</div>
-      )}
-    </motion.div>
-  );
-}
+import { API_ALERTS_LIMIT, AMOUNT_DIVISOR_LAKHS, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
+import StatCard from '../components/StatCard';
 
 /* ── Empty State ── */
 function EmptyState({ hasFilters }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.4 }}
+    <div
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -101,19 +41,14 @@ function EmptyState({ hasFilters }) {
         }}>
           {hasFilters ? 'No alerts match filters' : 'Queue is clear'}
         </p>
-        <p style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 11,
-          color: 'var(--text-muted)',
-          letterSpacing: '0.3px',
-        }}>
+        <p className="text-mono-sm">
           {hasFilters
-            ? '// adjust severity or status filters'
-            : '// network topology analysis running · 0 anomalies detected'
+            ? 'Adjust severity or status filters'
+            : 'Network topology analysis running'
           }
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -129,7 +64,7 @@ export default function Dashboard() {
 
   const fetchAlerts = () => {
     setLoading(true);
-    apiFetch('/api/v1/alerts?limit=100')
+    apiFetch(`/api/v1/alerts?limit=${API_ALERTS_LIMIT}`)
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
@@ -190,14 +125,14 @@ export default function Dashboard() {
     critical: alerts.filter(a => a.severity === 'CRITICAL').length,
     high:     alerts.filter(a => a.severity === 'HIGH').length,
     open:     alerts.filter(a => a.status === 'OPEN').length,
-    total:    (alerts.reduce((s, a) => s + a.total_amount, 0) / 100000).toFixed(1),
+    total:    (alerts.reduce((s, a) => s + a.total_amount, 0) / AMOUNT_DIVISOR_LAKHS).toFixed(1),
   };
 
   const hasFilters = filter.severity !== 'ALL' || filter.status !== 'ALL';
 
   const getRiskColor = (score) => {
-    if (score >= 0.8) return 'var(--critical)';
-    if (score >= 0.6) return 'var(--high)';
+    if (score >= RISK_CRITICAL_THRESHOLD) return 'var(--critical)';
+    if (score >= RISK_HIGH_THRESHOLD) return 'var(--high)';
     if (score >= 0.4) return 'var(--medium)';
     return 'var(--text-muted)';
   };
@@ -206,10 +141,7 @@ export default function Dashboard() {
     <div style={{ padding: '28px 32px', maxWidth: 1440, margin: '0 auto' }}>
 
       {/* ── Page Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
+      <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -218,23 +150,14 @@ export default function Dashboard() {
         }}
       >
         <div>
-          <h1 className="gradient-text" style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 24,
-            fontWeight: 700,
-            letterSpacing: '-0.3px',
-            margin: '0 0 4px',
-          }}>
+          <h1 className="text-page-title" style={{ margin: '0 0 4px' }}>
             Alert Queue
           </h1>
-          <p style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            color: 'var(--text-muted)',
-            letterSpacing: '0.2px',
+          <p className="text-mono-sm" style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
+            fontSize: 12,
           }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
             {filtered.length} alerts
@@ -253,14 +176,14 @@ export default function Dashboard() {
           <RefreshCw size={13} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.5px' }}>Refresh</span>
         </button>
-      </motion.div>
+      </div>
 
       {/* ── Metric Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Critical"      value={stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts"   index={0} />
-        <StatCard label="High Severity" value={stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts"   index={1} />
-        <StatCard label="Open Cases"    value={stats.open}     color="var(--medium)"   icon={Shield}        sub="under review"    index={2} />
-        <StatCard label="Total Flagged" value={`₹${stats.total}L`} color="var(--high)" icon={DollarSign}   sub="this cycle"      index={3} />
+        <StatCard label="Critical"      value={stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts" />
+        <StatCard label="High Severity" value={stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts" />
+        <StatCard label="Open Cases"    value={stats.open}     color="var(--medium)"   icon={Shield}        sub="under review" />
+        <StatCard label="Total Flagged" value={`₹${stats.total}L`} color="var(--high)" icon={DollarSign}   sub="this cycle" />
       </div>
 
       {/* ── Filter Bar ── */}
@@ -307,11 +230,7 @@ export default function Dashboard() {
           Loading intelligence data...
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-        >
+        <div>
           <div style={{
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
@@ -340,97 +259,92 @@ export default function Dashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    <AnimatePresence>
-                      {filtered.map((alert, idx) => (
-                        <motion.tr
-                          key={alert.alert_id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: Math.min(idx * 0.02, 0.3) }}
-                          className={`clickable ${idx === selectedIndex ? 'selected' : ''}`}
-                          onClick={() => navigate(`/alert/${alert.alert_id}`)}
-                          tabIndex={0}
-                          role="row"
-                          onKeyDown={e => { if (e.key === 'Enter') navigate(`/alert/${alert.alert_id}`); }}
-                        >
-                          <td style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'var(--font-mono)', paddingLeft: 16 }}>
-                            {idx + 1}
-                          </td>
-                          <td>
+                    {filtered.map((alert, idx) => (
+                      <tr
+                        key={alert.alert_id}
+                        className={`clickable ${idx === selectedIndex ? 'selected' : ''}`}
+                        onClick={() => navigate(`/alert/${alert.alert_id}`)}
+                        tabIndex={0}
+                        role="row"
+                        onKeyDown={e => { if (e.key === 'Enter') navigate(`/alert/${alert.alert_id}`); }}
+                      >
+                        <td style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'var(--font-mono)', paddingLeft: 16 }}>
+                          {idx + 1}
+                        </td>
+                        <td>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 12,
+                            color: 'var(--accent-cyan)',
+                            letterSpacing: '0.3px',
+                          }}>{alert.alert_id}</span>
+                        </td>
+                        <td>
+                          <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 36, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%',
+                                width: `${alert.risk_score * 100}%`,
+                                background: getRiskColor(alert.risk_score),
+                                borderRadius: 2,
+                              }} />
+                            </div>
                             <span style={{
                               fontFamily: 'var(--font-mono)',
                               fontSize: 12,
-                              color: 'var(--accent-cyan)',
-                              letterSpacing: '0.3px',
-                            }}>{alert.alert_id}</span>
-                          </td>
-                          <td>
-                            <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
-                          </td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <div style={{ width: 36, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                                <div style={{
-                                  height: '100%',
-                                  width: `${alert.risk_score * 100}%`,
-                                  background: getRiskColor(alert.risk_score),
-                                  borderRadius: 2,
-                                }} />
-                              </div>
-                              <span style={{
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: 12,
-                                color: getRiskColor(alert.risk_score),
-                                fontWeight: 600,
-                              }}>
-                                {(alert.risk_score * 100).toFixed(0)}%
-                              </span>
-                            </div>
-                          </td>
-                          <td>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                              {alert.account_count}
-                            </span>
-                          </td>
-                          <td>
-                            <span style={{
-                              fontFamily: 'var(--font-mono)',
-                              fontSize: 13,
-                              color: 'var(--high)',
+                              color: getRiskColor(alert.risk_score),
                               fontWeight: 600,
                             }}>
-                              ₹{alert.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                              {(alert.risk_score * 100).toFixed(0)}%
                             </span>
-                          </td>
-                          <td>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
-                              {alert.txn_count}
-                            </span>
-                          </td>
-                          <td style={{ maxWidth: 180 }}>
-                            <span style={{
-                              fontSize: 11,
-                              fontFamily: 'var(--font-mono)',
-                              color: 'var(--text-secondary)',
-                              letterSpacing: '0.2px',
-                            }}>
-                              {alert.reason_codes?.[0]?.split(':')[0] || '—'}
-                            </span>
-                          </td>
-                          <td>
-                            <span className={`badge badge-${alert.status}`}>
-                              {alert.status.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
-                            {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
-                          </td>
-                          <td style={{ paddingRight: 16 }}>
-                            <ChevronRight size={13} color="var(--text-faint)" />
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
+                          </div>
+                        </td>
+                        <td>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                            {alert.account_count}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: 13,
+                            color: 'var(--high)',
+                            fontWeight: 600,
+                          }}>
+                            ₹{alert.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                            {alert.txn_count}
+                          </span>
+                        </td>
+                        <td style={{ maxWidth: 180 }}>
+                          <span style={{
+                            fontSize: 11,
+                            fontFamily: 'var(--font-mono)',
+                            color: 'var(--text-secondary)',
+                            letterSpacing: '0.2px',
+                          }}>
+                            {alert.reason_codes?.[0]?.split(':')[0] || '—'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge badge-${alert.status}`}>
+                            {alert.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+                          {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
+                        </td>
+                        <td style={{ paddingRight: 16 }}>
+                          <ChevronRight size={13} color="var(--text-faint)" />
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -461,7 +375,7 @@ export default function Dashboard() {
               </span>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

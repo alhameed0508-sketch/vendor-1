@@ -7,6 +7,7 @@ import TimelineSlider from '../graph_viz/TimelineSlider';
 import ExplainabilityPanel from '../explainability/ExplainabilityPanel';
 import InvestigationChat from '../genai/InvestigationChat';
 import { apiFetch } from '../auth/api';
+import { AMOUNT_DIVISOR_LAKHS } from '../config';
 
 export default function AlertDetail() {
   const { alertId } = useParams();
@@ -137,25 +138,22 @@ export default function AlertDetail() {
             Risk {riskPct}% · Confidence {confPct}%
             {alert.gnn_score != null && ` · GNN ${(alert.gnn_score * 100).toFixed(1)}%`}
             {' · '}{alert.account_count} accounts · {alert.txn_count} txns
-            {' · ₹'}{(alert.total_amount / 100000).toFixed(2)}L
+            {' · ₹'}{(alert.total_amount / AMOUNT_DIVISOR_LAKHS).toFixed(2)}L
           </p>
           {/* Mule classification & GenAI triage */}
           <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             {classification?.predicted_type && (
-              <span style={{
-                fontSize: 10, fontFamily: 'var(--font-mono)', padding: '3px 8px', borderRadius: 4,
-                background: 'rgba(139,92,246,0.12)', color: '#8b5cf6', fontWeight: 600,
-              }}>
+              <span className="tag-purple">
                 {classification.predicted_type}
                 {classification.confidence != null && ` ${(classification.confidence * 100).toFixed(0)}%`}
               </span>
             )}
             {triage?.recommendation && (
-              <span style={{
-                fontSize: 10, fontFamily: 'var(--font-mono)', padding: '3px 8px', borderRadius: 4,
-                background: triage.recommendation === 'ESCALATE' ? 'rgba(255,59,48,0.12)' : 'rgba(245,158,11,0.12)',
-                color: triage.recommendation === 'ESCALATE' ? 'var(--critical)' : 'var(--high)',
-              }}>
+              <span className={triage.recommendation === 'ESCALATE' ? 'tag-purple' : 'tag-amber'}
+                style={triage.recommendation === 'ESCALATE' ? {
+                  background: 'rgba(255,59,48,0.12)', color: 'var(--critical)',
+                } : undefined}
+              >
                 AI: {triage.recommendation}
                 {triage.confidence_adjustment != null && ` (${triage.confidence_adjustment > 0 ? '+' : ''}${(triage.confidence_adjustment * 100).toFixed(0)}%)`}
               </span>
@@ -203,13 +201,13 @@ export default function AlertDetail() {
               <p className="section-title">Shared Fingerprints</p>
               {alert.shared_devices.map((d, i) => (
                 <div key={`dev-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, background: 'rgba(56,189,248,0.15)', color: 'var(--accent-blue)', padding: '2px 7px', borderRadius: 4, marginRight: 8 }}>DEV</span>
+                  <span className="fingerprint-tag fingerprint-tag--device">DEV</span>
                   {d}
                 </div>
               ))}
               {alert.shared_ips.map((ip, i) => (
                 <div key={`ip-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, background: 'rgba(245,158,11,0.15)', color: 'var(--accent-amber)', padding: '2px 7px', borderRadius: 4, marginRight: 8 }}>IP</span>
+                  <span className="fingerprint-tag fingerprint-tag--ip">IP</span>
                   {ip}
                 </div>
               ))}
@@ -247,22 +245,22 @@ export default function AlertDetail() {
                   {(n.markov_transition_score > 0 || n.baseline_deviation > 0 || n.device_trust_score > 0 || n.semantics_score > 0) && (
                     <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                       {n.markov_transition_score > 0 && (
-                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}>
+                        <span className="enrichment-tag enrichment-tag--purple">
                           MKV {(n.markov_transition_score * 100).toFixed(0)}%
                         </span>
                       )}
                       {n.baseline_deviation > 0 && (
-                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(245,158,11,0.1)', color: 'var(--high)' }}>
+                        <span className="enrichment-tag enrichment-tag--amber">
                           BL {(n.baseline_deviation * 100).toFixed(0)}%
                         </span>
                       )}
                       {n.device_trust_score > 0 && (
-                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(56,189,248,0.1)', color: 'var(--accent-cyan)' }}>
+                        <span className="enrichment-tag enrichment-tag--cyan">
                           DEV {(n.device_trust_score * 100).toFixed(0)}%
                         </span>
                       )}
                       {n.semantics_score > 0 && (
-                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3, background: 'rgba(16,185,129,0.1)', color: 'var(--accent-green)' }}>
+                        <span className="enrichment-tag enrichment-tag--green">
                           SEM {(n.semantics_score * 100).toFixed(0)}%
                         </span>
                       )}
@@ -295,12 +293,7 @@ export default function AlertDetail() {
               id="alert-status"
               value={status}
               onChange={e => setStatus(e.target.value)}
-              style={{
-                width: '100%', padding: '10px 14px', fontSize: 14,
-                fontFamily: 'var(--font-mono)',
-                background: 'var(--bg-elevated)', color: 'var(--text-primary)',
-                border: '1px solid var(--border)', borderRadius: 8,
-              }}
+              style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}
             >
               {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE'].map(s => (
                 <option key={s} value={s}>{s}</option>
@@ -319,13 +312,7 @@ export default function AlertDetail() {
             onChange={e => setNotes(e.target.value)}
             rows={3}
             placeholder="Investigation notes..."
-            style={{
-              width: '100%', padding: '10px 14px', fontSize: 13,
-              fontFamily: 'var(--font-mono)',
-              background: 'var(--bg-elevated)', color: 'var(--text-primary)',
-              border: '1px solid var(--border)', borderRadius: 8,
-              resize: 'vertical', boxSizing: 'border-box',
-            }}
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 13, resize: 'vertical' }}
           />
         </div>
       </div>

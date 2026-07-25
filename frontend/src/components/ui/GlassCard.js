@@ -31,10 +31,8 @@ export function GlassCard({
         cursor: onClick ? 'pointer' : undefined,
       }}
       whileHover={hover ? {
-        y: -3,
-        scale: 1.01,
-        boxShadow: 'var(--shadow-lg), 0 0 0 1px rgba(37,99,235,0.12), 0 0 20px rgba(37,99,235,0.08)',
-        transition: { type: 'spring', stiffness: 400, damping: 30 },
+        borderColor: 'rgba(37,99,235,0.20)',
+        transition: { duration: 0.15 },
       } : undefined}
       {...props}
     >
@@ -57,28 +55,10 @@ export function GlassCardMetric({ label, value, icon, color, accent, children, c
           {icon}
         </div>
       )}
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 28,
-          fontWeight: 700,
-          letterSpacing: '-0.5px',
-          color: color || 'var(--text-primary)',
-          lineHeight: 1,
-        }}
-      >
+      <div className="text-metric-value" style={{ color: color || 'var(--text-primary)' }}>
         {value}
       </div>
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 9,
-          color: 'var(--text-muted)',
-          marginTop: 8,
-          letterSpacing: '1.5px',
-          textTransform: 'uppercase',
-        }}
-      >
+      <div className="text-metric-label" style={{ marginTop: 8 }}>
         {label}
       </div>
       {children}

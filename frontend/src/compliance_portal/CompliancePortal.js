@@ -4,6 +4,13 @@ import AnimatedCounter from '../components/AnimatedCounter';
 import { GlassCard } from '../components/ui/GlassCard';
 import { AnimateIn } from '../components/motion/AnimateIn';
 import { apiFetch } from '../auth/api';
+import {
+  API_ALERTS_LIMIT,
+  API_AUDIT_LIMIT,
+  API_STR_LIMIT,
+  RISK_FILTER_THRESHOLD,
+  AMOUNT_DIVISOR_LAKHS,
+} from '../config';
 
 const STATUS_COLORS = {
   DRAFT: '#FB923C',
@@ -37,7 +44,7 @@ export default function CompliancePortal() {
 
   const fetchStrList = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/v1/compliance/strs?limit=100');
+      const res = await apiFetch(`/api/v1/compliance/strs?limit=${API_STR_LIMIT}`);
       const body = await res.json();
       const data = body?.data || body;
       const records = data?.records || (Array.isArray(data) ? data : []);
@@ -51,13 +58,13 @@ export default function CompliancePortal() {
   }, []);
 
   useEffect(() => {
-    apiFetch('/api/v1/alerts?limit=100')
+    apiFetch(`/api/v1/alerts?limit=${API_ALERTS_LIMIT}`)
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
         const alertList = data?.alerts || (Array.isArray(data) ? data : []);
         const open = (Array.isArray(alertList) ? alertList : []).filter(a =>
-          a.risk_score > 0.6 && a.status !== 'FALSE_POSITIVE'
+          a.risk_score > RISK_FILTER_THRESHOLD && a.status !== 'FALSE_POSITIVE'
         );
         setAlerts(open);
         setLoading(false);
@@ -69,7 +76,7 @@ export default function CompliancePortal() {
 
     fetchStrList();
 
-    apiFetch('/api/v1/audit-log?limit=20')
+    apiFetch(`/api/v1/audit-log?limit=${API_AUDIT_LIMIT}`)
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
@@ -166,7 +173,7 @@ export default function CompliancePortal() {
     <div style={{ padding: 24 }}>
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
-          <h1 className="gradient-text" style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Compliance Portal</h1>
+          <h1 className="text-page-title" style={{ fontSize: 22, marginBottom: 4 }}>Compliance Portal</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
             Suspicious Transaction Report (STR) generation · FIU-IND format · RBI AML/CFT compliance
           </p>
@@ -179,7 +186,7 @@ export default function CompliancePortal() {
           {[
             { label: 'Reportable Alerts', value: alerts.length, color: 'var(--accent-amber)' },
             { label: 'Selected for STR', value: selected.size, color: 'var(--accent-cyan)' },
-            { label: 'Total Amount', value: `₹${(totalSelected / 100000).toFixed(2)}L`, color: 'var(--accent-amber)' },
+            { label: 'Total Amount', value: `₹${(totalSelected / AMOUNT_DIVISOR_LAKHS).toFixed(2)}L`, color: 'var(--accent-amber)' },
             { label: 'STRs Filed', value: strReports.length, color: 'var(--accent-green)' },
             { label: 'FIU Format', value: 'v2.1', color: 'var(--text-muted)' },
           ].map((s, i, arr) => (

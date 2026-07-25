@@ -1,34 +1,15 @@
-import React, { useEffect, useRef } from 'react';
-import gsap from 'gsap';
+import React from 'react';
 import { useTheme } from '../../ThemeContext';
 
-// Subtle ambient background — inspired by Mercury/Vercel
-// Minimal: one gentle gradient orb + faint dot grid + vignette
+// Subtle ambient background — static gradient + faint grid pattern
+// No GSAP, no animated orbs
 
 export default function BackgroundGrid() {
-  const containerRef = useRef(null);
-  const orb1Ref = useRef(null);
-  const orb2Ref = useRef(null);
   const { theme } = useTheme();
   const isLight = theme === 'light';
 
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.to(orb1Ref.current, {
-        x: '-10vw', y: '15vh', scale: 1.15,
-        duration: 40, repeat: -1, yoyo: true, ease: 'sine.inOut',
-      });
-      gsap.to(orb2Ref.current, {
-        x: '12vw', y: '-10vh', scale: 1.2,
-        duration: 50, repeat: -1, yoyo: true, ease: 'sine.inOut', delay: 10,
-      });
-    }, containerRef);
-    return () => ctx.revert();
-  }, [isLight]);
-
   return (
     <div
-      ref={containerRef}
       style={{
         position: 'fixed', inset: 0, zIndex: 0,
         pointerEvents: 'none', overflow: 'hidden',
@@ -36,24 +17,10 @@ export default function BackgroundGrid() {
         transition: 'background 0.4s ease',
       }}
     >
-      {/* Primary ambient orb — more visible in light mode for glass texture */}
-      <div ref={orb1Ref} style={{
-        position: 'absolute', top: '-20%', right: '-10%',
-        width: '60vw', height: '60vw',
-        background: isLight
-          ? 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 60%)'
-          : 'radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 60%)',
-        borderRadius: '50%', filter: 'blur(100px)',
-      }} />
-
-      {/* Secondary ambient orb */}
-      <div ref={orb2Ref} style={{
-        position: 'absolute', bottom: '-25%', left: '-10%',
-        width: '50vw', height: '50vw',
-        background: isLight
-          ? 'radial-gradient(circle, rgba(37,99,235,0.04) 0%, transparent 60%)'
-          : 'radial-gradient(circle, rgba(37,99,235,0.04) 0%, transparent 60%)',
-        borderRadius: '50%', filter: 'blur(120px)',
+      {/* Static ambient gradient — uses existing CSS token */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'var(--gradient-bg)',
       }} />
 
       {/* Subtle dot grid — dark mode only */}

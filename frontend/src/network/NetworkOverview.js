@@ -10,72 +10,9 @@ import RegionalStatsPanel from './RegionalStatsPanel';
 import NetworkGraph from '../graph_viz/NetworkGraph';
 import TimelineSlider from '../graph_viz/TimelineSlider';
 import useAlertStream from '../hooks/useAlertStream';
+import StatCard from '../components/StatCard';
 import { CITY_COORDS, CITY_TO_STATE } from '../constants/cities';
-
-/* ── Stat Card ── */
-function StatCard({ label, value, color, icon: Icon, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35, ease: 'easeOut' }}
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 10,
-        padding: '16px 18px',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-        cursor: 'default',
-      }}
-      whileHover={{
-        borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`,
-        y: -1,
-        transition: { duration: 0.2 },
-      }}
-    >
-      {/* Glow behind value */}
-      <div style={{
-        position: 'absolute', top: -20, right: -20,
-        width: 80, height: 80,
-        background: `radial-gradient(circle, ${color}18 0%, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-      {/* Top accent */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, ${color}60, transparent)`,
-      }} />
-
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 9,
-          color: 'var(--text-muted)',
-          letterSpacing: '1.2px',
-          textTransform: 'uppercase',
-          fontWeight: 700,
-        }}>{label}</div>
-        {Icon && (
-          <div style={{ color, opacity: 0.5 }}>
-            <Icon size={13} />
-          </div>
-        )}
-      </div>
-
-      <div style={{
-        fontFamily: 'var(--font-display)',
-        fontSize: 28,
-        fontWeight: 700,
-        color,
-        letterSpacing: '-0.5px',
-        lineHeight: 1,
-      }}>{value}</div>
-    </motion.div>
-  );
-}
+import { API_ALERTS_LIMIT } from '../config';
 
 /* ── Aggregate helpers ── */
 
@@ -218,7 +155,7 @@ export default function NetworkOverview() {
   const fetchData = useCallback(() => {
     setLoading(true);
 
-    const alertsPromise = apiFetch('/api/v1/alerts?limit=100')
+    const alertsPromise = apiFetch(`/api/v1/alerts?limit=${API_ALERTS_LIMIT}`)
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
@@ -345,13 +282,7 @@ export default function NetworkOverview() {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <h1 className="gradient-text" style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 26,
-              fontWeight: 700,
-              letterSpacing: '-0.5px',
-              margin: 0,
-            }}>
+            <h1 className="text-page-title" style={{ fontSize: 26, margin: 0 }}>
               Network Intelligence
             </h1>
 
@@ -414,34 +345,10 @@ export default function NetworkOverview() {
 
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard
-          label="Total Accounts"
-          value={stats.totalAccounts}
-          color="var(--accent-cyan)"
-          icon={Users}
-          index={0}
-        />
-        <StatCard
-          label="Total Transactions"
-          value={stats.totalTransactions.toLocaleString()}
-          color="#FB923C"
-          icon={ArrowRightLeft}
-          index={1}
-        />
-        <StatCard
-          label="Total Alerts"
-          value={stats.totalAlerts}
-          color="#F43F5E"
-          icon={AlertTriangle}
-          index={2}
-        />
-        <StatCard
-          label="Clusters Detected"
-          value={stats.clustersDetected}
-          color="#10B981"
-          icon={Share2}
-          index={3}
-        />
+        <StatCard label="Total Accounts"      value={stats.totalAccounts}                   color="var(--accent-cyan)" icon={Users} />
+        <StatCard label="Total Transactions"  value={stats.totalTransactions.toLocaleString()} color="#FB923C"          icon={ArrowRightLeft} />
+        <StatCard label="Total Alerts"        value={stats.totalAlerts}                     color="#F43F5E"            icon={AlertTriangle} />
+        <StatCard label="Clusters Detected"   value={stats.clustersDetected}                color="#10B981"            icon={Share2} />
       </div>
 
       {/* Map + Regional Stats Row */}

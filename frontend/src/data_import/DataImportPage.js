@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '../auth/api';
+import { MAX_UPLOAD_SIZE_BYTES } from '../config';
+import StatCard from '../components/StatCard';
 
 const cardStyle = {
   background: 'var(--bg-card)',
@@ -17,30 +19,6 @@ const cardStyle = {
   overflow: 'hidden',
   boxShadow: 'var(--shadow)',
 };
-
-function StatCard({ label, value, color, icon: Icon, index }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.35 }}
-      style={cardStyle}
-      whileHover={{
-        borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.12), 0 0 0 1px ${color}18`,
-        y: -2,
-        transition: { duration: 0.2 },
-      }}
-    >
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${color}, transparent)`, opacity: 0.7 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700 }}>{label}</div>
-        {Icon && <div style={{ color, opacity: 0.5 }}><Icon size={13} /></div>}
-      </div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color, letterSpacing: '-0.5px', lineHeight: 1 }}>{value}</div>
-    </motion.div>
-  );
-}
 
 function SeverityBadge({ severity, count }) {
   const colorMap = {
@@ -97,7 +75,7 @@ export default function DataImportPage() {
   const validateFile = useCallback((file) => {
     if (!file) return 'No file selected';
     if (!file.name.toLowerCase().endsWith('.csv')) return 'Only .csv files are accepted';
-    if (file.size > 50 * 1024 * 1024) return 'File exceeds 50MB limit';
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) return 'File exceeds 50MB limit';
     return null;
   }, []);
 
@@ -546,39 +524,21 @@ export default function DataImportPage() {
 
                 {/* Navigation links */}
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <motion.button
-                    onClick={() => navigate('/')}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '10px 20px', borderRadius: 8,
-                      background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)',
-                      color: '#3B82F6', cursor: 'pointer',
-                      fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600,
-                    }}
+                  <button className="btn btn-ghost" onClick={() => navigate('/')}
+                    style={{ gap: 8, color: '#3B82F6', borderColor: 'rgba(59,130,246,0.25)' }}
                   >
                     <BarChart2 size={14} />
                     View Dashboard
                     <ArrowRight size={12} />
-                  </motion.button>
+                  </button>
 
-                  <motion.button
-                    onClick={() => navigate('/queue')}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '10px 20px', borderRadius: 8,
-                      background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.25)',
-                      color: '#F43F5E', cursor: 'pointer',
-                      fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600,
-                    }}
+                  <button className="btn btn-ghost" onClick={() => navigate('/queue')}
+                    style={{ gap: 8, color: '#F43F5E', borderColor: 'rgba(244,63,94,0.25)' }}
                   >
                     <FileText size={14} />
                     Triage Queue
                     <ArrowRight size={12} />
-                  </motion.button>
+                  </button>
                 </div>
               </motion.div>
             )}

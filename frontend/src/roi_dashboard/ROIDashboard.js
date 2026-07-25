@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { apiFetch } from '../auth/api';
+import StatCard from '../components/StatCard';
 
 const FALLBACK_MONTHLY_TREND = [
   { month: 'Aug', alerts: 12, prevented: 18.2, hours: 36 },
@@ -58,58 +59,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   );
 };
 
-const cardAnim = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
-const container = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
-
-function MetricCard({ label, value, sub, color, accent, index }) {
-  return (
-    <motion.div
-      variants={cardAnim}
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 12,
-        padding: '22px 24px',
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow)',
-        transition: 'border-color 0.25s, box-shadow 0.25s',
-      }}
-      whileHover={{
-        borderColor: `${color}30`,
-        boxShadow: `0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px ${color}25`,
-        y: -2,
-        transition: { duration: 0.2 },
-      }}
-    >
-      {/* Accent top bar */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-        background: `linear-gradient(90deg, ${color}, transparent)`,
-        opacity: 0.7,
-      }} />
-      {/* Subtle corner glow */}
-      <div style={{
-        position: 'absolute', top: -30, left: -30, width: 80, height: 80,
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${color}20 0%, transparent 70%)`,
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        fontFamily: 'var(--font-mono)',
-        fontSize: 32,
-        fontWeight: 700,
-        color,
-        letterSpacing: '-0.5px',
-        lineHeight: 1,
-        marginBottom: 10,
-      }}>{value}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.3px' }}>{sub}</div>
-    </motion.div>
-  );
-}
-
 function ChartPanel({ title, children }) {
   return (
     <div style={{
@@ -127,7 +76,7 @@ function ChartPanel({ title, children }) {
         letterSpacing: '1.5px',
         fontWeight: 700,
         marginBottom: 18,
-      }}>// {title}</p>
+      }}>{title}</p>
       {children}
     </div>
   );
@@ -187,12 +136,7 @@ export default function ROIDashboard() {
         style={{ marginBottom: 32 }}
       >
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-          <h1 className="gradient-text" style={{
-            fontSize: 28,
-            fontWeight: 700,
-            letterSpacing: '-0.5px',
-            margin: 0,
-          }}>
+          <h1 className="text-page-title" style={{ fontSize: 28, margin: 0 }}>
             ROI Analytics
           </h1>
           <span style={{
@@ -209,70 +153,24 @@ export default function ROIDashboard() {
             LIVE
           </span>
         </div>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
-          // detection metrics · roi tracking · active learning feedback
+        <p className="text-mono-sm">
+          Detection metrics · ROI tracking · Active learning feedback
         </p>
       </motion.div>
 
       {/* Primary KPI Cards */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}
-      >
-        <MetricCard
-          label="Fraud Prevented"
-          value={`₹${(kpi?.fraud_prevented_crore || 0).toFixed(2)}Cr`}
-          sub="flagged cluster amounts"
-          color="#FB923C"
-          index={0}
-        />
-        <MetricCard
-          label="Investigation Time Saved"
-          value={`${kpi?.investigation_time_reduction_pct || 75}%`}
-          sub="4h → 1h per alert"
-          color="#22D3EE"
-          index={1}
-        />
-        <MetricCard
-          label="False Positive Reduction"
-          value="40%"
-          sub="vs. legacy rule-based AML"
-          color="#10B981"
-          index={2}
-        />
-      </motion.div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+        <StatCard label="Fraud Prevented"           value={`₹${(kpi?.fraud_prevented_crore || 0).toFixed(2)}Cr`} color="#FB923C" sub="flagged cluster amounts" />
+        <StatCard label="Investigation Time Saved"  value={`${kpi?.investigation_time_reduction_pct || 75}%`}    color="#22D3EE" sub="4h → 1h per alert" />
+        <StatCard label="False Positive Reduction"  value="40%"                                                   color="#10B981" sub="vs. legacy rule-based AML" />
+      </div>
 
       {/* Secondary KPI Cards */}
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 24 }}
-      >
-        <MetricCard
-          label="Manpower Saved"
-          value={`₹${(kpi?.manpower_saved_lakh || 0).toFixed(1)}L`}
-          sub={kpi?.hours_saved ? `${kpi.hours_saved.toFixed(0)} hours freed` : '—'}
-          color="#8B5CF6"
-          index={3}
-        />
-        <MetricCard
-          label="STRs Filed"
-          value={kpi?.strs_filed || 0}
-          sub="FIU-ready reports"
-          color="#38BDF8"
-          index={4}
-        />
-        <MetricCard
-          label="Total Alerts"
-          value={kpi?.total_alerts || 0}
-          sub="this cycle"
-          color="#F43F5E"
-          index={5}
-        />
-      </motion.div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 24 }}>
+        <StatCard label="Manpower Saved" value={`₹${(kpi?.manpower_saved_lakh || 0).toFixed(1)}L`} color="#8B5CF6" sub={kpi?.hours_saved ? `${kpi.hours_saved.toFixed(0)} hours freed` : '—'} />
+        <StatCard label="STRs Filed"     value={kpi?.strs_filed || 0}                                color="#38BDF8" sub="FIU-ready reports" />
+        <StatCard label="Total Alerts"   value={kpi?.total_alerts || 0}                              color="#F43F5E" sub="this cycle" />
+      </div>
 
       {/* Charts Row */}
       <motion.div
