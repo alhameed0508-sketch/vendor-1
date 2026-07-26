@@ -14,6 +14,9 @@ from infra.database.postgres import screening_watchlist, screening_results
 
 logger = logging.getLogger(__name__)
 
+# Confidence score assigned to exact alias matches
+ALIAS_EXACT_CONFIDENCE = 0.95
+
 
 def _levenshtein(s1: str, s2: str) -> int:
     """Compute Levenshtein distance between two strings."""
@@ -106,7 +109,7 @@ class PgScreeningRepository:
             aliases = entry.get("aliases", [])
             for alias in aliases:
                 if alias.lower() == name_lower:
-                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": 0.95})
+                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": ALIAS_EXACT_CONFIDENCE})
                     break
 
             if fuzzy and not any(m.get("entry_id") == entry.get("entry_id") for m in matches):

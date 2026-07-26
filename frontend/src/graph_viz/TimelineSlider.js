@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Pause, Play } from 'lucide-react';
 
 /**
@@ -8,9 +8,22 @@ import { Pause, Play } from 'lucide-react';
  * Props:
  *   edges       – array of edge objects with `timestamps` array
  *   onChange    – callback({start, end}) when range changes
+ *   windowPct  – playback window size as % of total range (default 15)
+ *   stepPct    – playback step size as % per tick (default 0.5)
+ *   intervalMs – playback tick interval in ms (default 80)
  */
-export default function TimelineSlider({ edges = [], onChange }) {
-  // Extract all timestamps and build a sorted unique list
+
+const DEFAULT_WINDOW_PCT = 15;
+const DEFAULT_STEP_PCT = 0.5;
+const DEFAULT_INTERVAL_MS = 80;
+
+export default function TimelineSlider({
+  edges = [],
+  onChange,
+  windowPct = DEFAULT_WINDOW_PCT,
+  stepPct = DEFAULT_STEP_PCT,
+  intervalMs = DEFAULT_INTERVAL_MS,
+}) {
   const allTimestamps = useMemo(() => {
     const ts = [];
     for (const e of edges) {
@@ -29,24 +42,29 @@ export default function TimelineSlider({ edges = [], onChange }) {
   const [startPct, setStartPct] = useState(0);
   const [endPct, setEndPct] = useState(100);
   const [playing, setPlaying] = useState(false);
-  const playRef = React.useRef(null);
+  const playRef = useRef(null);
+  const playingRef = useRef(false);
 
   const startTime = minTime + (startPct / 100) * range;
   const endTime = minTime + (endPct / 100) * range;
 
+  const emitRange = useCallback((sPct, ePct) => {
+    const s = minTime + (sPct / 100) * range;
+    const e = minTime + (ePct / 100) * range;
+    onChange?.({ start: s, end: e });
+  }, [minTime, range, onChange]);
+
   const handleStartChange = useCallback((e) => {
     const val = Math.min(Number(e.target.value), endPct - 2);
     setStartPct(val);
-    const s = minTime + (val / 100) * range;
-    onChange?.({ start: s, end: endTime });
-  }, [endPct, minTime, range, endTime, onChange]);
+    emitRange(val, endPct);
+  }, [endPct, emitRange]);
 
   const handleEndChange = useCallback((e) => {
     const val = Math.max(Number(e.target.value), startPct + 2);
     setEndPct(val);
-    const en = minTime + (val / 100) * range;
-    onChange?.({ start: startTime, end: en });
-  }, [startPct, minTime, range, startTime, onChange]);
+    emitRange(startPct, val);
+  }, [startPct, emitRange]);
 
   const handleReset = useCallback(() => {
     setStartPct(0);
@@ -54,36 +72,48 @@ export default function TimelineSlider({ edges = [], onChange }) {
     onChange?.({ start: minTime, end: maxTime });
   }, [minTime, maxTime, onChange]);
 
-  // Playback: animate the window sliding forward
+  const stopPlayback = useCallback(() => {
+    clearInterval(playRef.current);
+    playRef.current = null;
+    playingRef.current = false;
+    setPlaying(false);
+  }, []);
+
   const togglePlay = useCallback(() => {
-    if (playing) {
-      clearInterval(playRef.current);
-      setPlaying(false);
+    if (playingRef.current) {
+      stopPlayback();
       return;
     }
+
+    playingRef.current = true;
     setPlaying(true);
-    setStartPct(0);
-    setEndPct(15);
-    const step = 0.5;
+
+    let currentStart = 0;
+    let currentEnd = windowPct;
+    setStartPct(currentStart);
+    setEndPct(currentEnd);
+    emitRange(currentStart, currentEnd);
+
     playRef.current = setInterval(() => {
-      setEndPct(prev => {
-        const next = prev + step;
-        if (next >= 100) {
-          clearInterval(playRef.current);
-          setPlaying(false);
-          setEndPct(100);
-          onChange?.({ start: minTime, end: maxTime });
-          return 100;
-        }
-        const en = minTime + (next / 100) * range;
-        onChange?.({ start: minTime, end: en });
-        return next;
-      });
-    }, 80);
-  }, [playing, minTime, maxTime, range, onChange]);
+      currentStart += stepPct;
+      currentEnd += stepPct;
+
+      if (currentEnd >= 100) {
+        stopPlayback();
+        setStartPct(0);
+        setEndPct(100);
+        onChange?.({ start: minTime, end: maxTime });
+        return;
+      }
+
+      setStartPct(currentStart);
+      setEndPct(currentEnd);
+      emitRange(currentStart, currentEnd);
+    }, intervalMs);
+  }, [windowPct, stepPct, intervalMs, minTime, maxTime, onChange, emitRange, stopPlayback]);
 
   // Cleanup on unmount
-  React.useEffect(() => () => clearInterval(playRef.current), []);
+  useEffect(() => () => clearInterval(playRef.current), []);
 
   const formatTime = (ms) => {
     const d = new Date(ms);
@@ -91,7 +121,6 @@ export default function TimelineSlider({ edges = [], onChange }) {
       + ' ' + d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
-  // Count active edges in the current window
   const activeEdges = useMemo(() => {
     return edges.filter(e =>
       (e.timestamps || []).some(t => {

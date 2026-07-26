@@ -8,6 +8,9 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Confidence score assigned to exact alias matches
+ALIAS_EXACT_CONFIDENCE = 0.95
+
 
 class ScreeningRepository:
     """Watchlist and screening result data access."""
@@ -51,7 +54,7 @@ class ScreeningRepository:
             aliases = entry.get("aliases", [])
             for alias in aliases:
                 if alias.lower() == name_lower:
-                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": 0.95})
+                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": ALIAS_EXACT_CONFIDENCE})
                     break
 
             # Fuzzy (Levenshtein) if enabled

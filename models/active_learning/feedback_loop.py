@@ -13,13 +13,30 @@ Feedback types:
 from __future__ import annotations
 import json
 import os
-from datetime import datetime
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict, Optional, TYPE_CHECKING
+from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Optional
 
 
-FEEDBACK_STORE = Path(__file__).parent.parent.parent / "data" / "feedback_log.jsonl"
+DEFAULT_FEEDBACK_STORE_PATH = (
+    Path(__file__).parent.parent.parent / "data" / "feedback_log.jsonl"
+)
+
+
+@dataclass(frozen=True)
+class ThresholdConfig:
+    """All tunable active-learning parameters in one place."""
+
+    base_smurf_threshold: float = 0.55
+    base_suspicion_threshold: float = 0.50
+    fp_raise_bound: float = 0.30
+    fp_lower_bound: float = 0.10
+    raise_delta: float = 0.05
+    lower_delta: float = -0.03
+    recent_window: int = 20
+    min_feedback_for_adjustment: int = 5
+    retrain_batch_size: int = 20
 
 
 @dataclass
@@ -32,7 +49,7 @@ class FeedbackRecord:
     false_positive_accounts: List[str] = field(default_factory=list)
     true_positive_accounts: List[str] = field(default_factory=list)
     notes: str = ""
-    confidence_weight: float = 1.0  # weight based on uncertainty sampling
+    confidence_weight: float = 1.0
     created_at: str = ""
 
     def __post_init__(self):
@@ -41,11 +58,16 @@ class FeedbackRecord:
 
 
 class FeedbackStore:
-    """Persists investigator feedback for active learning"""
+    """Persists investigator feedback for active learning."""
 
-    def __init__(self, path: Path = FEEDBACK_STORE):
-        self.path = path
+    def __init__(
+        self,
+        path: Optional[Path] = None,
+        config: Optional[ThresholdConfig] = None,
+    ):
+        self.path = Path(path) if path else DEFAULT_FEEDBACK_STORE_PATH
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._config = config or ThresholdConfig()
 
     def save(self, record: FeedbackRecord):
         with open(self.path, "a") as f:
@@ -75,12 +97,12 @@ class FeedbackStore:
         based on recent feedback. Negative = tighten threshold.
         Uses confidence_weight for weighted feedback.
         """
+        cfg = self._config
         records = self.load_all()
-        if len(records) < 5:
+        if len(records) < cfg.min_feedback_for_adjustment:
             return 0.0
-        recent = records[-20:]
+        recent = records[-cfg.recent_window:]
 
-        # Weighted false positive rate
         total_weight = sum(getattr(r, 'confidence_weight', 1.0) for r in recent)
         if total_weight == 0:
             return 0.0
@@ -90,23 +112,25 @@ class FeedbackStore:
         )
         fp_rate = fp_weight / total_weight
 
-        if fp_rate > 0.30:
-            return +0.05
-        elif fp_rate < 0.10:
-            return -0.03
+        if fp_rate > cfg.fp_raise_bound:
+            return cfg.raise_delta
+        elif fp_rate < cfg.fp_lower_bound:
+            return cfg.lower_delta
         return 0.0
 
 
-def get_adjusted_thresholds(store: Optional["FeedbackStore"] = None) -> Dict:
+def get_adjusted_thresholds(
+    store: Optional[FeedbackStore] = None,
+    config: Optional[ThresholdConfig] = None,
+) -> Dict:
     """Returns recommended detection thresholds based on accumulated feedback."""
+    cfg = config or ThresholdConfig()
     if store is None:
-        store = FeedbackStore()
+        store = FeedbackStore(config=cfg)
     delta = store.get_threshold_adjustment()
-    base_smurf = 0.55
-    base_suspicion = 0.50
     return {
-        "smurf_flag_threshold": round(base_smurf + delta, 3),
-        "cluster_suspicion_threshold": round(base_suspicion + delta, 3),
+        "smurf_flag_threshold": round(cfg.base_smurf_threshold + delta, 3),
+        "cluster_suspicion_threshold": round(cfg.base_suspicion_threshold + delta, 3),
         "threshold_delta": delta,
         "false_positive_rate": round(store.false_positive_rate(), 3),
         "total_feedback": len(store.load_all()),
@@ -119,8 +143,13 @@ class ActiveLearningEngine:
     In production, this would trigger a GNN retraining job.
     """
 
-    def __init__(self):
-        self.store = FeedbackStore()
+    def __init__(
+        self,
+        store: Optional[FeedbackStore] = None,
+        config: Optional[ThresholdConfig] = None,
+    ):
+        self._config = config or ThresholdConfig()
+        self.store = store or FeedbackStore(config=self._config)
 
     def record_feedback(
         self,
@@ -154,12 +183,13 @@ class ActiveLearningEngine:
             "false_positives": sum(1 for r in records if not r.is_true_positive),
             "false_positive_rate": round(self.store.false_positive_rate(), 3),
             "recommended_threshold_delta": self.store.get_threshold_adjustment(),
-            "retraining_recommended": len(records) >= 20,
+            "retraining_recommended": len(records) >= self._config.retrain_batch_size,
         }
 
     def should_retrain(self) -> bool:
         records = self.store.load_all()
-        return len(records) > 0 and len(records) % 20 == 0
+        batch = self._config.retrain_batch_size
+        return len(records) > 0 and len(records) % batch == 0
 
     @staticmethod
     def get_uncertain_alerts(alerts: List[Dict], k: int = 10) -> List[Dict]:
@@ -178,7 +208,6 @@ class ActiveLearningEngine:
 
 if __name__ == "__main__":
     engine = ActiveLearningEngine()
-    # simulate feedback
     for i in range(5):
         fb = engine.record_feedback(
             alert_id=f"ALT_TEST_{i:03d}",

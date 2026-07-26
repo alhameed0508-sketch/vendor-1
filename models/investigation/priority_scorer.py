@@ -15,6 +15,23 @@ import math
 from dataclasses import dataclass
 from typing import Dict, List
 
+# -- Priority component weights (must sum to 1.0) -----------------------------
+WEIGHT_RISK_SCORE = 0.30          # Direct risk score from the alert
+WEIGHT_AMOUNT_FACTOR = 0.20       # Log-scaled transaction amount
+WEIGHT_NETWORK_CENTRALITY = 0.20  # Max betweenness centrality from nodes
+WEIGHT_EVIDENCE_DIVERSITY = 0.15  # Unique reason code prefixes / 10
+WEIGHT_TIME_SENSITIVITY = 0.15    # Newer alerts + new accounts boost
+
+# -- SAR filing base probabilities by severity --------------------------------
+SAR_BASE_PROBABILITY = {
+    "CRITICAL": 0.90,
+    "HIGH": 0.60,
+    "MEDIUM": 0.30,
+    "LOW": 0.10,
+}
+# Default SAR probability when severity is unrecognized
+SAR_DEFAULT_PROBABILITY = 0.10
+
 
 @dataclass(frozen=True)
 class AlertPriorityResult:
@@ -52,11 +69,11 @@ class AlertPriorityScorer:
     """
 
     WEIGHTS: Dict[str, float] = {
-        "risk_score": 0.30,
-        "amount_factor": 0.20,
-        "network_centrality": 0.20,
-        "evidence_diversity": 0.15,
-        "time_sensitivity": 0.15,
+        "risk_score": WEIGHT_RISK_SCORE,
+        "amount_factor": WEIGHT_AMOUNT_FACTOR,
+        "network_centrality": WEIGHT_NETWORK_CENTRALITY,
+        "evidence_diversity": WEIGHT_EVIDENCE_DIVERSITY,
+        "time_sensitivity": WEIGHT_TIME_SENSITIVITY,
     }
 
     # ₹10 Lakhs = 1,000,000
@@ -117,13 +134,7 @@ class AlertPriorityScorer:
         Adjusted upward by evidence count (reason codes).
         """
         severity = alert_data.get("severity", "").upper()
-        base_map = {
-            "CRITICAL": 0.90,
-            "HIGH": 0.60,
-            "MEDIUM": 0.30,
-            "LOW": 0.10,
-        }
-        base = base_map.get(severity, 0.10)
+        base = SAR_BASE_PROBABILITY.get(severity, SAR_DEFAULT_PROBABILITY)
 
         # Adjust by evidence count
         reason_codes = alert_data.get("reason_codes", [])

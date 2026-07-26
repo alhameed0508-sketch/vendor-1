@@ -14,6 +14,10 @@ from .prompts import SYSTEM_PROMPT_ONBOARDING
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for onboarding risk explanation ----------------
+ONBOARDING_TEMPERATURE = 0.3   # Slightly creative for readable explanations
+ONBOARDING_MAX_TOKENS = 1024   # Max response length for onboarding output
+
 
 def explain_onboarding(
     provider: Optional[LLMProvider],
@@ -33,8 +37,8 @@ def explain_onboarding(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_ONBOARDING),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.3,
-            max_tokens=1024,
+            temperature=ONBOARDING_TEMPERATURE,
+            max_tokens=ONBOARDING_MAX_TOKENS,
         )
         return ChatResponse(
             message=response.content,

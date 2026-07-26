@@ -253,12 +253,14 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
                 # Get mule classification from alert
                 mc = alert.get("mule_classification", {})
                 if mc:
-                    for member in mc.get("members", []):
+                    for member in mc.get("account_classifications", []):
                         if member.get("account_id") == acc_id:
-                            role = member.get("role", "CLEAN")
+                            role = member.get("classification", "UNKNOWN")
                             if role in ("COMPLICIT_MULE", "COMPLICIT"):
                                 mule_classification = "COMPLICIT"
                             elif role in ("EXPLOITED_MULE", "EXPLOITED") and mule_classification != "COMPLICIT":
+                                mule_classification = "EXPLOITED"
+                            elif role == "UNKNOWN" and mule_classification == "CLEAN":
                                 mule_classification = "EXPLOITED"
                             break
 

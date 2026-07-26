@@ -16,6 +16,10 @@ from .prompts import SYSTEM_PROMPT_TRIAGE
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for cluster triage ----------------------------
+TRIAGE_TEMPERATURE = 0.2   # Low temperature for consistent assessments
+TRIAGE_MAX_TOKENS = 512    # Max response length for triage output
+
 _ASSESSMENT_ADJUSTMENTS = {
     "HIGH": 0.10,
     "MEDIUM": 0.00,
@@ -44,8 +48,8 @@ def triage_cluster(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_TRIAGE),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.2,
-            max_tokens=512,
+            temperature=TRIAGE_TEMPERATURE,
+            max_tokens=TRIAGE_MAX_TOKENS,
         )
         latency = time.perf_counter() * 1000 - start_ms
         return _parse_triage_response(cluster_id, response, latency)

@@ -4,6 +4,7 @@ Shared test fixtures for MuleCatch test suite.
 
 import sys
 import os
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -11,6 +12,47 @@ import pytest
 from data.synthetic.generator import build_full_dataset, MuleClusterGenerator
 from detection.pipeline import DetectionPipeline
 from genai.base import LLMMessage, LLMProvider, LLMResponse, TemplateProvider
+
+
+# ── Test isolation for feedback store ────────────────────────────────────────
+# Redirect feedback writes to a temp file so tests never pollute the
+# production feedback_log.jsonl.
+
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_feedback_store():
+    """Patch the default feedback store path to a temp file for all tests."""
+    import models.active_learning.feedback_loop as fl_module
+
+    original_path = fl_module.DEFAULT_FEEDBACK_STORE_PATH
+    tmp = tempfile.NamedTemporaryFile(
+        suffix="_test_feedback.jsonl", delete=False, mode="w",
+    )
+    tmp.close()
+
+    fl_module.DEFAULT_FEEDBACK_STORE_PATH = type(original_path)(tmp.name)
+
+    # Clear lru_cache singletons in deps so they pick up the new path.
+    # get_detection_service also holds a FeedbackStore reference.
+    try:
+        from api import deps
+        for fn in (
+            deps.get_feedback_store,
+            deps.get_feedback_engine,
+            deps.get_feedback_service,
+            deps.get_detection_service,
+        ):
+            fn.cache_clear()
+    except (ImportError, AttributeError):
+        pass
+
+    yield
+
+    # Restore and clean up
+    fl_module.DEFAULT_FEEDBACK_STORE_PATH = original_path
+    try:
+        os.unlink(tmp.name)
+    except OSError:
+        pass
 
 
 class MockLLMProvider(LLMProvider):

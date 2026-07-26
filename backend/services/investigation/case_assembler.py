@@ -12,6 +12,16 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
+# -- Behavioral profile thresholds ---------------------------------------------
+# Account younger than this (days) is flagged as new
+THRESHOLD_YOUNG_ACCOUNT_DAYS = 7
+# Smurf score above this triggers a behavioral flag
+THRESHOLD_HIGH_SMURF_SCORE = 0.5
+# Betweenness centrality above this indicates high graph centrality
+THRESHOLD_HIGH_BETWEENNESS = 0.3
+# Smurf score above this classifies evidence severity as HIGH
+THRESHOLD_HIGH_SEVERITY_SMURF = 0.7
+
 
 @dataclass(frozen=True)
 class EvidenceItem:
@@ -183,13 +193,13 @@ class CaseAssemblyAgent:
             betweenness = node.get("betweenness_centrality", 0)
 
             flags: List[str] = []
-            if account_age is not None and account_age < 7:
+            if account_age is not None and account_age < THRESHOLD_YOUNG_ACCOUNT_DAYS:
                 flags.append(f"new_account ({account_age}d)")
-            if smurf_score > 0.5:
+            if smurf_score > THRESHOLD_HIGH_SMURF_SCORE:
                 flags.append(f"high_smurf_score ({smurf_score:.2f})")
             if kyc_status == "PENDING":
                 flags.append("kyc_pending")
-            if betweenness > 0.3:
+            if betweenness > THRESHOLD_HIGH_BETWEENNESS:
                 flags.append(f"high_centrality ({betweenness:.2f})")
 
             if flags:
@@ -323,7 +333,7 @@ class CaseAssemblyAgent:
         # Behavioral evidence
         for dev in behavioral_profile.get("deviations", []):
             smurf = dev.get("smurf_score", 0)
-            severity = "HIGH" if smurf > 0.7 else "MEDIUM"
+            severity = "HIGH" if smurf > THRESHOLD_HIGH_SEVERITY_SMURF else "MEDIUM"
             items.append(EvidenceItem(
                 evidence_type="behavioral",
                 description=f"Account {dev.get('account_id')}: {', '.join(dev.get('flags', []))}",

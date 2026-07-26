@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     smurf_flag_threshold: float = Field(0.55, alias="SMURF_FLAG_THRESHOLD")
     onboarding_risk_threshold: float = Field(0.50, alias="ONBOARDING_RISK_THRESHOLD")
 
+    # Active learning / feedback
+    feedback_store_path: str = Field("", alias="FEEDBACK_STORE_PATH")
+    feedback_fp_raise_bound: float = Field(0.30, alias="FEEDBACK_FP_RAISE_BOUND")
+    feedback_fp_lower_bound: float = Field(0.10, alias="FEEDBACK_FP_LOWER_BOUND")
+    feedback_raise_delta: float = Field(0.05, alias="FEEDBACK_RAISE_DELTA")
+    feedback_lower_delta: float = Field(-0.03, alias="FEEDBACK_LOWER_DELTA")
+    feedback_recent_window: int = Field(20, alias="FEEDBACK_RECENT_WINDOW")
+    feedback_min_for_adjustment: int = Field(5, alias="FEEDBACK_MIN_FOR_ADJUSTMENT")
+    feedback_retrain_batch_size: int = Field(20, alias="FEEDBACK_RETRAIN_BATCH_SIZE")
+
     # GNN model persistence
     gnn_model_path: str = Field("models/gnn/trained_model.pt", alias="GNN_MODEL_PATH")
 

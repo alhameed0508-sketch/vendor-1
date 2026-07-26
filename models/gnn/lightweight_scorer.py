@@ -22,6 +22,51 @@ logger = logging.getLogger(__name__)
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "lightweight_model.pkl")
 
+# -- KYC status numeric mapping -----------------------------------------------
+# Maps KYC verification status to a numeric risk indicator (0.0 = safest)
+KYC_STATUS_SCORES = {
+    "VERIFIED": 0.0,
+    "COMPLETE": 0.1,
+    "PARTIAL": 0.5,
+    "PENDING": 0.8,
+    "UNKNOWN": 0.6,
+}
+# Default KYC score when status is unrecognized
+KYC_DEFAULT_SCORE = 0.6
+
+# -- Feature normalization divisors -------------------------------------------
+# Normalize account age to a 0-1 range (365 days = 1.0)
+NORM_ACCOUNT_AGE_DAYS = 365.0
+# Normalize transaction velocity (30 txns/period = 1.0)
+NORM_VELOCITY_TXNS = 30.0
+# Normalize fan-out / fan-in unique counterparties (10 = 1.0)
+NORM_FAN_COUNTERPARTIES = 10.0
+# Cap rhythm ratio before normalizing (2.0 = max ratio)
+NORM_RHYTHM_CAP = 2.0
+# Normalize in/out degree (20 = 1.0)
+NORM_DEGREE = 20.0
+
+# -- ML training parameters ---------------------------------------------------
+# Learning rate for LightGBM and XGBoost gradient boosting
+LEARNING_RATE = 0.1
+
+# -- Heuristic fallback feature weights (must sum to ~1.0) --------------------
+HEURISTIC_WEIGHTS = (
+    0.08,  # account_age (inverted: young = risky)
+    0.08,  # kyc_numeric (high = incomplete)
+    0.20,  # smurf_score
+    0.10,  # velocity
+    0.08,  # fan_out
+    0.06,  # fan_in
+    0.05,  # rhythm
+    0.05,  # consolidation
+    0.05,  # in_degree
+    0.05,  # out_degree
+    0.07,  # betweenness
+    0.05,  # pagerank
+    0.08,  # baseline_deviation
+)
+
 FEATURE_NAMES = (
     "account_age", "kyc_numeric", "smurf_score", "velocity",
     "fan_out", "fan_in", "rhythm", "consolidation",
@@ -38,8 +83,7 @@ class LightweightPrediction:
 
 
 def _kyc_to_numeric(kyc_status: str) -> float:
-    mapping = {"VERIFIED": 0.0, "COMPLETE": 0.1, "PARTIAL": 0.5, "PENDING": 0.8, "UNKNOWN": 0.6}
-    return mapping.get(kyc_status, 0.6)
+    return KYC_STATUS_SCORES.get(kyc_status, KYC_DEFAULT_SCORE)
 
 
 def extract_features(
@@ -85,24 +129,24 @@ def extract_features(
         acc_id = acc["account_id"]
         account_ids.append(acc_id)
 
-        age = min(acc.get("account_age_days", 30) / 365.0, 1.0)
+        age = min(acc.get("account_age_days", 30) / NORM_ACCOUNT_AGE_DAYS, 1.0)
         kyc = _kyc_to_numeric(acc.get("kyc_status", "UNKNOWN"))
 
         ss = smurf_scores.get(acc_id)
         smurf = ss.smurf_score if ss and hasattr(ss, "smurf_score") else 0.0
 
-        velocity = min(outgoing_count.get(acc_id, 0) / 30.0, 1.0)
-        fan_out = min(len(unique_recipients.get(acc_id, set())) / 10.0, 1.0)
-        fan_in = min(len(unique_senders.get(acc_id, set())) / 10.0, 1.0)
+        velocity = min(outgoing_count.get(acc_id, 0) / NORM_VELOCITY_TXNS, 1.0)
+        fan_out = min(len(unique_recipients.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
+        fan_in = min(len(unique_senders.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
 
         out_amt = outgoing_total.get(acc_id, 0.0)
         in_amt = incoming_total.get(acc_id, 0.0)
         total_flow = out_amt + in_amt
-        rhythm = min(out_amt / max(in_amt, 1.0), 2.0) / 2.0 if in_amt > 0 else 0.5
+        rhythm = min(out_amt / max(in_amt, 1.0), NORM_RHYTHM_CAP) / NORM_RHYTHM_CAP if in_amt > 0 else 0.5
         consolidation = in_amt / max(total_flow, 1.0)
 
-        in_deg = min(incoming_count.get(acc_id, 0) / 20.0, 1.0)
-        out_deg = min(outgoing_count.get(acc_id, 0) / 20.0, 1.0)
+        in_deg = min(incoming_count.get(acc_id, 0) / NORM_DEGREE, 1.0)
+        out_deg = min(outgoing_count.get(acc_id, 0) / NORM_DEGREE, 1.0)
 
         cs = centrality.get(acc_id, {})
         betweenness = cs.get("betweenness", 0.0)
@@ -167,7 +211,7 @@ class LightweightScorer:
                 "objective": "binary",
                 "metric": "binary_logloss",
                 "num_leaves": 31,
-                "learning_rate": 0.1,
+                "learning_rate": LEARNING_RATE,
                 "verbose": -1,
             }
             model = lgb.train(params, dataset, num_boost_round=100)
@@ -183,7 +227,7 @@ class LightweightScorer:
                 params = {
                     "objective": "binary:logistic",
                     "max_depth": 6,
-                    "eta": 0.1,
+                    "eta": LEARNING_RATE,
                     "eval_metric": "logloss",
                     "verbosity": 0,
                 }
@@ -264,24 +308,9 @@ class LightweightScorer:
 
         Weighted combination of the 13 features with domain-knowledge weights.
         """
-        weights = (
-            0.08,  # account_age (inverted: young = risky)
-            0.08,  # kyc_numeric (high = incomplete)
-            0.20,  # smurf_score
-            0.10,  # velocity
-            0.08,  # fan_out
-            0.06,  # fan_in
-            0.05,  # rhythm
-            0.05,  # consolidation
-            0.05,  # in_degree
-            0.05,  # out_degree
-            0.07,  # betweenness
-            0.05,  # pagerank
-            0.08,  # baseline_deviation
-        )
         # For account_age, invert (younger = riskier)
         adjusted = list(features)
         adjusted[0] = 1.0 - adjusted[0]  # invert age
 
-        score = sum(w * v for w, v in zip(weights, adjusted))
+        score = sum(w * v for w, v in zip(HEURISTIC_WEIGHTS, adjusted))
         return min(max(score, 0.0), 1.0)

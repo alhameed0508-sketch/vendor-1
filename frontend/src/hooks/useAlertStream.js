@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { resolveUrl, getToken } from '../auth/api';
+import { SSE_INITIAL_RECONNECT_MS, SSE_MAX_RECONNECT_MS, SSE_BACKOFF_MULTIPLIER } from '../config';
 
-const INITIAL_RECONNECT_DELAY = 5000;
-const MAX_RECONNECT_DELAY = 60000;
+const INITIAL_RECONNECT_DELAY = SSE_INITIAL_RECONNECT_MS;
+const MAX_RECONNECT_DELAY = SSE_MAX_RECONNECT_MS;
 
 /**
  * SSE hook that connects to GET /api/v1/ingest/stream.
@@ -81,7 +82,7 @@ export default function useAlertStream({ onNewAlerts, enabled = true }) {
 
         const delay = reconnectDelay.current;
         // Exponential backoff: double delay each failure, cap at MAX
-        reconnectDelay.current = Math.min(delay * 2, MAX_RECONNECT_DELAY);
+        reconnectDelay.current = Math.min(delay * SSE_BACKOFF_MULTIPLIER, MAX_RECONNECT_DELAY);
 
         reconnectTimer.current = setTimeout(() => {
           reconnectTimer.current = null;

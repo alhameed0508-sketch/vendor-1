@@ -11,6 +11,12 @@ from repositories.dataset_repository import DatasetRepository
 from repositories.kpi_repository import KPIRepository
 from core.config import get_settings
 
+# -- Detection KPI constants --------------------------------------------------
+# Estimated analyst hours saved per automated alert
+HOURS_SAVED_PER_ALERT = 3.0
+# Risk score threshold above which an alert warrants SAR filing
+SAR_PROBABILITY_THRESHOLD = 0.7
+
 
 def alert_to_dict(a: Alert) -> Dict:
     """Convert a pipeline Alert object to a serializable dict."""
@@ -85,9 +91,10 @@ class DetectionService:
         dataset = self.get_or_generate_dataset()
 
         # Apply feedback-adjusted thresholds
+        settings = get_settings()
         threshold_delta = self._feedback_store.get_threshold_adjustment()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = 0.55 + threshold_delta
+            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
 
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]
@@ -129,8 +136,8 @@ class DetectionService:
         self._kpi_repo.update(
             total_alerts=len(alerts),
             fraud_prevented_inr=sum(a.total_amount for a in alerts),
-            hours_saved=len(alerts) * 3.0,
-            strs_filed=len([a for a in alerts if a.risk_score > 0.7]),
+            hours_saved=len(alerts) * HOURS_SAVED_PER_ALERT,
+            strs_filed=len([a for a in alerts if a.risk_score > SAR_PROBABILITY_THRESHOLD]),
         )
 
         # Update detection breakdown counters in PG if available
@@ -177,13 +184,13 @@ class DetectionService:
                     month=month_key,
                     alerts=len(alerts),
                     prevented=round(total_prevented, 1),
-                    hours=len(alerts) * 3.0,
+                    hours=len(alerts) * HOURS_SAVED_PER_ALERT,
                 ).on_conflict_do_update(
                     index_elements=["month"],
                     set_={
                         "alerts": len(alerts),
                         "prevented": round(total_prevented, 1),
-                        "hours": len(alerts) * 3.0,
+                        "hours": len(alerts) * HOURS_SAVED_PER_ALERT,
                     },
                 )
                 conn.execute(stmt)
@@ -201,9 +208,10 @@ class DetectionService:
 
     def retrain(self, threshold_delta: float) -> None:
         """Background retrain with adjusted thresholds."""
+        settings = get_settings()
         self._dataset_repo.clear()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = 0.55 + threshold_delta
+            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
         dataset = self.get_or_generate_dataset()
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]

@@ -32,15 +32,92 @@ class Community:
     size: int = 0
 
 
+# -- Community suspicion scoring constants ------------------------------------
+# Minimum suspicion score required to flag a community as a mule cluster
+SUSPICION_THRESHOLD = 0.50
+# Minimum number of accounts for a community to be considered
+MIN_CLUSTER_SIZE = 3
+# Minimum edge density for a community to trigger reason code CC01
+MIN_CLUSTER_DENSITY = 0.15
+
+# -- Scoring component caps and multipliers -----------------------------------
+# Maximum contribution from internal edge density (0-0.25)
+DENSITY_SCORE_CAP = 0.25
+# Density is multiplied by this before capping
+DENSITY_MULTIPLIER = 2
+
+# Maximum contribution from shared device fingerprints (0-0.25)
+SHARED_DEVICE_SCORE_CAP = 0.25
+# Score added per shared device fingerprint
+SHARED_DEVICE_SCORE_PER = 0.08
+
+# Maximum contribution from shared IP addresses (0-0.20)
+SHARED_IP_SCORE_CAP = 0.20
+# Score added per shared IP address
+SHARED_IP_SCORE_PER = 0.07
+
+# Maximum contribution from young/very-young accounts (0-0.20)
+YOUNG_ACCOUNT_SCORE_CAP = 0.20
+# Score weight for accounts younger than 30 days
+YOUNG_ACCOUNT_WEIGHT = 0.10
+# Score weight for accounts younger than 7 days
+VERY_YOUNG_ACCOUNT_WEIGHT = 0.10
+
+# Account age thresholds (days)
+VERY_YOUNG_ACCOUNT_DAYS = 7
+YOUNG_ACCOUNT_DAYS = 30
+
+# Maximum contribution from pending KYC ratio (0-0.10)
+PENDING_KYC_SCORE_CAP = 0.10
+# KYC pending ratio multiplier
+PENDING_KYC_WEIGHT = 0.10
+
+# Bonus for clusters spanning more than this many banks (layering signal)
+MIXED_BANK_THRESHOLD = 2
+MIXED_BANK_BONUS = 0.10
+
+# Bonus for large clusters (>= this many accounts)
+LARGE_CLUSTER_SIZE = 10
+LARGE_CLUSTER_BONUS = 0.05
+
+# Shared device edge weight bonus in graph construction
+SHARED_DEVICE_EDGE_WEIGHT = 2
+
+# Minimum cluster size for reason code CC04
+LARGE_GROUP_REASON_CODE_SIZE = 6
+
+# -- CBS behavioral feature scoring constants ---------------------------------
+# CBS pass-through ratio scoring
+CBS_PASS_THROUGH_MIN = 0.5
+CBS_PASS_THROUGH_MULTIPLIER = 0.15
+CBS_PASS_THROUGH_CAP = 0.12
+
+# CBS debit/credit ratio near 1.0 range
+CBS_DC_RATIO_LOW = 0.7
+CBS_DC_RATIO_HIGH = 1.3
+CBS_DC_RATIO_WEIGHT = 0.10
+CBS_DC_RATIO_CAP = 0.10
+
+# CBS negative balance scoring
+CBS_NEGATIVE_BALANCE_WEIGHT = 0.10
+CBS_NEGATIVE_BALANCE_CAP = 0.08
+
+# CBS balance volatility thresholds
+CBS_HIGH_VOLATILITY = 5000
+CBS_HIGH_VOLATILITY_BONUS = 0.05
+CBS_MEDIUM_VOLATILITY = 1000
+CBS_MEDIUM_VOLATILITY_BONUS = 0.03
+
+
 class LouvainClusterDetector:
     """
     Builds a transaction graph and applies Louvain community detection.
     Communities with high internal density + shared fingerprints are flagged.
     """
 
-    SUSPICION_THRESHOLD = 0.50
-    MIN_CLUSTER_SIZE    = 3
-    MIN_CLUSTER_DENSITY = 0.15
+    SUSPICION_THRESHOLD = SUSPICION_THRESHOLD
+    MIN_CLUSTER_SIZE    = MIN_CLUSTER_SIZE
+    MIN_CLUSTER_DENSITY = MIN_CLUSTER_DENSITY
 
     def detect_clusters(
         self,
@@ -125,9 +202,9 @@ class LouvainClusterDetector:
                     a, b = unique[i], unique[j]
                     if a in G.nodes and b in G.nodes:
                         if G.has_edge(a, b):
-                            G[a][b]["weight"] += 2  # shared device = extra weight
+                            G[a][b]["weight"] += SHARED_DEVICE_EDGE_WEIGHT
                         else:
-                            G.add_edge(a, b, weight=2)
+                            G.add_edge(a, b, weight=SHARED_DEVICE_EDGE_WEIGHT)
 
         return G
 
@@ -202,35 +279,35 @@ class LouvainClusterDetector:
         score = 0.0
         acc_map = {a["account_id"]: a for a in accounts if a["account_id"] in members}
 
-        # Density contribution (0-0.25)
-        score += min(c.density * 2, 0.25)
+        # Density contribution (0-DENSITY_SCORE_CAP)
+        score += min(c.density * DENSITY_MULTIPLIER, DENSITY_SCORE_CAP)
 
-        # Shared device fingerprints (0-0.25)
-        score += min(len(c.shared_devices) * 0.08, 0.25)
+        # Shared device fingerprints (0-SHARED_DEVICE_SCORE_CAP)
+        score += min(len(c.shared_devices) * SHARED_DEVICE_SCORE_PER, SHARED_DEVICE_SCORE_CAP)
 
-        # Shared IP addresses (0-0.20)
-        score += min(len(c.shared_ips) * 0.07, 0.20)
+        # Shared IP addresses (0-SHARED_IP_SCORE_CAP)
+        score += min(len(c.shared_ips) * SHARED_IP_SCORE_PER, SHARED_IP_SCORE_CAP)
 
-        # Young accounts - very young (<7d) score higher (0-0.20)
+        # Young accounts - very young (<7d) score higher (0-YOUNG_ACCOUNT_SCORE_CAP)
         ages = [a.get("account_age_days", 999) for a in acc_map.values()]
-        very_young = sum(1 for age in ages if age < 7)
-        young = sum(1 for age in ages if age < 30)
+        very_young = sum(1 for age in ages if age < VERY_YOUNG_ACCOUNT_DAYS)
+        young = sum(1 for age in ages if age < YOUNG_ACCOUNT_DAYS)
         young_ratio = young / max(len(ages), 1)
         very_young_ratio = very_young / max(len(ages), 1)
-        score += min(young_ratio * 0.10 + very_young_ratio * 0.10, 0.20)
+        score += min(young_ratio * YOUNG_ACCOUNT_WEIGHT + very_young_ratio * VERY_YOUNG_ACCOUNT_WEIGHT, YOUNG_ACCOUNT_SCORE_CAP)
 
-        # Pending KYC ratio (0-0.10)
+        # Pending KYC ratio (0-PENDING_KYC_SCORE_CAP)
         pending = sum(1 for a in acc_map.values() if a.get("kyc_status") == "PENDING")
-        score += min(pending / max(len(acc_map), 1) * 0.10, 0.10)
+        score += min(pending / max(len(acc_map), 1) * PENDING_KYC_WEIGHT, PENDING_KYC_SCORE_CAP)
 
         # Mixed banks (multiple banks = intentional layering)
         banks = set(a.get("bank", "") for a in acc_map.values())
-        if len(banks) > 2:
-            score += 0.10
+        if len(banks) > MIXED_BANK_THRESHOLD:
+            score += MIXED_BANK_BONUS
 
         # Cluster size bonus (larger = more suspicious)
-        if c.size >= 10:
-            score += 0.05
+        if c.size >= LARGE_CLUSTER_SIZE:
+            score += LARGE_CLUSTER_BONUS
 
         # CBS behavioral features (compensate when device/IP data is absent)
         # These features are set by MuleCSVAdapter for CBS transaction data.
@@ -257,31 +334,31 @@ class LouvainClusterDetector:
         n = len(acc_map)
 
         # Pass-through ratio: accounts where money enters and leaves same day
-        # High ratio across cluster = coordinated pass-through (0-0.12)
+        # High ratio across cluster = coordinated pass-through (0-CBS_PASS_THROUGH_CAP)
         pt_ratios = [a.get("pass_through_ratio", 0.0) for a in acc_map.values()]
         avg_pt = sum(pt_ratios) / n
-        if avg_pt >= 0.5:
-            boost += min(avg_pt * 0.15, 0.12)
+        if avg_pt >= CBS_PASS_THROUGH_MIN:
+            boost += min(avg_pt * CBS_PASS_THROUGH_MULTIPLIER, CBS_PASS_THROUGH_CAP)
 
-        # Debit/credit ratio near 1.0: in ≈ out = pass-through behavior (0-0.10)
+        # Debit/credit ratio near 1.0: in ~= out = pass-through behavior (0-CBS_DC_RATIO_CAP)
         dc_ratios = [a.get("debit_credit_ratio", 0.0) for a in acc_map.values()]
-        near_one = sum(1 for r in dc_ratios if 0.7 <= r <= 1.3)
+        near_one = sum(1 for r in dc_ratios if CBS_DC_RATIO_LOW <= r <= CBS_DC_RATIO_HIGH)
         near_one_ratio = near_one / n
-        boost += min(near_one_ratio * 0.10, 0.10)
+        boost += min(near_one_ratio * CBS_DC_RATIO_WEIGHT, CBS_DC_RATIO_CAP)
 
-        # Negative balances: overdraft abuse is a mule indicator (0-0.08)
+        # Negative balances: overdraft abuse is a mule indicator (0-CBS_NEGATIVE_BALANCE_CAP)
         neg_counts = [a.get("negative_balance_count", 0) for a in acc_map.values()]
         accts_with_neg = sum(1 for c in neg_counts if c > 0)
         neg_ratio = accts_with_neg / n
-        boost += min(neg_ratio * 0.10, 0.08)
+        boost += min(neg_ratio * CBS_NEGATIVE_BALANCE_WEIGHT, CBS_NEGATIVE_BALANCE_CAP)
 
-        # Balance volatility: high avg volatility = funds rapidly moving (0-0.05)
+        # Balance volatility: high avg volatility = funds rapidly moving (0-CBS_HIGH_VOLATILITY_BONUS)
         vols = [a.get("balance_volatility", 0.0) for a in acc_map.values()]
         avg_vol = sum(vols) / n if vols else 0
-        if avg_vol > 5000:
-            boost += 0.05
-        elif avg_vol > 1000:
-            boost += 0.03
+        if avg_vol > CBS_HIGH_VOLATILITY:
+            boost += CBS_HIGH_VOLATILITY_BONUS
+        elif avg_vol > CBS_MEDIUM_VOLATILITY:
+            boost += CBS_MEDIUM_VOLATILITY_BONUS
 
         return boost
 
@@ -293,7 +370,7 @@ class LouvainClusterDetector:
             codes.append(f"CC02: {len(c.shared_devices)} shared device fingerprint(s) across accounts")
         if c.shared_ips:
             codes.append(f"CC03: {len(c.shared_ips)} shared IP address(es) across accounts")
-        if c.size >= 6:
+        if c.size >= LARGE_GROUP_REASON_CODE_SIZE:
             codes.append(f"CC04: Large interconnected group ({c.size} accounts)")
         return codes
 

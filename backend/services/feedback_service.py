@@ -3,10 +3,14 @@ Feedback service — investigator feedback and active learning loop.
 """
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 
 from core.exceptions import NotFoundError
-from models.active_learning.feedback_loop import ActiveLearningEngine, FeedbackStore
+from models.active_learning.feedback_loop import (
+    ActiveLearningEngine,
+    FeedbackStore,
+    ThresholdConfig,
+)
 from repositories.alert_repository import AlertRepository
 from repositories.kpi_repository import KPIRepository
 from services.audit_service import AuditService
@@ -22,12 +26,14 @@ class FeedbackService:
         alert_repo: AlertRepository,
         kpi_repo: KPIRepository,
         audit_service: AuditService,
+        config: Optional[ThresholdConfig] = None,
     ):
         self._engine = feedback_engine
         self._store = feedback_store
         self._alert_repo = alert_repo
         self._kpi_repo = kpi_repo
         self._audit = audit_service
+        self._config = config or ThresholdConfig()
 
     def submit_feedback(
         self,
@@ -78,7 +84,7 @@ class FeedbackService:
             "false_positive_rate": summary["false_positive_rate"],
             "recommended_threshold_delta": summary["recommended_threshold_delta"],
             "retraining_recommended": summary["retraining_recommended"],
-            "current_smurf_threshold": 0.55 + self._store.get_threshold_adjustment(),
+            "current_smurf_threshold": self._config.base_smurf_threshold + self._store.get_threshold_adjustment(),
             "timestamp": datetime.utcnow().isoformat(),
         }
 
@@ -89,5 +95,5 @@ class FeedbackService:
         return {
             "summary": summary,
             "delta": delta,
-            "new_threshold": round(0.55 + delta, 3),
+            "new_threshold": round(self._config.base_smurf_threshold + delta, 3),
         }

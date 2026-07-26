@@ -30,7 +30,7 @@
     "build": "craco build",
     "test": "craco test"
   },
-  "proxy": "http://localhost:8000",
+  "proxy": "http://localhost:8001",
   "browserslist": {
     "production": [
       ">0.2%",

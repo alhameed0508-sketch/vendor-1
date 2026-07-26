@@ -14,6 +14,10 @@ from .prompts import SYSTEM_PROMPT_CHAT
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for investigation chat ------------------------
+CHAT_TEMPERATURE = 0.4    # Slightly creative for conversational responses
+CHAT_MAX_TOKENS = 1024    # Max response length for chat replies
+
 
 def chat(
     provider: Optional[LLMProvider],
@@ -60,8 +64,8 @@ def chat(
     try:
         response = provider.generate(
             messages=messages,
-            temperature=0.4,
-            max_tokens=1024,
+            temperature=CHAT_TEMPERATURE,
+            max_tokens=CHAT_MAX_TOKENS,
         )
         return ChatResponse(
             message=response.content,

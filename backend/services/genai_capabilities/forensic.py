@@ -14,6 +14,10 @@ from .prompts import SYSTEM_PROMPT_FORENSIC
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for forensic analysis -------------------------
+FORENSIC_TEMPERATURE = 0.3    # Balanced creativity for narrative generation
+FORENSIC_MAX_TOKENS = 2048    # Larger limit for detailed forensic reports
+
 
 def analyze_alert(
     provider: Optional[LLMProvider],
@@ -35,8 +39,8 @@ def analyze_alert(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_FORENSIC),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.3,
-            max_tokens=2048,
+            temperature=FORENSIC_TEMPERATURE,
+            max_tokens=FORENSIC_MAX_TOKENS,
         )
         return _parse_forensic_response(alert_id, response)
     except Exception as exc:

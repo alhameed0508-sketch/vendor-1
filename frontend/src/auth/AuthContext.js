@@ -7,6 +7,7 @@ import {
   clearTokens,
   resolveUrl,
 } from './api';
+import { TOKEN_REFRESH_BUFFER_MS, TOKEN_MIN_REFRESH_INTERVAL_MS } from '../config';
 
 const AuthContext = createContext(null);
 
@@ -87,7 +88,7 @@ export function AuthProvider({ children }) {
 
     const expiresInMs = payload.exp * 1000 - Date.now();
     // Refresh 60s before expiry, but at least every 30s
-    const refreshInMs = Math.max(expiresInMs - 60000, 30000);
+    const refreshInMs = Math.max(expiresInMs - TOKEN_REFRESH_BUFFER_MS, TOKEN_MIN_REFRESH_INTERVAL_MS);
 
     refreshIntervalRef.current = setInterval(refreshToken, refreshInMs);
   }, [refreshToken]);

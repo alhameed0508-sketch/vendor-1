@@ -6,18 +6,8 @@ import AlertDetail from './alert_detail/AlertDetail';
 import ROIDashboard from './roi_dashboard/ROIDashboard';
 import LoginPage from './login/LoginPage';
 import CompliancePortal from './compliance_portal/CompliancePortal';
-import JudgePresentation from './judge_view/JudgePresentation';
-import OnboardingRisk from './onboarding/OnboardingRisk';
 import NetworkOverview from './network/NetworkOverview';
-import InvestigationPage from './investigation/InvestigationPage';
-import TypologyPage from './typology/TypologyPage';
-import PropensityPage from './propensity/PropensityPage';
-import ScamDetectionPage from './scam/ScamDetectionPage';
-import IndiaCompliancePage from './india/IndiaCompliancePage';
-import ScreeningPage from './screening/ScreeningPage';
 import AlertQueue from './alert_queue/AlertQueue';
-import BenchmarkPage from './benchmark/BenchmarkPage';
-import SystemOpsPage from './system_ops/SystemOpsPage';
 import DataImportPage from './data_import/DataImportPage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -83,18 +73,8 @@ function AppContent() {
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
-              <Route path="/investigation" element={<ProtectedRoute><InvestigationPage /></ProtectedRoute>} />
-              <Route path="/typology" element={<ProtectedRoute><TypologyPage /></ProtectedRoute>} />
-              <Route path="/propensity" element={<ProtectedRoute><PropensityPage /></ProtectedRoute>} />
-              <Route path="/scam" element={<ProtectedRoute><ScamDetectionPage /></ProtectedRoute>} />
-              <Route path="/india" element={<ProtectedRoute><IndiaCompliancePage /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
               <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
-              <Route path="/judge" element={<ProtectedRoute><JudgePresentation /></ProtectedRoute>} />
-              <Route path="/onboarding" element={<ProtectedRoute><OnboardingRisk /></ProtectedRoute>} />
-              <Route path="/screening" element={<ProtectedRoute><ScreeningPage /></ProtectedRoute>} />
-              <Route path="/benchmark" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
-              <Route path="/system" element={<ProtectedRoute><SystemOpsPage /></ProtectedRoute>} />
               <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
             </Routes>
           </ErrorBoundary>

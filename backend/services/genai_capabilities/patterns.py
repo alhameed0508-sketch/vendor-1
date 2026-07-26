@@ -16,6 +16,10 @@ from .prompts import SYSTEM_PROMPT_PATTERN_DISCOVERY
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for pattern discovery -------------------------
+PATTERNS_TEMPERATURE = 0.4    # Higher temperature for creative pattern discovery
+PATTERNS_MAX_TOKENS = 1024    # Max response length for pattern output
+
 
 def discover_patterns(
     provider: Optional[LLMProvider],
@@ -37,8 +41,8 @@ def discover_patterns(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_PATTERN_DISCOVERY),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.4,
-            max_tokens=1024,
+            temperature=PATTERNS_TEMPERATURE,
+            max_tokens=PATTERNS_MAX_TOKENS,
         )
         latency = time.perf_counter() * 1000 - start_ms
         return _parse_pattern_response(response, latency)

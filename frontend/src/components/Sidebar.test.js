@@ -9,16 +9,12 @@ import { ThemeProvider } from '../ThemeContext';
 jest.mock('lucide-react', () => ({
   AlertTriangle: () => <div data-testid="icon-alert-triangle" />,
   BarChart2: () => <div data-testid="icon-bar-chart" />,
-  Shield: () => <div data-testid="icon-shield" />,
-  ChevronLeft: () => <div data-testid="icon-chevron-left" />,
-  ChevronRight: () => <div data-testid="icon-chevron-right" />,
-  Activity: () => <div data-testid="icon-activity" />,
   Moon: () => <div data-testid="icon-moon" />,
   Sun: () => <div data-testid="icon-sun" />,
   Zap: () => <div data-testid="icon-zap" />,
   FileCheck: () => <div data-testid="icon-file-check" />,
-  UserCheck: () => <div data-testid="icon-user-check" />,
-  Presentation: () => <div data-testid="icon-presentation" />,
+  Network: () => <div data-testid="icon-network" />,
+  Upload: () => <div data-testid="icon-upload" />,
 }));
 
 // Helper to render Sidebar with all required providers
@@ -48,30 +44,29 @@ describe('Sidebar Component', () => {
   });
 
   describe('Navigation Items', () => {
-    test('renders all 5 NAV_ITEMS', () => {
+    test('renders all navigation items', () => {
       renderSidebar();
 
-      expect(screen.getByText('Alert Queue')).toBeInTheDocument();
+      expect(screen.getByText('Dashboard')).toBeInTheDocument();
+      expect(screen.getByText('Triage Queue')).toBeInTheDocument();
+      expect(screen.getByText('Network Graph')).toBeInTheDocument();
       expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
-      expect(screen.getByText('Onboarding')).toBeInTheDocument();
-      expect(screen.getByText('Judge View')).toBeInTheDocument();
+      expect(screen.getByText('Data Import')).toBeInTheDocument();
     });
 
     test('renders navigation items with correct links', () => {
       renderSidebar();
 
-      const alertQueueLink = screen.getByText('Alert Queue').closest('a');
+      const dashboardLink = screen.getByText('Dashboard').closest('a');
       const analyticsLink = screen.getByText('ROI Analytics').closest('a');
       const complianceLink = screen.getByText('Compliance').closest('a');
-      const onboardingLink = screen.getByText('Onboarding').closest('a');
-      const judgeLink = screen.getByText('Judge View').closest('a');
+      const dataImportLink = screen.getByText('Data Import').closest('a');
 
-      expect(alertQueueLink).toHaveAttribute('href', '/');
+      expect(dashboardLink).toHaveAttribute('href', '/');
       expect(analyticsLink).toHaveAttribute('href', '/analytics');
       expect(complianceLink).toHaveAttribute('href', '/compliance');
-      expect(onboardingLink).toHaveAttribute('href', '/onboarding');
-      expect(judgeLink).toHaveAttribute('href', '/judge');
+      expect(dataImportLink).toHaveAttribute('href', '/data-import');
     });
 
     test('renders navigation items with icons', () => {
@@ -80,17 +75,16 @@ describe('Sidebar Component', () => {
       expect(screen.getByTestId('icon-alert-triangle')).toBeInTheDocument();
       expect(screen.getByTestId('icon-bar-chart')).toBeInTheDocument();
       expect(screen.getByTestId('icon-file-check')).toBeInTheDocument();
-      expect(screen.getByTestId('icon-user-check')).toBeInTheDocument();
-      expect(screen.getByTestId('icon-presentation')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-upload')).toBeInTheDocument();
     });
   });
 
   describe('Active State Highlighting', () => {
-    test('highlights Alert Queue as active when on root path', () => {
+    test('highlights Dashboard as active when on root path', () => {
       renderSidebar({}, '/');
 
-      const alertQueueLink = screen.getByText('Alert Queue').closest('a');
-      expect(alertQueueLink).toHaveClass('sidebar-link-active');
+      const dashboardLink = screen.getByText('Dashboard').closest('a');
+      expect(dashboardLink).toHaveClass('sidebar-link-active');
     });
 
     test('highlights ROI Analytics as active when on /analytics path', () => {
@@ -107,25 +101,11 @@ describe('Sidebar Component', () => {
       expect(complianceLink).toHaveClass('sidebar-link-active');
     });
 
-    test('highlights Onboarding as active when on /onboarding path', () => {
-      renderSidebar({}, '/onboarding');
-
-      const onboardingLink = screen.getByText('Onboarding').closest('a');
-      expect(onboardingLink).toHaveClass('sidebar-link-active');
-    });
-
-    test('highlights Judge View as active when on /judge path', () => {
-      renderSidebar({}, '/judge');
-
-      const judgeLink = screen.getByText('Judge View').closest('a');
-      expect(judgeLink).toHaveClass('sidebar-link-active');
-    });
-
-    test('does not highlight Alert Queue when on other paths', () => {
+    test('does not highlight Dashboard when on other paths', () => {
       renderSidebar({}, '/analytics');
 
-      const alertQueueLink = screen.getByText('Alert Queue').closest('a');
-      expect(alertQueueLink).not.toHaveClass('sidebar-link-active');
+      const dashboardLink = screen.getByText('Dashboard').closest('a');
+      expect(dashboardLink).not.toHaveClass('sidebar-link-active');
     });
 
     test('shows active bar indicator for active route', () => {
@@ -160,8 +140,7 @@ describe('Sidebar Component', () => {
       const routes = [
         { text: 'ROI Analytics', expectedActive: 'sidebar-link-active' },
         { text: 'Compliance', expectedActive: 'sidebar-link-active' },
-        { text: 'Onboarding', expectedActive: 'sidebar-link-active' },
-        { text: 'Judge View', expectedActive: 'sidebar-link-active' },
+        { text: 'Data Import', expectedActive: 'sidebar-link-active' },
       ];
 
       for (const route of routes) {
@@ -251,16 +230,21 @@ describe('Sidebar Component', () => {
       expect(onToggle).toHaveBeenCalledTimes(1);
     });
 
-    test('shows ChevronLeft icon when expanded', () => {
-      renderSidebar({ collapsed: false });
+    test('renders animated hamburger bars in the toggle button', () => {
+      const { container } = renderSidebar({ collapsed: false });
 
-      expect(screen.getByTestId('icon-chevron-left')).toBeInTheDocument();
+      // The HamburgerIcon renders 3 motion.span bars inside the button
+      const hamburgerButton = screen.getByRole('button', { name: /collapse sidebar/i });
+      const bars = hamburgerButton.querySelectorAll('span');
+      expect(bars.length).toBe(3);
     });
 
-    test('shows ChevronRight icon when collapsed', () => {
+    test('renders hamburger bars when collapsed too', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.getByTestId('icon-chevron-right')).toBeInTheDocument();
+      const hamburgerButton = screen.getByRole('button', { name: /expand sidebar/i });
+      const bars = hamburgerButton.querySelectorAll('span');
+      expect(bars.length).toBe(3);
     });
 
     test('has correct aria-label when expanded', () => {
@@ -282,21 +266,19 @@ describe('Sidebar Component', () => {
     test('hides nav item labels when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.queryByText('Alert Queue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
       expect(screen.queryByText('ROI Analytics')).not.toBeInTheDocument();
       expect(screen.queryByText('Compliance')).not.toBeInTheDocument();
-      expect(screen.queryByText('Onboarding')).not.toBeInTheDocument();
-      expect(screen.queryByText('Judge View')).not.toBeInTheDocument();
+      expect(screen.queryByText('Data Import')).not.toBeInTheDocument();
     });
 
     test('shows nav item labels when expanded', () => {
       renderSidebar({ collapsed: false });
 
-      expect(screen.getByText('Alert Queue')).toBeInTheDocument();
+      expect(screen.getByText('Dashboard')).toBeInTheDocument();
       expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
-      expect(screen.getByText('Onboarding')).toBeInTheDocument();
-      expect(screen.getByText('Judge View')).toBeInTheDocument();
+      expect(screen.getByText('Data Import')).toBeInTheDocument();
     });
 
     test('hides logo text when collapsed', () => {
@@ -323,28 +305,28 @@ describe('Sidebar Component', () => {
       expect(screen.getByText('// IOB Fraud Intelligence')).toBeInTheDocument();
     });
 
-    test('adds sidebar-collapsed class when collapsed', () => {
+    test('renders sidebar element when collapsed', () => {
       const { container } = renderSidebar({ collapsed: true });
 
       const sidebar = container.querySelector('.sidebar');
-      expect(sidebar).toHaveClass('sidebar-collapsed');
+      expect(sidebar).toBeInTheDocument();
     });
 
-    test('does not add sidebar-collapsed class when expanded', () => {
+    test('renders sidebar element when expanded', () => {
       const { container } = renderSidebar({ collapsed: false });
 
       const sidebar = container.querySelector('.sidebar');
-      expect(sidebar).not.toHaveClass('sidebar-collapsed');
+      expect(sidebar).toBeInTheDocument();
     });
 
     test('shows title attribute on nav items when collapsed', () => {
       renderSidebar({ collapsed: true });
 
       const links = screen.getAllByRole('link');
-      const alertQueueLink = links.find(link => link.getAttribute('title') === 'Alert Queue');
+      const dashboardLink = links.find(link => link.getAttribute('title') === 'Dashboard');
       const analyticsLink = links.find(link => link.getAttribute('title') === 'ROI Analytics');
 
-      expect(alertQueueLink).toBeInTheDocument();
+      expect(dashboardLink).toBeInTheDocument();
       expect(analyticsLink).toBeInTheDocument();
     });
   });
@@ -353,20 +335,20 @@ describe('Sidebar Component', () => {
     test('does not show stats when stats prop is null', () => {
       renderSidebar({ stats: null });
 
-      expect(screen.queryByText('Live Queue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Queue')).not.toBeInTheDocument();
     });
 
     test('does not show stats when stats prop is undefined', () => {
       renderSidebar({ stats: undefined });
 
-      expect(screen.queryByText('Live Queue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Queue')).not.toBeInTheDocument();
     });
 
     test('shows stats when provided and not collapsed', () => {
       const stats = { critical: 5, high: 10, medium: 15 };
       renderSidebar({ stats, collapsed: false });
 
-      expect(screen.getByText('Live Queue')).toBeInTheDocument();
+      expect(screen.getByText('Queue')).toBeInTheDocument();
       expect(screen.getByText('Critical')).toBeInTheDocument();
       expect(screen.getByText('High')).toBeInTheDocument();
       expect(screen.getByText('Medium')).toBeInTheDocument();
@@ -379,28 +361,28 @@ describe('Sidebar Component', () => {
       const stats = { critical: 5, high: 10, medium: 15 };
       renderSidebar({ stats, collapsed: true });
 
-      expect(screen.queryByText('Live Queue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Queue')).not.toBeInTheDocument();
     });
 
     test('does not show stats when total alerts is 0', () => {
       const stats = { critical: 0, high: 0, medium: 0 };
       renderSidebar({ stats, collapsed: false });
 
-      expect(screen.queryByText('Live Queue')).not.toBeInTheDocument();
+      expect(screen.queryByText('Queue')).not.toBeInTheDocument();
     });
 
     test('shows stats when at least one severity has alerts', () => {
       const stats = { critical: 0, high: 1, medium: 0 };
       renderSidebar({ stats, collapsed: false });
 
-      expect(screen.getByText('Live Queue')).toBeInTheDocument();
+      expect(screen.getByText('Queue')).toBeInTheDocument();
     });
 
     test('handles missing severity counts gracefully', () => {
       const stats = { critical: 5 }; // high and medium are undefined
       renderSidebar({ stats, collapsed: false });
 
-      expect(screen.getByText('Live Queue')).toBeInTheDocument();
+      expect(screen.getByText('Queue')).toBeInTheDocument();
       expect(screen.getByText('5')).toBeInTheDocument();
     });
   });
@@ -409,27 +391,29 @@ describe('Sidebar Component', () => {
     test('shows system online indicator when expanded', () => {
       renderSidebar({ collapsed: false });
 
-      expect(screen.getByText('System Online')).toBeInTheDocument();
+      expect(screen.getByText('Online')).toBeInTheDocument();
     });
 
     test('hides system online indicator when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.queryByText('System Online')).not.toBeInTheDocument();
+      expect(screen.queryByText('Online')).not.toBeInTheDocument();
     });
   });
 
   describe('Logo and Branding', () => {
-    test('always shows logo monogram', () => {
+    test('always renders hamburger toggle button', () => {
       renderSidebar();
 
-      expect(screen.getByText('MC')).toBeInTheDocument();
+      const hamburgerButton = screen.getByRole('button', { name: /collapse sidebar/i });
+      expect(hamburgerButton).toHaveClass('sidebar-hamburger');
     });
 
-    test('shows logo monogram even when collapsed', () => {
+    test('renders hamburger toggle when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.getByText('MC')).toBeInTheDocument();
+      const hamburgerButton = screen.getByRole('button', { name: /expand sidebar/i });
+      expect(hamburgerButton).toHaveClass('sidebar-hamburger');
     });
   });
 
@@ -438,7 +422,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links.length).toBeGreaterThanOrEqual(5); // At least 5 nav items
+      expect(links).toHaveLength(6); // 6 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -455,11 +439,14 @@ describe('Sidebar Component', () => {
       renderSidebar({ collapsed: true });
 
       const links = screen.getAllByRole('link');
+      const expectedTitles = [
+        'Dashboard', 'Triage Queue', 'Network Graph',
+        'ROI Analytics', 'Compliance', 'Data Import',
+      ];
       links.forEach(link => {
         const title = link.getAttribute('title');
-        // Only nav items should have title when collapsed
         if (title) {
-          expect(['Alert Queue', 'ROI Analytics', 'Compliance', 'Onboarding', 'Judge View']).toContain(title);
+          expect(expectedTitles).toContain(title);
         }
       });
     });

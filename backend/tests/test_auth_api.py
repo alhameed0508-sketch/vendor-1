@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from jose import jwt
 
 from api.app import create_app
@@ -75,22 +75,20 @@ def production_settings(monkeypatch) -> Settings:
 @pytest_asyncio.fixture
 async def demo_client(demo_settings: Settings):
     """Async HTTP client with demo mode enabled (auth disabled)."""
-    # Import the pre-created app instance instead of creating a new one
     from api.app import app
 
-    # The app is already created with the current settings
-    # Tests will use the existing app instance
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 
 @pytest_asyncio.fixture
 async def prod_client(production_settings: Settings):
     """Async HTTP client with production mode enabled (auth required)."""
-    # Import the pre-created app instance
     from api.app import app
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 

@@ -64,7 +64,29 @@ THRESHOLD_DORMANT_REACTIVATION_TXN = 10 # min outgoing for reactivation
 
 # Classification decision thresholds
 THRESHOLD_MIN_TOTAL_SCORE = 0.15        # below → UNKNOWN
-THRESHOLD_CLASSIFICATION_RATIO = 1.5    # score must exceed other by this factor
+THRESHOLD_CLASSIFICATION_RATIO = 1.3    # score must exceed other by this factor
+
+# CBS behavioral weights
+WEIGHT_CBS_PASSTHROUGH = 0.15           # CBS pass-through ratio >= 90%
+WEIGHT_NEG_BALANCE_HIGH = 0.15          # >= 10 negative balance events
+WEIGHT_NEG_BALANCE_MED = 0.08           # >= 3 negative balance events
+WEIGHT_DC_RATIO_MATCH = 0.10            # debit/credit ratio near 1.0
+WEIGHT_CREDIT_HUB = 0.15               # >= 50 incoming credits
+WEIGHT_CREDIT_FUNNEL = 0.10             # >= 20 incoming credits
+
+# CBS behavioral thresholds
+THRESHOLD_CBS_PASSTHROUGH = 0.90
+THRESHOLD_DC_RATIO_LOW = 0.85
+THRESHOLD_DC_RATIO_HIGH = 1.15
+THRESHOLD_NEG_BALANCE_HIGH = 10
+THRESHOLD_NEG_BALANCE_MED = 3
+THRESHOLD_CREDIT_HUB = 50
+THRESHOLD_CREDIT_FUNNEL = 20
+
+# Classification confidence bounds
+CONFIDENCE_UNKNOWN = 0.3
+CONFIDENCE_AMBIGUOUS = 0.5
+CONFIDENCE_CAP = 0.95
 
 
 @dataclass(frozen=True)
@@ -189,19 +211,56 @@ def classify_mule_type(
         complicit_score += WEIGHT_ROLE_AGGREGATOR
         signals.append("Acts as fund aggregator - terminal collection point")
 
+    # Signal 8: CBS behavioral features (compensate for missing device/IP)
+    cbs_pt = account.get("pass_through_ratio", 0.0)
+    if cbs_pt >= THRESHOLD_CBS_PASSTHROUGH:
+        complicit_score += WEIGHT_CBS_PASSTHROUGH
+        signals.append(
+            f"CBS pass-through ratio {cbs_pt:.0%} - same-day in/out pattern"
+        )
+
+    neg_bal = account.get("negative_balance_count", 0)
+    if neg_bal >= THRESHOLD_NEG_BALANCE_HIGH:
+        exploited_score += WEIGHT_NEG_BALANCE_HIGH
+        signals.append(
+            f"{neg_bal} negative balance events - overdraft abuse (account exploitation)"
+        )
+    elif neg_bal >= THRESHOLD_NEG_BALANCE_MED:
+        exploited_score += WEIGHT_NEG_BALANCE_MED
+        signals.append(f"{neg_bal} negative balance events")
+
+    dc_ratio = account.get("debit_credit_ratio", 0.0)
+    if THRESHOLD_DC_RATIO_LOW <= dc_ratio <= THRESHOLD_DC_RATIO_HIGH and dc_ratio > 0:
+        complicit_score += WEIGHT_DC_RATIO_MATCH
+        signals.append(
+            f"Debit/credit ratio {dc_ratio:.2f} - money in equals money out (pass-through)"
+        )
+
+    credit_count = account.get("credit_count", 0)
+    if credit_count >= THRESHOLD_CREDIT_HUB:
+        complicit_score += WEIGHT_CREDIT_HUB
+        signals.append(
+            f"{credit_count} incoming credits - collection hub pattern"
+        )
+    elif credit_count >= THRESHOLD_CREDIT_FUNNEL:
+        complicit_score += WEIGHT_CREDIT_FUNNEL
+        signals.append(
+            f"{credit_count} incoming credits - receiving funnel"
+        )
+
     # Classification decision
     total = complicit_score + exploited_score
     if total < THRESHOLD_MIN_TOTAL_SCORE:
         return MuleClassification(
             account_id=account_id,
             classification="UNKNOWN",
-            confidence=0.3,
+            confidence=CONFIDENCE_UNKNOWN,
             reasoning="Insufficient behavioral signals to determine mule type.",
             signals=signals,
         )
 
     if complicit_score > exploited_score * THRESHOLD_CLASSIFICATION_RATIO:
-        confidence = min(complicit_score / max(total, 0.01), 0.95)
+        confidence = min(complicit_score / max(total, 0.01), CONFIDENCE_CAP)
         reasoning = (
             f"Account shows {len([s for s in signals if 'complicit' in s.lower() or 'coordinated' in s.lower() or 'conduit' in s.lower() or 'deliberate' in s.lower()])} "
             f"strong indicators of knowing participation: "
@@ -215,7 +274,7 @@ def classify_mule_type(
             signals=signals,
         )
     elif exploited_score > complicit_score * THRESHOLD_CLASSIFICATION_RATIO:
-        confidence = min(exploited_score / max(total, 0.01), 0.95)
+        confidence = min(exploited_score / max(total, 0.01), CONFIDENCE_CAP)
         reasoning = (
             f"Account profile suggests the holder may be a victim: "
             + "; ".join(signals[:3]) + "."
@@ -231,7 +290,7 @@ def classify_mule_type(
         return MuleClassification(
             account_id=account_id,
             classification="UNKNOWN",
-            confidence=round(0.5, 2),
+            confidence=CONFIDENCE_AMBIGUOUS,
             reasoning=(
                 f"Mixed signals prevent definitive classification. "
                 f"Complicit indicators ({complicit_score:.2f}) vs "

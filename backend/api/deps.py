@@ -8,7 +8,11 @@ from functools import lru_cache
 from core.config import get_settings
 from graph_engine.persistence import PersistenceLayer
 from detection.pipeline import DetectionPipeline
-from models.active_learning.feedback_loop import ActiveLearningEngine, FeedbackStore
+from models.active_learning.feedback_loop import (
+    ActiveLearningEngine,
+    FeedbackStore,
+    ThresholdConfig,
+)
 from ingest.kafka_consumer import TransactionConsumer, KAFKA_ENABLED
 
 from cache.redis_client import RedisClient
@@ -68,14 +72,38 @@ def get_pipeline() -> DetectionPipeline:
     )
 
 
-@lru_cache(maxsize=1)
-def get_feedback_engine() -> ActiveLearningEngine:
-    return ActiveLearningEngine()
+def _build_threshold_config() -> ThresholdConfig:
+    """Build ThresholdConfig from centralised settings."""
+    settings = get_settings()
+    return ThresholdConfig(
+        base_smurf_threshold=settings.smurf_flag_threshold,
+        base_suspicion_threshold=settings.onboarding_risk_threshold,
+        fp_raise_bound=settings.feedback_fp_raise_bound,
+        fp_lower_bound=settings.feedback_fp_lower_bound,
+        raise_delta=settings.feedback_raise_delta,
+        lower_delta=settings.feedback_lower_delta,
+        recent_window=settings.feedback_recent_window,
+        min_feedback_for_adjustment=settings.feedback_min_for_adjustment,
+        retrain_batch_size=settings.feedback_retrain_batch_size,
+    )
 
 
 @lru_cache(maxsize=1)
 def get_feedback_store() -> FeedbackStore:
-    return FeedbackStore()
+    settings = get_settings()
+    path = settings.feedback_store_path or None
+    return FeedbackStore(
+        path=path,
+        config=_build_threshold_config(),
+    ) if path else FeedbackStore(config=_build_threshold_config())
+
+
+@lru_cache(maxsize=1)
+def get_feedback_engine() -> ActiveLearningEngine:
+    return ActiveLearningEngine(
+        store=get_feedback_store(),
+        config=_build_threshold_config(),
+    )
 
 
 @lru_cache(maxsize=1)
@@ -176,6 +204,7 @@ def get_feedback_service() -> FeedbackService:
         alert_repo=get_alert_repo(),
         kpi_repo=get_kpi_repo(),
         audit_service=get_audit_service(),
+        config=_build_threshold_config(),
     )
 
 

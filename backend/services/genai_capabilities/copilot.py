@@ -14,6 +14,11 @@ from .prompts import SYSTEM_PROMPT_INVESTIGATION
 
 logger = logging.getLogger(__name__)
 
+# -- LLM generation parameters for investigation copilot ---------------------
+COPILOT_TEMPERATURE = 0.3      # Balanced creativity for investigation Q&A
+COPILOT_MAX_TOKENS = 1024      # Max response length for investigation queries
+COPILOT_SUMMARY_MAX_TOKENS = 512  # Max response length for summaries and next steps
+
 
 def investigate_query(
     provider: Optional[LLMProvider],
@@ -46,8 +51,8 @@ def investigate_query(
                     content=f"Alert: {alert_id}\n{context_str}\nQuestion: {question}",
                 ),
             ],
-            temperature=0.3,
-            max_tokens=1024,
+            temperature=COPILOT_TEMPERATURE,
+            max_tokens=COPILOT_MAX_TOKENS,
         )
         return ChatResponse(
             message=response.content,
@@ -123,8 +128,8 @@ def suggest_next_steps(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_INVESTIGATION),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.3,
-            max_tokens=512,
+            temperature=COPILOT_TEMPERATURE,
+            max_tokens=COPILOT_SUMMARY_MAX_TOKENS,
         )
         return ChatResponse(
             message=response.content,
@@ -209,8 +214,8 @@ def generate_summary(
                 LLMMessage(role="system", content=SYSTEM_PROMPT_INVESTIGATION),
                 LLMMessage(role="user", content=prompt),
             ],
-            temperature=0.3,
-            max_tokens=512,
+            temperature=COPILOT_TEMPERATURE,
+            max_tokens=COPILOT_SUMMARY_MAX_TOKENS,
         )
         return ChatResponse(
             message=response.content,
