@@ -11,10 +11,10 @@ Returns DriftResult with recommendation: RETRAIN_RECOMMENDED or NO_ACTION.
 from __future__ import annotations
 
 import logging
-import math
 from collections import deque
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List
+
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,10 @@ class DriftDetector:
             logger.warning(
                 "Distribution drift detected: historical_mean=%.3f, "
                 "recent_mean=%.3f, divergence=%.3f (threshold=%.3f)",
-                hist_mean, recent_mean, divergence, self._drift_threshold,
+                hist_mean,
+                recent_mean,
+                divergence,
+                self._drift_threshold,
             )
 
         return DriftResult(

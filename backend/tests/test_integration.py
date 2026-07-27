@@ -48,6 +48,7 @@ def _error(response):
 
 # ── Health & Root ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_root(client):
     r = await client.get("/")
@@ -66,7 +67,30 @@ async def test_health(client):
     assert "persistence" in data
 
 
+@pytest.mark.asyncio
+async def test_readiness_does_not_mask_dependency_failure_in_demo_mode(
+    client, monkeypatch
+):
+    from api.v1.routes import health as health_module
+
+    monkeypatch.setattr(
+        health_module,
+        "_check_neo4j",
+        lambda: {"status": "unavailable"},
+    )
+    monkeypatch.setattr(health_module, "_check_postgres", lambda: {"status": "ok"})
+    monkeypatch.setattr(health_module, "_check_redis", lambda: {"status": "ok"})
+    monkeypatch.setattr(health_module, "_check_kafka", lambda: {"status": "ok"})
+
+    response = await client.get("/ready")
+
+    assert response.status_code == 503
+    assert response.json()["success"] is False
+    assert response.json()["data"]["status"] == "not_ready"
+
+
 # ── Auth endpoints ────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_auth_me_demo_mode(client):
@@ -80,7 +104,9 @@ async def test_auth_me_demo_mode(client):
 
 @pytest.mark.asyncio
 async def test_auth_login(client):
-    r = await client.post("/api/v1/auth/login", json={"username": "investigator", "password": "iob@2024"})
+    r = await client.post(
+        "/api/v1/auth/login", json={"username": "investigator", "password": "iob@2024"}
+    )
     # Accept 429 (rate limited by earlier test_auth_api.py rate limit tests)
     assert r.status_code in (200, 429)
     if r.status_code == 200:
@@ -90,12 +116,15 @@ async def test_auth_login(client):
 
 @pytest.mark.asyncio
 async def test_auth_login_bad_credentials(client):
-    r = await client.post("/api/v1/auth/login", json={"username": "bad", "password": "bad"})
+    r = await client.post(
+        "/api/v1/auth/login", json={"username": "bad", "password": "bad"}
+    )
     # Accept 429 (rate limited by earlier tests)
     assert r.status_code in (401, 429)
 
 
 # ── Alerts ────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_list_alerts(client):
@@ -143,10 +172,13 @@ async def test_update_alert(client):
     r = await client.get("/api/v1/alerts?limit=1")
     alert_id = _data(r)["alerts"][0]["alert_id"]
 
-    r = await client.patch(f"/api/v1/alerts/{alert_id}", json={
-        "status": "UNDER_REVIEW",
-        "investigator_notes": "Integration test note",
-    })
+    r = await client.patch(
+        f"/api/v1/alerts/{alert_id}",
+        json={
+            "status": "UNDER_REVIEW",
+            "investigator_notes": "Integration test note",
+        },
+    )
     assert r.status_code == 200
 
 
@@ -164,16 +196,20 @@ async def test_get_subgraph(client):
 
 # ── Feedback ──────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_submit_feedback(client):
     r = await client.get("/api/v1/alerts?limit=1")
     alert_id = _data(r)["alerts"][0]["alert_id"]
 
-    r = await client.post("/api/v1/feedback", json={
-        "alert_id": alert_id,
-        "is_true_positive": False,
-        "notes": "Integration test — false alarm",
-    })
+    r = await client.post(
+        "/api/v1/feedback",
+        json={
+            "alert_id": alert_id,
+            "is_true_positive": False,
+            "notes": "Integration test — false alarm",
+        },
+    )
     assert r.status_code == 200
     data = _data(r)
     assert data["accepted"] is True
@@ -192,6 +228,7 @@ async def test_feedback_stats(client):
 
 # ── KPI ───────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_kpi(client):
     r = await client.get("/api/v1/kpi")
@@ -204,12 +241,15 @@ async def test_kpi(client):
 
 # ── Compliance ────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_str_export(client):
     r = await client.get("/api/v1/alerts?limit=1")
     alert_id = _data(r)["alerts"][0]["alert_id"]
 
-    r = await client.post("/api/v1/compliance/str-export", json={"alert_ids": [alert_id]})
+    r = await client.post(
+        "/api/v1/compliance/str-export", json={"alert_ids": [alert_id]}
+    )
     assert r.status_code == 200
     data = _data(r)
     assert data["generated"] == 1
@@ -220,6 +260,7 @@ async def test_str_export(client):
 
 
 # ── Graph & Detection ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_graph_stats(client):
@@ -243,6 +284,7 @@ async def test_run_detection(client):
 
 # ── Ingest Status ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_ingest_status(client):
     r = await client.get("/api/v1/ingest/status")
@@ -253,6 +295,7 @@ async def test_ingest_status(client):
 
 
 # ── Full flow test ────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_full_detection_to_str_flow(client):
@@ -274,15 +317,20 @@ async def test_full_detection_to_str_flow(client):
     assert r.status_code == 200
 
     # 4. Submit feedback
-    r = await client.post("/api/v1/feedback", json={
-        "alert_id": alert_id,
-        "is_true_positive": True,
-        "notes": "Confirmed mule cluster",
-    })
+    r = await client.post(
+        "/api/v1/feedback",
+        json={
+            "alert_id": alert_id,
+            "is_true_positive": True,
+            "notes": "Confirmed mule cluster",
+        },
+    )
     assert r.status_code == 200
 
     # 5. Export STR
-    r = await client.post("/api/v1/compliance/str-export", json={"alert_ids": [alert_id]})
+    r = await client.post(
+        "/api/v1/compliance/str-export", json={"alert_ids": [alert_id]}
+    )
     assert r.status_code == 200
     assert _data(r)["generated"] == 1
 

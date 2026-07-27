@@ -30,9 +30,15 @@ services:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-mulecatch2024}
       NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
       # Neo4j 5.x server config format
-      NEO4J_server_memory_heap_initial__size: 512m
-      NEO4J_server_memory_heap_max__size: 2G
-      NEO4J_server_memory_pagecache_size: 1G
+      # Sized for the local/reference stack; production overlays must size
+      # managed Neo4j from the validated graph workload.
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 768m
+      NEO4J_server_memory_pagecache_size: 256m
+      # Keep the process marker on the container's ephemeral /run filesystem.
+      # A stale PID in the writable image layer otherwise prevents restart
+      # after an abrupt Docker/host shutdown.
+      NEO4J_server_directories_run: /run/neo4j
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
@@ -96,8 +102,8 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: mulecatch_backend
     ports:
       - "8000:8000"
@@ -119,6 +125,7 @@ services:
       GENAI_ENABLED: ${GENAI_ENABLED:-false}
       GENAI_PROVIDER: ${GENAI_PROVIDER:-gemini}
       GENAI_API_KEY: ${GENAI_API_KEY:-}
+      BENCHMARK_RESULTS_PATH: /app/logs/benchmark_results.json
     volumes:
       - ./data:/app/data:ro
       - ./models:/app/models:ro
@@ -157,7 +164,7 @@ services:
       - mulecatch_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/health"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -202,8 +209,8 @@ services:
 
   seed:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: mulecatch_seed
     command: python -m data.seed_graph
     environment:

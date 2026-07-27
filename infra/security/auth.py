@@ -12,11 +12,13 @@ Roles:
 """
 
 from fastapi import Request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
-import json, os
+import json
+import os
 from pathlib import Path
-from jose import jwt, JWTError
+import jwt
+from jwt import InvalidTokenError
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -28,7 +30,7 @@ JWT_EXPIRY = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 AUDIT_LOG_PATH = Path(os.getenv("AUDIT_LOG_PATH", "/app/logs/audit.jsonl"))
-AUDIT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+
 
 # Bcrypt password hashing utilities
 def hash_password(password: str) -> str:
@@ -40,38 +42,60 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         plain_password.encode("utf-8"), hashed_password.encode("utf-8")
     )
 
+
 # ── Rotating audit logger ────────────────────────────────────────────────────
 _audit_logger = logging.getLogger("mulecatch.audit")
 _audit_logger.setLevel(logging.INFO)
-_audit_handler = RotatingFileHandler(
-    str(AUDIT_LOG_PATH),
-    maxBytes=100 * 1024 * 1024,  # 100 MB
-    backupCount=5,
-)
+if os.getenv("ENV", "development") == "production":
+    # Production audit events go to stdout for collection by the bank's
+    # immutable log pipeline/SIEM. Business actions are additionally stored
+    # in PostgreSQL's tamper-evident audit chain.
+    _audit_handler = logging.StreamHandler()
+else:
+    try:
+        AUDIT_LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _audit_handler = RotatingFileHandler(
+            str(AUDIT_LOG_PATH),
+            maxBytes=100 * 1024 * 1024,
+            backupCount=5,
+        )
+    except OSError:
+        # Read-only test/dev environments still emit audit records.
+        _audit_handler = logging.StreamHandler()
 _audit_handler.setFormatter(logging.Formatter("%(message)s"))
 _audit_logger.addHandler(_audit_handler)
 
 # ── Permissions per role ──────────────────────────────────────────────────────
 ROLE_PERMISSIONS: Dict[str, List[str]] = {
     "ADMIN": [
-        "alerts:read", "alerts:write", "alerts:delete",
-        "str:export", "str:approve",
-        "config:read", "config:write",
-        "feedback:write",
-        "kpi:read",
-        "screening:read", "screening:write",
-        "onboarding:read", "onboarding:write",
-    ],
-    "SUPERVISOR": [
-        "alerts:read", "alerts:write",
-        "str:export", "str:approve",
+        "alerts:read",
+        "alerts:write",
+        "alerts:delete",
+        "str:export",
+        "str:approve",
+        "config:read",
+        "config:write",
         "feedback:write",
         "kpi:read",
         "screening:read",
-        "onboarding:read", "onboarding:write",
+        "screening:write",
+        "onboarding:read",
+        "onboarding:write",
+    ],
+    "SUPERVISOR": [
+        "alerts:read",
+        "alerts:write",
+        "str:export",
+        "str:approve",
+        "feedback:write",
+        "kpi:read",
+        "screening:read",
+        "onboarding:read",
+        "onboarding:write",
     ],
     "INVESTIGATOR": [
-        "alerts:read", "alerts:write",
+        "alerts:read",
+        "alerts:write",
         "str:export",
         "feedback:write",
         "kpi:read",
@@ -116,14 +140,15 @@ DEMO_USERS = {
 
 # ── Token utilities ───────────────────────────────────────────────────────────
 
+
 def create_token(user_id: str, role: str) -> str:
     """Create an access token (short-lived)."""
     payload = {
         "sub": user_id,
         "role": role,
         "type": "access",
-        "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(minutes=JWT_EXPIRY),
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRY),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -139,8 +164,8 @@ def create_refresh_token(user_id: str, role: str) -> str:
         "sub": user_id,
         "role": role,
         "type": "refresh",
-        "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS),
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -148,7 +173,7 @@ def create_refresh_token(user_id: str, role: str) -> str:
 def decode_token(token: str) -> Optional[Dict]:
     try:
         return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
-    except JWTError:
+    except InvalidTokenError:
         return None
 
 
@@ -172,6 +197,7 @@ def has_permission(token: str, permission: str) -> bool:
 
 # ── Audit logging ─────────────────────────────────────────────────────────────
 
+
 def audit_log(
     user_id: str,
     action: str,
@@ -181,7 +207,7 @@ def audit_log(
     details: Dict = None,
 ):
     record = {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "user_id": user_id,
         "action": action,
         "resource": resource,
@@ -194,11 +220,12 @@ def audit_log(
 
 # ── FastAPI middleware ────────────────────────────────────────────────────────
 
+
 async def audit_middleware(request: Request, call_next):
     """Logs every API request for RBI audit trail"""
-    start = datetime.utcnow()
+    start = datetime.now(timezone.utc)
     response = await call_next(request)
-    elapsed_ms = (datetime.utcnow() - start).total_seconds() * 1000
+    elapsed_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
 
     # Extract user from token header if present
     auth = request.headers.get("Authorization", "")
@@ -223,6 +250,7 @@ async def audit_middleware(request: Request, call_next):
 
 
 # ── Encryption helpers ────────────────────────────────────────────────────────
+
 
 def mask_account_id(account_id: str) -> str:
     """Masks account ID for non-admin display"""

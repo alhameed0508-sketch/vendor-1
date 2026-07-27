@@ -24,7 +24,7 @@ from __future__ import annotations
 import itertools
 import logging
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -60,16 +60,19 @@ FEATURE_DESCRIPTIONS: Dict[str, str] = {
 # Heuristic weights used in the lightweight risk-scoring surrogate.
 # These approximate the actual pipeline blend without requiring
 # the full pipeline dependency chain.
-_SURROGATE_WEIGHTS: np.ndarray = np.array([
-    0.30,   # smurf_score
-    0.10,   # baseline_deviation
-    0.12,   # device_trust_score
-    0.10,   # semantics_score
-    0.08,   # betweenness
-    0.04,   # pagerank
-    -0.15,  # account_age_days (older = less risky)
-    0.11,   # rule_hit_count
-], dtype=np.float64)
+_SURROGATE_WEIGHTS: np.ndarray = np.array(
+    [
+        0.30,  # smurf_score
+        0.10,  # baseline_deviation
+        0.12,  # device_trust_score
+        0.10,  # semantics_score
+        0.08,  # betweenness
+        0.04,  # pagerank
+        -0.15,  # account_age_days (older = less risky)
+        0.11,  # rule_hit_count
+    ],
+    dtype=np.float64,
+)
 
 _SURROGATE_BIAS: float = 0.10
 
@@ -87,6 +90,7 @@ def _check_shap() -> bool:
     if _shap_available is None:
         try:
             import shap  # noqa: F401
+
             _shap_available = True
         except ImportError:
             _shap_available = False
@@ -101,13 +105,14 @@ def _check_shap() -> bool:
 # Immutable data models
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class GlobalImportance:
     """Global feature importance ranking across a batch of alerts."""
 
     feature_rankings: Tuple[Tuple[str, float], ...]  # (feature, importance) desc
-    top_features: Tuple[str, ...]                     # top-3 feature names
-    method: str                                        # "shap" | "permutation"
+    top_features: Tuple[str, ...]  # top-3 feature names
+    method: str  # "shap" | "permutation"
 
     def to_dict(self) -> Dict:
         return {
@@ -156,6 +161,7 @@ class AlertExplanation:
 # Feature extraction helpers
 # ---------------------------------------------------------------------------
 
+
 def _extract_features(alert_data: Dict) -> np.ndarray:
     """
     Extract a 1-D feature vector from a single alert dict.
@@ -177,11 +183,21 @@ def _extract_features(alert_data: Dict) -> np.ndarray:
         else:
             get = lambda k, d=0.0: getattr(node, k, d)  # noqa: E731
 
-        max_vals["smurf_score"] = max(max_vals["smurf_score"], float(get("smurf_score", 0.0)))
-        max_vals["baseline_deviation"] = max(max_vals["baseline_deviation"], float(get("baseline_deviation", 0.0)))
-        max_vals["device_trust_score"] = max(max_vals["device_trust_score"], float(get("device_trust_score", 0.0)))
-        max_vals["semantics_score"] = max(max_vals["semantics_score"], float(get("semantics_score", 0.0)))
-        max_vals["betweenness"] = max(max_vals["betweenness"], float(get("betweenness", 0.0)))
+        max_vals["smurf_score"] = max(
+            max_vals["smurf_score"], float(get("smurf_score", 0.0))
+        )
+        max_vals["baseline_deviation"] = max(
+            max_vals["baseline_deviation"], float(get("baseline_deviation", 0.0))
+        )
+        max_vals["device_trust_score"] = max(
+            max_vals["device_trust_score"], float(get("device_trust_score", 0.0))
+        )
+        max_vals["semantics_score"] = max(
+            max_vals["semantics_score"], float(get("semantics_score", 0.0))
+        )
+        max_vals["betweenness"] = max(
+            max_vals["betweenness"], float(get("betweenness", 0.0))
+        )
         max_vals["pagerank"] = max(max_vals["pagerank"], float(get("pagerank", 0.0)))
 
         age = float(get("account_age_days", 365))
@@ -190,10 +206,16 @@ def _extract_features(alert_data: Dict) -> np.ndarray:
         if max_vals["account_age_days"] == 0.0:
             max_vals["account_age_days"] = normalized_age
         else:
-            max_vals["account_age_days"] = min(max_vals["account_age_days"], normalized_age)
+            max_vals["account_age_days"] = min(
+                max_vals["account_age_days"], normalized_age
+            )
 
     # rule_hit_count: count unique rule hits, normalize to 0-1
-    rule_codes = [rc for rc in reason_codes if rc.startswith("R0") or rc.startswith("R1") or rc.startswith("R2")]
+    rule_codes = [
+        rc
+        for rc in reason_codes
+        if rc.startswith("R0") or rc.startswith("R1") or rc.startswith("R2")
+    ]
     max_vals["rule_hit_count"] = min(len(rule_codes) / 10.0, 1.0)
 
     return np.array([max_vals[f] for f in FEATURE_NAMES], dtype=np.float64)
@@ -207,9 +229,11 @@ def _extract_batch_features(alerts_data: List[Dict]) -> np.ndarray:
     return np.stack(rows)
 
 
+
 # ---------------------------------------------------------------------------
 # Surrogate scoring function (approximates pipeline composite score)
 # ---------------------------------------------------------------------------
+
 
 def _surrogate_score(features: np.ndarray) -> np.ndarray:
     """
@@ -233,6 +257,7 @@ def _surrogate_score(features: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Core SHAP explainer class
 # ---------------------------------------------------------------------------
+
 
 class SHAPAlertExplainer:
     """
@@ -266,7 +291,8 @@ class SHAPAlertExplainer:
     # ------------------------------------------------------------------
 
     def compute_global_importance(
-        self, alerts_data: List[Dict],
+        self,
+        alerts_data: List[Dict],
     ) -> GlobalImportance:
         """
         Compute SHAP-style global feature importance across all alerts.
@@ -385,7 +411,11 @@ class SHAPAlertExplainer:
         )
 
         explanation_text = self._build_explanation_text(
-            alert_id, prediction, base_score, positives, negatives,
+            alert_id,
+            prediction,
+            base_score,
+            positives,
+            negatives,
         )
 
         return AlertExplanation(
@@ -403,7 +433,8 @@ class SHAPAlertExplainer:
     # ------------------------------------------------------------------
 
     def generate_regulatory_report(
-        self, alert_explanation: AlertExplanation,
+        self,
+        alert_explanation: AlertExplanation,
     ) -> Dict:
         """
         Generate a structured report suitable for FIU-IND STR attachment.
@@ -428,12 +459,14 @@ class SHAPAlertExplainer:
             key=lambda x: -abs(x[1]),
         )
         for feat_name, value in all_contribs[:5]:
-            top_contributing.append({
-                "feature": feat_name,
-                "description": FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
-                "shapley_value": round(value, 6),
-                "direction": "increases risk" if value > 0 else "decreases risk",
-            })
+            top_contributing.append(
+                {
+                    "feature": feat_name,
+                    "description": FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
+                    "shapley_value": round(value, 6),
+                    "direction": "increases risk" if value > 0 else "decreases risk",
+                }
+            )
 
         confidence = sum(
             abs(v) for v in alert_explanation.feature_contributions.values()
@@ -452,7 +485,9 @@ class SHAPAlertExplainer:
             "audit_trail": {
                 "method_used": alert_explanation.method,
                 "feature_count": len(FEATURE_NAMES),
-                "features_analyzed": list(alert_explanation.feature_contributions.keys()),
+                "features_analyzed": list(
+                    alert_explanation.feature_contributions.keys()
+                ),
                 "positive_contributors": len(alert_explanation.top_positive_features),
                 "negative_contributors": len(alert_explanation.top_negative_features),
                 "framework_compliance": "RBI FREE-AI (August 2025)",
@@ -465,7 +500,8 @@ class SHAPAlertExplainer:
     # ------------------------------------------------------------------
 
     def _kernel_shap_explain(
-        self, features: np.ndarray,
+        self,
+        features: np.ndarray,
     ) -> Tuple[np.ndarray, float]:
         """
         Use the ``shap`` library's KernelExplainer for exact-ish
@@ -481,6 +517,7 @@ class SHAPAlertExplainer:
         shap_values = explainer.shap_values(
             features.reshape(1, -1),
             nsamples=self._n_coalition_samples,
+            silent=True,
         )
 
         base_value = float(explainer.expected_value)
@@ -492,14 +529,15 @@ class SHAPAlertExplainer:
         else:
             sv = np.array(shap_values).flatten()
 
-        return sv[:len(FEATURE_NAMES)], base_value
+        return sv[: len(FEATURE_NAMES)], base_value
 
     # ------------------------------------------------------------------
     # Internal: permutation-based fallback (no external deps)
     # ------------------------------------------------------------------
 
     def _permutation_explain(
-        self, features: np.ndarray,
+        self,
+        features: np.ndarray,
     ) -> Tuple[np.ndarray, float]:
         """
         Approximate Shapley values via coalition sampling and marginal
@@ -630,16 +668,10 @@ class SHAPAlertExplainer:
             parts.append(f"Risk-reducing factors: {mitigants}.")
 
         if prediction >= 0.8:
-            parts.append(
-                "This is a high-confidence alert requiring immediate review."
-            )
+            parts.append("This is a high-confidence alert requiring immediate review.")
         elif prediction >= 0.6:
-            parts.append(
-                "This alert warrants priority investigation."
-            )
+            parts.append("This alert warrants priority investigation.")
         else:
-            parts.append(
-                "This alert should be monitored for escalation."
-            )
+            parts.append("This alert should be monitored for escalation.")
 
         return " ".join(parts)

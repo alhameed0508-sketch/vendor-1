@@ -50,7 +50,9 @@ class DualRiskResult:
     sender_risk: ScamVictimResult
     receiver_risk: Dict  # mule probability, reason codes from existing pipeline
     combined_risk: float  # 0.0-1.0
-    transaction_recommendation: str  # ALLOW, DELAY_30S, DELAY_1HR, BLOCK_WITH_EDUCATION, BLOCK_HARD
+    transaction_recommendation: (
+        str  # ALLOW, DELAY_30S, DELAY_1HR, BLOCK_WITH_EDUCATION, BLOCK_HARD
+    )
     intervention_message: str  # Contextual warning for the sender
     reason_codes: Tuple[str, ...]
 
@@ -113,11 +115,11 @@ class DualRiskEngine:
 
         # 3. Combined risk with interaction boost
         sender_score = sender_result.composite_score
-        interaction_boost = 1.0 if (sender_score > 0.5 and receiver_mule_score > 0.5) else 0.0
+        interaction_boost = (
+            1.0 if (sender_score > 0.5 and receiver_mule_score > 0.5) else 0.0
+        )
         combined = (
-            sender_score * 0.4
-            + receiver_mule_score * 0.4
-            + interaction_boost * 0.2
+            sender_score * 0.4 + receiver_mule_score * 0.4 + interaction_boost * 0.2
         )
         combined = round(min(max(combined, 0.0), 1.0), 4)
 
@@ -133,7 +135,8 @@ class DualRiskEngine:
 
         # 6. Generate intervention message
         intervention_msg = self.generate_intervention_message(
-            sender_result, combined,
+            sender_result,
+            combined,
         )
 
         return DualRiskResult(

@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Set
 
 from detection.pipeline import DetectionPipeline
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class BenchmarkResult:
     """Immutable benchmark result with classification metrics."""
+
     dataset_name: str
     total_accounts: int
     total_transactions: int
@@ -32,6 +33,7 @@ class BenchmarkResult:
     precision: float
     recall: float
     f1_score: float
+    accuracy: float
     auc_roc: Optional[float]
     elapsed_seconds: float
     split_metadata: Optional[Dict] = None
@@ -49,6 +51,7 @@ class BenchmarkResult:
             "precision": round(self.precision, 4),
             "recall": round(self.recall, 4),
             "f1_score": round(self.f1_score, 4),
+            "accuracy": round(self.accuracy, 4),
             "auc_roc": round(self.auc_roc, 4) if self.auc_roc is not None else None,
             "elapsed_seconds": round(self.elapsed_seconds, 3),
         }
@@ -60,15 +63,18 @@ class BenchmarkResult:
 @dataclass(frozen=True)
 class CrossValResult:
     """Immutable cross-validation result with per-fold and aggregate metrics."""
+
     dataset_name: str
     num_folds: int
     fold_results: List[Dict]
     mean_precision: float
     mean_recall: float
     mean_f1: float
+    mean_accuracy: float
     std_precision: float
     std_recall: float
     std_f1: float
+    std_accuracy: float
     elapsed_seconds: float
 
     def to_dict(self) -> Dict:
@@ -79,9 +85,11 @@ class CrossValResult:
             "mean_precision": round(self.mean_precision, 4),
             "mean_recall": round(self.mean_recall, 4),
             "mean_f1": round(self.mean_f1, 4),
+            "mean_accuracy": round(self.mean_accuracy, 4),
             "std_precision": round(self.std_precision, 4),
             "std_recall": round(self.std_recall, 4),
             "std_f1": round(self.std_f1, 4),
+            "std_accuracy": round(self.std_accuracy, 4),
             "elapsed_seconds": round(self.elapsed_seconds, 3),
         }
 
@@ -90,7 +98,11 @@ class BenchmarkRunner:
     """Runs the detection pipeline on labeled data and computes metrics."""
 
     def __init__(self, pipeline: Optional[DetectionPipeline] = None):
-        self._pipeline = pipeline or DetectionPipeline()
+        self._pipeline = pipeline
+
+    def _new_pipeline(self):
+        """Return an isolated pipeline unless a test/injected pipeline was supplied."""
+        return self._pipeline or DetectionPipeline()
 
     def run(
         self,
@@ -118,7 +130,7 @@ class BenchmarkRunner:
         }
 
         # Run detection pipeline
-        alerts = self._pipeline.run(transactions, accounts)
+        alerts = self._new_pipeline().run(transactions, accounts)
 
         # Map alerts to per-account predictions
         predicted_suspicious: Set[str] = set()
@@ -137,11 +149,10 @@ class BenchmarkRunner:
         precision = tp / max(tp + fp, 1)
         recall = tp / max(tp + fn, 1)
         f1 = (2 * precision * recall) / max(precision + recall, 1e-9)
+        accuracy = (tp + tn) / max(tp + fp + tn + fn, 1)
 
         # AUC-ROC — use per-account risk scores from alerts
-        auc = self._compute_auc(
-            ground_truth, alerts, all_accounts
-        )
+        auc = self._compute_auc(ground_truth, alerts, all_accounts)
 
         elapsed = time.perf_counter() - start
 
@@ -157,6 +168,7 @@ class BenchmarkRunner:
             precision=precision,
             recall=recall,
             f1_score=f1,
+            accuracy=accuracy,
             auc_roc=auc,
             elapsed_seconds=elapsed,
         )
@@ -167,23 +179,24 @@ class BenchmarkRunner:
         accounts: List[Dict],
         dataset_name: str = "unknown",
         train_ratio: float = 0.7,
+        random_seed: int = 42,
     ) -> BenchmarkResult:
         """
-        Split accounts 70/30 stratified by label. Train GNN on 70%,
-        run full pipeline on 30% test set, compute metrics on test only.
+        Evaluate a deterministic, stratified account holdout.
+
+        The detection pipeline uses its configured model artifact and rules. This
+        method does not claim to train a new model because doing that inside the
+        held-out request would make benchmark provenance ambiguous.
         """
         start = time.perf_counter()
 
         ground_truth = self._extract_ground_truth(accounts, transactions)
-        suspicious_ids = [
-            acc_id for acc_id, label in ground_truth.items() if label
-        ]
-        legit_ids = [
-            acc_id for acc_id, label in ground_truth.items() if not label
-        ]
+        suspicious_ids = [acc_id for acc_id, label in ground_truth.items() if label]
+        legit_ids = [acc_id for acc_id, label in ground_truth.items() if not label]
 
-        random.shuffle(suspicious_ids)
-        random.shuffle(legit_ids)
+        rng = random.Random(random_seed)
+        rng.shuffle(suspicious_ids)
+        rng.shuffle(legit_ids)
 
         sus_split = int(len(suspicious_ids) * train_ratio)
         leg_split = int(len(legit_ids) * train_ratio)
@@ -194,13 +207,14 @@ class BenchmarkRunner:
         test_accounts = [a for a in accounts if a["account_id"] in test_ids]
         test_account_set = {a["account_id"] for a in test_accounts}
         test_transactions = [
-            t for t in transactions
+            t
+            for t in transactions
             if t["from_account"] in test_account_set
-            or t["to_account"] in test_account_set
+            and t["to_account"] in test_account_set
         ]
 
         # Run pipeline on test data (GNN will train internally if needed)
-        alerts = self._pipeline.run(test_transactions, test_accounts)
+        alerts = self._new_pipeline().run(test_transactions, test_accounts)
 
         predicted_suspicious: Set[str] = set()
         for alert in alerts:
@@ -218,6 +232,7 @@ class BenchmarkRunner:
         precision = tp / max(tp + fp, 1)
         recall = tp / max(tp + fn, 1)
         f1 = (2 * precision * recall) / max(precision + recall, 1e-9)
+        accuracy = (tp + tn) / max(tp + fp + tn + fn, 1)
 
         auc = self._compute_auc(
             {aid: aid in suspicious_accounts for aid in test_ids},
@@ -239,6 +254,7 @@ class BenchmarkRunner:
             precision=precision,
             recall=recall,
             f1_score=f1,
+            accuracy=accuracy,
             auc_roc=auc,
             elapsed_seconds=elapsed,
             split_metadata={
@@ -246,6 +262,7 @@ class BenchmarkRunner:
                 "train_ratio": train_ratio,
                 "train_accounts": len(accounts) - len(test_accounts),
                 "test_accounts": len(test_accounts),
+                "random_seed": random_seed,
             },
         )
 
@@ -255,25 +272,30 @@ class BenchmarkRunner:
         accounts: List[Dict],
         dataset_name: str = "unknown",
         num_folds: int = 5,
+        random_seed: int = 42,
     ) -> CrossValResult:
         """
-        K-fold stratified cross-validation. Train/test on each fold,
-        report mean + std for precision, recall, F1.
+        Deterministic stratified k-fold evaluation.
+
+        Every fold uses a fresh pipeline configured with the same committed
+        model artifact and rule set. No fold labels are used to fit a model.
         """
         import math
 
         start = time.perf_counter()
 
         ground_truth = self._extract_ground_truth(accounts, transactions)
-        suspicious_ids = [
-            acc_id for acc_id, label in ground_truth.items() if label
-        ]
-        legit_ids = [
-            acc_id for acc_id, label in ground_truth.items() if not label
-        ]
+        suspicious_ids = [acc_id for acc_id, label in ground_truth.items() if label]
+        legit_ids = [acc_id for acc_id, label in ground_truth.items() if not label]
 
-        random.shuffle(suspicious_ids)
-        random.shuffle(legit_ids)
+        if num_folds < 2:
+            raise ValueError("num_folds must be at least 2")
+        if num_folds > min(len(suspicious_ids), len(legit_ids)):
+            raise ValueError("num_folds cannot exceed the smallest ground-truth class")
+
+        rng = random.Random(random_seed)
+        rng.shuffle(suspicious_ids)
+        rng.shuffle(legit_ids)
 
         # Create stratified folds
         def split_into_folds(ids: List[str], k: int) -> List[List[str]]:
@@ -289,6 +311,7 @@ class BenchmarkRunner:
         precisions = []
         recalls = []
         f1s = []
+        accuracies = []
 
         for fold_idx in range(num_folds):
             test_ids = set(sus_folds[fold_idx] + leg_folds[fold_idx])
@@ -296,9 +319,10 @@ class BenchmarkRunner:
             test_accounts = [a for a in accounts if a["account_id"] in test_ids]
             test_account_set = {a["account_id"] for a in test_accounts}
             test_transactions = [
-                t for t in transactions
+                t
+                for t in transactions
                 if t["from_account"] in test_account_set
-                or t["to_account"] in test_account_set
+                and t["to_account"] in test_account_set
             ]
 
             # Fresh pipeline per fold (no leaked GNN weights)
@@ -321,19 +345,27 @@ class BenchmarkRunner:
             p = tp / max(tp + fp, 1)
             r = tp / max(tp + fn, 1)
             f = (2 * p * r) / max(p + r, 1e-9)
+            accuracy = (tp + tn) / max(tp + fp + tn + fn, 1)
 
             precisions.append(p)
             recalls.append(r)
             f1s.append(f)
+            accuracies.append(accuracy)
 
-            fold_results.append({
-                "fold": fold_idx + 1,
-                "test_accounts": len(test_accounts),
-                "tp": tp, "fp": fp, "tn": tn, "fn": fn,
-                "precision": round(p, 4),
-                "recall": round(r, 4),
-                "f1_score": round(f, 4),
-            })
+            fold_results.append(
+                {
+                    "fold": fold_idx + 1,
+                    "test_accounts": len(test_accounts),
+                    "tp": tp,
+                    "fp": fp,
+                    "tn": tn,
+                    "fn": fn,
+                    "precision": round(p, 4),
+                    "recall": round(r, 4),
+                    "f1_score": round(f, 4),
+                    "accuracy": round(accuracy, 4),
+                }
+            )
 
         def mean(vals: List[float]) -> float:
             return sum(vals) / max(len(vals), 1)
@@ -352,9 +384,11 @@ class BenchmarkRunner:
             mean_precision=mean(precisions),
             mean_recall=mean(recalls),
             mean_f1=mean(f1s),
+            mean_accuracy=mean(accuracies),
             std_precision=std(precisions),
             std_recall=std(recalls),
             std_f1=std(f1s),
+            std_accuracy=std(accuracies),
             elapsed_seconds=elapsed,
         )
 

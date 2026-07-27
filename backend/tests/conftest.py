@@ -7,16 +7,26 @@ import os
 import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+# Tests must never attach to a developer's running Compose services. Pin all
+# optional infrastructure before application modules and cached settings load.
+os.environ["ENV"] = "development"
+os.environ["AUTH_ENABLED"] = "false"
+os.environ["KAFKA_ENABLED"] = "false"
+os.environ["POSTGRES_URL"] = ""
+os.environ["REDIS_URL"] = "redis://127.0.0.1:6399/15"
+os.environ["NEO4J_URI"] = "bolt://127.0.0.1:7699"
+os.environ["JWT_SECRET"] = "test-only-jwt-secret-with-at-least-32-bytes"
 
 import pytest
-from data.synthetic.generator import build_full_dataset, MuleClusterGenerator
+from data.synthetic.generator import build_full_dataset
 from detection.pipeline import DetectionPipeline
-from genai.base import LLMMessage, LLMProvider, LLMResponse, TemplateProvider
+from genai.base import LLMProvider, LLMResponse, TemplateProvider
 
 
 # ── Test isolation for feedback store ────────────────────────────────────────
 # Redirect feedback writes to a temp file so tests never pollute the
 # production feedback_log.jsonl.
+
 
 @pytest.fixture(autouse=True, scope="session")
 def _isolate_feedback_store():
@@ -25,7 +35,9 @@ def _isolate_feedback_store():
 
     original_path = fl_module.DEFAULT_FEEDBACK_STORE_PATH
     tmp = tempfile.NamedTemporaryFile(
-        suffix="_test_feedback.jsonl", delete=False, mode="w",
+        suffix="_test_feedback.jsonl",
+        delete=False,
+        mode="w",
     )
     tmp.close()
 
@@ -35,6 +47,7 @@ def _isolate_feedback_store():
     # get_detection_service also holds a FeedbackStore reference.
     try:
         from api import deps
+
         for fn in (
             deps.get_feedback_store,
             deps.get_feedback_engine,
@@ -224,8 +237,18 @@ def sample_onboarding_assessment():
         ],
         "signals": [
             {"signal": "device_overlap", "score": 0.8, "weight": 12, "weighted": 0.096},
-            {"signal": "kyc_completeness", "score": 0.6, "weight": 10, "weighted": 0.060},
-            {"signal": "application_hour", "score": 0.7, "weight": 5, "weighted": 0.035},
+            {
+                "signal": "kyc_completeness",
+                "score": 0.6,
+                "weight": 10,
+                "weighted": 0.060,
+            },
+            {
+                "signal": "application_hour",
+                "score": 0.7,
+                "weight": 5,
+                "weighted": 0.035,
+            },
         ],
         "assessed_at": "2025-05-08T10:00:00",
     }

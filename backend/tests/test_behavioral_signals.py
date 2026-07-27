@@ -1,6 +1,6 @@
 """Tests for enhanced behavioral baseline signals (BL01-BL08)."""
-import pytest
-from models.behavioral.baseline import compute_baselines, BaselineDeviation, WEIGHTS
+
+from models.behavioral.baseline import compute_baselines, WEIGHTS
 
 
 def _acc(acc_id, age=30, avg_monthly=8, kyc="VERIFIED"):
@@ -73,10 +73,7 @@ class TestBeneficiaryEntropy:
 class TestTemporalRegularity:
     def test_regular_timing(self):
         accounts = [_acc("A")]
-        txns = [
-            _txn("A", "B", ts=f"2024-01-15T{10+i}:00:00")
-            for i in range(5)
-        ]
+        txns = [_txn("A", "B", ts=f"2024-01-15T{10 + i}:00:00") for i in range(5)]
         result = compute_baselines(accounts, txns)
         assert result["A"].temporal_regularity > 0.5
 

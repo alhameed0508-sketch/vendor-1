@@ -15,8 +15,8 @@ from .prompts import SYSTEM_PROMPT_FORENSIC
 logger = logging.getLogger(__name__)
 
 # -- LLM generation parameters for forensic analysis -------------------------
-FORENSIC_TEMPERATURE = 0.3    # Balanced creativity for narrative generation
-FORENSIC_MAX_TOKENS = 2048    # Larger limit for detailed forensic reports
+FORENSIC_TEMPERATURE = 0.3  # Balanced creativity for narrative generation
+FORENSIC_MAX_TOKENS = 2048  # Larger limit for detailed forensic reports
 
 
 def analyze_alert(
@@ -73,18 +73,18 @@ def _build_forensic_prompt(alert: Dict) -> str:
 
     return f"""Analyze this MuleCatch alert:
 
-Alert ID: {alert.get('alert_id')}
-Severity: {alert.get('severity')}
-Risk Score: {alert.get('risk_score', 0):.3f}
-Total Amount: ₹{alert.get('total_amount', 0):,.0f}
-Transaction Count: {alert.get('txn_count', 0)}
-Account Count: {alert.get('account_count', 0)}
-GNN Score: {alert.get('gnn_score', 'N/A')}
-Shared Devices: {len(alert.get('shared_devices', []))}
-Shared IPs: {len(alert.get('shared_ips', []))}
+Alert ID: {alert.get("alert_id")}
+Severity: {alert.get("severity")}
+Risk Score: {alert.get("risk_score", 0):.3f}
+Total Amount: ₹{alert.get("total_amount", 0):,.0f}
+Transaction Count: {alert.get("txn_count", 0)}
+Account Count: {alert.get("account_count", 0)}
+GNN Score: {alert.get("gnn_score", "N/A")}
+Shared Devices: {len(alert.get("shared_devices", []))}
+Shared IPs: {len(alert.get("shared_ips", []))}
 
 Reason Codes:
-{chr(10).join(f'  - {rc}' for rc in reason_codes)}
+{chr(10).join(f"  - {rc}" for rc in reason_codes)}
 
 Network Nodes:
 {chr(10).join(node_summary)}
@@ -120,32 +120,57 @@ def _parse_forensic_response(alert_id: str, response) -> ForensicAnalysis:
 
         if "executive brief" in lower and stripped.startswith("#"):
             if current_section:
-                _store_section(current_section, current_lines, sections,
-                               key_findings, recommended_actions)
+                _store_section(
+                    current_section,
+                    current_lines,
+                    sections,
+                    key_findings,
+                    recommended_actions,
+                )
             current_section = "executive_brief"
             current_lines = []
         elif "detailed narrative" in lower and stripped.startswith("#"):
             if current_section:
-                _store_section(current_section, current_lines, sections,
-                               key_findings, recommended_actions)
+                _store_section(
+                    current_section,
+                    current_lines,
+                    sections,
+                    key_findings,
+                    recommended_actions,
+                )
             current_section = "detailed_narrative"
             current_lines = []
         elif "regulatory summary" in lower and stripped.startswith("#"):
             if current_section:
-                _store_section(current_section, current_lines, sections,
-                               key_findings, recommended_actions)
+                _store_section(
+                    current_section,
+                    current_lines,
+                    sections,
+                    key_findings,
+                    recommended_actions,
+                )
             current_section = "regulatory_summary"
             current_lines = []
         elif "key findings" in lower and stripped.startswith("#"):
             if current_section:
-                _store_section(current_section, current_lines, sections,
-                               key_findings, recommended_actions)
+                _store_section(
+                    current_section,
+                    current_lines,
+                    sections,
+                    key_findings,
+                    recommended_actions,
+                )
             current_section = "key_findings"
             current_lines = []
         elif "recommended actions" in lower and stripped.startswith("#"):
             if current_section:
-                _store_section(current_section, current_lines, sections,
-                               key_findings, recommended_actions)
+                _store_section(
+                    current_section,
+                    current_lines,
+                    sections,
+                    key_findings,
+                    recommended_actions,
+                )
             current_section = "recommended_actions"
             current_lines = []
         else:
@@ -153,8 +178,9 @@ def _parse_forensic_response(alert_id: str, response) -> ForensicAnalysis:
 
     # Store final section
     if current_section:
-        _store_section(current_section, current_lines, sections,
-                       key_findings, recommended_actions)
+        _store_section(
+            current_section, current_lines, sections, key_findings, recommended_actions
+        )
 
     # Fallback: if parsing got nothing, use full text as narrative
     if not any(sections.values()):

@@ -8,6 +8,7 @@ Orchestrates the multi-layer detection stack:
   Layer 2c: Transaction semantics analysis
   Layer 2d: Device profiling
   Layer 2e: Markov state transition scoring (temporal lifecycle)
+  Layer 2f: PyOD label-free anomaly scoring (cold start)
   Layer 3: Louvain community detection (network topology)
   Layer 4: GNN scoring (graph learning, optional)
   Layer 5: GenAI triage (LLM reviews uncertain alerts)
@@ -17,13 +18,16 @@ Orchestrates the multi-layer detection stack:
 Produces consolidated Alert objects with subgraph data.
 """
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
-from dataclasses import dataclass, field
-import sys, os
+from dataclasses import dataclass
+import sys
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -34,66 +38,81 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 # These thresholds are used by the rule-engine helper functions.
 
 # R04: Structured transactions — amounts between these bounds trigger the rule
-STRUCTURED_AMOUNT_LOWER = 40000       # lower bound of "near ₹50k ceiling" band
-STRUCTURED_AMOUNT_UPPER = 50000       # upper bound (the ₹50k reporting threshold)
-STRUCTURED_MIN_TXNS = 3               # minimum outgoing txns to evaluate
-STRUCTURED_RATIO_THRESHOLD = 0.7      # fraction of txns near ceiling to flag
+STRUCTURED_AMOUNT_LOWER = 40000  # lower bound of "near ₹50k ceiling" band
+STRUCTURED_AMOUNT_UPPER = 50000  # upper bound (the ₹50k reporting threshold)
+STRUCTURED_MIN_TXNS = 3  # minimum outgoing txns to evaluate
+STRUCTURED_RATIO_THRESHOLD = 0.7  # fraction of txns near ceiling to flag
 
 # R08: Night-time high-value transactions
-NIGHT_HOUR_START = 23                 # 11 PM
-NIGHT_HOUR_END = 5                    # 5 AM
-NIGHT_HIGH_VALUE_AMOUNT = 10000       # ₹10k minimum to count as high-value
-NIGHT_TXN_MIN_COUNT = 3              # minimum night txns to trigger rule
+NIGHT_HOUR_START = 23  # 11 PM
+NIGHT_HOUR_END = 5  # 5 AM
+NIGHT_HIGH_VALUE_AMOUNT = 10000  # ₹10k minimum to count as high-value
+NIGHT_TXN_MIN_COUNT = 3  # minimum night txns to trigger rule
 
 # R14: Split transactions
-SPLIT_TXN_AMOUNT_UPPER = 10000       # individual txn ceiling (< ₹10k each)
-SPLIT_TXN_MIN_COUNT = 5              # minimum number of small txns
-SPLIT_TXN_TOTAL_THRESHOLD = 100000   # aggregate total must exceed ₹1L
+SPLIT_TXN_AMOUNT_UPPER = 10000  # individual txn ceiling (< ₹10k each)
+SPLIT_TXN_MIN_COUNT = 5  # minimum number of small txns
+SPLIT_TXN_TOTAL_THRESHOLD = 100000  # aggregate total must exceed ₹1L
 
 # R15: High-risk UPI handles
-UPI_DIGIT_RATIO_THRESHOLD = 0.6      # fraction of digits in UPI handle
-UPI_MIN_LENGTH = 10                   # minimum UPI handle length
+UPI_DIGIT_RATIO_THRESHOLD = 0.6  # fraction of digits in UPI handle
+UPI_MIN_LENGTH = 10  # minimum UPI handle length
 
 # R19: Rapid fund sweep
-FUND_SWEEP_MIN_INCOMING = 10000       # minimum incoming volume to evaluate
-FUND_SWEEP_RATIO_THRESHOLD = 0.90     # outgoing / incoming ratio to flag
+FUND_SWEEP_MIN_INCOMING = 10000  # minimum incoming volume to evaluate
+FUND_SWEEP_RATIO_THRESHOLD = 0.90  # outgoing / incoming ratio to flag
 
 # R20: 72-hour anomaly
-EARLY_ANOMALY_AGE_DAYS = 3            # account age threshold (days)
-EARLY_ANOMALY_MIN_TXNS = 5            # minimum outgoing txns
-EARLY_ANOMALY_MIN_AMOUNT = 100000     # minimum outgoing volume (₹1L)
+EARLY_ANOMALY_AGE_DAYS = 3  # account age threshold (days)
+EARLY_ANOMALY_MIN_TXNS = 5  # minimum outgoing txns
+EARLY_ANOMALY_MIN_AMOUNT = 100000  # minimum outgoing volume (₹1L)
 
-from models.temporal_weighting.smurf_weighting import score_transaction_batch, AccountScore
-from models.community_detection.louvain_detector import LouvainClusterDetector, Community
-from models.behavioral.baseline import compute_baselines, BaselineDeviation
-from models.gnn.lightweight_scorer import LightweightScorer
-from models.semantics.transaction_analyzer import TransactionSemanticsAnalyzer, SemanticsResult
-from models.device.device_profiler import DeviceProfiler, DeviceTrustResult
-from models.temporal.markov_state import MarkovStateScorer, MarkovStateResult
-from models.explainability.shap_explainer import SHAPAlertExplainer
-from explainability.explainer import explain_alert
-from explainability.narrative_generator import generate_narrative
-from detection.mule_classifier import classify_cluster
+from models.temporal_weighting.smurf_weighting import (
+    score_transaction_batch,
+    AccountScore,
+)  # noqa: E402
+from models.community_detection.louvain_detector import (
+    LouvainClusterDetector,
+    Community,
+)  # noqa: E402
+from models.behavioral.baseline import compute_baselines, BaselineDeviation  # noqa: E402
+from models.gnn.lightweight_scorer import LightweightScorer  # noqa: E402
+from models.semantics.transaction_analyzer import (
+    TransactionSemanticsAnalyzer,
+    SemanticsResult,
+)  # noqa: E402
+from models.device.device_profiler import DeviceProfiler, DeviceTrustResult  # noqa: E402
+from models.temporal.markov_state import MarkovStateScorer, MarkovStateResult  # noqa: E402
+from models.explainability.shap_explainer import SHAPAlertExplainer  # noqa: E402
+from models.anomaly.unsupervised_scorer import (  # noqa: E402
+    AnomalyPrediction,
+    UnsupervisedAccountScorer,
+)
+from explainability.explainer import explain_alert  # noqa: E402
+from explainability.narrative_generator import generate_narrative  # noqa: E402
+from detection.mule_classifier import classify_cluster  # noqa: E402
 
 
 # ── Data models ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class AlertNode:
     account_id: str
-    role: str           # SOURCE | MULE | AGGREGATOR | UNKNOWN
+    role: str  # SOURCE | MULE | AGGREGATOR | UNKNOWN
     smurf_score: float
     bank: str
     city: str
     account_age_days: int
     kyc_status: str
     upi_id: str
-    betweenness: float = 0.0    # betweenness centrality (0-1, higher = more bridging)
-    pagerank: float = 0.0       # PageRank score (higher = more influential)
+    betweenness: float = 0.0  # betweenness centrality (0-1, higher = more bridging)
+    pagerank: float = 0.0  # PageRank score (higher = more influential)
     baseline_deviation: float = 0.0  # behavioral deviation from historical baseline
     device_trust_score: float = 0.0  # device profiling risk (0=trusted, 1=untrusted)
-    semantics_score: float = 0.0     # transaction semantics risk (0-1)
+    semantics_score: float = 0.0  # transaction semantics risk (0-1)
     markov_transition_score: float = 0.0  # Markov state transition risk (0-1)
+    anomaly_score: float = 0.0  # PyOD cold-start anomaly probability (0-1)
     # CBS behavioral features (populated from MuleCSVAdapter)
     pass_through_ratio: float = 0.0
     debit_credit_ratio: float = 0.0
@@ -116,7 +135,7 @@ class AlertEdge:
 class Alert:
     alert_id: str
     cluster_id: Optional[str]
-    severity: str           # CRITICAL | HIGH | MEDIUM
+    severity: str  # CRITICAL | HIGH | MEDIUM
     confidence: float
     risk_score: float
     total_amount: float
@@ -128,18 +147,22 @@ class Alert:
     shared_devices: List[str]
     shared_ips: List[str]
     created_at: str
-    status: str = "OPEN"    # OPEN | UNDER_REVIEW | RESOLVED | FALSE_POSITIVE
+    status: str = "OPEN"  # OPEN | UNDER_REVIEW | RESOLVED | FALSE_POSITIVE
     investigator_notes: str = ""
     gnn_score: Optional[float] = None
+    anomaly_score: Optional[float] = None
     genai_triage: Optional[Dict] = None
     explanation: Optional[Dict] = None
     narrative: Optional[Dict] = None
     mule_classification: Optional[Dict] = None
     shap_explanation: Optional[Dict] = None
     regulatory_report: Optional[Dict] = None
+    model_version: str = "unversioned"
+    rule_version: str = "unversioned"
 
 
 # ── Rule engine ───────────────────────────────────────────────────────────
+
 
 class RuleEngine:
     """
@@ -149,51 +172,110 @@ class RuleEngine:
 
     RULES = [
         # ── Original 4 rules ────────────────────────────────────────────
-        ("R01", "Account age < 7 days",
-         lambda a, txns: a.get("account_age_days", 999) < 7),
-        ("R02", "> 20 transactions in 24h",
-         lambda a, txns: _count_outgoing(a, txns) > 20),
-        ("R03", "KYC pending with high volume",
-         lambda a, txns: a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > 5),
-        ("R04", "Amounts structured below ₹50k threshold",
-         lambda a, txns: _all_near_ceiling(a["account_id"], txns)),
-
+        (
+            "R01",
+            "Account age < 7 days",
+            lambda a, txns: a.get("account_age_days", 999) < 7,
+        ),
+        (
+            "R02",
+            "> 20 transactions in 24h",
+            lambda a, txns: _count_outgoing(a, txns) > 20,
+        ),
+        (
+            "R03",
+            "KYC pending with high volume",
+            lambda a, txns: (
+                a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > 5
+            ),
+        ),
+        (
+            "R04",
+            "Amounts structured below ₹50k threshold",
+            lambda a, txns: _all_near_ceiling(a["account_id"], txns),
+        ),
         # ── MuleHunter-aligned behavioral patterns ──────────────────────
-        ("R05", "Dormant account suddenly activated",
-         lambda a, txns: a.get("account_age_days", 0) > 180 and
-                         a.get("avg_monthly_txn", 0) < 3 and _count_outgoing(a, txns) > 8),
-        ("R06", "Same-day credit-debit (pass-through)",
-         lambda a, txns: _same_day_credit_debit(a["account_id"], txns)),
-        ("R07", "Funds received from multiple sources then consolidated",
-         lambda a, txns: _fan_in_then_out(a["account_id"], txns)),
-        ("R08", "Night-time high-value transactions (11PM-5AM)",
-         lambda a, txns: _night_transactions(a["account_id"], txns)),
-        ("R09", "Round-trip transfer detected",
-         lambda a, txns: _round_trip(a["account_id"], txns)),
-        ("R10", "Sudden beneficiary addition spike",
-         lambda a, txns: _sudden_beneficiary_spike(a["account_id"], txns)),
-        ("R11", "Cross-bank rapid layering",
-         lambda a, txns: _cross_bank_layering(a, txns)),
-        ("R12", "Identical amounts to multiple recipients",
-         lambda a, txns: _identical_amounts(a["account_id"], txns)),
-        ("R13", "Geographic anomaly — multi-city in 24h",
-         lambda a, txns: _geographic_anomaly(a["account_id"], txns)),
-        ("R14", "Split transaction pattern (< ₹10k each, > ₹1L total)",
-         lambda a, txns: _split_transactions(a["account_id"], txns)),
-        ("R15", "High-risk UPI handle pattern",
-         lambda a, txns: _high_risk_upi(a)),
-        ("R16", "Account used as intermediary only (no self-use)",
-         lambda a, txns: _intermediary_only(a["account_id"], txns)),
-        ("R17", "Velocity acceleration — txn rate doubling",
-         lambda a, txns: _velocity_acceleration(a["account_id"], txns)),
-        ("R18", "Shared device across multiple accounts",
-         lambda a, txns: _shared_device(a["account_id"], txns)),
-        ("R19", "Rapid fund sweep — balance cleared within hours",
-         lambda a, txns: _rapid_fund_sweep(a["account_id"], txns)),
-
+        (
+            "R05",
+            "Dormant account suddenly activated",
+            lambda a, txns: (
+                a.get("account_age_days", 0) > 180
+                and a.get("avg_monthly_txn", 0) < 3
+                and _count_outgoing(a, txns) > 8
+            ),
+        ),
+        (
+            "R06",
+            "Same-day credit-debit (pass-through)",
+            lambda a, txns: _same_day_credit_debit(a["account_id"], txns),
+        ),
+        (
+            "R07",
+            "Funds received from multiple sources then consolidated",
+            lambda a, txns: _fan_in_then_out(a["account_id"], txns),
+        ),
+        (
+            "R08",
+            "Night-time high-value transactions (11PM-5AM)",
+            lambda a, txns: _night_transactions(a["account_id"], txns),
+        ),
+        (
+            "R09",
+            "Round-trip transfer detected",
+            lambda a, txns: _round_trip(a["account_id"], txns),
+        ),
+        (
+            "R10",
+            "Sudden beneficiary addition spike",
+            lambda a, txns: _sudden_beneficiary_spike(a["account_id"], txns),
+        ),
+        (
+            "R11",
+            "Cross-bank rapid layering",
+            lambda a, txns: _cross_bank_layering(a, txns),
+        ),
+        (
+            "R12",
+            "Identical amounts to multiple recipients",
+            lambda a, txns: _identical_amounts(a["account_id"], txns),
+        ),
+        (
+            "R13",
+            "Geographic anomaly — multi-city in 24h",
+            lambda a, txns: _geographic_anomaly(a["account_id"], txns),
+        ),
+        (
+            "R14",
+            "Split transaction pattern (< ₹10k each, > ₹1L total)",
+            lambda a, txns: _split_transactions(a["account_id"], txns),
+        ),
+        ("R15", "High-risk UPI handle pattern", lambda a, txns: _high_risk_upi(a)),
+        (
+            "R16",
+            "Account used as intermediary only (no self-use)",
+            lambda a, txns: _intermediary_only(a["account_id"], txns),
+        ),
+        (
+            "R17",
+            "Velocity acceleration — txn rate doubling",
+            lambda a, txns: _velocity_acceleration(a["account_id"], txns),
+        ),
+        (
+            "R18",
+            "Shared device across multiple accounts",
+            lambda a, txns: _shared_device(a["account_id"], txns),
+        ),
+        (
+            "R19",
+            "Rapid fund sweep — balance cleared within hours",
+            lambda a, txns: _rapid_fund_sweep(a["account_id"], txns),
+        ),
         # ── 72-hour early detection (BioCatch research) ──────────────
-        ("R20", "72-hour behavioral anomaly — high activity within 3 days of opening",
-         lambda a, txns: _seventy_two_hour_anomaly(a, txns)),
+        (
+            "R20",
+            "72-hour behavioral anomaly — high activity within 3 days of opening",
+            lambda a, txns: _seventy_two_hour_anomaly(a, txns),
+        ),
     ]
 
     def evaluate(
@@ -213,16 +295,23 @@ class RuleEngine:
 
 # ── Rule helper functions ─────────────────────────────────────────────────
 
+
 def _count_outgoing(a: Dict, txns: List[Dict]) -> int:
     return sum(1 for t in txns if t["from_account"] == a["account_id"])
 
 
 def _all_near_ceiling(account_id: str, transactions: List[Dict]) -> bool:
-    amounts = [t["amount"] for t in transactions
-               if t["from_account"] == account_id
-               and STRUCTURED_AMOUNT_LOWER <= float(t["amount"]) < STRUCTURED_AMOUNT_UPPER]
+    amounts = [
+        t["amount"]
+        for t in transactions
+        if t["from_account"] == account_id
+        and STRUCTURED_AMOUNT_LOWER <= float(t["amount"]) < STRUCTURED_AMOUNT_UPPER
+    ]
     total = sum(1 for t in transactions if t["from_account"] == account_id)
-    return total > STRUCTURED_MIN_TXNS and len(amounts) / max(total, 1) > STRUCTURED_RATIO_THRESHOLD
+    return (
+        total > STRUCTURED_MIN_TXNS
+        and len(amounts) / max(total, 1) > STRUCTURED_RATIO_THRESHOLD
+    )
 
 
 def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
@@ -230,7 +319,11 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
     incoming_days = set()
     outgoing_days = set()
     for t in txns:
-        day = t["timestamp"][:10] if isinstance(t["timestamp"], str) else str(t["timestamp"])[:10]
+        day = (
+            t["timestamp"][:10]
+            if isinstance(t["timestamp"], str)
+            else str(t["timestamp"])[:10]
+        )
         if t["to_account"] == account_id:
             incoming_days.add(day)
         if t["from_account"] == account_id:
@@ -263,7 +356,9 @@ def _night_transactions(account_id: str, txns: List[Dict]) -> bool:
 def _round_trip(account_id: str, txns: List[Dict]) -> bool:
     """Detects A→B and B→A transfers."""
     sent_to = set(t["to_account"] for t in txns if t["from_account"] == account_id)
-    received_from = set(t["from_account"] for t in txns if t["to_account"] == account_id)
+    received_from = set(
+        t["from_account"] for t in txns if t["to_account"] == account_id
+    )
     return len(sent_to & received_from) >= 1
 
 
@@ -286,7 +381,6 @@ def _cross_bank_layering(a: Dict, txns: List[Dict]) -> bool:
 
 def _identical_amounts(account_id: str, txns: List[Dict]) -> bool:
     """Same exact amount sent to multiple different recipients."""
-    from collections import Counter
     amounts_by_recipient = {}
     for t in txns:
         if t["from_account"] != account_id:
@@ -339,14 +433,16 @@ def _velocity_acceleration(account_id: str, txns: List[Dict]) -> bool:
 def _shared_device(account_id: str, txns: List[Dict]) -> bool:
     """Multiple accounts using the same device_id."""
     my_devices = set(
-        t.get("device_id", "") for t in txns
+        t.get("device_id", "")
+        for t in txns
         if t["from_account"] == account_id and t.get("device_id")
     )
     if not my_devices:
         return False
     for dev in my_devices:
         other_accounts = set(
-            t["from_account"] for t in txns
+            t["from_account"]
+            for t in txns
             if t.get("device_id") == dev and t["from_account"] != account_id
         )
         if other_accounts:
@@ -356,8 +452,12 @@ def _shared_device(account_id: str, txns: List[Dict]) -> bool:
 
 def _rapid_fund_sweep(account_id: str, txns: List[Dict]) -> bool:
     """Incoming funds swept out within same window (balance near zero)."""
-    incoming_total = sum(float(t["amount"]) for t in txns if t["to_account"] == account_id)
-    outgoing_total = sum(float(t["amount"]) for t in txns if t["from_account"] == account_id)
+    incoming_total = sum(
+        float(t["amount"]) for t in txns if t["to_account"] == account_id
+    )
+    outgoing_total = sum(
+        float(t["amount"]) for t in txns if t["from_account"] == account_id
+    )
     if incoming_total < FUND_SWEEP_MIN_INCOMING:
         return False
     # If >90% of incoming is swept out, flag it
@@ -378,15 +478,20 @@ def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict]) -> bool:
         float(t["amount"]) for t in txns if t["from_account"] == a["account_id"]
     )
     # Account <72h old with 5+ outgoing txns or >₹1L outgoing volume
-    return outgoing >= EARLY_ANOMALY_MIN_TXNS or outgoing_amount >= EARLY_ANOMALY_MIN_AMOUNT
+    return (
+        outgoing >= EARLY_ANOMALY_MIN_TXNS
+        or outgoing_amount >= EARLY_ANOMALY_MIN_AMOUNT
+    )
 
 
 # ── GNN scorer (lazy import, optional) ───────────────────────────────────
+
 
 def _try_load_gnn_scorer(model_path: str = None):
     """Attempt to load the GNN scorer; returns None if unavailable."""
     try:
         from models.gnn.gnn_model import GNNScorer
+
         scorer = GNNScorer(model_path=model_path)
         return scorer
     except Exception:
@@ -394,6 +499,7 @@ def _try_load_gnn_scorer(model_path: str = None):
 
 
 # ── Detection pipeline ────────────────────────────────────────────────────
+
 
 class DetectionPipeline:
     """
@@ -410,8 +516,8 @@ class DetectionPipeline:
     FALLBACK_SMURF_WEIGHT = 0.40
 
     # ── Severity thresholds ──────────────────────────────────────────────
-    SEVERITY_CRITICAL_THRESHOLD = 0.80   # risk_score >= this → CRITICAL
-    SEVERITY_HIGH_THRESHOLD = 0.60       # risk_score >= this → HIGH (else MEDIUM)
+    SEVERITY_CRITICAL_THRESHOLD = 0.80  # risk_score >= this → CRITICAL
+    SEVERITY_HIGH_THRESHOLD = 0.60  # risk_score >= this → HIGH (else MEDIUM)
 
     # ── GenAI triage band ────────────────────────────────────────────────
     # Only uncertain alerts within this risk range are sent to LLM triage
@@ -421,56 +527,56 @@ class DetectionPipeline:
     # ── Smurf / GNN aggregation weights ──────────────────────────────────
     # Blend of max + mean: cluster risk is driven by highest-scoring member,
     # not diluted by low-scoring mules.
-    AGG_MAX_WEIGHT = 0.6                 # weight for max score
-    AGG_MEAN_WEIGHT = 0.4                # weight for mean score
+    AGG_MAX_WEIGHT = 0.6  # weight for max score
+    AGG_MEAN_WEIGHT = 0.4  # weight for mean score
 
     # ── Centrality boost parameters ──────────────────────────────────────
-    BETWEENNESS_MULTIPLIER = 0.4         # scale factor for betweenness
-    BETWEENNESS_BOOST_CAP = 0.08         # max boost from betweenness centrality
-    PAGERANK_MULTIPLIER = 4              # scale factor for PageRank
-    PAGERANK_BOOST_CAP = 0.04            # max boost from PageRank
+    BETWEENNESS_MULTIPLIER = 0.4  # scale factor for betweenness
+    BETWEENNESS_BOOST_CAP = 0.08  # max boost from betweenness centrality
+    PAGERANK_MULTIPLIER = 4  # scale factor for PageRank
+    PAGERANK_BOOST_CAP = 0.04  # max boost from PageRank
 
     # ── Behavioral baseline boost ────────────────────────────────────────
     BASELINE_DEVIATION_MULTIPLIER = 0.1  # scale factor for deviation score
-    BASELINE_BOOST_CAP = 0.06            # max boost from baseline deviation
+    BASELINE_BOOST_CAP = 0.06  # max boost from baseline deviation
 
     # ── Transaction semantics boost ──────────────────────────────────────
-    SEMANTICS_MULTIPLIER = 0.1           # scale factor for semantics score
-    SEMANTICS_BOOST_CAP = 0.05           # max boost from semantics analysis
+    SEMANTICS_MULTIPLIER = 0.1  # scale factor for semantics score
+    SEMANTICS_BOOST_CAP = 0.05  # max boost from semantics analysis
 
     # ── Device trust boost ───────────────────────────────────────────────
-    DEVICE_MULTIPLIER = 0.12             # scale factor for device trust score
-    DEVICE_BOOST_CAP = 0.06              # max boost from device profiling
+    DEVICE_MULTIPLIER = 0.12  # scale factor for device trust score
+    DEVICE_BOOST_CAP = 0.06  # max boost from device profiling
 
     # ── Markov transition boost ──────────────────────────────────────────
-    MARKOV_MULTIPLIER = 0.15             # scale factor for Markov transition score
-    MARKOV_BOOST_CAP = 0.08              # max boost from temporal state transitions
+    MARKOV_MULTIPLIER = 0.15  # scale factor for Markov transition score
+    MARKOV_BOOST_CAP = 0.08  # max boost from temporal state transitions
 
     # ── Structural risk amplifiers ───────────────────────────────────────
     # Large clusters with many reason codes are more suspicious
-    LARGE_CLUSTER_SIZE = 12              # member count for large cluster
-    LARGE_CLUSTER_CODES = 6              # reason code count for large cluster
-    LARGE_CLUSTER_BOOST = 0.10           # risk increment for large clusters
+    LARGE_CLUSTER_SIZE = 12  # member count for large cluster
+    LARGE_CLUSTER_CODES = 6  # reason code count for large cluster
+    LARGE_CLUSTER_BOOST = 0.10  # risk increment for large clusters
 
-    MEDIUM_CLUSTER_SIZE = 10             # member count for medium cluster
-    MEDIUM_CLUSTER_CODES = 5             # reason code count for medium cluster
-    MEDIUM_CLUSTER_BOOST = 0.05          # risk increment for medium clusters
+    MEDIUM_CLUSTER_SIZE = 10  # member count for medium cluster
+    MEDIUM_CLUSTER_CODES = 5  # reason code count for medium cluster
+    MEDIUM_CLUSTER_BOOST = 0.05  # risk increment for medium clusters
 
     # Shared device fingerprint amplifiers
-    SHARED_DEVICES_HIGH = 3              # device count for high amplification
-    SHARED_DEVICES_HIGH_BOOST = 0.08     # risk increment for 3+ shared devices
-    SHARED_DEVICES_LOW = 2               # device count for low amplification
-    SHARED_DEVICES_LOW_BOOST = 0.04      # risk increment for 2+ shared devices
+    SHARED_DEVICES_HIGH = 3  # device count for high amplification
+    SHARED_DEVICES_HIGH_BOOST = 0.08  # risk increment for 3+ shared devices
+    SHARED_DEVICES_LOW = 2  # device count for low amplification
+    SHARED_DEVICES_LOW_BOOST = 0.04  # risk increment for 2+ shared devices
 
     # ── Risk score bounds ────────────────────────────────────────────────
-    RISK_SCORE_CAP = 0.99                # maximum risk score
+    RISK_SCORE_CAP = 0.99  # maximum risk score
 
     # ── Confidence calculation ───────────────────────────────────────────
-    CONFIDENCE_CODE_FACTOR = 0.05        # per-unique-reason-code confidence bump
-    CONFIDENCE_CAP = 1.0                 # maximum confidence score
+    CONFIDENCE_CODE_FACTOR = 0.05  # per-unique-reason-code confidence bump
+    CONFIDENCE_CAP = 1.0  # maximum confidence score
 
     # ── Reason code limits ───────────────────────────────────────────────
-    MAX_REASON_CODES = 15                # max deduplicated reason codes per alert
+    MAX_REASON_CODES = 15  # max deduplicated reason codes per alert
 
     def __init__(
         self,
@@ -478,6 +584,10 @@ class DetectionPipeline:
         suspicion_threshold: Optional[float] = None,
         gnn_model_path: Optional[str] = None,
         genai_service=None,
+        model_version: str = "unvalidated-dev",
+        rule_version: str = "rules-2026.1",
+        device_profiler: Optional[DeviceProfiler] = None,
+        anomaly_scorer: Optional[UnsupervisedAccountScorer] = None,
     ):
         self.rule_engine = RuleEngine()
         self.cluster_detector = LouvainClusterDetector()
@@ -486,8 +596,11 @@ class DetectionPipeline:
         self._gnn_available = self._gnn_scorer is not None
         self._lightweight_scorer = LightweightScorer()
         self._genai_service = genai_service
+        self._model_version = model_version
+        self._rule_version = rule_version
         self._semantics_analyzer = TransactionSemanticsAnalyzer()
-        self._device_profiler = DeviceProfiler()
+        self._device_profiler = device_profiler or DeviceProfiler()
+        self._anomaly_scorer = anomaly_scorer or UnsupervisedAccountScorer()
         self._markov_scorer = MarkovStateScorer()
         self._shap_explainer = SHAPAlertExplainer()
 
@@ -500,7 +613,7 @@ class DetectionPipeline:
         transactions: List[Dict],
         accounts: List[Dict],
     ) -> List[Alert]:
-        start = datetime.now()
+        start = datetime.now(timezone.utc)
 
         # Layer 1: rules
         rule_hits = self.rule_engine.evaluate(accounts, transactions)
@@ -526,6 +639,16 @@ class DetectionPipeline:
         # Layer 3b: centrality scoring (betweenness + PageRank)
         centrality = self.cluster_detector.compute_centrality()
 
+        # Layer 3c: label-free cold-start anomaly scoring. This remains a
+        # supporting signal and never creates an adverse decision on its own.
+        anomaly_predictions = self._anomaly_scorer.score(
+            accounts,
+            transactions,
+            smurf_scores,
+            centrality,
+            baselines,
+        )
+
         # Layer 4: GNN scoring (optional)
         gnn_predictions = {}
         if self._gnn_available and self._gnn_scorer is not None:
@@ -533,16 +656,22 @@ class DetectionPipeline:
                 if self._gnn_scorer.is_trained:
                     # Fast path: model already trained/loaded
                     preds = self._gnn_scorer.predict(
-                        accounts, transactions, smurf_scores,
+                        accounts,
+                        transactions,
+                        smurf_scores,
                     )
                 else:
                     # Train on this data (stratified split), save weights
                     preds, metrics = self._gnn_scorer.train_and_predict(
-                        accounts, transactions, smurf_scores,
+                        accounts,
+                        transactions,
+                        smurf_scores,
                     )
                     logger.info(
                         "GNN trained: %d epochs, final_loss=%.4f, train_acc=%.3f",
-                        metrics.epochs, metrics.final_loss, metrics.train_accuracy,
+                        metrics.epochs,
+                        metrics.final_loss,
+                        metrics.train_accuracy,
                     )
                 gnn_predictions = {p.account_id: p for p in preds}
             except Exception as exc:
@@ -552,7 +681,11 @@ class DetectionPipeline:
         if not gnn_predictions and self._lightweight_scorer is not None:
             try:
                 lw_preds = self._lightweight_scorer.predict(
-                    accounts, transactions, smurf_scores, centrality, baselines,
+                    accounts,
+                    transactions,
+                    smurf_scores,
+                    centrality,
+                    baselines,
                 )
                 if lw_preds:
                     gnn_predictions = {p.account_id: p for p in lw_preds}
@@ -578,13 +711,18 @@ class DetectionPipeline:
                 semantics,
                 device_results,
                 markov_results,
+                anomaly_predictions,
             )
             alerts.append(alert)
 
         # Layer 5: GenAI triage — LLM reviews uncertain alerts
         if self._genai_service is not None:
             for alert in alerts:
-                if self.GENAI_TRIAGE_LOWER <= alert.risk_score <= self.GENAI_TRIAGE_UPPER:
+                if (
+                    self.GENAI_TRIAGE_LOWER
+                    <= alert.risk_score
+                    <= self.GENAI_TRIAGE_UPPER
+                ):
                     try:
                         triage = self._genai_service.triage_cluster(
                             alert_data={
@@ -605,15 +743,18 @@ class DetectionPipeline:
                         )
                         # Recalculate severity after adjustment
                         alert.severity = (
-                            "CRITICAL" if alert.risk_score >= self.SEVERITY_CRITICAL_THRESHOLD else
-                            "HIGH" if alert.risk_score >= self.SEVERITY_HIGH_THRESHOLD else
-                            "MEDIUM"
+                            "CRITICAL"
+                            if alert.risk_score >= self.SEVERITY_CRITICAL_THRESHOLD
+                            else "HIGH"
+                            if alert.risk_score >= self.SEVERITY_HIGH_THRESHOLD
+                            else "MEDIUM"
                         )
                         alert.genai_triage = triage.to_dict()
                     except Exception as exc:
                         logger.warning(
                             "GenAI triage failed for %s: %s",
-                            alert.alert_id, exc,
+                            alert.alert_id,
+                            exc,
                         )
 
         # Layer 6: Explainability — generate explanations for each alert
@@ -630,6 +771,7 @@ class DetectionPipeline:
                     "shared_devices": alert.shared_devices,
                     "shared_ips": alert.shared_ips,
                     "gnn_score": alert.gnn_score,
+                    "anomaly_score": alert.anomaly_score,
                 }
                 explanation = explain_alert(alert_dict, smurf_scores)
                 alert.explanation = explanation.to_dict()
@@ -638,11 +780,17 @@ class DetectionPipeline:
 
             # SHAP-based explanation (RBI FREE-AI compliant)
             try:
-                shap_explanation = self._shap_explainer.explain_alert(alert_dict, smurf_scores)
+                shap_explanation = self._shap_explainer.explain_alert(
+                    alert_dict, smurf_scores
+                )
                 alert.shap_explanation = shap_explanation.to_dict()
-                alert.regulatory_report = self._shap_explainer.generate_regulatory_report(shap_explanation)
+                alert.regulatory_report = (
+                    self._shap_explainer.generate_regulatory_report(shap_explanation)
+                )
             except Exception as exc:
-                logger.warning("SHAP explanation failed for %s: %s", alert.alert_id, exc)
+                logger.warning(
+                    "SHAP explanation failed for %s: %s", alert.alert_id, exc
+                )
 
         # Layer 7: Mule type classification + narrative generation
         for alert in alerts:
@@ -660,6 +808,7 @@ class DetectionPipeline:
                     "shared_devices": alert.shared_devices,
                     "shared_ips": alert.shared_ips,
                     "gnn_score": alert.gnn_score,
+                    "anomaly_score": alert.anomaly_score,
                     "explanation": alert.explanation or {},
                 }
                 classification = classify_cluster(alert_dict, transactions)
@@ -668,13 +817,18 @@ class DetectionPipeline:
                 narrative = generate_narrative(alert_dict, classification)
                 alert.narrative = narrative.to_dict()
             except Exception as exc:
-                logger.warning("Classification/narrative failed for %s: %s", alert.alert_id, exc)
+                logger.warning(
+                    "Classification/narrative failed for %s: %s", alert.alert_id, exc
+                )
 
-        elapsed = (datetime.now() - start).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - start).total_seconds()
         gnn_status = "with GNN" if gnn_predictions else "without GNN"
         logger.info(
             "Detection pipeline (%s): %d txns -> %d alerts in %.2fs",
-            gnn_status, len(transactions), len(flagged_communities), elapsed,
+            gnn_status,
+            len(transactions),
+            len(flagged_communities),
+            elapsed,
         )
 
         return sorted(alerts, key=lambda a: -a.risk_score)
@@ -715,12 +869,14 @@ class DetectionPipeline:
         semantics: Dict[str, SemanticsResult] = None,
         device_results: Dict[str, DeviceTrustResult] = None,
         markov_results: Dict[str, MarkovStateResult] = None,
+        anomaly_predictions: Dict[str, AnomalyPrediction] = None,
     ) -> Alert:
         members = community.accounts
 
         # Filter transactions within this community
         community_txns = [
-            t for t in transactions
+            t
+            for t in transactions
             if t["from_account"] in members or t["to_account"] in members
         ]
 
@@ -730,36 +886,41 @@ class DetectionPipeline:
         semantics = semantics or {}
         device_results = device_results or {}
         markov_results = markov_results or {}
+        anomaly_predictions = anomaly_predictions or {}
         nodes = []
         for acc_id in members:
             acc = acc_map.get(acc_id, {})
-            ss  = smurf_scores.get(acc_id)
-            cs  = centrality.get(acc_id, {})
-            bl  = baselines.get(acc_id)
+            ss = smurf_scores.get(acc_id)
+            cs = centrality.get(acc_id, {})
+            bl = baselines.get(acc_id)
             sem = semantics.get(acc_id)
             dev = device_results.get(acc_id)
-            mk  = markov_results.get(acc_id)
-            nodes.append(AlertNode(
-                account_id=acc_id,
-                role=acc.get("role", "UNKNOWN"),
-                smurf_score=ss.smurf_score if ss else 0.0,
-                bank=acc.get("bank", ""),
-                city=acc.get("city", ""),
-                account_age_days=acc.get("account_age_days", 0),
-                kyc_status=acc.get("kyc_status", "UNKNOWN"),
-                upi_id=acc.get("upi_id", ""),
-                betweenness=cs.get("betweenness", 0.0),
-                pagerank=cs.get("pagerank", 0.0),
-                baseline_deviation=bl.composite_score if bl else 0.0,
-                device_trust_score=dev.device_trust_score if dev else 0.0,
-                semantics_score=sem.composite_score if sem else 0.0,
-                markov_transition_score=mk.transition_score if mk else 0.0,
-                pass_through_ratio=acc.get("pass_through_ratio", 0.0),
-                debit_credit_ratio=acc.get("debit_credit_ratio", 0.0),
-                negative_balance_count=acc.get("negative_balance_count", 0),
-                credit_count=acc.get("credit_count", 0),
-                debit_count=acc.get("debit_count", 0),
-            ))
+            mk = markov_results.get(acc_id)
+            anomaly = anomaly_predictions.get(acc_id)
+            nodes.append(
+                AlertNode(
+                    account_id=acc_id,
+                    role=acc.get("role", "UNKNOWN"),
+                    smurf_score=ss.smurf_score if ss else 0.0,
+                    bank=acc.get("bank", ""),
+                    city=acc.get("city", ""),
+                    account_age_days=acc.get("account_age_days", 0),
+                    kyc_status=acc.get("kyc_status", "UNKNOWN"),
+                    upi_id=acc.get("upi_id", ""),
+                    betweenness=cs.get("betweenness", 0.0),
+                    pagerank=cs.get("pagerank", 0.0),
+                    baseline_deviation=bl.composite_score if bl else 0.0,
+                    device_trust_score=dev.device_trust_score if dev else 0.0,
+                    semantics_score=sem.composite_score if sem else 0.0,
+                    markov_transition_score=mk.transition_score if mk else 0.0,
+                    anomaly_score=anomaly.anomaly_score if anomaly else 0.0,
+                    pass_through_ratio=acc.get("pass_through_ratio", 0.0),
+                    debit_credit_ratio=acc.get("debit_credit_ratio", 0.0),
+                    negative_balance_count=acc.get("negative_balance_count", 0),
+                    credit_count=acc.get("credit_count", 0),
+                    debit_count=acc.get("debit_count", 0),
+                )
+            )
 
         # Build edges (aggregate multiple txns between same pair)
         edge_map: Dict[tuple, AlertEdge] = {}
@@ -797,16 +958,26 @@ class DetectionPipeline:
             mk = markov_results.get(acc_id)
             if mk:
                 all_codes.extend(mk.reason_codes)
-        unique_codes = list(dict.fromkeys(all_codes))[:self.MAX_REASON_CODES]
+            anomaly = anomaly_predictions.get(acc_id)
+            if anomaly and anomaly.is_anomaly:
+                all_codes.append(
+                    "AD01: PyOD ECOD peer-group anomaly "
+                    f"(score={anomaly.anomaly_score:.2f})"
+                )
+        unique_codes = list(dict.fromkeys(all_codes))[: self.MAX_REASON_CODES]
 
         # Composite risk score with optional GNN layer
         # Use blend of max + avg smurf scores: cluster risk is driven by
         # the highest-scoring member (SOURCE), not diluted by low-scoring mules
-        member_smurf = [smurf_scores[a].smurf_score for a in members if a in smurf_scores]
+        member_smurf = [
+            smurf_scores[a].smurf_score for a in members if a in smurf_scores
+        ]
         if member_smurf:
             max_smurf = max(member_smurf)
             mean_smurf = sum(member_smurf) / len(member_smurf)
-            avg_smurf = self.AGG_MAX_WEIGHT * max_smurf + self.AGG_MEAN_WEIGHT * mean_smurf
+            avg_smurf = (
+                self.AGG_MAX_WEIGHT * max_smurf + self.AGG_MEAN_WEIGHT * mean_smurf
+            )
         else:
             avg_smurf = 0.0
 
@@ -814,76 +985,113 @@ class DetectionPipeline:
         if gnn_predictions:
             gnn_scores = [
                 gnn_predictions[a].mule_probability
-                for a in members if a in gnn_predictions
+                for a in members
+                if a in gnn_predictions
             ]
             if gnn_scores:
                 max_gnn = max(gnn_scores)
                 mean_gnn = sum(gnn_scores) / len(gnn_scores)
-                avg_gnn = self.AGG_MAX_WEIGHT * max_gnn + self.AGG_MEAN_WEIGHT * mean_gnn
+                avg_gnn = (
+                    self.AGG_MAX_WEIGHT * max_gnn + self.AGG_MEAN_WEIGHT * mean_gnn
+                )
 
         # Centrality amplifier: accounts with high betweenness are network
         # bridges (money laundering bottlenecks); high PageRank means they
         # receive flow from many paths.  max() captures the most critical node.
-        member_betweenness = [centrality.get(a, {}).get("betweenness", 0) for a in members]
-        member_pagerank    = [centrality.get(a, {}).get("pagerank", 0)    for a in members]
+        member_betweenness = [
+            centrality.get(a, {}).get("betweenness", 0) for a in members
+        ]
+        member_pagerank = [centrality.get(a, {}).get("pagerank", 0) for a in members]
         max_betweenness = max(member_betweenness) if member_betweenness else 0
-        max_pagerank    = max(member_pagerank)    if member_pagerank    else 0
+        max_pagerank = max(member_pagerank) if member_pagerank else 0
         # Centrality boost from betweenness + PageRank
-        centrality_boost = (min(max_betweenness * self.BETWEENNESS_MULTIPLIER, self.BETWEENNESS_BOOST_CAP) +
-                            min(max_pagerank * self.PAGERANK_MULTIPLIER, self.PAGERANK_BOOST_CAP))
+        centrality_boost = min(
+            max_betweenness * self.BETWEENNESS_MULTIPLIER, self.BETWEENNESS_BOOST_CAP
+        ) + min(max_pagerank * self.PAGERANK_MULTIPLIER, self.PAGERANK_BOOST_CAP)
 
         # Behavioral baseline boost: up to +0.06 from deviation
-        member_baselines = [baselines.get(a, BaselineDeviation(a)).composite_score for a in members]
+        member_baselines = [
+            baselines.get(a, BaselineDeviation(a)).composite_score for a in members
+        ]
         max_baseline_dev = max(member_baselines) if member_baselines else 0
-        baseline_boost = min(max_baseline_dev * self.BASELINE_DEVIATION_MULTIPLIER, self.BASELINE_BOOST_CAP)
+        baseline_boost = min(
+            max_baseline_dev * self.BASELINE_DEVIATION_MULTIPLIER,
+            self.BASELINE_BOOST_CAP,
+        )
 
         # Semantics boost: up to +0.05 from transaction semantics
         _empty_sem = SemanticsResult("", 0.0, 0.0, 0.0, 0.0, 0.0, ())
-        member_semantics = [semantics.get(a, _empty_sem).composite_score for a in members]
+        member_semantics = [
+            semantics.get(a, _empty_sem).composite_score for a in members
+        ]
         max_semantics = max(member_semantics) if member_semantics else 0
-        semantics_boost = min(max_semantics * self.SEMANTICS_MULTIPLIER, self.SEMANTICS_BOOST_CAP)
+        semantics_boost = min(
+            max_semantics * self.SEMANTICS_MULTIPLIER, self.SEMANTICS_BOOST_CAP
+        )
 
         # Device trust boost: up to +0.06 from device profiling
         _empty_dev = DeviceTrustResult("", 0.0, 0, 0, (), ())
-        member_device = [device_results.get(a, _empty_dev).device_trust_score for a in members]
+        member_device = [
+            device_results.get(a, _empty_dev).device_trust_score for a in members
+        ]
         max_device = max(member_device) if member_device else 0
         device_boost = min(max_device * self.DEVICE_MULTIPLIER, self.DEVICE_BOOST_CAP)
 
         # Markov transition boost: up to +0.08 from temporal state transitions
         _empty_mk = MarkovStateResult("", "DORMANT", (), 0.0, 0.0, ())
-        member_markov = [markov_results.get(a, _empty_mk).transition_score for a in members]
+        member_markov = [
+            markov_results.get(a, _empty_mk).transition_score for a in members
+        ]
         max_markov = max(member_markov) if member_markov else 0
         markov_boost = min(max_markov * self.MARKOV_MULTIPLIER, self.MARKOV_BOOST_CAP)
+
+        # PyOD is deliberately capped below the graph/behavioral layers. It
+        # improves prioritisation without becoming an opaque decision maker.
+        member_anomalies = [
+            anomaly_predictions[a].anomaly_score
+            for a in members
+            if a in anomaly_predictions and anomaly_predictions[a].is_anomaly
+        ]
+        max_anomaly = max(member_anomalies) if member_anomalies else 0.0
+        anomaly_boost = min(max_anomaly * 0.06, 0.06)
 
         if avg_gnn is not None:
             # 4-layer scoring: 50% Louvain + 30% Smurf + 20% GNN + boosts
             risk_score = (
-                self.DEFAULT_LOUVAIN_WEIGHT * community.suspicion_score +
-                self.DEFAULT_SMURF_WEIGHT * avg_smurf +
-                self.DEFAULT_GNN_WEIGHT * avg_gnn +
-                centrality_boost +
-                baseline_boost +
-                semantics_boost +
-                device_boost +
-                markov_boost
+                self.DEFAULT_LOUVAIN_WEIGHT * community.suspicion_score
+                + self.DEFAULT_SMURF_WEIGHT * avg_smurf
+                + self.DEFAULT_GNN_WEIGHT * avg_gnn
+                + centrality_boost
+                + baseline_boost
+                + semantics_boost
+                + device_boost
+                + markov_boost
+                + anomaly_boost
             )
         else:
             # 3-layer fallback: 60% Louvain + 40% Smurf + boosts
             risk_score = (
-                self.FALLBACK_LOUVAIN_WEIGHT * community.suspicion_score +
-                self.FALLBACK_SMURF_WEIGHT * avg_smurf +
-                centrality_boost +
-                baseline_boost +
-                semantics_boost +
-                device_boost +
-                markov_boost
+                self.FALLBACK_LOUVAIN_WEIGHT * community.suspicion_score
+                + self.FALLBACK_SMURF_WEIGHT * avg_smurf
+                + centrality_boost
+                + baseline_boost
+                + semantics_boost
+                + device_boost
+                + markov_boost
+                + anomaly_boost
             )
 
         # Structural risk amplifiers
         # Large clusters with many reason codes are more suspicious
-        if len(members) >= self.LARGE_CLUSTER_SIZE and len(unique_codes) >= self.LARGE_CLUSTER_CODES:
+        if (
+            len(members) >= self.LARGE_CLUSTER_SIZE
+            and len(unique_codes) >= self.LARGE_CLUSTER_CODES
+        ):
             risk_score += self.LARGE_CLUSTER_BOOST
-        elif len(members) >= self.MEDIUM_CLUSTER_SIZE and len(unique_codes) >= self.MEDIUM_CLUSTER_CODES:
+        elif (
+            len(members) >= self.MEDIUM_CLUSTER_SIZE
+            and len(unique_codes) >= self.MEDIUM_CLUSTER_CODES
+        ):
             risk_score += self.MEDIUM_CLUSTER_BOOST
 
         # Multiple shared fingerprints amplify risk
@@ -894,14 +1102,19 @@ class DetectionPipeline:
 
         risk_score = min(risk_score, self.RISK_SCORE_CAP)
 
-        confidence = min(risk_score + self.CONFIDENCE_CODE_FACTOR * len(unique_codes), self.CONFIDENCE_CAP)
+        confidence = min(
+            risk_score + self.CONFIDENCE_CODE_FACTOR * len(unique_codes),
+            self.CONFIDENCE_CAP,
+        )
 
         total_amount = sum(float(t["amount"]) for t in community_txns)
 
         severity = (
-            "CRITICAL" if risk_score >= self.SEVERITY_CRITICAL_THRESHOLD else
-            "HIGH"     if risk_score >= self.SEVERITY_HIGH_THRESHOLD else
-            "MEDIUM"
+            "CRITICAL"
+            if risk_score >= self.SEVERITY_CRITICAL_THRESHOLD
+            else "HIGH"
+            if risk_score >= self.SEVERITY_HIGH_THRESHOLD
+            else "MEDIUM"
         )
 
         # Try to get cluster_id from any member
@@ -926,8 +1139,11 @@ class DetectionPipeline:
             reason_codes=unique_codes,
             shared_devices=community.shared_devices,
             shared_ips=community.shared_ips,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
             gnn_score=round(avg_gnn, 3) if avg_gnn is not None else None,
+            anomaly_score=round(max_anomaly, 3) if member_anomalies else None,
+            model_version=self._model_version,
+            rule_version=self._rule_version,
         )
 
 
@@ -943,7 +1159,9 @@ if __name__ == "__main__":
     print(f"\n{len(alerts)} alerts generated:")
     for a in alerts:
         gnn_str = f"  gnn={a.gnn_score:.3f}" if a.gnn_score is not None else ""
-        print(f"  [{a.severity}] {a.alert_id}  score={a.risk_score:.3f}{gnn_str}  "
-              f"accounts={a.account_count}  amount=₹{a.total_amount:,.0f}")
+        print(
+            f"  [{a.severity}] {a.alert_id}  score={a.risk_score:.3f}{gnn_str}  "
+            f"accounts={a.account_count}  amount=₹{a.total_amount:,.0f}"
+        )
         for rc in a.reason_codes[:3]:
             print(f"    {rc}")

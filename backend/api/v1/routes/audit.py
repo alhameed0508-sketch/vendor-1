@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
-from middleware.auth import require_permission
+from middleware.auth import require_permission, require_role
 from api.deps import get_audit_service
 from services.audit_service import AuditService
 
@@ -32,3 +32,13 @@ def register_audit_routes(r: APIRouter, limiter: Limiter) -> None:
         return success_response(
             audit_svc.get_log(alert_id=alert_id, action=action, limit=limit)
         )
+
+    @r.get("/audit-log/integrity")
+    @limiter.limit("10/minute")
+    def verify_audit_integrity(
+        request: Request,
+        _user: dict = Depends(require_role("ADMIN", "SUPERVISOR")),
+        audit_svc: AuditService = Depends(get_audit_service),
+    ):
+        """Verify the tamper-evident audit hash chain."""
+        return success_response(audit_svc.verify_integrity())

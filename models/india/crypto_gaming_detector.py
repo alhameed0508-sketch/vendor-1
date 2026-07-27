@@ -22,13 +22,14 @@ from typing import Dict, FrozenSet, List, Set, Tuple
 @dataclass(frozen=True)
 class CryptoHawalaResult:
     """Immutable assessment result for crypto/hawala/gaming signals."""
+
     account_id: str
-    crypto_score: float        # 0.0-1.0
-    gaming_score: float        # 0.0-1.0
-    hawala_score: float        # 0.0-1.0
-    composite_score: float     # 0.0-1.0
-    reason_codes: tuple        # tuple of reason-code strings
-    flagged_merchants: tuple   # tuple of matched merchant identifiers
+    crypto_score: float  # 0.0-1.0
+    gaming_score: float  # 0.0-1.0
+    hawala_score: float  # 0.0-1.0
+    composite_score: float  # 0.0-1.0
+    reason_codes: tuple  # tuple of reason-code strings
+    flagged_merchants: tuple  # tuple of matched merchant identifiers
 
 
 # Signal weights
@@ -45,21 +46,36 @@ class CryptoGamingDetector:
     """Detect crypto, gaming, and hawala laundering patterns."""
 
     # Known crypto exchange merchant IDs / UPI handles
-    CRYPTO_MERCHANTS: FrozenSet[str] = frozenset({
-        "wazirx", "coindcx", "mudrex", "coinswitch", "zebpay", "buyucoin",
-    })
+    CRYPTO_MERCHANTS: FrozenSet[str] = frozenset(
+        {
+            "wazirx",
+            "coindcx",
+            "mudrex",
+            "coinswitch",
+            "zebpay",
+            "buyucoin",
+        }
+    )
 
     # Known gaming / betting merchant IDs
-    GAMING_MERCHANTS: FrozenSet[str] = frozenset({
-        "dream11", "mpl", "winzo", "parimatch", "mahadev", "1xbet", "betway",
-    })
+    GAMING_MERCHANTS: FrozenSet[str] = frozenset(
+        {
+            "dream11",
+            "mpl",
+            "winzo",
+            "parimatch",
+            "mahadev",
+            "1xbet",
+            "betway",
+        }
+    )
 
     # P2P crypto conversion amounts (INR equivalents of common USDT values)
     _P2P_AMOUNTS: tuple = (
-        8_300,    # ~$100 USDT
-        16_600,   # ~$200 USDT
-        41_500,   # ~$500 USDT
-        83_000,   # ~$1000 USDT
+        8_300,  # ~$100 USDT
+        16_600,  # ~$200 USDT
+        41_500,  # ~$500 USDT
+        83_000,  # ~$1000 USDT
     )
 
     _P2P_TOLERANCE: float = 0.05  # 5% tolerance for amount matching
@@ -109,9 +125,7 @@ class CryptoGamingDetector:
             reasons.append(ch05_reason)
 
         # ── Composite ───────────────────────────────────────────────
-        composite = sum(
-            _WEIGHTS[code] * score for code, score in signals.items()
-        )
+        composite = sum(_WEIGHTS[code] * score for code, score in signals.items())
         composite = min(composite, 1.0)
 
         crypto_score = max(signals.get("CH01", 0.0), signals.get("CH02", 0.0))
@@ -148,10 +162,11 @@ class CryptoGamingDetector:
             return 0.0, "", set()
 
         score = min(1.0, len(flagged) / 3.0)
-        return score, (
-            f"CH01: Funds flowing to crypto exchanges — "
-            f"{', '.join(sorted(flagged))}"
-        ), flagged
+        return (
+            score,
+            (f"CH01: Funds flowing to crypto exchanges — {', '.join(sorted(flagged))}"),
+            flagged,
+        )
 
     def _ch02_p2p_patterns(
         self,
@@ -195,10 +210,14 @@ class CryptoGamingDetector:
             return 0.0, "", set()
 
         score = min(1.0, len(flagged) / 3.0)
-        return score, (
-            f"CH03: Gaming platform transactions detected — "
-            f"{', '.join(sorted(flagged))}"
-        ), flagged
+        return (
+            score,
+            (
+                f"CH03: Gaming platform transactions detected — "
+                f"{', '.join(sorted(flagged))}"
+            ),
+            flagged,
+        )
 
     @staticmethod
     def _ch04_hawala_hybrid(
@@ -206,11 +225,13 @@ class CryptoGamingDetector:
     ) -> Tuple[float, str]:
         """CH04: Cash deposits followed by immediate UPI fan-out."""
         cash_deposits = [
-            t for t in transactions
+            t
+            for t in transactions
             if (t.get("channel") or "").upper() in ("CASH", "CDM", "BRANCH_DEPOSIT")
         ]
         upi_transfers = [
-            t for t in transactions
+            t
+            for t in transactions
             if (t.get("channel") or "").upper() == "UPI"
             and (t.get("direction") or "").upper() in ("OUTBOUND", "DEBIT", "")
         ]
@@ -219,8 +240,7 @@ class CryptoGamingDetector:
             return 0.0, ""
 
         unique_upi_recipients = {
-            t.get("to_account") or t.get("beneficiary") or ""
-            for t in upi_transfers
+            t.get("to_account") or t.get("beneficiary") or "" for t in upi_transfers
         }
         unique_upi_recipients.discard("")
 

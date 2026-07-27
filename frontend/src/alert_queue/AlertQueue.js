@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { alertPath } from '../utils/safeNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
 import useAlertStream from '../hooks/useAlertStream';
@@ -697,7 +698,7 @@ export default function AlertQueue({ onSelectAlert }) {
                   {expanded && (
                     <div style={{ textAlign: 'right', padding: '4px 0 8px' }}>
                       <Link
-                        to={`/alert/${alert.alert_id}`}
+                        to={alertPath(alert.alert_id)}
                         className="btn btn-primary btn-sm"
                         onClick={(e) => e.stopPropagation()}
                         style={{ textDecoration: 'none' }}

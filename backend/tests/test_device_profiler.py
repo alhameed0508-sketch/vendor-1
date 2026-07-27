@@ -1,10 +1,10 @@
 """Tests for device profiling service."""
+
 import time
 import pytest
 from models.device.device_profiler import (
     DeviceProfiler,
     DeviceTrustResult,
-    EMULATOR_INDICATORS,
 )
 
 
@@ -16,8 +16,11 @@ def profiler():
 class TestDeviceTrustResult:
     def test_frozen(self):
         result = DeviceTrustResult(
-            account_id="A", device_trust_score=0.5, device_count=1,
-            recent_switches_24h=0, shared_device_accounts=(),
+            account_id="A",
+            device_trust_score=0.5,
+            device_count=1,
+            recent_switches_24h=0,
+            shared_device_accounts=(),
             reason_codes=(),
         )
         with pytest.raises(AttributeError):
@@ -79,6 +82,15 @@ class TestDP04Emulator:
         result = profiler.compute_trust("ACC_001")
         assert not any("DP04" in rc for rc in result.reason_codes)
 
+    def test_explicit_bot_indicator(self, profiler):
+        profiler.record_device_event(
+            "ACC_001",
+            "hashed-device-id",
+            risk_indicators=("bot",),
+        )
+        result = profiler.compute_trust("ACC_001")
+        assert any("DP05" in rc for rc in result.reason_codes)
+
 
 class TestCompositeScore:
     def test_clean_account(self, profiler):
@@ -94,7 +106,9 @@ class TestCompositeScore:
     def test_score_bounded(self, profiler):
         now = time.time()
         for i in range(10):
-            profiler.record_device_event("BAD", f"emulator_dev_{i}", now - i * 100, is_flagged=True)
+            profiler.record_device_event(
+                "BAD", f"emulator_dev_{i}", now - i * 100, is_flagged=True
+            )
         profiler.record_device_event("SUSPECT", "emulator_dev_0", now)
         result = profiler.compute_trust("SUSPECT")
         assert 0.0 <= result.device_trust_score <= 1.0

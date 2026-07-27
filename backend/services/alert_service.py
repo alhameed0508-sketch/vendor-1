@@ -31,7 +31,6 @@ except Exception:
 try:
     from cache.keys import (
         alert_key,
-        alerts_list_key,
         explanation_key,
         narrative_key,
         shap_key,
@@ -39,12 +38,21 @@ try:
     )
 except Exception:
     # Inline key helpers when cache.keys is unavailable
-    def alert_key(aid: str) -> str: return f"alert:{aid}"
-    def alerts_list_key(sev, st, lim) -> str: return f"alerts:list:{sev}:{st}:{lim}"
-    def explanation_key(aid: str) -> str: return f"explanation:{aid}"
-    def narrative_key(aid: str) -> str: return f"narrative:{aid}"
-    def shap_key(aid: str) -> str: return f"shap:{aid}"
-    def subgraph_key(aid: str) -> str: return f"subgraph:{aid}"
+    def alert_key(aid: str) -> str:
+        return f"alert:{aid}"
+
+    def explanation_key(aid: str) -> str:
+        return f"explanation:{aid}"
+
+    def narrative_key(aid: str) -> str:
+        return f"narrative:{aid}"
+
+    def shap_key(aid: str) -> str:
+        return f"shap:{aid}"
+
+    def subgraph_key(aid: str) -> str:
+        return f"subgraph:{aid}"
+
 
 logger = logging.getLogger(__name__)
 
@@ -69,20 +77,128 @@ DEMO_ALERTS: List[Dict] = [
             "R04: New account (<7 days)",
         ],
         "nodes": [
-            {"account_id": "AC001", "role": "SOURCE",     "smurf_score": 0.93, "betweenness": 0.62, "pagerank": 0.18, "account_age_days": 3,   "bank": "IOB", "city": "Chennai",    "kyc_status": "PARTIAL",  "upi_id": "src01@iob"},
-            {"account_id": "AC002", "role": "AGGREGATOR", "smurf_score": 0.88, "betweenness": 0.78, "pagerank": 0.21, "account_age_days": 5,   "bank": "IOB", "city": "Chennai",    "kyc_status": "PARTIAL",  "upi_id": "agg02@iob"},
-            {"account_id": "AC003", "role": "MULE",       "smurf_score": 0.76, "betweenness": 0.31, "pagerank": 0.09, "account_age_days": 12,  "bank": "SBI", "city": "Coimbatore", "kyc_status": "PENDING",  "upi_id": "mule03@sbi"},
-            {"account_id": "AC004", "role": "MULE",       "smurf_score": 0.71, "betweenness": 0.22, "pagerank": 0.08, "account_age_days": 8,   "bank": "SBI", "city": "Madurai",   "kyc_status": "PENDING",  "upi_id": "mule04@sbi"},
-            {"account_id": "AC005", "role": "MULE",       "smurf_score": 0.68, "betweenness": 0.18, "pagerank": 0.07, "account_age_days": 6,   "bank": "BOI", "city": "Trichy",    "kyc_status": "PENDING",  "upi_id": "mule05@boi"},
-            {"account_id": "AC006", "role": "LEGITIMATE", "smurf_score": 0.12, "betweenness": 0.05, "pagerank": 0.04, "account_age_days": 420, "bank": "IOB", "city": "Chennai",   "kyc_status": "COMPLETE", "upi_id": "legit06@iob"},
+            {
+                "account_id": "AC001",
+                "role": "SOURCE",
+                "smurf_score": 0.93,
+                "betweenness": 0.62,
+                "pagerank": 0.18,
+                "account_age_days": 3,
+                "bank": "IOB",
+                "city": "Chennai",
+                "kyc_status": "PARTIAL",
+                "upi_id": "src01@iob",
+            },
+            {
+                "account_id": "AC002",
+                "role": "AGGREGATOR",
+                "smurf_score": 0.88,
+                "betweenness": 0.78,
+                "pagerank": 0.21,
+                "account_age_days": 5,
+                "bank": "IOB",
+                "city": "Chennai",
+                "kyc_status": "PARTIAL",
+                "upi_id": "agg02@iob",
+            },
+            {
+                "account_id": "AC003",
+                "role": "MULE",
+                "smurf_score": 0.76,
+                "betweenness": 0.31,
+                "pagerank": 0.09,
+                "account_age_days": 12,
+                "bank": "SBI",
+                "city": "Coimbatore",
+                "kyc_status": "PENDING",
+                "upi_id": "mule03@sbi",
+            },
+            {
+                "account_id": "AC004",
+                "role": "MULE",
+                "smurf_score": 0.71,
+                "betweenness": 0.22,
+                "pagerank": 0.08,
+                "account_age_days": 8,
+                "bank": "SBI",
+                "city": "Madurai",
+                "kyc_status": "PENDING",
+                "upi_id": "mule04@sbi",
+            },
+            {
+                "account_id": "AC005",
+                "role": "MULE",
+                "smurf_score": 0.68,
+                "betweenness": 0.18,
+                "pagerank": 0.07,
+                "account_age_days": 6,
+                "bank": "BOI",
+                "city": "Trichy",
+                "kyc_status": "PENDING",
+                "upi_id": "mule05@boi",
+            },
+            {
+                "account_id": "AC006",
+                "role": "LEGITIMATE",
+                "smurf_score": 0.12,
+                "betweenness": 0.05,
+                "pagerank": 0.04,
+                "account_age_days": 420,
+                "bank": "IOB",
+                "city": "Chennai",
+                "kyc_status": "COMPLETE",
+                "upi_id": "legit06@iob",
+            },
         ],
         "edges": [
-            {"from_account": "AC001", "to_account": "AC002", "total_amount": 750000, "txn_count": 8, "pattern": "SMURFING",      "timestamps": ["2025-05-01T02:14:00", "2025-05-01T02:38:00"]},
-            {"from_account": "AC001", "to_account": "AC003", "total_amount": 450000, "txn_count": 5, "pattern": "SMURFING",      "timestamps": ["2025-05-01T03:10:00"]},
-            {"from_account": "AC002", "to_account": "AC004", "total_amount": 380000, "txn_count": 6, "pattern": "CONSOLIDATION", "timestamps": ["2025-05-02T14:22:00"]},
-            {"from_account": "AC002", "to_account": "AC005", "total_amount": 270000, "txn_count": 5, "pattern": "SMURFING",      "timestamps": ["2025-05-02T15:00:00"]},
-            {"from_account": "AC003", "to_account": "AC006", "total_amount": 120000, "txn_count": 3, "pattern": "NORMAL",        "timestamps": ["2025-05-03T09:00:00"]},
-            {"from_account": "AC004", "to_account": "AC006", "total_amount": 80000,  "txn_count": 2, "pattern": "NORMAL",        "timestamps": ["2025-05-03T10:00:00"]},
+            {
+                "from_account": "AC001",
+                "to_account": "AC002",
+                "total_amount": 750000,
+                "txn_count": 8,
+                "pattern": "SMURFING",
+                "timestamps": ["2025-05-01T02:14:00", "2025-05-01T02:38:00"],
+            },
+            {
+                "from_account": "AC001",
+                "to_account": "AC003",
+                "total_amount": 450000,
+                "txn_count": 5,
+                "pattern": "SMURFING",
+                "timestamps": ["2025-05-01T03:10:00"],
+            },
+            {
+                "from_account": "AC002",
+                "to_account": "AC004",
+                "total_amount": 380000,
+                "txn_count": 6,
+                "pattern": "CONSOLIDATION",
+                "timestamps": ["2025-05-02T14:22:00"],
+            },
+            {
+                "from_account": "AC002",
+                "to_account": "AC005",
+                "total_amount": 270000,
+                "txn_count": 5,
+                "pattern": "SMURFING",
+                "timestamps": ["2025-05-02T15:00:00"],
+            },
+            {
+                "from_account": "AC003",
+                "to_account": "AC006",
+                "total_amount": 120000,
+                "txn_count": 3,
+                "pattern": "NORMAL",
+                "timestamps": ["2025-05-03T09:00:00"],
+            },
+            {
+                "from_account": "AC004",
+                "to_account": "AC006",
+                "total_amount": 80000,
+                "txn_count": 2,
+                "pattern": "NORMAL",
+                "timestamps": ["2025-05-03T10:00:00"],
+            },
         ],
         "shared_devices": ["DEV-8821"],
         "shared_ips": ["103.21.244.7"],
@@ -100,15 +216,80 @@ DEMO_ALERTS: List[Dict] = [
             "R05: UPI velocity spike",
         ],
         "nodes": [
-            {"account_id": "AC010", "role": "SOURCE",     "smurf_score": 0.77, "betweenness": 0.55, "pagerank": 0.14, "account_age_days": 14, "bank": "IOB",  "city": "Bangalore", "kyc_status": "PARTIAL",  "upi_id": "src10@iob"},
-            {"account_id": "AC011", "role": "MULE",       "smurf_score": 0.65, "betweenness": 0.33, "pagerank": 0.10, "account_age_days": 21, "bank": "HDFC", "city": "Bangalore", "kyc_status": "PENDING",  "upi_id": "mule11@hdfc"},
-            {"account_id": "AC012", "role": "MULE",       "smurf_score": 0.59, "betweenness": 0.28, "pagerank": 0.08, "account_age_days": 18, "bank": "HDFC", "city": "Mysore",    "kyc_status": "PENDING",  "upi_id": "mule12@hdfc"},
-            {"account_id": "AC013", "role": "LEGITIMATE", "smurf_score": 0.08, "betweenness": 0.04, "pagerank": 0.03, "account_age_days": 730, "bank": "IOB", "city": "Bangalore", "kyc_status": "COMPLETE", "upi_id": "legit13@iob"},
+            {
+                "account_id": "AC010",
+                "role": "SOURCE",
+                "smurf_score": 0.77,
+                "betweenness": 0.55,
+                "pagerank": 0.14,
+                "account_age_days": 14,
+                "bank": "IOB",
+                "city": "Bangalore",
+                "kyc_status": "PARTIAL",
+                "upi_id": "src10@iob",
+            },
+            {
+                "account_id": "AC011",
+                "role": "MULE",
+                "smurf_score": 0.65,
+                "betweenness": 0.33,
+                "pagerank": 0.10,
+                "account_age_days": 21,
+                "bank": "HDFC",
+                "city": "Bangalore",
+                "kyc_status": "PENDING",
+                "upi_id": "mule11@hdfc",
+            },
+            {
+                "account_id": "AC012",
+                "role": "MULE",
+                "smurf_score": 0.59,
+                "betweenness": 0.28,
+                "pagerank": 0.08,
+                "account_age_days": 18,
+                "bank": "HDFC",
+                "city": "Mysore",
+                "kyc_status": "PENDING",
+                "upi_id": "mule12@hdfc",
+            },
+            {
+                "account_id": "AC013",
+                "role": "LEGITIMATE",
+                "smurf_score": 0.08,
+                "betweenness": 0.04,
+                "pagerank": 0.03,
+                "account_age_days": 730,
+                "bank": "IOB",
+                "city": "Bangalore",
+                "kyc_status": "COMPLETE",
+                "upi_id": "legit13@iob",
+            },
         ],
         "edges": [
-            {"from_account": "AC010", "to_account": "AC011", "total_amount": 320000, "txn_count": 6, "pattern": "SMURFING", "timestamps": ["2025-05-04T11:00:00"]},
-            {"from_account": "AC010", "to_account": "AC012", "total_amount": 300000, "txn_count": 5, "pattern": "SMURFING", "timestamps": ["2025-05-04T11:45:00"]},
-            {"from_account": "AC011", "to_account": "AC013", "total_amount": 180000, "txn_count": 3, "pattern": "NORMAL",   "timestamps": ["2025-05-05T09:00:00"]},
+            {
+                "from_account": "AC010",
+                "to_account": "AC011",
+                "total_amount": 320000,
+                "txn_count": 6,
+                "pattern": "SMURFING",
+                "timestamps": ["2025-05-04T11:00:00"],
+            },
+            {
+                "from_account": "AC010",
+                "to_account": "AC012",
+                "total_amount": 300000,
+                "txn_count": 5,
+                "pattern": "SMURFING",
+                "timestamps": ["2025-05-04T11:45:00"],
+            },
+            {
+                "from_account": "AC011",
+                "to_account": "AC013",
+                "total_amount": 180000,
+                "txn_count": 3,
+                "pattern": "NORMAL",
+                "timestamps": ["2025-05-05T09:00:00"],
+            },
         ],
         "shared_devices": [],
         "shared_ips": ["45.115.8.22"],
@@ -123,13 +304,60 @@ DEMO_ALERTS: List[Dict] = [
         "txn_count": 7,
         "reason_codes": ["R03: Shared device fingerprint"],
         "nodes": [
-            {"account_id": "AC020", "role": "SOURCE", "smurf_score": 0.54, "betweenness": 0.40, "pagerank": 0.11, "account_age_days": 30, "bank": "IOB", "city": "Mumbai", "kyc_status": "COMPLETE", "upi_id": "src20@iob"},
-            {"account_id": "AC021", "role": "MULE",   "smurf_score": 0.48, "betweenness": 0.22, "pagerank": 0.07, "account_age_days": 45, "bank": "PNB", "city": "Pune",   "kyc_status": "PARTIAL",  "upi_id": "mule21@pnb"},
-            {"account_id": "AC022", "role": "MULE",   "smurf_score": 0.44, "betweenness": 0.18, "pagerank": 0.06, "account_age_days": 60, "bank": "PNB", "city": "Nagpur", "kyc_status": "PARTIAL",  "upi_id": "mule22@pnb"},
+            {
+                "account_id": "AC020",
+                "role": "SOURCE",
+                "smurf_score": 0.54,
+                "betweenness": 0.40,
+                "pagerank": 0.11,
+                "account_age_days": 30,
+                "bank": "IOB",
+                "city": "Mumbai",
+                "kyc_status": "COMPLETE",
+                "upi_id": "src20@iob",
+            },
+            {
+                "account_id": "AC021",
+                "role": "MULE",
+                "smurf_score": 0.48,
+                "betweenness": 0.22,
+                "pagerank": 0.07,
+                "account_age_days": 45,
+                "bank": "PNB",
+                "city": "Pune",
+                "kyc_status": "PARTIAL",
+                "upi_id": "mule21@pnb",
+            },
+            {
+                "account_id": "AC022",
+                "role": "MULE",
+                "smurf_score": 0.44,
+                "betweenness": 0.18,
+                "pagerank": 0.06,
+                "account_age_days": 60,
+                "bank": "PNB",
+                "city": "Nagpur",
+                "kyc_status": "PARTIAL",
+                "upi_id": "mule22@pnb",
+            },
         ],
         "edges": [
-            {"from_account": "AC020", "to_account": "AC021", "total_amount": 120000, "txn_count": 4, "pattern": "CONSOLIDATION", "timestamps": ["2025-05-06T16:00:00"]},
-            {"from_account": "AC020", "to_account": "AC022", "total_amount": 90000,  "txn_count": 3, "pattern": "CONSOLIDATION", "timestamps": ["2025-05-06T16:30:00"]},
+            {
+                "from_account": "AC020",
+                "to_account": "AC021",
+                "total_amount": 120000,
+                "txn_count": 4,
+                "pattern": "CONSOLIDATION",
+                "timestamps": ["2025-05-06T16:00:00"],
+            },
+            {
+                "from_account": "AC020",
+                "to_account": "AC022",
+                "total_amount": 90000,
+                "txn_count": 3,
+                "pattern": "CONSOLIDATION",
+                "timestamps": ["2025-05-06T16:30:00"],
+            },
         ],
         "shared_devices": ["DEV-4412"],
         "shared_ips": [],
@@ -200,7 +428,9 @@ class _StubAudit:
     """Fallback audit logger that prints to stdout."""
 
     def log(self, action, user_id, resource_id, details):
-        logger.info("[AUDIT] %s user=%s resource=%s %s", action, user_id, resource_id, details)
+        logger.info(
+            "[AUDIT] %s user=%s resource=%s %s", action, user_id, resource_id, details
+        )
 
 
 class AlertService:
@@ -227,31 +457,18 @@ class AlertService:
         limit: int = 50,
         offset: int = 0,
     ) -> Dict:
-        """List alerts with optional filters. Cache-first."""
-        cache_k = alerts_list_key(severity, status, limit)
-        cached = self._cache.get(cache_k)
-        if cached is not None:
-            return cached
-
+        """List current alerts from the shared repository."""
         alerts = self._repo.find_all(severity=severity, status=status, limit=limit)
-        result = {
+        return {
             "total": len(alerts),
             "alerts": alerts[offset:],
         }
-        self._cache.set(cache_k, result, l1_ttl=30, l2_ttl=300)
-        return result
 
     def get_alert(self, alert_id: str) -> Dict:
-        """Get a single alert by ID. Raises NotFoundError."""
-        cache_k = alert_key(alert_id)
-        cached = self._cache.get(cache_k)
-        if cached is not None:
-            return cached
-
+        """Get a current alert by ID. Raises NotFoundError."""
         alert = self._repo.find_by_id(alert_id)
         if not alert:
             raise NotFoundError("Alert", alert_id)
-        self._cache.set(cache_k, alert, l1_ttl=60, l2_ttl=600)
         return alert
 
     def update_alert(
@@ -278,12 +495,12 @@ class AlertService:
 
     def get_explanation(self, alert_id: str) -> Dict:
         """Return explainability data. Cached, lazy-generates if missing."""
-        cache_k = explanation_key(alert_id)
+        alert = self._get_alert_or_raise(alert_id)
+        cache_k = self._versioned_key(explanation_key(alert_id), alert)
         cached = self._cache.get(cache_k)
         if cached is not None:
             return cached
 
-        alert = self._get_alert_or_raise(alert_id)
         explanation = alert.get("explanation")
         if explanation:
             self._cache.set(cache_k, explanation, l1_ttl=120, l2_ttl=1800)
@@ -291,6 +508,7 @@ class AlertService:
 
         try:
             from explainability.explainer import explain_alert
+
             exp = explain_alert(alert)
             result = exp.to_dict()
         except Exception:
@@ -300,12 +518,12 @@ class AlertService:
 
     def get_narrative(self, alert_id: str) -> Dict:
         """Return judge-ready narrative. Cached."""
-        cache_k = narrative_key(alert_id)
+        alert = self._get_alert_or_raise(alert_id)
+        cache_k = self._versioned_key(narrative_key(alert_id), alert)
         cached = self._cache.get(cache_k)
         if cached is not None:
             return cached
 
-        alert = self._get_alert_or_raise(alert_id)
         narrative = alert.get("narrative")
         if narrative:
             self._cache.set(cache_k, narrative, l1_ttl=120, l2_ttl=1800)
@@ -314,6 +532,7 @@ class AlertService:
         try:
             from explainability.narrative_generator import generate_narrative
             from detection.mule_classifier import classify_cluster
+
             classification = classify_cluster(alert, [])
             narr = generate_narrative(alert, classification)
             result = narr.to_dict()
@@ -324,20 +543,25 @@ class AlertService:
 
     def get_shap(self, alert_id: str) -> Dict:
         """Return SHAP values. Cached."""
-        cache_k = shap_key(alert_id)
+        alert = self._get_alert_or_raise(alert_id)
+        cache_k = self._versioned_key(shap_key(alert_id), alert)
         cached = self._cache.get(cache_k)
         if cached is not None:
             return cached
 
-        alert = self._get_alert_or_raise(alert_id)
-
         try:
-            from explainability.shap_explainer import compute_shap_values, format_for_waterfall_chart
+            from explainability.shap_explainer import (
+                compute_shap_values,
+                format_for_waterfall_chart,
+            )
+
             results = compute_shap_values(alert)
             result = {
                 "alert_id": alert_id,
                 "shap_results": [r.to_dict() for r in results],
-                "waterfall_charts": [format_for_waterfall_chart(r) for r in results[:5]],
+                "waterfall_charts": [
+                    format_for_waterfall_chart(r) for r in results[:5]
+                ],
             }
         except Exception:
             result = self._stub_shap(alert)
@@ -346,12 +570,12 @@ class AlertService:
 
     def get_subgraph(self, alert_id: str) -> Dict:
         """Return graph topology for visualization. Cached."""
-        cache_k = subgraph_key(alert_id)
+        alert = self._get_alert_or_raise(alert_id)
+        cache_k = self._versioned_key(subgraph_key(alert_id), alert)
         cached = self._cache.get(cache_k)
         if cached is not None:
             return cached
 
-        alert = self._get_alert_or_raise(alert_id)
         result = {
             "alert_id": alert_id,
             "nodes": alert.get("nodes", []),
@@ -370,6 +594,13 @@ class AlertService:
             raise NotFoundError("Alert", alert_id)
         return alert
 
+    @staticmethod
+    def _versioned_key(base_key: str, alert: Dict) -> str:
+        """Scope derived caches to the concrete alert generation."""
+        version = alert.get("model_version", "")
+        created_at = alert.get("created_at", "")
+        return f"{base_key}:{version}:{created_at}"
+
     # ------------------------------------------------------------------
     # Stub generators (used when explainability modules are unavailable)
     # ------------------------------------------------------------------
@@ -380,10 +611,10 @@ class AlertService:
             "alert_id": alert["alert_id"],
             "top_features": [
                 {"feature": "rapid_fund_aggregation", "importance": 0.34},
-                {"feature": "structured_deposits",    "importance": 0.28},
-                {"feature": "account_age_days",       "importance": 0.18},
-                {"feature": "device_overlap",         "importance": 0.12},
-                {"feature": "kyc_completeness",       "importance": 0.08},
+                {"feature": "structured_deposits", "importance": 0.28},
+                {"feature": "account_age_days", "importance": 0.18},
+                {"feature": "device_overlap", "importance": 0.12},
+                {"feature": "kyc_completeness", "importance": 0.08},
             ],
             "summary": (
                 f"Alert {alert['alert_id']} triggered primarily due to rapid fund "
@@ -415,22 +646,26 @@ class AlertService:
     def _stub_shap(alert: Dict) -> Dict:
         features = [
             ("rapid_fund_aggregation", 0.34),
-            ("structured_deposits",    0.28),
-            ("account_age_days",      -0.18),
-            ("device_overlap",         0.12),
-            ("kyc_completeness",      -0.08),
+            ("structured_deposits", 0.28),
+            ("account_age_days", -0.18),
+            ("device_overlap", 0.12),
+            ("kyc_completeness", -0.08),
         ]
         return {
             "alert_id": alert["alert_id"],
             "shap_results": [
-                {"feature": f, "shap_value": v, "direction": "increases" if v > 0 else "decreases"}
+                {
+                    "feature": f,
+                    "shap_value": v,
+                    "direction": "increases" if v > 0 else "decreases",
+                }
                 for f, v in features
             ],
             "waterfall_charts": [
                 {
                     "feature": f,
                     "value": v,
-                    "cumulative": round(sum(x for _, x in features[:i + 1]), 4),
+                    "cumulative": round(sum(x for _, x in features[: i + 1]), 4),
                 }
                 for i, (f, v) in enumerate(features)
             ],

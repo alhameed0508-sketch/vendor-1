@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from slowapi import Limiter
 
 from core.response import success_response
@@ -17,12 +18,14 @@ def register_health_routes(r: APIRouter, limiter: Limiter) -> None:
     @r.get("/")
     @limiter.limit("100/minute")
     def root(request: Request):
-        return success_response({
-            "service": "MuleCatch API",
-            "version": "1.0.0",
-            "status": "operational",
-            "docs": "/docs",
-        })
+        return success_response(
+            {
+                "service": "MuleCatch API",
+                "version": "1.0.0",
+                "status": "operational",
+                "docs": "/docs",
+            }
+        )
 
     @r.get("/health")
     @limiter.limit("100/minute")
@@ -31,11 +34,13 @@ def register_health_routes(r: APIRouter, limiter: Limiter) -> None:
         from api.deps import get_persistence
 
         persistence = get_persistence()
-        return success_response({
-            "status": "ok",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "persistence": "neo4j" if persistence.is_persistent else "in-memory",
-        })
+        return success_response(
+            {
+                "status": "ok",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "persistence": "neo4j" if persistence.is_persistent else "in-memory",
+            }
+        )
 
     @r.get("/health/detailed", tags=["monitoring"])
     @limiter.limit("30/minute")
@@ -60,11 +65,34 @@ def register_health_routes(r: APIRouter, limiter: Limiter) -> None:
         if checks["kafka"]["status"] == "error":
             all_healthy = False
 
-        return success_response({
-            "status": "ok" if all_healthy else "degraded",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "checks": checks,
-        })
+        return success_response(
+            {
+                "status": "ok" if all_healthy else "degraded",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "checks": checks,
+            }
+        )
+
+    @r.get("/ready", tags=["monitoring"])
+    @limiter.limit("60/minute")
+    def readiness(request: Request):
+        """Strict dependency readiness for production orchestrators."""
+        checks = {
+            "neo4j": _check_neo4j(),
+            "postgres": _check_postgres(),
+            "redis": _check_redis(),
+            "kafka": _check_kafka(),
+        }
+        ready = all(check["status"] == "ok" for check in checks.values())
+        payload = {
+            "success": ready,
+            "data": {
+                "status": "ready" if ready else "not_ready",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "checks": checks,
+            },
+        }
+        return JSONResponse(payload, status_code=200 if ready else 503)
 
 
 def _check_neo4j() -> dict:
@@ -72,6 +100,7 @@ def _check_neo4j() -> dict:
     start = time.time()
     try:
         from api.deps import get_persistence
+
         persistence = get_persistence()
         if persistence.is_persistent:
             return {
@@ -79,7 +108,7 @@ def _check_neo4j() -> dict:
                 "mode": "neo4j",
                 "latency_ms": round((time.time() - start) * 1000, 1),
             }
-        return {"status": "ok", "mode": "in-memory"}
+        return {"status": "unavailable", "mode": "in-memory"}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
@@ -89,27 +118,50 @@ def _check_redis() -> dict:
     start = time.time()
     try:
         from api.deps import get_redis_client
+
         client = get_redis_client()
         if client.ping():
             return {
                 "status": "ok",
                 "latency_ms": round((time.time() - start) * 1000, 1),
             }
-        return {"status": "ok", "mode": "unavailable (in-memory fallback)"}
-    except Exception:
-        return {"status": "ok", "mode": "unavailable (in-memory fallback)"}
+        return {"status": "unavailable", "mode": "in-memory fallback"}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+def _check_postgres() -> dict:
+    """Check PostgreSQL with a minimal query."""
+    start = time.time()
+    try:
+        from sqlalchemy import text
+        from api.deps import _get_pg_engine
+
+        engine = _get_pg_engine()
+        if engine is None:
+            return {"status": "unavailable", "mode": "not configured"}
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {
+            "status": "ok",
+            "latency_ms": round((time.time() - start) * 1000, 1),
+        }
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
 
 
 def _check_kafka() -> dict:
     """Check Kafka connectivity."""
     try:
         from ingest.kafka_consumer import KAFKA_ENABLED
+
         if not KAFKA_ENABLED:
             return {"status": "ok", "mode": "disabled"}
         from api.deps import get_kafka_consumer
+
         consumer = get_kafka_consumer()
-        if consumer and hasattr(consumer, '_running') and consumer._running:
+        if consumer and hasattr(consumer, "_running") and consumer._running:
             return {"status": "ok", "mode": "consuming"}
-        return {"status": "ok", "mode": "connected"}
+        return {"status": "error", "mode": "consumer_not_running"}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}

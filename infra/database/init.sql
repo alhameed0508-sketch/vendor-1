@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     username    TEXT NOT NULL DEFAULT '',
     alert_id    TEXT,
     details     TEXT,
+    previous_hash TEXT NOT NULL DEFAULT '',
+    entry_hash  TEXT NOT NULL DEFAULT '',
     timestamp   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_audit_alert  ON audit_logs(alert_id);
@@ -92,10 +94,28 @@ CREATE TABLE IF NOT EXISTS onboarding_assessments (
     signals       JSONB NOT NULL DEFAULT '[]',
     reason_codes  JSONB NOT NULL DEFAULT '[]',
     recommendation TEXT NOT NULL DEFAULT '',
+    entity_resolution JSONB NOT NULL DEFAULT '{}',
     assessed_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_onboard_account ON onboarding_assessments(account_id);
 CREATE INDEX IF NOT EXISTS idx_onboard_risk    ON onboarding_assessments(risk_level);
+
+-- Privacy-minimised identity profiles for duplicate/synthetic identity linking.
+-- Phone/email values are one-way hashed by the application before persistence.
+CREATE TABLE IF NOT EXISTS identity_profiles (
+    entity_id TEXT PRIMARY KEY,
+    full_name TEXT NOT NULL DEFAULT '',
+    phone_hash TEXT NOT NULL DEFAULT '',
+    email_hash TEXT NOT NULL DEFAULT '',
+    postal_address TEXT NOT NULL DEFAULT '',
+    government_id_hash TEXT NOT NULL DEFAULT '',
+    device_fingerprint TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_identity_phone  ON identity_profiles(phone_hash);
+CREATE INDEX IF NOT EXISTS idx_identity_email  ON identity_profiles(email_hash);
+CREATE INDEX IF NOT EXISTS idx_identity_gov    ON identity_profiles(government_id_hash);
+CREATE INDEX IF NOT EXISTS idx_identity_device ON identity_profiles(device_fingerprint);
 
 -- ── KPI Snapshots ───────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS kpi_snapshots (

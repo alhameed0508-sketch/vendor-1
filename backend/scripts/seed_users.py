@@ -12,7 +12,7 @@ _project_dir = os.path.dirname(_backend_dir)
 sys.path.insert(0, _backend_dir)
 sys.path.insert(0, _project_dir)
 
-from infra.database.user_db import UserDB
+from infra.database.user_db import UserDB  # noqa: E402
 
 
 def main():
@@ -37,7 +37,11 @@ def main():
         print("Error: password must be at least 8 characters")
         sys.exit(1)
 
-    display_name = os.getenv("ADMIN_DISPLAY_NAME") or input("Display name [Admin]: ").strip() or "Admin"
+    display_name = (
+        os.getenv("ADMIN_DISPLAY_NAME")
+        or input("Display name [Admin]: ").strip()
+        or "Admin"
+    )
     branch = os.getenv("ADMIN_BRANCH") or input("Branch [HO IT]: ").strip() or "HO IT"
 
     user = db.create_user(

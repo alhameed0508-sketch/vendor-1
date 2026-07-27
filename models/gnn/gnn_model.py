@@ -21,7 +21,7 @@ Directed edges & edge features (v2):
 from __future__ import annotations
 import importlib.util
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
@@ -37,8 +37,9 @@ import torch.nn.functional as F
 
 # Optional torch_geometric import (graceful fallback for environments without it)
 try:
-    from torch_geometric.nn import SAGEConv, global_mean_pool
-    from torch_geometric.data import Data, DataLoader as GeoDataLoader
+    from torch_geometric.nn import SAGEConv
+    from torch_geometric.data import Data
+
     HAS_TORCH_GEOMETRIC = True
 except ImportError:
     HAS_TORCH_GEOMETRIC = False
@@ -145,6 +146,7 @@ class FocalLoss(nn.Module):
 @dataclass
 class TrainingMetrics:
     """Metrics from a GNN training run."""
+
     epochs: int
     loss_curve: List[float]
     final_loss: float
@@ -177,7 +179,9 @@ class MuleCatchGNN(nn.Module):
     def __init__(self, in_channels: int = 8, hidden: int = 64, out_channels: int = 2):
         super().__init__()
         if not HAS_TORCH_GEOMETRIC:
-            raise RuntimeError("torch_geometric required for GNN. Using fallback scorer.")
+            raise RuntimeError(
+                "torch_geometric required for GNN. Using fallback scorer."
+            )
 
         self.conv1 = SAGEConv(in_channels, hidden)
         self.conv2 = SAGEConv(hidden, hidden)
@@ -252,7 +256,7 @@ class MuleCatchGNN(nn.Module):
         # Layer 3
         x = self.conv3(x, edge_index)
         out = self.classifier(x)
-        return out, x   # logits + embeddings
+        return out, x  # logits + embeddings
 
 
 _PAYMENT_TYPE_ENCODING: Dict[str, float] = {
@@ -353,9 +357,7 @@ def build_graph_data(
             raw_amounts.append(float(t.get("amount", 0)))
             raw_timestamps.append(_parse_timestamp(t.get("timestamp", 0)))
             ptype = str(t.get("payment_type", "")).upper()
-            raw_payment_types.append(
-                _PAYMENT_TYPE_ENCODING.get(ptype, 0.5)
-            )
+            raw_payment_types.append(_PAYMENT_TYPE_ENCODING.get(ptype, 0.5))
 
             if not directed:
                 # Legacy undirected mode: add reverse edge with same features
@@ -469,7 +471,7 @@ class GNNScorer:
             optimizer.step()
             losses.append(loss.item())
             if (epoch + 1) % 10 == 0:
-                print(f"  GNN Epoch {epoch+1}/{epochs}  loss={loss.item():.4f}")
+                print(f"  GNN Epoch {epoch + 1}/{epochs}  loss={loss.item():.4f}")
 
         self._is_trained = True
         return losses
@@ -490,7 +492,10 @@ class GNNScorer:
         if not HAS_TORCH_GEOMETRIC or self.model is None:
             print("torch_geometric not available — skipping GNN training")
             return self._heuristic_predict(accounts, smurf_scores), TrainingMetrics(
-                epochs=0, loss_curve=[], final_loss=0.0, train_accuracy=0.0,
+                epochs=0,
+                loss_curve=[],
+                final_loss=0.0,
+                train_accuracy=0.0,
             )
 
         data, account_ids = build_graph_data(accounts, transactions, smurf_scores)
@@ -509,17 +514,21 @@ class GNNScorer:
         pos_train_n = max(1, int(len(pos_indices) * train_ratio))
         neg_train_n = max(1, int(len(neg_indices) * train_ratio))
 
-        train_indices = np.concatenate([
-            pos_indices[:pos_train_n],
-            neg_indices[:neg_train_n],
-        ])
+        train_indices = np.concatenate(
+            [
+                pos_indices[:pos_train_n],
+                neg_indices[:neg_train_n],
+            ]
+        )
 
         train_mask = torch.zeros(num_nodes, dtype=torch.bool)
         train_mask[torch.from_numpy(train_indices)] = True
         train_mask = train_mask.to(self.device)
 
         optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=lr, weight_decay=5e-4,
+            self.model.parameters(),
+            lr=lr,
+            weight_decay=5e-4,
         )
         criterion = FocalLoss(gamma=2.0, alpha=0.25)
 
@@ -533,7 +542,7 @@ class GNNScorer:
             optimizer.step()
             losses.append(loss.item())
             if (epoch + 1) % 10 == 0:
-                print(f"  GNN Epoch {epoch+1}/{epochs}  loss={loss.item():.4f}")
+                print(f"  GNN Epoch {epoch + 1}/{epochs}  loss={loss.item():.4f}")
 
         # Compute train accuracy
         self.model.eval()
@@ -561,12 +570,14 @@ class GNNScorer:
         results = []
         for i, acc_id in enumerate(account_ids):
             mule_prob = float(probs[i][1])
-            results.append(GNNPrediction(
-                account_id=acc_id,
-                mule_probability=mule_prob,
-                embedding=embs[i].tolist(),
-                is_flagged=mule_prob >= 0.5,
-            ))
+            results.append(
+                GNNPrediction(
+                    account_id=acc_id,
+                    mule_probability=mule_prob,
+                    embedding=embs[i].tolist(),
+                    is_flagged=mule_prob >= 0.5,
+                )
+            )
 
         metrics = TrainingMetrics(
             epochs=epochs,
@@ -598,17 +609,19 @@ class GNNScorer:
         with torch.no_grad():
             logits, embeddings = self.model(data.x, data.edge_index, edge_attr)
             probs = F.softmax(logits, dim=1).cpu().numpy()
-            embs  = embeddings.cpu().numpy()
+            embs = embeddings.cpu().numpy()
 
         results = []
         for i, acc_id in enumerate(account_ids):
             mule_prob = float(probs[i][1])
-            results.append(GNNPrediction(
-                account_id=acc_id,
-                mule_probability=mule_prob,
-                embedding=embs[i].tolist(),
-                is_flagged=mule_prob >= 0.5,
-            ))
+            results.append(
+                GNNPrediction(
+                    account_id=acc_id,
+                    mule_probability=mule_prob,
+                    embedding=embs[i].tolist(),
+                    is_flagged=mule_prob >= 0.5,
+                )
+            )
         return results
 
     def _heuristic_predict(
@@ -620,11 +633,13 @@ class GNNScorer:
             acc_id = acc["account_id"]
             ss = smurf_scores.get(acc_id)
             prob = ss.smurf_score if ss else 0.0
-            results.append(GNNPrediction(
-                account_id=acc_id,
-                mule_probability=prob,
-                is_flagged=prob >= 0.5,
-            ))
+            results.append(
+                GNNPrediction(
+                    account_id=acc_id,
+                    mule_probability=prob,
+                    is_flagged=prob >= 0.5,
+                )
+            )
         return results
 
     def save(self, path: str):
@@ -640,6 +655,7 @@ class GNNScorer:
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, ".")
     from data.synthetic.generator import build_full_dataset
     from models.temporal_weighting.smurf_weighting import score_transaction_batch

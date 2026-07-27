@@ -37,6 +37,7 @@ def create_llm_provider(settings) -> Optional[LLMProvider]:
 
     if provider_name == "gemini":
         from genai.gemini_provider import GeminiProvider
+
         return GeminiProvider(
             api_key=api_key,
             model=model or "gemini-2.5-flash",
@@ -44,6 +45,7 @@ def create_llm_provider(settings) -> Optional[LLMProvider]:
 
     if provider_name == "openai":
         from genai.openai_provider import OpenAIProvider
+
         return OpenAIProvider(
             api_key=api_key,
             model=model or "gpt-4o-mini",
@@ -51,6 +53,7 @@ def create_llm_provider(settings) -> Optional[LLMProvider]:
 
     if provider_name == "anthropic":
         from genai.anthropic_provider import AnthropicProvider
+
         return AnthropicProvider(
             api_key=api_key,
             model=model or "claude-haiku-4-5-20250514",

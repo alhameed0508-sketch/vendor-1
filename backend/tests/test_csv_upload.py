@@ -45,6 +45,19 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
 19/05/2026 18:30|s_006|T|CI|D|ACCT_S|50|49200|UPI|CIF_S|01/04/2026 18:30|0|25"""
 
 
+CHANNEL_CSV = """\
+TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|channel|CIF_ID|ACCT_OPN_DATE|LIEN_AMT|customer_age
+19/05/2026 18:30|ch_001|T|CI|D|ACCT_A|100|900|IMPS|CIF_A|01/01/2020 18:30|0|30
+19/05/2026 18:30|ch_002|T|CI|D|ACCT_A|100|800|ATM|CIF_A|01/01/2020 18:30|0|30
+19/05/2026 18:30|ch_003|T|CI|C|ACCT_A|100|900|BNA|CIF_A|01/01/2020 18:30|0|30"""
+
+
+INFERRED_LINK_CSV = """\
+TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|channel|CIF_ID|ACCT_OPN_DATE|LIEN_AMT|customer_age
+19/05/2026 18:30|debit_unique|T|CI|D|ACCT_A|500|500|UPI|CIF_A|01/01/2020 18:30|0|30
+19/05/2026 18:30|credit_unique|T|CI|C|ACCT_B|500|500|UPI|CIF_B|01/01/2020 18:30|0|31"""
+
+
 @pytest.fixture
 def adapter():
     return MuleCSVAdapter()
@@ -79,6 +92,19 @@ class TestMuleCSVAdapterParsing:
         result = adapter.parse(header_only)
         assert len(result["transactions"]) == 0
         assert len(result["accounts"]) == 0
+
+    def test_parse_rejects_missing_required_columns(self, adapter):
+        with pytest.raises(ValueError, match="Missing required CBS columns"):
+            adapter.parse("TRAN_DATE|TRAN_ID\n19/05/2026 18:30|txn_1")
+
+    def test_quality_report_exposes_low_confidence_inferred_linkage(self, adapter):
+        quality = adapter.parse(INFERRED_LINK_CSV)["data_quality"]
+        assert quality["linkage_strategy"] == "AMOUNT_DATE_INFERENCE"
+        assert quality["linkage_confidence"] == "LOW"
+        assert quality["internal_links"] == 1
+        assert "GROUND_TRUTH_LABELS_ABSENT" in quality["warnings"]
+        assert "TIMESTAMP_VARIETY_LOW" in quality["warnings"]
+        assert "TRAN_ID_LINKAGE_UNAVAILABLE" in quality["warnings"]
 
 
 class TestMuleCSVAdapterTransactionMapping:
@@ -129,6 +155,14 @@ class TestMuleCSVAdapterTransactionMapping:
         # txn_009 has channel=NEFT
         neft_txn = result["transactions"][8]
         assert neft_txn["txn_type"] == "NEFT"
+
+    def test_sample_dataset_channel_variants_are_not_mapped_to_upi(self, adapter):
+        result = adapter.parse(CHANNEL_CSV)
+        assert [txn["txn_type"] for txn in result["transactions"]] == [
+            "IMPS",
+            "ATM_WITHDRAWAL",
+            "CASH_DEPOSIT",
+        ]
 
     def test_is_suspicious_defaults_false(self, adapter):
         result = adapter.parse(SAMPLE_CSV)
@@ -205,20 +239,26 @@ class TestMuleCSVAdapterAnomalyFlags:
 
     def test_negative_balance_flagged(self, adapter):
         result = adapter.parse(SAMPLE_CSV)
-        neg_flags = [f for f in result["anomaly_flags"] if f["flag"] == "NEGATIVE_BALANCE"]
+        neg_flags = [
+            f for f in result["anomaly_flags"] if f["flag"] == "NEGATIVE_BALANCE"
+        ]
         # ACCT_A has negative balances
         flagged_accounts = {f["account_id"] for f in neg_flags}
         assert "ACCT_A" in flagged_accounts
 
     def test_rapid_small_debits_flagged(self, adapter):
         result = adapter.parse(SMURFING_CSV)
-        smurf_flags = [f for f in result["anomaly_flags"] if f["flag"] == "RAPID_SMALL_DEBITS"]
+        smurf_flags = [
+            f for f in result["anomaly_flags"] if f["flag"] == "RAPID_SMALL_DEBITS"
+        ]
         assert len(smurf_flags) >= 1
         assert smurf_flags[0]["account_id"] == "ACCT_S"
 
     def test_layering_pattern_flagged(self, adapter):
         result = adapter.parse(SMURFING_CSV)
-        layer_flags = [f for f in result["anomaly_flags"] if f["flag"] == "LAYERING_PATTERN"]
+        layer_flags = [
+            f for f in result["anomaly_flags"] if f["flag"] == "LAYERING_PATTERN"
+        ]
         assert len(layer_flags) >= 1
         assert layer_flags[0]["account_id"] == "ACCT_S"
 
@@ -233,7 +273,11 @@ class TestMuleCSVAdapterAnomalyFlags:
             )
         csv_content = "\n".join(lines)
         result = adapter.parse(csv_content)
-        young_flags = [f for f in result["anomaly_flags"] if f["flag"] == "YOUNG_ACCOUNT_HIGH_VOLUME"]
+        young_flags = [
+            f
+            for f in result["anomaly_flags"]
+            if f["flag"] == "YOUNG_ACCOUNT_HIGH_VOLUME"
+        ]
         assert len(young_flags) >= 1
 
     def test_no_false_positive_flags_on_clean_data(self, adapter):
@@ -261,7 +305,8 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
         result = adapter.parse(self.PAIRED_CSV)
         acc_ids = {a["account_id"] for a in result["accounts"]}
         internal = [
-            t for t in result["transactions"]
+            t
+            for t in result["transactions"]
             if t["from_account"] in acc_ids and t["to_account"] in acc_ids
         ]
         # pair_001: ACCT_X -> ACCT_Y, pair_002: ACCT_Y -> ACCT_Z
@@ -277,8 +322,7 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
         result = adapter.parse(self.PAIRED_CSV)
         # ext_003 is unpaired D from ACCT_X
         ext_txns = [
-            t for t in result["transactions"]
-            if t["to_account"].startswith("EXT_")
+            t for t in result["transactions"] if t["to_account"].startswith("EXT_")
         ]
         assert len(ext_txns) == 1
         assert ext_txns[0]["from_account"] == "ACCT_X"
@@ -301,7 +345,8 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
         result = adapter.parse(self.FLOW_CSV)
         acc_ids = {a["account_id"] for a in result["accounts"]}
         internal = [
-            t for t in result["transactions"]
+            t
+            for t in result["transactions"]
             if t["from_account"] in acc_ids and t["to_account"] in acc_ids
         ]
         # D(ACCT_P, 1000) matches C(ACCT_Q, 1000)
@@ -402,7 +447,8 @@ class TestMuleCSVAdapterRealData:
         result = adapter.parse(real_csv_content)
         acc_ids = {a["account_id"] for a in result["accounts"]}
         internal = [
-            t for t in result["transactions"]
+            t
+            for t in result["transactions"]
             if t["from_account"] in acc_ids and t["to_account"] in acc_ids
         ]
         # Flow inference should create internal links between accounts
@@ -431,6 +477,7 @@ class TestCSVUploadEndpoints:
     async def client(self):
         from httpx import AsyncClient, ASGITransport
         from api.app import app
+
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as c:
             yield c
@@ -470,6 +517,8 @@ class TestCSVUploadEndpoints:
         assert len(data["preview_rows"]) <= 50
         assert "anomaly_flags" in data
         assert "account_summaries" in data
+        assert "data_quality" in data
+        assert data["data_quality"]["source_rows"] == 10
 
     @pytest.mark.asyncio
     async def test_upload_rejects_non_csv(self, client):

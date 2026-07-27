@@ -7,8 +7,7 @@ Supports JSON and CSV formats from IOB Core Banking System.
 import json
 import csv
 from typing import List, Dict
-from datetime import datetime
-from pathlib import Path
+from datetime import datetime, timezone
 
 
 def parse_cbs_log_line(line: str) -> Dict:
@@ -16,16 +15,16 @@ def parse_cbs_log_line(line: str) -> Dict:
     try:
         raw = json.loads(line)
         return {
-            "txn_id":       raw.get("txn_ref") or raw.get("txn_id", ""),
+            "txn_id": raw.get("txn_ref") or raw.get("txn_id", ""),
             "from_account": raw.get("dr_account") or raw.get("from_account", ""),
-            "to_account":   raw.get("cr_account") or raw.get("to_account", ""),
-            "amount":       float(raw.get("amount", 0)),
-            "timestamp":    raw.get("timestamp", datetime.utcnow().isoformat()),
-            "device_id":    raw.get("device_id", "UNKNOWN"),
-            "ip_address":   raw.get("ip_address", "0.0.0.0"),
-            "upi_id":       raw.get("upi_id", ""),
-            "txn_type":     raw.get("txn_type", "UPI_PUSH"),
-            "pattern":      "NORMAL",
+            "to_account": raw.get("cr_account") or raw.get("to_account", ""),
+            "amount": float(raw.get("amount", 0)),
+            "timestamp": raw.get("timestamp", datetime.now(timezone.utc).isoformat()),
+            "device_id": raw.get("device_id", "UNKNOWN"),
+            "ip_address": raw.get("ip_address", "0.0.0.0"),
+            "upi_id": raw.get("upi_id", ""),
+            "txn_type": raw.get("txn_type", "UPI_PUSH"),
+            "pattern": "NORMAL",
             "is_suspicious": False,
         }
     except (json.JSONDecodeError, ValueError):
@@ -52,19 +51,21 @@ def parse_upi_csv(filepath: str) -> List[Dict]:
         reader = csv.DictReader(f)
         for row in reader:
             try:
-                transactions.append({
-                    "txn_id":        row.get("Transaction ID", ""),
-                    "from_account":  row.get("Debit Account", ""),
-                    "to_account":    row.get("Credit Account", ""),
-                    "amount":        float(row.get("Amount", 0)),
-                    "timestamp":     row.get("Timestamp", ""),
-                    "device_id":     row.get("Device ID", "UNKNOWN"),
-                    "ip_address":    row.get("IP Address", "0.0.0.0"),
-                    "upi_id":        row.get("UPI ID", ""),
-                    "txn_type":      "UPI_PUSH",
-                    "pattern":       "NORMAL",
-                    "is_suspicious": False,
-                })
+                transactions.append(
+                    {
+                        "txn_id": row.get("Transaction ID", ""),
+                        "from_account": row.get("Debit Account", ""),
+                        "to_account": row.get("Credit Account", ""),
+                        "amount": float(row.get("Amount", 0)),
+                        "timestamp": row.get("Timestamp", ""),
+                        "device_id": row.get("Device ID", "UNKNOWN"),
+                        "ip_address": row.get("IP Address", "0.0.0.0"),
+                        "upi_id": row.get("UPI ID", ""),
+                        "txn_type": "UPI_PUSH",
+                        "pattern": "NORMAL",
+                        "is_suspicious": False,
+                    }
+                )
             except (ValueError, KeyError):
                 continue
     return transactions

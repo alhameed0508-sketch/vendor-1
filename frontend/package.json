@@ -3,11 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@types/cytoscape": "^3.19.14",
-    "@types/d3": "^7.4.3",
-    "@types/react": "^18.2.0",
-    "ajv": "^8.12.0",
-    "axios": "^1.6.5",
     "cmdk": "^1.1.1",
     "cytoscape": "^3.27.0",
     "cytoscape-cola": "^2.5.1",
@@ -18,12 +13,10 @@
     "lucide-react": "^1.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.3",
-    "react-scripts": "5.0.1",
-    "react-simple-maps": "^3.0.0",
+    "react-router-dom": "^6.30.4",
     "recharts": "^2.10.3",
     "sonner": "^2.0.7",
-    "typescript": "^5.3.3"
+    "topojson-client": "^3.1.0"
   },
   "scripts": {
     "start": "craco start",
@@ -46,6 +39,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1"
+    "@testing-library/user-event": "^14.6.1",
+    "react-scripts": "5.0.1"
   }
 }

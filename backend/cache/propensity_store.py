@@ -4,8 +4,7 @@ Stores rolling mule propensity scores per account with 30-day TTL.
 """
 
 import logging
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -37,13 +36,16 @@ class PropensityStore:
                 self._use_redis = True
                 logger.info("PropensityStore: using Redis backend")
             except Exception:
-                logger.info("PropensityStore: Redis unavailable, using in-memory fallback")
+                logger.info(
+                    "PropensityStore: Redis unavailable, using in-memory fallback"
+                )
 
     def get(self, account_id: str) -> Optional[PropensityRecord]:
         """Retrieve propensity record for an account."""
         if self._use_redis:
             try:
                 import json
+
                 data = self._redis.get(f"{KEY_PREFIX}{account_id}")
                 if data:
                     parsed = json.loads(data)
@@ -70,13 +72,16 @@ class PropensityStore:
         if self._use_redis:
             try:
                 import json
-                data = json.dumps({
-                    "account_id": record.account_id,
-                    "score": record.score,
-                    "window_scores": list(record.window_scores),
-                    "signal_breakdown": list(record.signal_breakdown),
-                    "updated_at": record.updated_at,
-                })
+
+                data = json.dumps(
+                    {
+                        "account_id": record.account_id,
+                        "score": record.score,
+                        "window_scores": list(record.window_scores),
+                        "signal_breakdown": list(record.signal_breakdown),
+                        "updated_at": record.updated_at,
+                    }
+                )
                 self._redis.setex(
                     f"{KEY_PREFIX}{record.account_id}",
                     self._ttl,

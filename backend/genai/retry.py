@@ -57,14 +57,20 @@ def with_retry(
             if attempt == max_attempts:
                 logger.error(
                     "[%s] LLM call failed after %d attempts: %s",
-                    provider_name, max_attempts, exc,
+                    provider_name,
+                    max_attempts,
+                    exc,
                 )
                 raise
 
             delay = base_delay * (2 ** (attempt - 1))
             logger.warning(
                 "[%s] LLM call failed (attempt %d/%d), retrying in %.1fs: %s",
-                provider_name, attempt, max_attempts, delay, exc,
+                provider_name,
+                attempt,
+                max_attempts,
+                delay,
+                exc,
             )
             time.sleep(delay)
 

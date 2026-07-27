@@ -23,9 +23,7 @@ class OpenAIProvider(LLMProvider):
         try:
             from openai import OpenAI
         except ImportError as exc:
-            raise ImportError(
-                "openai package required: pip install openai"
-            ) from exc
+            raise ImportError("openai package required: pip install openai") from exc
 
         self._client = OpenAI(api_key=api_key)
         self._model = model
@@ -44,10 +42,7 @@ class OpenAIProvider(LLMProvider):
     ) -> LLMResponse:
         start = time.perf_counter()
 
-        oai_messages = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-        ]
+        oai_messages = [{"role": m.role, "content": m.content} for m in messages]
 
         response = with_retry(
             lambda: self._client.chat.completions.create(

@@ -3,7 +3,7 @@ Consistent API response envelope helpers.
 All API responses use this format for uniformity.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi.responses import JSONResponse
@@ -17,7 +17,7 @@ def success_response(data: Any, status_code: int = 200) -> JSONResponse:
             "success": True,
             "data": data,
             "error": None,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 
@@ -42,7 +42,7 @@ def paginated_response(
                 "offset": offset,
                 "count": len(items),
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 
@@ -64,6 +64,6 @@ def error_response(
                 "message": message,
                 "details": details,
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )

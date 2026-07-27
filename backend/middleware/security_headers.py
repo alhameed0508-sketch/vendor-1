@@ -1,6 +1,7 @@
 """
 Security headers middleware — adds HSTS, CSP, X-Content-Type-Options, etc.
 """
+
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response

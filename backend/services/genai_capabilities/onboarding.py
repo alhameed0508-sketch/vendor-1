@@ -15,8 +15,8 @@ from .prompts import SYSTEM_PROMPT_ONBOARDING
 logger = logging.getLogger(__name__)
 
 # -- LLM generation parameters for onboarding risk explanation ----------------
-ONBOARDING_TEMPERATURE = 0.3   # Slightly creative for readable explanations
-ONBOARDING_MAX_TOKENS = 1024   # Max response length for onboarding output
+ONBOARDING_TEMPERATURE = 0.3  # Slightly creative for readable explanations
+ONBOARDING_MAX_TOKENS = 1024  # Max response length for onboarding output
 
 
 def explain_onboarding(
@@ -65,13 +65,13 @@ def _build_onboarding_prompt(assessment: Dict) -> str:
     reason_codes = assessment.get("reason_codes", [])
     return f"""Explain this onboarding risk assessment in plain English:
 
-Account: {_mask(assessment.get('account_id', 'N/A'))}
-Risk Score: {assessment.get('risk_score', 0):.2f}
-Risk Level: {assessment.get('risk_level', 'N/A')}
-Recommendation: {assessment.get('recommendation', 'N/A')}
+Account: {_mask(assessment.get("account_id", "N/A"))}
+Risk Score: {assessment.get("risk_score", 0):.2f}
+Risk Level: {assessment.get("risk_level", "N/A")}
+Recommendation: {assessment.get("recommendation", "N/A")}
 
 Triggered Reason Codes:
-{chr(10).join(f'  - {rc}' for rc in reason_codes)}
+{chr(10).join(f"  - {rc}" for rc in reason_codes)}
 
 Signal Breakdown:
 {chr(10).join(signal_lines)}
@@ -88,9 +88,7 @@ def _template_onboarding_explanation(assessment: Dict) -> ChatResponse:
     signals = assessment.get("signals", [])
 
     # Sort signals by weighted score descending
-    top_signals = sorted(
-        signals, key=lambda s: s.get("weighted", 0), reverse=True
-    )[:5]
+    top_signals = sorted(signals, key=lambda s: s.get("weighted", 0), reverse=True)[:5]
 
     lines = [
         f"Risk Assessment: {risk_level} ({risk_score:.0%} risk score)",

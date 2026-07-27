@@ -12,9 +12,8 @@ Feedback types:
 
 from __future__ import annotations
 import json
-import os
 from dataclasses import dataclass, asdict, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -54,7 +53,7 @@ class FeedbackRecord:
 
     def __post_init__(self):
         if not self.created_at:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = datetime.now(timezone.utc).isoformat()
 
 
 class FeedbackStore:
@@ -101,14 +100,15 @@ class FeedbackStore:
         records = self.load_all()
         if len(records) < cfg.min_feedback_for_adjustment:
             return 0.0
-        recent = records[-cfg.recent_window:]
+        recent = records[-cfg.recent_window :]
 
-        total_weight = sum(getattr(r, 'confidence_weight', 1.0) for r in recent)
+        total_weight = sum(getattr(r, "confidence_weight", 1.0) for r in recent)
         if total_weight == 0:
             return 0.0
         fp_weight = sum(
-            getattr(r, 'confidence_weight', 1.0)
-            for r in recent if not r.is_true_positive
+            getattr(r, "confidence_weight", 1.0)
+            for r in recent
+            if not r.is_true_positive
         )
         fp_rate = fp_weight / total_weight
 
@@ -162,6 +162,7 @@ class ActiveLearningEngine:
         true_positive_accounts: List[str] = None,
     ) -> FeedbackRecord:
         import uuid
+
         record = FeedbackRecord(
             feedback_id=f"FB_{uuid.uuid4().hex[:8].upper()}",
             alert_id=alert_id,
@@ -198,10 +199,7 @@ class ActiveLearningEngine:
         Alerts with risk_score closest to 0.5 are most uncertain and
         benefit most from investigator feedback.
         """
-        scored = [
-            (abs(a.get("risk_score", 0.5) - 0.5), a)
-            for a in alerts
-        ]
+        scored = [(abs(a.get("risk_score", 0.5) - 0.5), a) for a in alerts]
         scored.sort(key=lambda x: x[0])
         return [a for _, a in scored[:k]]
 

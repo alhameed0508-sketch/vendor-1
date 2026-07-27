@@ -7,8 +7,8 @@ across restarts; otherwise, an in-memory dict keeps the demo working.
 """
 
 import logging
+import json
 from typing import Dict, List, Optional, Any
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,11 @@ class PersistenceLayer:
         # This avoids the slow driver timeout when Neo4j isn't running
         neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
         host = neo4j_uri.split("://")[-1].split(":")[0]
-        port = int(neo4j_uri.split(":")[-1].split("/")[0]) if ":" in neo4j_uri.split("://")[-1] else 7687
+        port = (
+            int(neo4j_uri.split(":")[-1].split("/")[0])
+            if ":" in neo4j_uri.split("://")[-1]
+            else 7687
+        )
         try:
             sock = socket.create_connection((host, port), timeout=1)
             sock.close()
@@ -55,10 +59,13 @@ class PersistenceLayer:
                     "Production requires a running Neo4j instance. "
                     "In-memory fallback is not available in production."
                 )
-            logger.info("Neo4j not reachable at %s:%s — using in-memory fallback", host, port)
+            logger.info(
+                "Neo4j not reachable at %s:%s — using in-memory fallback", host, port
+            )
             return
         try:
             from graph_engine.neo4j_client import Neo4jClient
+
             client = Neo4jClient()
             if client.verify_connectivity():
                 self._neo4j = client
@@ -79,7 +86,9 @@ class PersistenceLayer:
                     f"Neo4j connection failed: {exc}. "
                     "Production requires a running Neo4j instance."
                 )
-            logger.info("Neo4j import/connect failed (%s) — using in-memory fallback", exc)
+            logger.info(
+                "Neo4j import/connect failed (%s) — using in-memory fallback", exc
+            )
 
     @property
     def is_persistent(self) -> bool:
@@ -93,6 +102,21 @@ class PersistenceLayer:
                 self._neo4j.upsert_alert(alert)
         self._memory["alerts"] = alerts
 
+    @staticmethod
+    def _restore_alert(props: Dict) -> Dict:
+        """Restore the full alert payload persisted as Neo4j JSON."""
+        payload_json = props.get("payload_json")
+        if not payload_json:
+            return props
+        try:
+            restored = json.loads(payload_json)
+        except (json.JSONDecodeError, TypeError):
+            return props
+        for field in ("status", "investigator_notes"):
+            if field in props:
+                restored[field] = props[field]
+        return restored
+
     def get_alerts(
         self,
         severity: Optional[str] = None,
@@ -102,7 +126,7 @@ class PersistenceLayer:
         if self._use_neo4j:
             rows = self._neo4j.get_alerts(severity=severity, status=status, limit=limit)
             if rows:
-                return [r["props"] for r in rows]
+                return [self._restore_alert(r["props"]) for r in rows]
 
         # In-memory fallback
         alerts = list(self._memory["alerts"])
@@ -116,7 +140,7 @@ class PersistenceLayer:
         if self._use_neo4j:
             result = self._neo4j.get_alert(alert_id)
             if result:
-                return result
+                return self._restore_alert(result)
 
         for a in self._memory["alerts"]:
             if a["alert_id"] == alert_id:
@@ -127,7 +151,9 @@ class PersistenceLayer:
         self, alert_id: str, status: Optional[str] = None, notes: Optional[str] = None
     ) -> Optional[Dict]:
         if self._use_neo4j:
-            result = self._neo4j.update_alert_status(alert_id, status=status, notes=notes)
+            result = self._neo4j.update_alert_status(
+                alert_id, status=status, notes=notes
+            )
             if result:
                 # Immutable update of in-memory copy
                 self._memory["alerts"] = [
@@ -140,7 +166,7 @@ class PersistenceLayer:
                     else a
                     for a in self._memory["alerts"]
                 ]
-                return result
+                return self._restore_alert(result)
 
         # In-memory fallback — immutable update
         updated = None
@@ -178,6 +204,8 @@ class PersistenceLayer:
         self._memory["dataset"] = dataset
 
     def clear(self):
+        if self._use_neo4j:
+            self._neo4j.delete_all_alerts()
         self._memory["alerts"] = []
         self._memory["dataset"] = None
 
@@ -200,7 +228,9 @@ class PersistenceLayer:
         if self._use_neo4j:
             try:
                 return self._neo4j.find_flagged_neighbors(
-                    device_id=device_id, ip_address=ip_address, phone=phone,
+                    device_id=device_id,
+                    ip_address=ip_address,
+                    phone=phone,
                 )
             except Exception as exc:
                 logger.warning("Graph cross-check failed: %s", exc)

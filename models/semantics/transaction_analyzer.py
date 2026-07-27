@@ -26,23 +26,59 @@ STRUCTURING_THRESHOLD = 50_000  # INR threshold for CTR reporting
 STRUCTURING_BAND = (40_000, 49_999)  # Suspicious range just below threshold
 ROUND_AMOUNT_MULTIPLES = (1000, 5000, 10000, 25000)
 
-SUSPICIOUS_NARRATION_KEYWORDS = frozenset({
-    "loan", "commission", "crypto", "bitcoin", "usdt", "tether",
-    "investment return", "forex", "trading profit", "easy money",
-    "part time", "work from home", "telegram", "whatsapp job",
-    "safe account", "rbi verification", "tax refund", "insurance claim",
-    "lottery", "prize", "gift", "donation", "hawala",
-})
+SUSPICIOUS_NARRATION_KEYWORDS = frozenset(
+    {
+        "loan",
+        "commission",
+        "crypto",
+        "bitcoin",
+        "usdt",
+        "tether",
+        "investment return",
+        "forex",
+        "trading profit",
+        "easy money",
+        "part time",
+        "work from home",
+        "telegram",
+        "whatsapp job",
+        "safe account",
+        "rbi verification",
+        "tax refund",
+        "insurance claim",
+        "lottery",
+        "prize",
+        "gift",
+        "donation",
+        "hawala",
+    }
+)
 
-CRYPTO_MERCHANT_PATTERNS = frozenset({
-    "wazirx", "coindcx", "mudrex", "coinswitch", "zebpay",
-    "binance", "kucoin", "bybit",
-})
+CRYPTO_MERCHANT_PATTERNS = frozenset(
+    {
+        "wazirx",
+        "coindcx",
+        "mudrex",
+        "coinswitch",
+        "zebpay",
+        "binance",
+        "kucoin",
+        "bybit",
+    }
+)
 
-GAMING_MERCHANT_PATTERNS = frozenset({
-    "dream11", "mpl", "winzo", "parimatch", "mahadev",
-    "betway", "1xbet", "stake",
-})
+GAMING_MERCHANT_PATTERNS = frozenset(
+    {
+        "dream11",
+        "mpl",
+        "winzo",
+        "parimatch",
+        "mahadev",
+        "betway",
+        "1xbet",
+        "stake",
+    }
+)
 
 SIGNAL_WEIGHTS = {
     "round_amount": 0.30,
@@ -90,7 +126,8 @@ class TransactionSemanticsAnalyzer:
         round_score = self._score_round_amounts(outgoing)
         if round_score > 0.3:
             near_threshold = sum(
-                1 for t in outgoing
+                1
+                for t in outgoing
                 if STRUCTURING_BAND[0] <= float(t["amount"]) <= STRUCTURING_BAND[1]
             )
             reason_codes.append(
@@ -108,22 +145,18 @@ class TransactionSemanticsAnalyzer:
         # TS03: Narration keyword analysis
         narration_score = self._score_narrations(outgoing)
         if narration_score > 0.3:
-            reason_codes.append(
-                "TS03: Suspicious narration keywords detected"
-            )
+            reason_codes.append("TS03: Suspicious narration keywords detected")
 
         # TS04: Crypto/gaming wallet interaction
         crypto_score = self._score_crypto_gaming(outgoing)
         if crypto_score > 0.3:
-            reason_codes.append(
-                "TS04: Crypto/gaming platform interaction detected"
-            )
+            reason_codes.append("TS04: Crypto/gaming platform interaction detected")
 
         composite = (
-            SIGNAL_WEIGHTS["round_amount"] * round_score +
-            SIGNAL_WEIGHTS["upi_pattern"] * upi_score +
-            SIGNAL_WEIGHTS["narration"] * narration_score +
-            SIGNAL_WEIGHTS["crypto_gaming"] * crypto_score
+            SIGNAL_WEIGHTS["round_amount"] * round_score
+            + SIGNAL_WEIGHTS["upi_pattern"] * upi_score
+            + SIGNAL_WEIGHTS["narration"] * narration_score
+            + SIGNAL_WEIGHTS["crypto_gaming"] * crypto_score
         )
 
         return SemanticsResult(
@@ -192,12 +225,14 @@ class TransactionSemanticsAnalyzer:
             total_with_upi += 1
 
             # Numeric-heavy UPI handles (>60% digits, length >10)
-            digit_ratio = sum(1 for c in upi_handle if c.isdigit()) / max(len(upi_handle), 1)
+            digit_ratio = sum(1 for c in upi_handle if c.isdigit()) / max(
+                len(upi_handle), 1
+            )
             if digit_ratio > 0.6 and len(upi_handle) > 10:
                 suspicious_count += 1
 
             # Random-looking handles (no recognizable words)
-            if re.match(r'^[a-z0-9]{10,}@', upi_handle):
+            if re.match(r"^[a-z0-9]{10,}@", upi_handle):
                 suspicious_count += 1
 
         if total_with_upi == 0:

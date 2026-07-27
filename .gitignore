@@ -13,6 +13,8 @@ __pycache__/
 dist/
 build/
 *.egg
+.tmp*/
+.tmp-*
 
 # Node
 node_modules/

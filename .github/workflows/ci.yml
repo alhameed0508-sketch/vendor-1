@@ -51,14 +51,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements*.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Install CPU-only PyTorch
-        run: pip install torch==2.1.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+        run: pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
 
-      - name: Install backend dependencies
-        run: pip install -r backend/requirements.txt
+      - name: Install backend test dependencies
+        run: pip install -r backend/requirements-dev.txt
 
       - name: Run backend tests with coverage
         run: |
@@ -114,19 +114,18 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install safety
-        run: pip install safety
+      - name: Install pip-audit
+        run: pip install pip-audit
 
       - name: Audit Python dependencies
-        run: safety check -r backend/requirements.txt --output text || true
-        # Non-blocking — logs vulnerabilities but doesn't fail build
+        run: pip-audit -r backend/requirements.txt
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Audit npm dependencies
-        run: cd frontend && npm audit --production || true
+        run: cd frontend && npm audit --omit=dev --audit-level=high
 
   # ── Docker: Build + Push ──────────────────────────────────────
   docker-build:
@@ -151,7 +150,8 @@ jobs:
       - name: Build backend image
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: .
+          file: ./backend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend:${{ github.sha }}

@@ -7,9 +7,8 @@ Uses the latest kpi_snapshots row as the current state.
 import logging
 from typing import Dict
 
-from sqlalchemy import text
 from sqlalchemy.engine import Engine
-from infra.database.postgres import kpi_snapshots
+from backend.infra.database.postgres import kpi_snapshots
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +32,7 @@ class PgKPIRepository:
         """Return current KPI snapshot (latest row)."""
         with self._engine.connect() as conn:
             row = conn.execute(
-                kpi_snapshots.select()
-                .order_by(kpi_snapshots.c.id.desc())
-                .limit(1)
+                kpi_snapshots.select().order_by(kpi_snapshots.c.id.desc()).limit(1)
             ).first()
         if row is None:
             return dict(_DEFAULT_KPI)
@@ -48,9 +45,7 @@ class PgKPIRepository:
         """Update the latest KPI snapshot row with new values."""
         with self._engine.connect() as conn:
             row = conn.execute(
-                kpi_snapshots.select()
-                .order_by(kpi_snapshots.c.id.desc())
-                .limit(1)
+                kpi_snapshots.select().order_by(kpi_snapshots.c.id.desc()).limit(1)
             ).first()
 
             if row is None:
@@ -70,9 +65,7 @@ class PgKPIRepository:
         """Increment a KPI counter atomically."""
         with self._engine.connect() as conn:
             row = conn.execute(
-                kpi_snapshots.select()
-                .order_by(kpi_snapshots.c.id.desc())
-                .limit(1)
+                kpi_snapshots.select().order_by(kpi_snapshots.c.id.desc()).limit(1)
             ).first()
 
             if row is None:

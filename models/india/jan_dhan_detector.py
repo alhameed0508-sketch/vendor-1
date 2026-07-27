@@ -23,11 +23,12 @@ from typing import Dict, List, Tuple
 @dataclass(frozen=True)
 class JanDhanRiskResult:
     """Immutable assessment result for a Jan Dhan / BSBDA account."""
+
     account_id: str
     is_bsbda: bool
-    activity_spike_score: float   # 0.0-1.0
-    reason_codes: tuple           # tuple of reason-code strings
-    composite_score: float        # 0.0-1.0 weighted blend
+    activity_spike_score: float  # 0.0-1.0
+    reason_codes: tuple  # tuple of reason-code strings
+    composite_score: float  # 0.0-1.0 weighted blend
 
 
 # Signal weights
@@ -39,10 +40,19 @@ _WEIGHTS: Dict[str, float] = {
 }
 
 # Tier-1 cities in India (metro / urban hubs)
-_TIER1_CITIES = frozenset({
-    "mumbai", "delhi", "bangalore", "bengaluru", "hyderabad",
-    "chennai", "kolkata", "pune", "ahmedabad",
-})
+_TIER1_CITIES = frozenset(
+    {
+        "mumbai",
+        "delhi",
+        "bangalore",
+        "bengaluru",
+        "hyderabad",
+        "chennai",
+        "kolkata",
+        "pune",
+        "ahmedabad",
+    }
+)
 
 
 def _is_bsbda(account: Dict) -> bool:
@@ -101,9 +111,7 @@ class JanDhanDetector:
             reasons.append(jd04_reason)
 
         # ── Composite ───────────────────────────────────────────────
-        composite = sum(
-            _WEIGHTS[code] * score for code, score in signals.items()
-        )
+        composite = sum(_WEIGHTS[code] * score for code, score in signals.items())
         composite = min(composite, 1.0)
 
         # Activity spike is max of JD01 and JD02
@@ -182,8 +190,7 @@ class JanDhanDetector:
         if len(tier1_senders) >= 3:
             score = min(1.0, len(tier1_senders) / 6.0)
             return score, (
-                f"JD03: BSBDA receiving from {len(tier1_senders)} "
-                f"tier-1 city accounts"
+                f"JD03: BSBDA receiving from {len(tier1_senders)} tier-1 city accounts"
             )
         return 0.0, ""
 
@@ -199,7 +206,9 @@ class JanDhanDetector:
 
         urban_counterparties: set = set()
         for txn in transactions:
-            cp_city = (txn.get("counterparty_city") or txn.get("sender_city") or "").lower()
+            cp_city = (
+                txn.get("counterparty_city") or txn.get("sender_city") or ""
+            ).lower()
             if cp_city in _TIER1_CITIES:
                 cp_id = txn.get("from_account") or txn.get("to_account") or ""
                 urban_counterparties.add(cp_id)

@@ -27,8 +27,9 @@ def mask_account_id(value) -> str:
 @dataclass(frozen=True)
 class TriageResult:
     """Immutable result from LLM triage of a cluster."""
+
     cluster_id: str
-    llm_assessment: str        # "HIGH" | "MEDIUM" | "LOW"
+    llm_assessment: str  # "HIGH" | "MEDIUM" | "LOW"
     confidence_adjustment: float  # -0.10 to +0.10
     reasoning: str
     provider: str
@@ -52,6 +53,7 @@ class TriageResult:
 @dataclass(frozen=True)
 class PatternDiscovery:
     """Immutable result from LLM pattern discovery."""
+
     suggested_patterns: List[Dict]
     risk_indicators: List[str]
     novel_signals: List[str]
@@ -75,6 +77,7 @@ class PatternDiscovery:
 @dataclass(frozen=True)
 class ForensicAnalysis:
     """Immutable result from LLM forensic analysis."""
+
     alert_id: str
     executive_brief: str
     detailed_narrative: str
@@ -104,6 +107,7 @@ class ForensicAnalysis:
 @dataclass(frozen=True)
 class ChatResponse:
     """Immutable chat response."""
+
     message: str
     provider: str
     model: str

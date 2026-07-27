@@ -17,19 +17,20 @@ Signals:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Tuple
 
 
 @dataclass(frozen=True)
 class UPIComplianceResult:
     """Immutable result of a UPI compliance assessment."""
+
     account_id: str
     annual_upi_credit: float
-    limit_proximity_pct: float     # How close to Rs 25 lakh ceiling (0-100)
+    limit_proximity_pct: float  # How close to Rs 25 lakh ceiling (0-100)
     cooling_period_applicable: bool
-    flags: tuple                    # tuple of flag strings
-    composite_score: float          # 0.0-1.0
+    flags: tuple  # tuple of flag strings
+    composite_score: float  # 0.0-1.0
 
 
 # Signal weights
@@ -55,9 +56,9 @@ def _parse_ts(raw) -> datetime:
 class UPIComplianceMonitor:
     """Monitor UPI transactions for regulatory compliance signals."""
 
-    ANNUAL_UPI_LIMIT: float = 2_500_000.0   # Rs 25 lakh (proposed RBI rule)
-    COOLING_THRESHOLD: float = 10_000.0      # Rs 10,000 cooling period threshold
-    COOLING_PERIOD_HOURS: int = 4            # 4-hour cooling period window
+    ANNUAL_UPI_LIMIT: float = 2_500_000.0  # Rs 25 lakh (proposed RBI rule)
+    COOLING_THRESHOLD: float = 10_000.0  # Rs 10,000 cooling period threshold
+    COOLING_PERIOD_HOURS: int = 4  # 4-hour cooling period window
 
     def assess(
         self,
@@ -68,8 +69,7 @@ class UPIComplianceMonitor:
         acc_id = account.get("account_id", "UNKNOWN")
 
         upi_txns = [
-            t for t in transactions
-            if (t.get("channel") or "").upper() == "UPI"
+            t for t in transactions if (t.get("channel") or "").upper() == "UPI"
         ]
 
         signals: Dict[str, float] = {}
@@ -106,15 +106,15 @@ class UPIComplianceMonitor:
             flags.append(uc05_flag)
 
         # ── Composite ───────────────────────────────────────────────
-        composite = sum(
-            _WEIGHTS[code] * score for code, score in signals.items()
-        )
+        composite = sum(_WEIGHTS[code] * score for code, score in signals.items())
         composite = min(composite, 1.0)
 
         proximity_pct = (annual_credit / self.ANNUAL_UPI_LIMIT) * 100.0
         proximity_pct = min(proximity_pct, 100.0)
 
-        cooling_applicable = signals.get("UC02", 0.0) > 0 or signals.get("UC03", 0.0) > 0
+        cooling_applicable = (
+            signals.get("UC02", 0.0) > 0 or signals.get("UC03", 0.0) > 0
+        )
 
         return UPIComplianceResult(
             account_id=acc_id,
@@ -143,7 +143,9 @@ class UPIComplianceMonitor:
 
         # Rule 1: Amount exceeds cooling threshold
         if amount >= self.COOLING_THRESHOLD:
-            beneficiary = transaction.get("to_account") or transaction.get("beneficiary") or ""
+            beneficiary = (
+                transaction.get("to_account") or transaction.get("beneficiary") or ""
+            )
             known = account.get("known_beneficiaries") or []
             is_new = beneficiary not in known
 
@@ -156,7 +158,8 @@ class UPIComplianceMonitor:
 
         # Rule 2: Rapid successive large payments
         recent_upi = [
-            t for t in recent_transactions
+            t
+            for t in recent_transactions
             if (t.get("channel") or "").upper() == "UPI"
             and float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
         ]
@@ -186,10 +189,14 @@ class UPIComplianceMonitor:
 
         proximity = annual_credit / self.ANNUAL_UPI_LIMIT
         score = min(1.0, (proximity - 0.7) / 0.3)  # Scale 0.7-1.0 -> 0-1
-        return score, (
-            f"UC01: Annual UPI credit Rs {annual_credit:,.0f} is "
-            f"{proximity:.0%} of Rs {self.ANNUAL_UPI_LIMIT:,.0f} ceiling"
-        ), annual_credit
+        return (
+            score,
+            (
+                f"UC01: Annual UPI credit Rs {annual_credit:,.0f} is "
+                f"{proximity:.0%} of Rs {self.ANNUAL_UPI_LIMIT:,.0f} ceiling"
+            ),
+            annual_credit,
+        )
 
     def _uc02_cooling_flag(
         self,
@@ -197,8 +204,7 @@ class UPIComplianceMonitor:
     ) -> Tuple[float, str]:
         """UC02: Transactions > Rs 10,000 flagged for cooling period."""
         large_txns = [
-            t for t in upi_txns
-            if float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
+            t for t in upi_txns if float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
         ]
 
         if not large_txns:
@@ -242,8 +248,7 @@ class UPIComplianceMonitor:
     ) -> Tuple[float, str]:
         """UC04: Multiple UPI collect requests from same handle."""
         collect_txns = [
-            t for t in upi_txns
-            if (t.get("upi_type") or "").upper() == "COLLECT"
+            t for t in upi_txns if (t.get("upi_type") or "").upper() == "COLLECT"
         ]
         if not collect_txns:
             return 0.0, ""
@@ -264,10 +269,7 @@ class UPIComplianceMonitor:
             return 0.0, ""
 
         score = min(1.0, max_count / 8.0)
-        return score, (
-            f"UC04: {max_count} collect requests from handle "
-            f"'{max_handle}'"
-        )
+        return score, (f"UC04: {max_count} collect requests from handle '{max_handle}'")
 
     @staticmethod
     def _uc05_p2p_collect_migration(

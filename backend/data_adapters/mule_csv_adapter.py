@@ -28,11 +28,29 @@ CHANNEL_TYPE_MAP = {
     "UPI": "UPI_PUSH",
     "MB": "MOBILE_BANKING",
     "IMPS_other": "IMPS",
+    "IMPS": "IMPS",
     "NEFT": "NEFT",
     "RTGS": "RTGS",
+    "ATM": "ATM_WITHDRAWAL",
+    "BNA": "CASH_DEPOSIT",
 }
 
 CBS_DATE_FORMAT = "%d/%m/%Y %H:%M"
+REQUIRED_CBS_COLUMNS = {
+    "TRAN_DATE",
+    "TRAN_ID",
+    "TRAN_TYPE",
+    "TRAN_SUB_TYPE",
+    "PART_TRAN_TYPE",
+    "ACID",
+    "TRAN_AMT",
+    "balance",
+    "channel",
+    "CIF_ID",
+    "ACCT_OPN_DATE",
+    "LIEN_AMT",
+    "customer_age",
+}
 
 
 def row_date_key(row: Dict) -> str:
@@ -43,9 +61,7 @@ def row_date_key(row: Dict) -> str:
 class MuleCSVAdapter:
     """Parses pipe-delimited CBS CSV and maps to MuleCatch transaction/account format."""
 
-    def parse(
-        self, content: str, max_rows: int = 50000
-    ) -> Dict[str, List[Dict]]:
+    def parse(self, content: str, max_rows: int = 50000) -> Dict[str, List[Dict]]:
         """
         Parse pipe-delimited CSV content and return MuleCatch-format data.
 
@@ -56,10 +72,15 @@ class MuleCSVAdapter:
         Returns:
             Dict with keys "transactions" and "accounts"
         """
-        raw_rows = self._read_rows(content, max_rows)
-        transactions = self._map_transactions(raw_rows)
+        raw_rows = self._read_rows(content.lstrip("\ufeff"), max_rows)
+        transactions, linkage_strategy = self._map_transactions(raw_rows)
         accounts = self._derive_accounts(raw_rows)
         anomaly_flags = self._detect_anomaly_flags(raw_rows)
+        data_quality = self._build_quality_report(
+            raw_rows,
+            transactions,
+            linkage_strategy,
+        )
 
         logger.info(
             "MuleCSV parsed: %d transactions, %d accounts, %d anomaly flags",
@@ -71,12 +92,18 @@ class MuleCSVAdapter:
             "transactions": transactions,
             "accounts": accounts,
             "anomaly_flags": anomaly_flags,
+            "data_quality": data_quality,
         }
 
     @staticmethod
     def _read_rows(content: str, max_rows: int) -> List[Dict]:
         """Read pipe-delimited CSV rows into list of dicts."""
         reader = csv.DictReader(StringIO(content), delimiter="|")
+        fieldnames = {name.strip() for name in (reader.fieldnames or []) if name}
+        missing = sorted(REQUIRED_CBS_COLUMNS - fieldnames)
+        if missing:
+            raise ValueError(f"Missing required CBS columns: {', '.join(missing)}")
+
         rows: List[Dict] = []
         for i, row in enumerate(reader):
             if max_rows and i >= max_rows:
@@ -96,7 +123,7 @@ class MuleCSVAdapter:
             logger.warning("Invalid CBS date format: %r, using epoch", date_str[:20])
             return datetime(2000, 1, 1)
 
-    def _map_transactions(self, rows: List[Dict]) -> List[Dict]:
+    def _map_transactions(self, rows: List[Dict]) -> Tuple[List[Dict], str]:
         """Map CBS rows to MuleCatch transaction format.
 
         Linking strategy (applied in order of priority):
@@ -109,18 +136,19 @@ class MuleCSVAdapter:
         3. Remaining unmatched rows get an EXT_* counterparty.
         """
         all_acids = set(
-            r.get("ACID", "").strip() for r in rows
-            if r.get("ACID", "").strip()
+            r.get("ACID", "").strip() for r in rows if r.get("ACID", "").strip()
         )
 
         transactions = self._try_tran_id_pairing(rows, all_acids)
 
         # Check if TRAN_ID pairing produced any internal links
         internal_links = sum(
-            1 for t in transactions
+            1
+            for t in transactions
             if t["from_account"] in all_acids and t["to_account"] in all_acids
         )
 
+        linkage_strategy = "TRAN_ID_PAIRING" if internal_links else "EXTERNAL_ONLY"
         if internal_links == 0 and len(all_acids) >= 2:
             # Fallback: amount-based flow inference
             logger.info(
@@ -129,12 +157,91 @@ class MuleCSVAdapter:
                 len(all_acids),
             )
             transactions = self._infer_flow_links(rows, all_acids)
+            inferred_links = sum(
+                1
+                for transaction in transactions
+                if transaction["from_account"] in all_acids
+                and transaction["to_account"] in all_acids
+            )
+            if inferred_links:
+                linkage_strategy = "AMOUNT_DATE_INFERENCE"
 
-        return transactions
+        return transactions, linkage_strategy
 
-    def _try_tran_id_pairing(
-        self, rows: List[Dict], all_acids: set
-    ) -> List[Dict]:
+    @staticmethod
+    def _build_quality_report(
+        rows: List[Dict],
+        transactions: List[Dict],
+        linkage_strategy: str,
+    ) -> Dict:
+        """Describe linkage confidence and limitations of an uploaded dataset."""
+        account_ids = {
+            row.get("ACID", "").strip() for row in rows if row.get("ACID", "").strip()
+        }
+        internal_links = sum(
+            1
+            for transaction in transactions
+            if transaction["from_account"] in account_ids
+            and transaction["to_account"] in account_ids
+        )
+        debit_rows = sum(row.get("PART_TRAN_TYPE", "").strip() == "D" for row in rows)
+        credit_rows = sum(row.get("PART_TRAN_TYPE", "").strip() == "C" for row in rows)
+        transaction_ids = [
+            row.get("TRAN_ID", "").strip()
+            for row in rows
+            if row.get("TRAN_ID", "").strip()
+        ]
+        distinct_timestamps = {
+            row.get("TRAN_DATE", "").strip()
+            for row in rows
+            if row.get("TRAN_DATE", "").strip()
+        }
+        unknown_channels = sorted(
+            {
+                row.get("channel", "").strip()
+                for row in rows
+                if row.get("channel", "").strip() not in CHANNEL_TYPE_MAP
+            }
+        )
+
+        warnings = ["GROUND_TRUTH_LABELS_ABSENT"]
+        if len(distinct_timestamps) <= 1 and len(rows) > 1:
+            warnings.append("TIMESTAMP_VARIETY_LOW")
+        if linkage_strategy == "AMOUNT_DATE_INFERENCE":
+            warnings.append("TRAN_ID_LINKAGE_UNAVAILABLE")
+        smaller_leg = min(debit_rows, credit_rows)
+        larger_leg = max(debit_rows, credit_rows)
+        if larger_leg and smaller_leg / larger_leg < 0.2:
+            warnings.append("DEBIT_CREDIT_IMBALANCE")
+        if unknown_channels:
+            warnings.append("UNKNOWN_CHANNELS")
+
+        if linkage_strategy == "TRAN_ID_PAIRING":
+            linkage_confidence = "HIGH"
+        elif linkage_strategy == "AMOUNT_DATE_INFERENCE":
+            linkage_confidence = "LOW" if len(distinct_timestamps) <= 1 else "MEDIUM"
+        else:
+            linkage_confidence = "LOW"
+
+        return {
+            "source_rows": len(rows),
+            "mapped_transactions": len(transactions),
+            "unique_accounts": len(account_ids),
+            "unique_transaction_ids": len(set(transaction_ids)),
+            "duplicate_transaction_id_rows": len(transaction_ids)
+            - len(set(transaction_ids)),
+            "debit_rows": debit_rows,
+            "credit_rows": credit_rows,
+            "distinct_timestamps": len(distinct_timestamps),
+            "internal_links": internal_links,
+            "external_transactions": len(transactions) - internal_links,
+            "linkage_strategy": linkage_strategy,
+            "linkage_confidence": linkage_confidence,
+            "unknown_channels": unknown_channels,
+            "warnings": warnings,
+        }
+
+    def _try_tran_id_pairing(self, rows: List[Dict], all_acids: set) -> List[Dict]:
         """Attempt to pair CBS rows by TRAN_ID (D + C legs)."""
         tran_groups: Dict[str, List[Dict]] = defaultdict(list)
         for row in rows:
@@ -147,25 +254,25 @@ class MuleCSVAdapter:
 
         for tran_id, group in tran_groups.items():
             debit_legs = [
-                r for r in group
-                if r.get("PART_TRAN_TYPE", "").strip() == "D"
+                r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "D"
             ]
             credit_legs = [
-                r for r in group
-                if r.get("PART_TRAN_TYPE", "").strip() == "C"
+                r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "C"
             ]
 
             if debit_legs and credit_legs:
                 # Paired internal transfer: link D account → C account
                 for d_row in debit_legs:
                     for c_row in credit_legs:
-                        pair_key = (tran_id, d_row.get("ACID", ""), c_row.get("ACID", ""))
+                        pair_key = (
+                            tran_id,
+                            d_row.get("ACID", ""),
+                            c_row.get("ACID", ""),
+                        )
                         if pair_key in seen_tran_ids:
                             continue
                         seen_tran_ids.add(pair_key)
-                        transactions.append(
-                            self._make_txn(d_row, c_row, tran_id)
-                        )
+                        transactions.append(self._make_txn(d_row, c_row, tran_id))
             else:
                 # Single-leg — assign EXT_* counterparty
                 for row in group:
@@ -173,9 +280,7 @@ class MuleCSVAdapter:
 
         return transactions
 
-    def _infer_flow_links(
-        self, rows: List[Dict], all_acids: set
-    ) -> List[Dict]:
+    def _infer_flow_links(self, rows: List[Dict], all_acids: set) -> List[Dict]:
         """Infer internal links by matching debit amounts to credit amounts.
 
         For each unique (date_key, amount) pair, if there are debits from one
@@ -229,12 +334,14 @@ class MuleCSVAdapter:
                 transactions.append(self._make_single_leg_txn(row, tran_id))
 
         internal_count = sum(
-            1 for t in transactions
+            1
+            for t in transactions
             if t["from_account"] in all_acids and t["to_account"] in all_acids
         )
         logger.info(
             "Flow inference: %d internal links inferred across %d accounts",
-            internal_count, len(all_acids),
+            internal_count,
+            len(all_acids),
         )
 
         return transactions
@@ -375,9 +482,7 @@ class MuleCSVAdapter:
             if info["acct_opn_date"] and info["tran_dates"]:
                 try:
                     opn_date = self._parse_date(info["acct_opn_date"])
-                    latest_txn = max(
-                        self._parse_date(d) for d in info["tran_dates"]
-                    )
+                    latest_txn = max(self._parse_date(d) for d in info["tran_dates"])
                     account_age_days = max(0, (latest_txn - opn_date).days)
                 except (ValueError, TypeError):
                     account_age_days = 0
@@ -394,7 +499,8 @@ class MuleCSVAdapter:
             pass_through_days = info["debit_days"] & info["credit_days"]
             pass_through_ratio = (
                 len(pass_through_days) / len(all_active_days)
-                if all_active_days else 0.0
+                if all_active_days
+                else 0.0
             )
 
             # Balance volatility: std dev of balances
@@ -402,7 +508,7 @@ class MuleCSVAdapter:
             if len(balances) >= 2:
                 mean_bal = sum(balances) / len(balances)
                 variance = sum((b - mean_bal) ** 2 for b in balances) / len(balances)
-                balance_volatility = round(variance ** 0.5, 2)
+                balance_volatility = round(variance**0.5, 2)
             else:
                 balance_volatility = 0.0
 
@@ -412,13 +518,15 @@ class MuleCSVAdapter:
             # Debit/credit ratio (near 1.0 = pass-through behavior)
             debit_credit_ratio = (
                 round(info["debit_volume"] / info["credit_volume"], 4)
-                if info["credit_volume"] > 0 else 0.0
+                if info["credit_volume"] > 0
+                else 0.0
             )
 
             # Max single txn ratio (layering: one big inflow then many small outflows)
             max_single_txn_ratio = (
                 round(info["max_txn_amount"] / info["total_amount"], 4)
-                if info["total_amount"] > 0 else 0.0
+                if info["total_amount"] > 0
+                else 0.0
             )
 
             # Generate a deterministic bank/city from ACID hash
@@ -426,33 +534,35 @@ class MuleCSVAdapter:
             banks = ["IOB", "SBI", "HDFC", "ICICI", "PNB", "BOB"]
             cities = ["Chennai", "Mumbai", "Delhi", "Kolkata", "Hyderabad", "Bengaluru"]
 
-            accounts.append({
-                "account_id": acid,
-                "cif_id": info["cif_id"],
-                "role": "UNKNOWN",
-                "is_suspicious": False,
-                "is_fraud": False,
-                "bank": banks[acc_hash % len(banks)],
-                "city": cities[(acc_hash >> 4) % len(cities)],
-                "account_age_days": account_age_days,
-                "kyc_status": "VERIFIED",
-                "customer_age": info["customer_age"],
-                "balance": latest_balance,
-                "lien_amount": info["lien_amount"],
-                "debit_count": info["debit_count"],
-                "credit_count": info["credit_count"],
-                "debit_volume": round(info["debit_volume"], 2),
-                "credit_volume": round(info["credit_volume"], 2),
-                "avg_txn_amount": round(avg_amount, 2),
-                "avg_monthly_txn": avg_monthly_txn,
-                "upi_id": f"{acid[:8].lower()}@upi",
-                # CBS-specific derived features
-                "pass_through_ratio": round(pass_through_ratio, 4),
-                "balance_volatility": balance_volatility,
-                "negative_balance_count": negative_balance_count,
-                "debit_credit_ratio": debit_credit_ratio,
-                "max_single_txn_ratio": max_single_txn_ratio,
-            })
+            accounts.append(
+                {
+                    "account_id": acid,
+                    "cif_id": info["cif_id"],
+                    "role": "UNKNOWN",
+                    "is_suspicious": False,
+                    "is_fraud": False,
+                    "bank": banks[acc_hash % len(banks)],
+                    "city": cities[(acc_hash >> 4) % len(cities)],
+                    "account_age_days": account_age_days,
+                    "kyc_status": "VERIFIED",
+                    "customer_age": info["customer_age"],
+                    "balance": latest_balance,
+                    "lien_amount": info["lien_amount"],
+                    "debit_count": info["debit_count"],
+                    "credit_count": info["credit_count"],
+                    "debit_volume": round(info["debit_volume"], 2),
+                    "credit_volume": round(info["credit_volume"], 2),
+                    "avg_txn_amount": round(avg_amount, 2),
+                    "avg_monthly_txn": avg_monthly_txn,
+                    "upi_id": f"{acid[:8].lower()}@upi",
+                    # CBS-specific derived features
+                    "pass_through_ratio": round(pass_through_ratio, 4),
+                    "balance_volatility": balance_volatility,
+                    "negative_balance_count": negative_balance_count,
+                    "debit_credit_ratio": debit_credit_ratio,
+                    "max_single_txn_ratio": max_single_txn_ratio,
+                }
+            )
 
         return accounts
 
@@ -471,62 +581,63 @@ class MuleCSVAdapter:
             for txn in txns:
                 balance = float(txn.get("balance", 0))
                 if balance < 0:
-                    flags.append({
-                        "account_id": acid,
-                        "flag": "NEGATIVE_BALANCE",
-                        "detail": f"Balance {balance} after txn {txn.get('TRAN_ID', '')[:12]}",
-                    })
+                    flags.append(
+                        {
+                            "account_id": acid,
+                            "flag": "NEGATIVE_BALANCE",
+                            "detail": f"Balance {balance} after txn {txn.get('TRAN_ID', '')[:12]}",
+                        }
+                    )
                     break  # One flag per account
 
             # 2. Rapid small debits (smurfing): 3+ debits under 500 in the dataset
             small_debits = [
-                t for t in txns
+                t
+                for t in txns
                 if t.get("PART_TRAN_TYPE", "").strip() == "D"
                 and float(t.get("TRAN_AMT", 0)) < 500
             ]
             if len(small_debits) >= 3:
-                flags.append({
-                    "account_id": acid,
-                    "flag": "RAPID_SMALL_DEBITS",
-                    "detail": f"{len(small_debits)} debits under 500",
-                })
+                flags.append(
+                    {
+                        "account_id": acid,
+                        "flag": "RAPID_SMALL_DEBITS",
+                        "detail": f"{len(small_debits)} debits under 500",
+                    }
+                )
 
             # 3. Large credit followed by many small debits (layering)
-            credits = [
-                t for t in txns
-                if t.get("PART_TRAN_TYPE", "").strip() == "C"
-            ]
-            debits = [
-                t for t in txns
-                if t.get("PART_TRAN_TYPE", "").strip() == "D"
-            ]
+            credits = [t for t in txns if t.get("PART_TRAN_TYPE", "").strip() == "C"]
+            debits = [t for t in txns if t.get("PART_TRAN_TYPE", "").strip() == "D"]
             if credits and debits:
                 max_credit = max(float(c.get("TRAN_AMT", 0)) for c in credits)
                 small_debit_count = sum(
                     1 for d in debits if float(d.get("TRAN_AMT", 0)) < max_credit * 0.1
                 )
                 if max_credit > 10000 and small_debit_count >= 3:
-                    flags.append({
-                        "account_id": acid,
-                        "flag": "LAYERING_PATTERN",
-                        "detail": f"Credit {max_credit} followed by {small_debit_count} small debits",
-                    })
+                    flags.append(
+                        {
+                            "account_id": acid,
+                            "flag": "LAYERING_PATTERN",
+                            "detail": f"Credit {max_credit} followed by {small_debit_count} small debits",
+                        }
+                    )
 
             # 4. Young account + high volume
             acct_opn = txns[0].get("ACCT_OPN_DATE", "").strip()
             if acct_opn:
                 try:
                     opn_date = self._parse_date(acct_opn)
-                    latest = max(
-                        self._parse_date(t["TRAN_DATE"]) for t in txns
-                    )
+                    latest = max(self._parse_date(t["TRAN_DATE"]) for t in txns)
                     age_days = (latest - opn_date).days
                     if age_days < 90 and len(txns) > 10:
-                        flags.append({
-                            "account_id": acid,
-                            "flag": "YOUNG_ACCOUNT_HIGH_VOLUME",
-                            "detail": f"Account age {age_days}d with {len(txns)} transactions",
-                        })
+                        flags.append(
+                            {
+                                "account_id": acid,
+                                "flag": "YOUNG_ACCOUNT_HIGH_VOLUME",
+                                "detail": f"Account age {age_days}d with {len(txns)} transactions",
+                            }
+                        )
                 except (ValueError, TypeError):
                     pass
 

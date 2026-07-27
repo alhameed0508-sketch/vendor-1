@@ -1,10 +1,11 @@
 """
 Screening service — orchestrates watchlist screening against accounts.
 """
+
 import logging
 import uuid
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 from repositories.screening_repository import ScreeningRepository
 
@@ -17,7 +18,9 @@ class ScreeningService:
     def __init__(self, screening_repo: ScreeningRepository):
         self._repo = screening_repo
 
-    def screen_account(self, account_id: str, name: str, identifiers: Optional[List[str]] = None) -> Dict:
+    def screen_account(
+        self, account_id: str, name: str, identifiers: Optional[List[str]] = None
+    ) -> Dict:
         """Screen a single account against watchlist."""
         matches = self._repo.search_by_name(name, fuzzy=True)
 
@@ -25,14 +28,17 @@ class ScreeningService:
             for identifier in identifiers:
                 id_matches = self._repo.search_by_identifier(identifier)
                 for m in id_matches:
-                    if not any(existing.get("entry_id") == m.get("entry_id") for existing in matches):
+                    if not any(
+                        existing.get("entry_id") == m.get("entry_id")
+                        for existing in matches
+                    ):
                         matches.append(m)
 
         result = {
             "result_id": f"SCR-{uuid.uuid4().hex[:8].upper()}",
             "account_id": account_id,
             "screened_name": name,
-            "screened_at": datetime.utcnow().isoformat(),
+            "screened_at": datetime.now(timezone.utc).isoformat(),
             "matches": matches[:10],
             "match_count": len(matches),
             "highest_confidence": max((m["confidence"] for m in matches), default=0.0),
@@ -56,6 +62,7 @@ class ScreeningService:
     def refresh_unsc_list(self, unsc_url: str) -> Dict:
         """Fetch and import UNSC consolidated sanctions list."""
         from services.screening.unsc_fetcher import fetch_and_parse_unsc
+
         entries = fetch_and_parse_unsc(unsc_url)
         count = self._repo.bulk_import_entries(entries, source="UNSC")
         logger.info("UNSC watchlist refreshed: %d entries imported", count)
@@ -68,10 +75,18 @@ class ScreeningService:
             entry = {
                 "entry_id": row.get("entry_id", f"CSV-{uuid.uuid4().hex[:8].upper()}"),
                 "name": row.get("name", ""),
-                "aliases": [a.strip() for a in row.get("aliases", "").split(";") if a.strip()],
-                "identifiers": [i.strip() for i in row.get("identifiers", "").split(";") if i.strip()],
+                "aliases": [
+                    a.strip() for a in row.get("aliases", "").split(";") if a.strip()
+                ],
+                "identifiers": [
+                    i.strip()
+                    for i in row.get("identifiers", "").split(";")
+                    if i.strip()
+                ],
                 "entity_type": row.get("entity_type", "INDIVIDUAL"),
-                "countries": [c.strip() for c in row.get("countries", "").split(";") if c.strip()],
+                "countries": [
+                    c.strip() for c in row.get("countries", "").split(";") if c.strip()
+                ],
                 "risk_category": row.get("risk_category", "SANCTIONS"),
             }
             entries.append(entry)
@@ -80,3 +95,11 @@ class ScreeningService:
 
     def get_stats(self) -> Dict:
         return self._repo.get_stats()
+
+    def get_results_for_account(self, account_id: str) -> List[Dict]:
+        """Return prior screening decisions for an account."""
+        return self._repo.get_results_for_account(account_id)
+
+    def get_entries(self, source: Optional[str] = None, limit: int = 100) -> List[Dict]:
+        """Return watchlist entries for authorized review."""
+        return self._repo.get_entries(source=source, limit=limit)

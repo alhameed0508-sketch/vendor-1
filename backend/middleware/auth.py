@@ -16,14 +16,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from infra.security.auth import (
-    authenticate,
+    audit_middleware as audit_middleware,
     decode_token,
-    has_permission,
-    create_token,
-    audit_log,
-    audit_middleware,
     ROLE_PERMISSIONS,
-    DEMO_USERS,
 )
 
 from core.config import get_settings
@@ -57,7 +52,9 @@ async def get_current_user(
         if not _demo_warning_shown:
             logger.warning("=" * 60)
             logger.warning("AUTHENTICATION DISABLED — DEMO MODE ACTIVE")
-            logger.warning("All requests granted ADMIN access. DO NOT USE IN PRODUCTION.")
+            logger.warning(
+                "All requests granted ADMIN access. DO NOT USE IN PRODUCTION."
+            )
             logger.warning("=" * 60)
             _demo_warning_shown = True
         return {"sub": "demo_user", "role": "ADMIN"}

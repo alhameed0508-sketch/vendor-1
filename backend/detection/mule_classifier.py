@@ -24,55 +24,55 @@ from typing import Dict, List, Optional
 
 # ── Scoring weights (tunable constants) ────────────────────────────────────
 # Account age signals
-WEIGHT_AGE_VERY_NEW = 0.20       # < 7 days → complicit
-WEIGHT_AGE_NEW = 0.10            # < 30 days → complicit
-WEIGHT_AGE_ESTABLISHED = 0.15   # > 365 days → exploited
+WEIGHT_AGE_VERY_NEW = 0.20  # < 7 days → complicit
+WEIGHT_AGE_NEW = 0.10  # < 30 days → complicit
+WEIGHT_AGE_ESTABLISHED = 0.15  # > 365 days → exploited
 
 # KYC signals
-WEIGHT_KYC_PENDING = 0.10       # KYC incomplete → complicit
-WEIGHT_KYC_VERIFIED = 0.05      # KYC verified → exploited
+WEIGHT_KYC_PENDING = 0.10  # KYC incomplete → complicit
+WEIGHT_KYC_VERIFIED = 0.05  # KYC verified → exploited
 
 # Device sharing
-WEIGHT_DEVICE_SHARED = 0.25     # Shared device with flagged accounts
+WEIGHT_DEVICE_SHARED = 0.25  # Shared device with flagged accounts
 
 # Transaction patterns
 WEIGHT_PASSTHROUGH_HIGH = 0.15  # > 90% pass-through ratio
-WEIGHT_PASSTHROUGH_MED = 0.08   # > 70% pass-through ratio
+WEIGHT_PASSTHROUGH_MED = 0.08  # > 70% pass-through ratio
 
 # Night-time activity
-WEIGHT_NIGHT_ACTIVITY = 0.10    # Transactions between 11PM-5AM
+WEIGHT_NIGHT_ACTIVITY = 0.10  # Transactions between 11PM-5AM
 
 # Velocity burst (BioCatch 72-hour indicator)
-WEIGHT_VELOCITY_BURST = 0.20    # High activity within 72h of opening
+WEIGHT_VELOCITY_BURST = 0.20  # High activity within 72h of opening
 WEIGHT_DORMANT_REACTIVATION = 0.20  # Dormant account suddenly active
 
 # Network role
-WEIGHT_ROLE_SOURCE = 0.10       # Fund originator
-WEIGHT_ROLE_AGGREGATOR = 0.15   # Terminal collection point
+WEIGHT_ROLE_SOURCE = 0.10  # Fund originator
+WEIGHT_ROLE_AGGREGATOR = 0.15  # Terminal collection point
 
 # Thresholds
 THRESHOLD_PASSTHROUGH_HIGH = 0.90
 THRESHOLD_PASSTHROUGH_MED = 0.70
-THRESHOLD_AGE_VERY_NEW = 7      # days
-THRESHOLD_AGE_NEW = 30          # days
-THRESHOLD_AGE_ESTABLISHED = 365 # days
-THRESHOLD_NIGHT_TXN_COUNT = 3   # min night-time transactions to flag
-THRESHOLD_VELOCITY_BURST_DAYS = 3       # days since opening
-THRESHOLD_VELOCITY_BURST_TXN = 5        # min outgoing transactions
-THRESHOLD_DORMANT_DAYS = 180            # days to consider dormant
-THRESHOLD_DORMANT_REACTIVATION_TXN = 10 # min outgoing for reactivation
+THRESHOLD_AGE_VERY_NEW = 7  # days
+THRESHOLD_AGE_NEW = 30  # days
+THRESHOLD_AGE_ESTABLISHED = 365  # days
+THRESHOLD_NIGHT_TXN_COUNT = 3  # min night-time transactions to flag
+THRESHOLD_VELOCITY_BURST_DAYS = 3  # days since opening
+THRESHOLD_VELOCITY_BURST_TXN = 5  # min outgoing transactions
+THRESHOLD_DORMANT_DAYS = 180  # days to consider dormant
+THRESHOLD_DORMANT_REACTIVATION_TXN = 10  # min outgoing for reactivation
 
 # Classification decision thresholds
-THRESHOLD_MIN_TOTAL_SCORE = 0.15        # below → UNKNOWN
-THRESHOLD_CLASSIFICATION_RATIO = 1.3    # score must exceed other by this factor
+THRESHOLD_MIN_TOTAL_SCORE = 0.15  # below → UNKNOWN
+THRESHOLD_CLASSIFICATION_RATIO = 1.3  # score must exceed other by this factor
 
 # CBS behavioral weights
-WEIGHT_CBS_PASSTHROUGH = 0.15           # CBS pass-through ratio >= 90%
-WEIGHT_NEG_BALANCE_HIGH = 0.15          # >= 10 negative balance events
-WEIGHT_NEG_BALANCE_MED = 0.08           # >= 3 negative balance events
-WEIGHT_DC_RATIO_MATCH = 0.10            # debit/credit ratio near 1.0
-WEIGHT_CREDIT_HUB = 0.15               # >= 50 incoming credits
-WEIGHT_CREDIT_FUNNEL = 0.10             # >= 20 incoming credits
+WEIGHT_CBS_PASSTHROUGH = 0.15  # CBS pass-through ratio >= 90%
+WEIGHT_NEG_BALANCE_HIGH = 0.15  # >= 10 negative balance events
+WEIGHT_NEG_BALANCE_MED = 0.08  # >= 3 negative balance events
+WEIGHT_DC_RATIO_MATCH = 0.10  # debit/credit ratio near 1.0
+WEIGHT_CREDIT_HUB = 0.15  # >= 50 incoming credits
+WEIGHT_CREDIT_FUNNEL = 0.10  # >= 20 incoming credits
 
 # CBS behavioral thresholds
 THRESHOLD_CBS_PASSTHROUGH = 0.90
@@ -190,13 +190,19 @@ def classify_mule_type(
         )
 
     # Signal 6: Velocity burst (BioCatch 72-hour indicator)
-    if age_days <= THRESHOLD_VELOCITY_BURST_DAYS and len(outgoing) >= THRESHOLD_VELOCITY_BURST_TXN:
+    if (
+        age_days <= THRESHOLD_VELOCITY_BURST_DAYS
+        and len(outgoing) >= THRESHOLD_VELOCITY_BURST_TXN
+    ):
         complicit_score += WEIGHT_VELOCITY_BURST
         signals.append(
             "High activity within 72 hours of account opening - "
             "BioCatch indicator for complicit mules"
         )
-    elif age_days > THRESHOLD_DORMANT_DAYS and len(outgoing) >= THRESHOLD_DORMANT_REACTIVATION_TXN:
+    elif (
+        age_days > THRESHOLD_DORMANT_DAYS
+        and len(outgoing) >= THRESHOLD_DORMANT_REACTIVATION_TXN
+    ):
         exploited_score += WEIGHT_DORMANT_REACTIVATION
         signals.append(
             "Dormant account suddenly reactivated with high volume - "
@@ -215,9 +221,7 @@ def classify_mule_type(
     cbs_pt = account.get("pass_through_ratio", 0.0)
     if cbs_pt >= THRESHOLD_CBS_PASSTHROUGH:
         complicit_score += WEIGHT_CBS_PASSTHROUGH
-        signals.append(
-            f"CBS pass-through ratio {cbs_pt:.0%} - same-day in/out pattern"
-        )
+        signals.append(f"CBS pass-through ratio {cbs_pt:.0%} - same-day in/out pattern")
 
     neg_bal = account.get("negative_balance_count", 0)
     if neg_bal >= THRESHOLD_NEG_BALANCE_HIGH:
@@ -239,14 +243,10 @@ def classify_mule_type(
     credit_count = account.get("credit_count", 0)
     if credit_count >= THRESHOLD_CREDIT_HUB:
         complicit_score += WEIGHT_CREDIT_HUB
-        signals.append(
-            f"{credit_count} incoming credits - collection hub pattern"
-        )
+        signals.append(f"{credit_count} incoming credits - collection hub pattern")
     elif credit_count >= THRESHOLD_CREDIT_FUNNEL:
         complicit_score += WEIGHT_CREDIT_FUNNEL
-        signals.append(
-            f"{credit_count} incoming credits - receiving funnel"
-        )
+        signals.append(f"{credit_count} incoming credits - receiving funnel")
 
     # Classification decision
     total = complicit_score + exploited_score
@@ -264,7 +264,8 @@ def classify_mule_type(
         reasoning = (
             f"Account shows {len([s for s in signals if 'complicit' in s.lower() or 'coordinated' in s.lower() or 'conduit' in s.lower() or 'deliberate' in s.lower()])} "
             f"strong indicators of knowing participation: "
-            + "; ".join(signals[:3]) + "."
+            + "; ".join(signals[:3])
+            + "."
         )
         return MuleClassification(
             account_id=account_id,
@@ -276,8 +277,9 @@ def classify_mule_type(
     elif exploited_score > complicit_score * THRESHOLD_CLASSIFICATION_RATIO:
         confidence = min(exploited_score / max(total, 0.01), CONFIDENCE_CAP)
         reasoning = (
-            f"Account profile suggests the holder may be a victim: "
-            + "; ".join(signals[:3]) + "."
+            "Account profile suggests the holder may be a victim: "
+            + "; ".join(signals[:3])
+            + "."
         )
         return MuleClassification(
             account_id=account_id,
@@ -329,14 +331,14 @@ def classify_cluster(
     if complicit_count > exploited_count:
         cluster_type = "COMPLICIT"
         cluster_reasoning = (
-            f"{complicit_count}/{total} accounts ({round(complicit_count/total*100)}%) "
+            f"{complicit_count}/{total} accounts ({round(complicit_count / total * 100)}%) "
             f"show complicit mule indicators. This appears to be a coordinated, "
             f"knowingly-operated mule network."
         )
     elif exploited_count > complicit_count:
         cluster_type = "EXPLOITED"
         cluster_reasoning = (
-            f"{exploited_count}/{total} accounts ({round(exploited_count/total*100)}%) "
+            f"{exploited_count}/{total} accounts ({round(exploited_count / total * 100)}%) "
             f"show signs of exploitation. Account holders may be victims of social "
             f"engineering or account takeover."
         )

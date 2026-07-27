@@ -28,7 +28,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Tuple
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +43,8 @@ _CANONICAL_LIFECYCLE: Tuple[str, ...] = ("DORMANT", "RECEIVING", "FORWARDING", "
 # These are intentionally set to detect transitions even when self-loop
 # dilution reduces raw probabilities (e.g., 4 weeks in RECEIVING followed
 # by 4 weeks in FORWARDING yields P(FORWARDING|RECEIVING) = 0.25).
-_ACTIVATION_THRESHOLD = 0.15      # P(RECEIVING | DORMANT)
-_MULE_BEHAVIOR_THRESHOLD = 0.15   # P(FORWARDING | RECEIVING)
+_ACTIVATION_THRESHOLD = 0.15  # P(RECEIVING | DORMANT)
+_MULE_BEHAVIOR_THRESHOLD = 0.15  # P(FORWARDING | RECEIVING)
 _FUND_CLEARANCE_THRESHOLD = 0.15  # P(SWEEP | FORWARDING)
 
 # Rapid lifecycle progression -- if an account traverses DORMANT->SWEEP
@@ -60,6 +59,7 @@ _MIN_CYCLE_COUNT = 2
 # State enum
 # ---------------------------------------------------------------------------
 
+
 class AccountState(Enum):
     """Observable account states in the mule lifecycle."""
 
@@ -73,6 +73,7 @@ class AccountState(Enum):
 # ---------------------------------------------------------------------------
 # Immutable result data classes
 # ---------------------------------------------------------------------------
+
 
 @dataclass(frozen=True)
 class MarkovTransitionMatrix:
@@ -100,14 +101,17 @@ class MarkovStateResult:
     account_id: str
     current_state: str
     state_history: Tuple[str, ...]
-    transition_score: float          # 0-1 composite risk score
-    mule_lifecycle_probability: float  # 0-1 how closely transitions match canonical lifecycle
+    transition_score: float  # 0-1 composite risk score
+    mule_lifecycle_probability: (
+        float  # 0-1 how closely transitions match canonical lifecycle
+    )
     reason_codes: Tuple[str, ...]
 
 
 # ---------------------------------------------------------------------------
 # Scorer
 # ---------------------------------------------------------------------------
+
 
 class MarkovStateScorer:
     """Score accounts by modelling their temporal state transitions as a
@@ -377,7 +381,9 @@ class MarkovStateScorer:
         """
         all_txns = transactions + in_transactions
         if not all_txns:
-            logger.debug("No transactions for account %s — returning zero score", account_id)
+            logger.debug(
+                "No transactions for account %s — returning zero score", account_id
+            )
             return _zero_result(account_id)
 
         # Determine time range from transaction timestamps
@@ -402,7 +408,11 @@ class MarkovStateScorer:
         state_history: List[str] = []
         for w_start, w_end in windows:
             state = self._classify_state(
-                account, transactions, in_transactions, w_start, w_end,
+                account,
+                transactions,
+                in_transactions,
+                w_start,
+                w_end,
             )
             state_history.append(state.value)
 
@@ -478,7 +488,10 @@ class MarkovStateScorer:
             out_txns = outgoing.get(acc_id, [])
             in_txns = incoming.get(acc_id, [])
             results[acc_id] = self.score_account(
-                acc_id, acc, out_txns, in_txns,
+                acc_id,
+                acc,
+                out_txns,
+                in_txns,
             )
 
         return results
@@ -487,6 +500,7 @@ class MarkovStateScorer:
 # ---------------------------------------------------------------------------
 # Module-private helpers
 # ---------------------------------------------------------------------------
+
 
 def _zero_result(account_id: str) -> MarkovStateResult:
     """Return a zero-score result for insufficient data."""

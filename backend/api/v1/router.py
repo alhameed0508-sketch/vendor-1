@@ -19,6 +19,9 @@ from api.v1.routes.genai import register_genai_routes
 from api.v1.routes.device import register_device_routes
 from api.v1.routes.roi import register_roi_routes
 from api.v1.routes.csv_upload import register_csv_upload_routes
+from api.v1.routes.onboarding import register_onboarding_routes
+from api.v1.routes.screening import register_screening_routes
+from api.v1.routes.benchmark import register_benchmark_routes
 
 
 def create_v1_router(limiter: Limiter) -> APIRouter:
@@ -66,6 +69,18 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     csv_upload_router = APIRouter(prefix="/csv-upload", tags=["csv-upload"])
     register_csv_upload_routes(csv_upload_router, limiter)
     v1.include_router(csv_upload_router)
+
+    onboarding_router = APIRouter(prefix="/onboarding", tags=["onboarding"])
+    register_onboarding_routes(onboarding_router, limiter)
+    v1.include_router(onboarding_router)
+
+    screening_router = APIRouter(prefix="/screening", tags=["screening"])
+    register_screening_routes(screening_router, limiter)
+    v1.include_router(screening_router)
+
+    benchmark_router = APIRouter(prefix="/benchmark", tags=["benchmark"])
+    register_benchmark_routes(benchmark_router, limiter)
+    v1.include_router(benchmark_router)
 
     # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)

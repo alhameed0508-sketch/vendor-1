@@ -3,7 +3,7 @@ User repository — data access layer for user operations.
 Wraps UserDB with business-level operations.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict
 
 from infra.database.user_db import UserDB
@@ -12,7 +12,12 @@ from infra.database.user_db import UserDB
 class UserRepository:
     """User data access with lockout checks."""
 
-    def __init__(self, user_db: UserDB, lockout_max_attempts: int = 5, lockout_duration_minutes: int = 30):
+    def __init__(
+        self,
+        user_db: UserDB,
+        lockout_max_attempts: int = 5,
+        lockout_duration_minutes: int = 30,
+    ):
         self._db = user_db
         self._lockout_max_attempts = lockout_max_attempts
         self._lockout_duration_minutes = lockout_duration_minutes
@@ -47,7 +52,9 @@ class UserRepository:
 
     def record_login_success(self, username: str) -> None:
         self._db.clear_failed_logins(username)
-        self._db.update_user(username, last_login=datetime.utcnow().isoformat())
+        self._db.update_user(
+            username, last_login=datetime.now(timezone.utc).isoformat()
+        )
 
     def record_failed_login(self, username: str, ip_address: str = "unknown") -> None:
         self._db.record_failed_login(username, ip_address)

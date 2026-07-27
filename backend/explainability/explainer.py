@@ -19,16 +19,18 @@ References:
 
 from __future__ import annotations
 from collections import defaultdict, deque
-from dataclasses import dataclass, field, asdict
-from typing import List, Dict, Set, Optional, Tuple
+from dataclasses import dataclass, asdict
+from typing import List, Dict, Set, Tuple
 import networkx as nx
 
 
 # ── Data models ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class FeatureContribution:
     """A single feature's contribution to the risk score."""
+
     feature: str
     value: float
     weight: float
@@ -40,6 +42,7 @@ class FeatureContribution:
 @dataclass
 class FraudChainStep:
     """One step in a fraud money-flow chain."""
+
     step: int
     from_account: str
     to_account: str
@@ -52,6 +55,7 @@ class FraudChainStep:
 @dataclass
 class CycleInfo:
     """A detected money cycle (round-trip ring)."""
+
     accounts: List[str]
     total_amount: float
     cycle_length: int
@@ -61,6 +65,7 @@ class CycleInfo:
 @dataclass
 class AlertExplanation:
     """Complete explanation package for an alert."""
+
     alert_id: str
     risk_score: float
     severity: str
@@ -101,7 +106,10 @@ class AlertExplanation:
 
 # ── Score Decomposition (SHAP-like) ──────────────────────────────────────
 
-def decompose_score(alert: Dict, smurf_scores: Dict = None) -> List[FeatureContribution]:
+
+def decompose_score(
+    alert: Dict, smurf_scores: Dict = None
+) -> List[FeatureContribution]:
     """
     Decomposes the alert risk score into feature-level contributions,
     similar to SHAP waterfall charts. Shows investigators exactly WHY
@@ -109,46 +117,51 @@ def decompose_score(alert: Dict, smurf_scores: Dict = None) -> List[FeatureContr
     """
     contributions = []
     nodes = alert.get("nodes", [])
-    edges = alert.get("edges", [])
     reason_codes = alert.get("reason_codes", [])
 
     # Community density / topology
     account_count = alert.get("account_count", 0)
     density_signal = min(account_count / 15.0, 1.0)
-    contributions.append(FeatureContribution(
-        feature="cluster_size",
-        value=account_count,
-        weight=0.15,
-        contribution=round(density_signal * 0.15, 4),
-        description=f"{account_count} accounts form a tightly connected cluster",
-        severity="HIGH" if account_count >= 8 else "MEDIUM",
-    ))
+    contributions.append(
+        FeatureContribution(
+            feature="cluster_size",
+            value=account_count,
+            weight=0.15,
+            contribution=round(density_signal * 0.15, 4),
+            description=f"{account_count} accounts form a tightly connected cluster",
+            severity="HIGH" if account_count >= 8 else "MEDIUM",
+        )
+    )
 
     # Shared device fingerprints
     shared_devs = alert.get("shared_devices", [])
     dev_signal = min(len(shared_devs) * 0.3, 1.0)
     if shared_devs:
-        contributions.append(FeatureContribution(
-            feature="shared_devices",
-            value=len(shared_devs),
-            weight=0.20,
-            contribution=round(dev_signal * 0.20, 4),
-            description=f"{len(shared_devs)} device(s) shared across multiple accounts — strong collusion signal",
-            severity="HIGH",
-        ))
+        contributions.append(
+            FeatureContribution(
+                feature="shared_devices",
+                value=len(shared_devs),
+                weight=0.20,
+                contribution=round(dev_signal * 0.20, 4),
+                description=f"{len(shared_devs)} device(s) shared across multiple accounts — strong collusion signal",
+                severity="HIGH",
+            )
+        )
 
     # Shared IP addresses
     shared_ips = alert.get("shared_ips", [])
     ip_signal = min(len(shared_ips) * 0.25, 1.0)
     if shared_ips:
-        contributions.append(FeatureContribution(
-            feature="shared_ips",
-            value=len(shared_ips),
-            weight=0.15,
-            contribution=round(ip_signal * 0.15, 4),
-            description=f"{len(shared_ips)} IP address(es) shared — accounts operated from same location",
-            severity="HIGH" if len(shared_ips) >= 2 else "MEDIUM",
-        ))
+        contributions.append(
+            FeatureContribution(
+                feature="shared_ips",
+                value=len(shared_ips),
+                weight=0.15,
+                contribution=round(ip_signal * 0.15, 4),
+                description=f"{len(shared_ips)} IP address(es) shared — accounts operated from same location",
+                severity="HIGH" if len(shared_ips) >= 2 else "MEDIUM",
+            )
+        )
 
     # Smurf scoring sub-components (if available)
     if smurf_scores and nodes:
@@ -159,109 +172,160 @@ def decompose_score(alert: Dict, smurf_scores: Dict = None) -> List[FeatureContr
         max_consolidation = 0.0
 
         for n in nodes:
-            ss = smurf_scores.get(n.get("account_id") if isinstance(n, dict) else n.account_id)
+            ss = smurf_scores.get(
+                n.get("account_id") if isinstance(n, dict) else n.account_id
+            )
             if ss:
-                max_velocity = max(max_velocity, ss.velocity_score if hasattr(ss, 'velocity_score') else 0)
-                max_ceiling = max(max_ceiling, ss.amount_ceiling_score if hasattr(ss, 'amount_ceiling_score') else 0)
-                max_fanout = max(max_fanout, ss.fan_out_score if hasattr(ss, 'fan_out_score') else 0)
-                max_rhythm = max(max_rhythm, ss.rhythm_score if hasattr(ss, 'rhythm_score') else 0)
-                max_consolidation = max(max_consolidation, ss.consolidation_score if hasattr(ss, 'consolidation_score') else 0)
+                max_velocity = max(
+                    max_velocity,
+                    ss.velocity_score if hasattr(ss, "velocity_score") else 0,
+                )
+                max_ceiling = max(
+                    max_ceiling,
+                    ss.amount_ceiling_score
+                    if hasattr(ss, "amount_ceiling_score")
+                    else 0,
+                )
+                max_fanout = max(
+                    max_fanout, ss.fan_out_score if hasattr(ss, "fan_out_score") else 0
+                )
+                max_rhythm = max(
+                    max_rhythm, ss.rhythm_score if hasattr(ss, "rhythm_score") else 0
+                )
+                max_consolidation = max(
+                    max_consolidation,
+                    ss.consolidation_score if hasattr(ss, "consolidation_score") else 0,
+                )
 
         if max_velocity > 0.3:
-            contributions.append(FeatureContribution(
-                feature="transaction_velocity",
-                value=round(max_velocity, 3),
-                weight=0.25,
-                contribution=round(max_velocity * 0.25, 4),
-                description=f"Burst of transactions detected — {round(max_velocity * 12):.0f}+ txns/hour peak",
-                severity="HIGH" if max_velocity > 0.6 else "MEDIUM",
-            ))
+            contributions.append(
+                FeatureContribution(
+                    feature="transaction_velocity",
+                    value=round(max_velocity, 3),
+                    weight=0.25,
+                    contribution=round(max_velocity * 0.25, 4),
+                    description=f"Burst of transactions detected — {round(max_velocity * 12):.0f}+ txns/hour peak",
+                    severity="HIGH" if max_velocity > 0.6 else "MEDIUM",
+                )
+            )
 
         if max_ceiling > 0.3:
-            contributions.append(FeatureContribution(
-                feature="amount_structuring",
-                value=round(max_ceiling, 3),
-                weight=0.25,
-                contribution=round(max_ceiling * 0.25, 4),
-                description="Amounts deliberately kept just below the ₹50,000 reporting threshold",
-                severity="HIGH" if max_ceiling > 0.6 else "MEDIUM",
-            ))
+            contributions.append(
+                FeatureContribution(
+                    feature="amount_structuring",
+                    value=round(max_ceiling, 3),
+                    weight=0.25,
+                    contribution=round(max_ceiling * 0.25, 4),
+                    description="Amounts deliberately kept just below the ₹50,000 reporting threshold",
+                    severity="HIGH" if max_ceiling > 0.6 else "MEDIUM",
+                )
+            )
 
         if max_fanout > 0.3:
-            contributions.append(FeatureContribution(
-                feature="fan_out_pattern",
-                value=round(max_fanout, 3),
-                weight=0.20,
-                contribution=round(max_fanout * 0.20, 4),
-                description=f"Funds dispersed to {round(max_fanout * 8):.0f}+ unique recipients — layering behavior",
-                severity="HIGH" if max_fanout > 0.5 else "MEDIUM",
-            ))
+            contributions.append(
+                FeatureContribution(
+                    feature="fan_out_pattern",
+                    value=round(max_fanout, 3),
+                    weight=0.20,
+                    contribution=round(max_fanout * 0.20, 4),
+                    description=f"Funds dispersed to {round(max_fanout * 8):.0f}+ unique recipients — layering behavior",
+                    severity="HIGH" if max_fanout > 0.5 else "MEDIUM",
+                )
+            )
 
         if max_rhythm > 0.3:
-            contributions.append(FeatureContribution(
-                feature="bot_like_rhythm",
-                value=round(max_rhythm, 3),
-                weight=0.15,
-                contribution=round(max_rhythm * 0.15, 4),
-                description="Suspiciously regular transaction intervals — likely automated",
-                severity="MEDIUM",
-            ))
+            contributions.append(
+                FeatureContribution(
+                    feature="bot_like_rhythm",
+                    value=round(max_rhythm, 3),
+                    weight=0.15,
+                    contribution=round(max_rhythm * 0.15, 4),
+                    description="Suspiciously regular transaction intervals — likely automated",
+                    severity="MEDIUM",
+                )
+            )
 
         if max_consolidation > 0.3:
-            contributions.append(FeatureContribution(
-                feature="rapid_consolidation",
-                value=round(max_consolidation, 3),
-                weight=0.15,
-                contribution=round(max_consolidation * 0.15, 4),
-                description="Funds received and re-sent within hours — classic mule pass-through",
-                severity="HIGH" if max_consolidation > 0.5 else "MEDIUM",
-            ))
+            contributions.append(
+                FeatureContribution(
+                    feature="rapid_consolidation",
+                    value=round(max_consolidation, 3),
+                    weight=0.15,
+                    contribution=round(max_consolidation * 0.15, 4),
+                    description="Funds received and re-sent within hours — classic mule pass-through",
+                    severity="HIGH" if max_consolidation > 0.5 else "MEDIUM",
+                )
+            )
     else:
         # Fallback: decompose from reason codes
         smurf_codes = [rc for rc in reason_codes if rc.startswith("RC")]
         if smurf_codes:
             per_code = 0.10
             for rc in smurf_codes:
-                contributions.append(FeatureContribution(
-                    feature="smurf_signal",
-                    value=1.0,
-                    weight=per_code,
-                    contribution=per_code,
-                    description=rc.split(": ", 1)[1] if ": " in rc else rc,
-                    severity="HIGH",
-                ))
+                contributions.append(
+                    FeatureContribution(
+                        feature="smurf_signal",
+                        value=1.0,
+                        weight=per_code,
+                        contribution=per_code,
+                        description=rc.split(": ", 1)[1] if ": " in rc else rc,
+                        severity="HIGH",
+                    )
+                )
 
     # Rule engine hits
     rule_codes = [rc for rc in reason_codes if rc.startswith("R0")]
     if rule_codes:
         rule_contribution = min(len(rule_codes) * 0.05, 0.15)
-        contributions.append(FeatureContribution(
-            feature="rule_engine_hits",
-            value=len(rule_codes),
-            weight=0.10,
-            contribution=round(rule_contribution, 4),
-            description=f"{len(rule_codes)} deterministic rule(s) triggered: {', '.join(rc.split(':')[0] for rc in rule_codes)}",
-            severity="HIGH" if len(rule_codes) >= 3 else "MEDIUM",
-        ))
+        contributions.append(
+            FeatureContribution(
+                feature="rule_engine_hits",
+                value=len(rule_codes),
+                weight=0.10,
+                contribution=round(rule_contribution, 4),
+                description=f"{len(rule_codes)} deterministic rule(s) triggered: {', '.join(rc.split(':')[0] for rc in rule_codes)}",
+                severity="HIGH" if len(rule_codes) >= 3 else "MEDIUM",
+            )
+        )
 
     # GNN score (if present)
     gnn_score = alert.get("gnn_score")
     if gnn_score is not None and gnn_score > 0:
-        contributions.append(FeatureContribution(
-            feature="gnn_graph_learning",
-            value=round(gnn_score, 3),
-            weight=0.20,
-            contribution=round(gnn_score * 0.20, 4),
-            description=f"Graph neural network classified cluster as {round(gnn_score * 100)}% likely mule network",
-            severity="HIGH" if gnn_score > 0.7 else "MEDIUM",
-        ))
+        contributions.append(
+            FeatureContribution(
+                feature="gnn_graph_learning",
+                value=round(gnn_score, 3),
+                weight=0.20,
+                contribution=round(gnn_score * 0.20, 4),
+                description=f"Graph neural network classified cluster as {round(gnn_score * 100)}% likely mule network",
+                severity="HIGH" if gnn_score > 0.7 else "MEDIUM",
+            )
+        )
+
+    anomaly_score = alert.get("anomaly_score")
+    if anomaly_score is not None and anomaly_score > 0:
+        contributions.append(
+            FeatureContribution(
+                feature="peer_group_anomaly",
+                value=round(anomaly_score, 3),
+                weight=0.06,
+                contribution=round(anomaly_score * 0.06, 4),
+                description=(
+                    "Label-free peer analysis rated the cluster's most unusual "
+                    f"account at {round(anomaly_score * 100)}% anomaly risk"
+                ),
+                severity="HIGH" if anomaly_score > 0.8 else "MEDIUM",
+            )
+        )
 
     # Sort by contribution descending
     contributions.sort(key=lambda c: -c.contribution)
     return contributions
 
 
-def build_score_narrative(contributions: List[FeatureContribution], risk_score: float) -> str:
+def build_score_narrative(
+    contributions: List[FeatureContribution], risk_score: float
+) -> str:
     """Generates a plain-English paragraph explaining the risk score."""
     if not contributions:
         return "Insufficient data to explain this score."
@@ -284,6 +348,7 @@ def build_score_narrative(contributions: List[FeatureContribution], risk_score: 
 
 
 # ── Fraud Chain Explainer (BFS) ──────────────────────────────────────────
+
 
 def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
     """
@@ -314,9 +379,9 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
         amount = float(e.get("total_amount") if isinstance(e, dict) else e.total_amount)
         txn_count = int(e.get("txn_count") if isinstance(e, dict) else e.txn_count)
         pattern = e.get("pattern", "NORMAL") if isinstance(e, dict) else e.pattern
-        adj[src].append({
-            "to": dst, "amount": amount, "txn_count": txn_count, "pattern": pattern
-        })
+        adj[src].append(
+            {"to": dst, "amount": amount, "txn_count": txn_count, "pattern": pattern}
+        )
 
     # Find SOURCE nodes (entry points)
     sources = [acc for acc, role in role_map.items() if role == "SOURCE"]
@@ -325,7 +390,9 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
         out_volume = defaultdict(float)
         for e in edges:
             src = e.get("from_account") if isinstance(e, dict) else e.from_account
-            amount = float(e.get("total_amount") if isinstance(e, dict) else e.total_amount)
+            amount = float(
+                e.get("total_amount") if isinstance(e, dict) else e.total_amount
+            )
             out_volume[src] += amount
         if out_volume:
             sources = [max(out_volume, key=out_volume.get)]
@@ -356,19 +423,26 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
             src_role = role_map.get(current, "UNKNOWN")
 
             description = _describe_flow_step(
-                current, dst, src_role, dst_role,
-                edge["amount"], edge["txn_count"], edge["pattern"]
+                current,
+                dst,
+                src_role,
+                dst_role,
+                edge["amount"],
+                edge["txn_count"],
+                edge["pattern"],
             )
 
-            chain.append(FraudChainStep(
-                step=step_num,
-                from_account=current,
-                to_account=dst,
-                amount=edge["amount"],
-                txn_count=edge["txn_count"],
-                pattern=edge["pattern"],
-                description=description,
-            ))
+            chain.append(
+                FraudChainStep(
+                    step=step_num,
+                    from_account=current,
+                    to_account=dst,
+                    amount=edge["amount"],
+                    txn_count=edge["txn_count"],
+                    pattern=edge["pattern"],
+                    description=description,
+                )
+            )
 
             queue.append(dst)
 
@@ -376,13 +450,16 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
 
 
 def _describe_flow_step(
-    src: str, dst: str,
-    src_role: str, dst_role: str,
-    amount: float, txn_count: int, pattern: str
+    src: str,
+    dst: str,
+    src_role: str,
+    dst_role: str,
+    amount: float,
+    txn_count: int,
+    pattern: str,
 ) -> str:
     """Human-readable description of a money flow step."""
     amount_str = f"₹{amount:,.0f}"
-    src_short = src[-8:]
     dst_short = dst[-8:]
 
     if src_role == "SOURCE":
@@ -445,6 +522,7 @@ def build_chain_narrative(chain: List[FraudChainStep], alert: Dict) -> str:
 
 # ── Cycle Detection ──────────────────────────────────────────────────────
 
+
 def detect_cycles(alert: Dict) -> List[CycleInfo]:
     """
     Detects money cycles (round-trip fraud) in the alert subgraph.
@@ -491,12 +569,14 @@ def detect_cycles(alert: Dict) -> List[CycleInfo]:
                 f"This is a strong indicator of circular layering / money laundering."
             )
 
-            cycles.append(CycleInfo(
-                accounts=cycle_nodes,
-                total_amount=round(total_amount, 2),
-                cycle_length=len(cycle_nodes),
-                description=description,
-            ))
+            cycles.append(
+                CycleInfo(
+                    accounts=cycle_nodes,
+                    total_amount=round(total_amount, 2),
+                    cycle_length=len(cycle_nodes),
+                    description=description,
+                )
+            )
     except (nx.NetworkXError, TypeError):
         # TypeError fallback: length_bound not supported in older networkx
         try:
@@ -519,12 +599,14 @@ def detect_cycles(alert: Dict) -> List[CycleInfo]:
                     f"₹{total_amount:,.0f} circulated through {len(cycle_nodes)} accounts. "
                     f"This is a strong indicator of circular layering / money laundering."
                 )
-                cycles.append(CycleInfo(
-                    accounts=cycle_nodes,
-                    total_amount=round(total_amount, 2),
-                    cycle_length=len(cycle_nodes),
-                    description=description,
-                ))
+                cycles.append(
+                    CycleInfo(
+                        accounts=cycle_nodes,
+                        total_amount=round(total_amount, 2),
+                        cycle_length=len(cycle_nodes),
+                        description=description,
+                    )
+                )
         except nx.NetworkXError:
             pass
 
@@ -558,51 +640,73 @@ def build_cycle_narrative(cycles: List[CycleInfo]) -> str:
 
 # ── Confidence Factors ───────────────────────────────────────────────────
 
-def build_confidence_factors(alert: Dict, contributions: List[FeatureContribution]) -> List[str]:
+
+def build_confidence_factors(
+    alert: Dict, contributions: List[FeatureContribution]
+) -> List[str]:
     """Lists factors that increase or decrease confidence in the alert."""
     factors = []
 
     high_count = sum(1 for c in contributions if c.severity == "HIGH")
     if high_count >= 3:
-        factors.append(f"Strong confidence: {high_count} high-severity signals converge")
+        factors.append(
+            f"Strong confidence: {high_count} high-severity signals converge"
+        )
     elif high_count >= 1:
-        factors.append(f"Moderate confidence: {high_count} high-severity signal(s) detected")
+        factors.append(
+            f"Moderate confidence: {high_count} high-severity signal(s) detected"
+        )
 
     if alert.get("shared_devices"):
         factors.append("Device fingerprint sharing provides strong physical evidence")
 
     if alert.get("gnn_score") and alert["gnn_score"] > 0.7:
-        factors.append("GNN graph learning independently confirms high mule probability")
+        factors.append(
+            "GNN graph learning independently confirms high mule probability"
+        )
 
     nodes = alert.get("nodes", [])
     young_accounts = sum(
-        1 for n in nodes
-        if (n.get("account_age_days") if isinstance(n, dict) else getattr(n, 'account_age_days', 999)) < 30
+        1
+        for n in nodes
+        if (
+            n.get("account_age_days")
+            if isinstance(n, dict)
+            else getattr(n, "account_age_days", 999)
+        )
+        < 30
     )
     if young_accounts >= 2:
-        factors.append(f"{young_accounts} accounts are less than 30 days old — elevated risk")
+        factors.append(
+            f"{young_accounts} accounts are less than 30 days old — elevated risk"
+        )
 
     pending_kyc = sum(
-        1 for n in nodes
-        if (n.get("kyc_status") if isinstance(n, dict) else getattr(n, 'kyc_status', '')) == "PENDING"
+        1
+        for n in nodes
+        if (
+            n.get("kyc_status") if isinstance(n, dict) else getattr(n, "kyc_status", "")
+        )
+        == "PENDING"
     )
     if pending_kyc:
         factors.append(f"{pending_kyc} account(s) have incomplete KYC verification")
 
     reason_codes = alert.get("reason_codes", [])
     if len(reason_codes) >= 5:
-        factors.append(f"{len(reason_codes)} distinct reason codes — multi-signal convergence")
+        factors.append(
+            f"{len(reason_codes)} distinct reason codes — multi-signal convergence"
+        )
 
     return factors
 
 
 # ── Recommendation Engine ────────────────────────────────────────────────
 
+
 def build_recommendation(alert: Dict, cycles: List[CycleInfo]) -> str:
     """Generates an actionable recommendation for the investigator."""
     severity = alert.get("severity", "MEDIUM")
-    risk = alert.get("risk_score", 0)
-
     if severity == "CRITICAL":
         rec = "IMMEDIATE ACTION REQUIRED: "
         if cycles:
@@ -634,6 +738,7 @@ def build_recommendation(alert: Dict, cycles: List[CycleInfo]) -> str:
 
 
 # ── Main Explainer ───────────────────────────────────────────────────────
+
 
 def explain_alert(alert: Dict, smurf_scores: Dict = None) -> AlertExplanation:
     """

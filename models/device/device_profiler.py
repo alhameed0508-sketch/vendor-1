@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Set, Tuple
 
 logger = logging.getLogger(__name__)
@@ -32,10 +32,19 @@ class DeviceTrustResult:
 
 
 # Known emulator/rooting indicators in device fingerprints
-EMULATOR_INDICATORS = frozenset({
-    "generic", "emulator", "sdk_gphone", "vbox", "goldfish",
-    "rooted", "magisk", "supersu", "xposed",
-})
+EMULATOR_INDICATORS = frozenset(
+    {
+        "generic",
+        "emulator",
+        "sdk_gphone",
+        "vbox",
+        "goldfish",
+        "rooted",
+        "magisk",
+        "supersu",
+        "xposed",
+    }
+)
 
 
 class DeviceProfiler:
@@ -48,6 +57,9 @@ class DeviceProfiler:
         self._device_accounts: Dict[str, Set[str]] = {}
         # account_id -> set of flagged account_ids sharing devices
         self._flagged_accounts: Set[str] = set()
+        # Only categorical risk flags are retained; raw browser attributes are
+        # intentionally not stored.
+        self._device_risk_indicators: Dict[str, Set[str]] = {}
 
     def record_device_event(
         self,
@@ -55,12 +67,17 @@ class DeviceProfiler:
         device_id: str,
         timestamp: float = None,
         is_flagged: bool = False,
+        risk_indicators: Tuple[str, ...] = (),
     ) -> None:
         """Record a device usage event for an account."""
         ts = timestamp or time.time()
 
         self._account_devices.setdefault(account_id, []).append((device_id, ts))
         self._device_accounts.setdefault(device_id, set()).add(account_id)
+        if risk_indicators:
+            self._device_risk_indicators.setdefault(device_id, set()).update(
+                indicator.lower() for indicator in risk_indicators
+            )
 
         if is_flagged:
             self._flagged_accounts.add(account_id)
@@ -76,10 +93,14 @@ class DeviceProfiler:
         device_count = len(unique_devices)
         if device_count >= 4:
             scores.append(0.9)
-            reason_codes.append(f"DP01: {device_count} different devices used on this account")
+            reason_codes.append(
+                f"DP01: {device_count} different devices used on this account"
+            )
         elif device_count >= 2:
             scores.append(0.4)
-            reason_codes.append(f"DP01: {device_count} different devices used on this account")
+            reason_codes.append(
+                f"DP01: {device_count} different devices used on this account"
+            )
 
         # DP02: Rapid device switching (multiple in 24h)
         recent_switches = self._count_recent_switches(events, window_hours=24)
@@ -100,11 +121,23 @@ class DeviceProfiler:
 
         # DP04: Emulator or rooted device indicators
         emulator_detected = any(
-            self._is_emulator(dev_id) for dev_id in unique_devices
+            self._is_emulator(dev_id)
+            or bool(
+                self._device_risk_indicators.get(dev_id, set()) & {"emulator", "rooted"}
+            )
+            for dev_id in unique_devices
         )
         if emulator_detected:
             scores.append(0.7)
             reason_codes.append("DP04: Emulator or rooted device detected")
+
+        bot_detected = any(
+            "bot" in self._device_risk_indicators.get(dev_id, set())
+            for dev_id in unique_devices
+        )
+        if bot_detected:
+            scores.append(0.75)
+            reason_codes.append("DP05: Automated browser or bot signal detected")
 
         # Composite trust score (0 = trusted, 1 = untrusted)
         trust_score = 0.0
@@ -123,7 +156,9 @@ class DeviceProfiler:
         )
 
     def _count_recent_switches(
-        self, events: List[Tuple[str, float]], window_hours: int = 24,
+        self,
+        events: List[Tuple[str, float]],
+        window_hours: int = 24,
     ) -> int:
         """Count unique device switches within a time window."""
         if len(events) < 2:
@@ -134,14 +169,15 @@ class DeviceProfiler:
             return 0
         recent.sort(key=lambda x: x[1])
         switches = sum(
-            1 for i in range(1, len(recent))
-            if recent[i][0] != recent[i - 1][0]
+            1 for i in range(1, len(recent)) if recent[i][0] != recent[i - 1][0]
         )
         return switches
 
     def _find_shared_flagged(self, account_id: str) -> List[str]:
         """Find flagged accounts sharing any device with this account."""
-        my_devices = set(dev_id for dev_id, _ in self._account_devices.get(account_id, []))
+        my_devices = set(
+            dev_id for dev_id, _ in self._account_devices.get(account_id, [])
+        )
         shared = set()
         for dev_id in my_devices:
             for other_acc in self._device_accounts.get(dev_id, set()):

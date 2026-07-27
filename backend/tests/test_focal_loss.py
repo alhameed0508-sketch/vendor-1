@@ -19,7 +19,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from models.gnn.gnn_model import FocalLoss
 
@@ -49,7 +48,6 @@ def binary_logits_and_targets():
 
 
 class TestFocalLossGradients:
-
     def test_produces_valid_gradients(self, focal_default, binary_logits_and_targets):
         """Loss must be differentiable and produce finite, non-zero gradients."""
         logits, targets = binary_logits_and_targets
@@ -93,7 +91,6 @@ class TestFocalLossGradients:
 
 
 class TestFocalLossGammaZeroEquivalence:
-
     def test_gamma_zero_matches_cross_entropy_balanced(self):
         """With gamma=0 and alpha=0.5, FocalLoss should equal CrossEntropyLoss."""
         focal = FocalLoss(gamma=0.0, alpha=0.5, reduction="mean")
@@ -109,7 +106,10 @@ class TestFocalLossGammaZeroEquivalence:
         # alpha=0.5 means both classes weighted equally (0.5 each), so
         # focal_loss = 0.5 * CE.  Scale accordingly for comparison.
         torch.testing.assert_close(
-            focal_loss, ce_loss * 0.5, atol=1e-5, rtol=1e-5,
+            focal_loss,
+            ce_loss * 0.5,
+            atol=1e-5,
+            rtol=1e-5,
         )
 
     def test_gamma_zero_per_sample(self):
@@ -125,7 +125,10 @@ class TestFocalLossGammaZeroEquivalence:
         ce_losses = ce(logits, targets)
 
         torch.testing.assert_close(
-            focal_losses, ce_losses * 0.5, atol=1e-5, rtol=1e-5,
+            focal_losses,
+            ce_losses * 0.5,
+            atol=1e-5,
+            rtol=1e-5,
         )
 
     def test_gamma_zero_sum_reduction(self):
@@ -138,8 +141,10 @@ class TestFocalLossGammaZeroEquivalence:
         targets = torch.randint(0, 2, (20,))
 
         torch.testing.assert_close(
-            focal(logits, targets), ce(logits, targets) * 0.5,
-            atol=1e-5, rtol=1e-5,
+            focal(logits, targets),
+            ce(logits, targets) * 0.5,
+            atol=1e-5,
+            rtol=1e-5,
         )
 
 
@@ -149,7 +154,6 @@ class TestFocalLossGammaZeroEquivalence:
 
 
 class TestFocalLossDownWeighting:
-
     def test_high_confidence_correct_gets_lower_loss(self):
         """
         For a correctly classified sample, higher confidence should produce
@@ -225,7 +229,6 @@ class TestFocalLossDownWeighting:
 
 
 class TestGNNScorerWithFocalLoss:
-
     @pytest.fixture
     def _skip_without_torch_geometric(self):
         """Skip tests if torch_geometric is not installed."""
@@ -253,8 +256,8 @@ class TestGNNScorerWithFocalLoss:
         )
 
         assert len(losses) == 30, f"Expected 30 loss values, got {len(losses)}"
-        assert all(isinstance(l, float) for l in losses)
-        assert all(l >= 0.0 for l in losses), "Loss values must be non-negative"
+        assert all(isinstance(loss, float) for loss in losses)
+        assert all(loss >= 0.0 for loss in losses), "Loss values must be non-negative"
         # The loss curve should generally decrease (compare first 5 avg vs last 5 avg)
         avg_first = sum(losses[:5]) / 5
         avg_last = sum(losses[-5:]) / 5
@@ -288,7 +291,6 @@ class TestGNNScorerWithFocalLoss:
 
 
 class TestFocalLossEdgeCases:
-
     def test_all_same_class_zero(self):
         """All targets are class 0 (legitimate). Loss should be finite."""
         focal = FocalLoss(gamma=2.0, alpha=0.25)
@@ -336,7 +338,9 @@ class TestFocalLossEdgeCases:
         targets = torch.tensor([0, 1], dtype=torch.long)
 
         loss = focal(logits, targets)
-        assert torch.isfinite(loss), f"Loss is not finite for large logits: {loss.item()}"
+        assert torch.isfinite(loss), (
+            f"Loss is not finite for large logits: {loss.item()}"
+        )
 
     def test_equal_logits(self):
         """Equal logits (maximum uncertainty) should produce valid loss."""
@@ -355,7 +359,6 @@ class TestFocalLossEdgeCases:
 
 
 class TestFocalLossValidation:
-
     def test_negative_gamma_raises(self):
         with pytest.raises(ValueError, match="gamma must be non-negative"):
             FocalLoss(gamma=-1.0)
@@ -385,7 +388,6 @@ class TestFocalLossValidation:
 
 
 class TestFocalLossReductions:
-
     def test_none_returns_per_sample(self):
         focal = FocalLoss(gamma=2.0, alpha=0.25, reduction="none")
         logits = torch.randn(8, 2)

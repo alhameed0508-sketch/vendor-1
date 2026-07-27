@@ -49,21 +49,24 @@ spec:
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: 8000
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
-            - name: data
-              mountPath: /app/data
-              readOnly: true
-            - name: models
-              mountPath: /app/models
-              readOnly: true
+            - name: tmp
+              mountPath: /tmp
       volumes:
-        - name: data
-          emptyDir: {}
-        - name: models
-          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi

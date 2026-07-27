@@ -98,22 +98,21 @@ class RollingPropensityScorer:
         window_scores: List[Tuple[str, float]] = []
         for window_name, window_seconds in WINDOWS:
             cutoff = now - window_seconds
-            window_txns = [(ts, amt, recip, inc) for ts, amt, recip, inc in history if ts >= cutoff]
+            window_txns = [
+                (ts, amt, recip, inc) for ts, amt, recip, inc in history if ts >= cutoff
+            ]
             score = self._score_window(window_txns)
             window_scores.append((window_name, round(score, 4)))
 
         # Weighted blend of window scores
-        base_score = sum(
-            WINDOW_WEIGHTS[name] * score
-            for name, score in window_scores
-        )
+        base_score = sum(WINDOW_WEIGHTS[name] * score for name, score in window_scores)
 
         # External signal boosts
         external_boost = (
-            EXTERNAL_WEIGHTS["smurf"] * smurf_score +
-            EXTERNAL_WEIGHTS["device_trust"] * device_trust +
-            EXTERNAL_WEIGHTS["semantics"] * semantics_score +
-            EXTERNAL_WEIGHTS["baseline_deviation"] * baseline_deviation
+            EXTERNAL_WEIGHTS["smurf"] * smurf_score
+            + EXTERNAL_WEIGHTS["device_trust"] * device_trust
+            + EXTERNAL_WEIGHTS["semantics"] * semantics_score
+            + EXTERNAL_WEIGHTS["baseline_deviation"] * baseline_deviation
         )
 
         final_score = min(base_score + external_boost, 1.0)
@@ -122,9 +121,18 @@ class RollingPropensityScorer:
         signal_breakdown = (
             ("base_window_score", round(base_score, 4)),
             ("smurf_boost", round(EXTERNAL_WEIGHTS["smurf"] * smurf_score, 4)),
-            ("device_trust_boost", round(EXTERNAL_WEIGHTS["device_trust"] * device_trust, 4)),
-            ("semantics_boost", round(EXTERNAL_WEIGHTS["semantics"] * semantics_score, 4)),
-            ("baseline_boost", round(EXTERNAL_WEIGHTS["baseline_deviation"] * baseline_deviation, 4)),
+            (
+                "device_trust_boost",
+                round(EXTERNAL_WEIGHTS["device_trust"] * device_trust, 4),
+            ),
+            (
+                "semantics_boost",
+                round(EXTERNAL_WEIGHTS["semantics"] * semantics_score, 4),
+            ),
+            (
+                "baseline_boost",
+                round(EXTERNAL_WEIGHTS["baseline_deviation"] * baseline_deviation, 4),
+            ),
         )
 
         record = PropensityRecord(
@@ -139,6 +147,7 @@ class RollingPropensityScorer:
         if self._store is not None:
             try:
                 from cache.propensity_store import PropensityRecord as StoreRecord
+
                 store_record = StoreRecord(
                     account_id=record.account_id,
                     score=record.score,

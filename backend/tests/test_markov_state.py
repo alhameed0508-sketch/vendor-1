@@ -32,6 +32,7 @@ from models.temporal.markov_state import (
 # Test helpers
 # ---------------------------------------------------------------------------
 
+
 def _acc(acc_id: str, age: int = 30, avg_monthly: int = 8) -> dict:
     """Build a minimal account metadata dict."""
     return {
@@ -74,6 +75,7 @@ def scorer() -> MarkovStateScorer:
 # AccountState enum
 # ---------------------------------------------------------------------------
 
+
 class TestAccountState:
     def test_has_five_states(self):
         assert len(AccountState) == 5
@@ -86,6 +88,7 @@ class TestAccountState:
 # ---------------------------------------------------------------------------
 # Frozen dataclasses
 # ---------------------------------------------------------------------------
+
 
 class TestFrozenDataclasses:
     def test_markov_state_result_is_frozen(self):
@@ -111,21 +114,28 @@ class TestFrozenDataclasses:
 # State classification
 # ---------------------------------------------------------------------------
 
+
 class TestStateClassification:
     """Verify _classify_state for each AccountState."""
 
     def test_dormant_no_transactions(self, scorer):
         state = scorer._classify_state(
-            _acc("A"), [], [],
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            [],
+            [],
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.DORMANT
 
     def test_dormant_single_transaction(self, scorer):
         txns = [_txn("A", "B", ts=_week_ts(BASE_DATE, 0, day=1))]
         state = scorer._classify_state(
-            _acc("A"), txns, [],
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            txns,
+            [],
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.DORMANT
 
@@ -139,8 +149,11 @@ class TestStateClassification:
             _txn("X", "A", 5000, _week_ts(BASE_DATE, 0, day=1)),
         ]
         state = scorer._classify_state(
-            _acc("A"), out_txns, in_txns,
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            out_txns,
+            in_txns,
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.LOW_ACTIVITY
 
@@ -155,8 +168,11 @@ class TestStateClassification:
             _txn("A", "D", 5_000, _week_ts(BASE_DATE, 0, day=4)),
         ]
         state = scorer._classify_state(
-            _acc("A"), out_txns, in_txns,
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            out_txns,
+            in_txns,
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.RECEIVING
 
@@ -170,8 +186,11 @@ class TestStateClassification:
             _txn("A", "D2", 40_000, _week_ts(BASE_DATE, 0, day=3)),
         ]
         state = scorer._classify_state(
-            _acc("A"), out_txns, in_txns,
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            out_txns,
+            in_txns,
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.FORWARDING
 
@@ -185,8 +204,11 @@ class TestStateClassification:
             _txn("A", "D2", 48_000, _week_ts(BASE_DATE, 0, day=3)),
         ]
         state = scorer._classify_state(
-            _acc("A"), out_txns, in_txns,
-            BASE_DATE, BASE_DATE + timedelta(weeks=1),
+            _acc("A"),
+            out_txns,
+            in_txns,
+            BASE_DATE,
+            BASE_DATE + timedelta(weeks=1),
         )
         assert state == AccountState.SWEEP
 
@@ -194,6 +216,7 @@ class TestStateClassification:
 # ---------------------------------------------------------------------------
 # Transition matrix
 # ---------------------------------------------------------------------------
+
 
 class TestTransitionMatrix:
     def test_simple_sequence(self, scorer):
@@ -226,7 +249,14 @@ class TestTransitionMatrix:
         assert counts.get("DORMANT", 0) == 1
 
     def test_probabilities_sum_to_one(self, scorer):
-        history = ["DORMANT", "RECEIVING", "FORWARDING", "SWEEP", "DORMANT", "RECEIVING"]
+        history = [
+            "DORMANT",
+            "RECEIVING",
+            "FORWARDING",
+            "SWEEP",
+            "DORMANT",
+            "RECEIVING",
+        ]
         matrix = scorer._compute_transition_matrix(history)
 
         # For each from_state that has outgoing transitions, probs should sum to 1
@@ -239,6 +269,7 @@ class TestTransitionMatrix:
 # ---------------------------------------------------------------------------
 # Mule lifecycle scoring
 # ---------------------------------------------------------------------------
+
 
 class TestMuleLifecycleScoring:
     def test_canonical_lifecycle_scores_high(self, scorer):
@@ -282,6 +313,7 @@ class TestMuleLifecycleScoring:
 # Reason codes
 # ---------------------------------------------------------------------------
 
+
 class TestReasonCodes:
     def test_mk01_dormant_to_receiving(self, scorer):
         history = ["DORMANT", "RECEIVING"]
@@ -310,9 +342,7 @@ class TestReasonCodes:
 
     def test_mk04_not_triggered_if_slow(self, scorer):
         """DORMANT -> ... -> SWEEP over many weeks should NOT fire MK04."""
-        history = (
-            ["DORMANT"] + ["LOW_ACTIVITY"] * 5 + ["RECEIVING"] + ["SWEEP"]
-        )
+        history = ["DORMANT"] + ["LOW_ACTIVITY"] * 5 + ["RECEIVING"] + ["SWEEP"]
         matrix = scorer._compute_transition_matrix(history)
         codes = scorer._generate_reason_codes(matrix, history)
         assert not any("MK04" in c for c in codes)
@@ -320,8 +350,12 @@ class TestReasonCodes:
     def test_mk05_cyclic_pattern(self, scorer):
         """Repeated DORMANT->SWEEP cycles -> MK05."""
         history = [
-            "DORMANT", "RECEIVING", "SWEEP",
-            "DORMANT", "FORWARDING", "SWEEP",
+            "DORMANT",
+            "RECEIVING",
+            "SWEEP",
+            "DORMANT",
+            "FORWARDING",
+            "SWEEP",
         ]
         matrix = scorer._compute_transition_matrix(history)
         codes = scorer._generate_reason_codes(matrix, history)
@@ -346,6 +380,7 @@ class TestReasonCodes:
 # End-to-end score_account
 # ---------------------------------------------------------------------------
 
+
 class TestScoreAccount:
     def test_canonical_mule_gets_high_score(self, scorer):
         """Simulate a textbook mule lifecycle across weekly windows."""
@@ -362,21 +397,37 @@ class TestScoreAccount:
         # Weeks 4-7: receiving phase
         for w in range(4, 8):
             for d in range(3):
-                in_txns.append(_txn("S1", "MULE_001", 80_000, _week_ts(BASE_DATE, w, day=d)))
+                in_txns.append(
+                    _txn("S1", "MULE_001", 80_000, _week_ts(BASE_DATE, w, day=d))
+                )
 
         # Weeks 8-11: forwarding phase
         for w in range(8, 12):
-            in_txns.append(_txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0)))
-            out_txns.append(_txn("MULE_001", "D1", 40_000, _week_ts(BASE_DATE, w, day=1)))
-            out_txns.append(_txn("MULE_001", "D2", 40_000, _week_ts(BASE_DATE, w, day=2)))
+            in_txns.append(
+                _txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0))
+            )
+            out_txns.append(
+                _txn("MULE_001", "D1", 40_000, _week_ts(BASE_DATE, w, day=1))
+            )
+            out_txns.append(
+                _txn("MULE_001", "D2", 40_000, _week_ts(BASE_DATE, w, day=2))
+            )
 
         # Weeks 12-14: sweep phase
         for w in range(12, 15):
-            in_txns.append(_txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0)))
-            out_txns.append(_txn("MULE_001", "D1", 50_000, _week_ts(BASE_DATE, w, day=1)))
-            out_txns.append(_txn("MULE_001", "D2", 48_000, _week_ts(BASE_DATE, w, day=2)))
+            in_txns.append(
+                _txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0))
+            )
+            out_txns.append(
+                _txn("MULE_001", "D1", 50_000, _week_ts(BASE_DATE, w, day=1))
+            )
+            out_txns.append(
+                _txn("MULE_001", "D2", 48_000, _week_ts(BASE_DATE, w, day=2))
+            )
 
-        result = scorer.score_account("MULE_001", acc, out_txns, in_txns, window_weeks=24)
+        result = scorer.score_account(
+            "MULE_001", acc, out_txns, in_txns, window_weeks=24
+        )
 
         assert isinstance(result, MarkovStateResult)
         assert result.account_id == "MULE_001"
@@ -394,10 +445,16 @@ class TestScoreAccount:
 
         # Steady low activity for 20 weeks
         for w in range(20):
-            out_txns.append(_txn("NORMAL_001", "SHOP", 2_000, _week_ts(BASE_DATE, w, day=3)))
-            in_txns.append(_txn("SALARY", "NORMAL_001", 2_500, _week_ts(BASE_DATE, w, day=0)))
+            out_txns.append(
+                _txn("NORMAL_001", "SHOP", 2_000, _week_ts(BASE_DATE, w, day=3))
+            )
+            in_txns.append(
+                _txn("SALARY", "NORMAL_001", 2_500, _week_ts(BASE_DATE, w, day=0))
+            )
 
-        result = scorer.score_account("NORMAL_001", acc, out_txns, in_txns, window_weeks=24)
+        result = scorer.score_account(
+            "NORMAL_001", acc, out_txns, in_txns, window_weeks=24
+        )
 
         assert result.transition_score < 0.3
         # Should have no mule-specific reason codes
@@ -426,7 +483,9 @@ class TestScoreAccount:
         acc = _acc("A")
         # Create an extreme scenario
         in_txns = [_txn("S", "A", 1_000_000, _week_ts(BASE_DATE, w)) for w in range(20)]
-        out_txns = [_txn("A", "D", 999_000, _week_ts(BASE_DATE, w, day=3)) for w in range(20)]
+        out_txns = [
+            _txn("A", "D", 999_000, _week_ts(BASE_DATE, w, day=3)) for w in range(20)
+        ]
         result = scorer.score_account("A", acc, out_txns, in_txns, window_weeks=24)
         assert 0.0 <= result.transition_score <= 1.0
 
@@ -434,6 +493,7 @@ class TestScoreAccount:
 # ---------------------------------------------------------------------------
 # Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     def test_no_transactions(self, scorer):
@@ -496,7 +556,12 @@ class TestEdgeCases:
             {"from_account": "DT", "to_account": "C", "amount": 5000, "timestamp": dt2},
         ]
         in_txns = [
-            {"from_account": "S", "to_account": "DT", "amount": 50000, "timestamp": dt3},
+            {
+                "from_account": "S",
+                "to_account": "DT",
+                "amount": 50000,
+                "timestamp": dt3,
+            },
         ]
         result = scorer.score_account("DT", acc, out_txns, in_txns)
         # Should not raise, and should produce some result
@@ -507,6 +572,7 @@ class TestEdgeCases:
 # ---------------------------------------------------------------------------
 # Batch scoring
 # ---------------------------------------------------------------------------
+
 
 class TestBatchScoring:
     def test_batch_returns_all_accounts(self, scorer):
@@ -563,6 +629,7 @@ class TestBatchScoring:
 # ---------------------------------------------------------------------------
 # Private helper tests
 # ---------------------------------------------------------------------------
+
 
 class TestHelpers:
     def test_parse_timestamp_iso(self):

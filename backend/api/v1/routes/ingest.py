@@ -3,7 +3,6 @@ Ingest routes — /api/v1/ingest/*
 """
 
 import json
-import time
 import queue
 import logging
 
@@ -18,7 +17,6 @@ from api.deps import (
     get_ingest_service,
     get_detection_service,
     get_dataset_repo,
-    get_kafka_consumer,
 )
 from services.ingest_service import IngestService
 from services.detection_service import DetectionService
@@ -124,8 +122,10 @@ def register_ingest_routes(r: APIRouter, limiter: Limiter) -> None:
         finally:
             producer.close()
 
-        return success_response({
-            "seeded": count,
-            "topic": producer.topic,
-            "message": f"Sent {count} transactions to Kafka",
-        })
+        return success_response(
+            {
+                "seeded": count,
+                "topic": producer.topic,
+                "message": f"Sent {count} transactions to Kafka",
+            }
+        )

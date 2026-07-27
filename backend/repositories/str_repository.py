@@ -6,7 +6,7 @@ Status progression: DRAFT -> READY_FOR_SUBMISSION -> SUBMITTED -> ACKNOWLEDGED
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,11 @@ class STRRepository:
 
     def create(self, str_record: Dict) -> Dict:
         str_id = str_record["str_id"]
-        record = {**str_record, "status": "DRAFT", "created_at": datetime.utcnow().isoformat()}
+        record = {
+            **str_record,
+            "status": "DRAFT",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
         self._store[str_id] = record
         return dict(record)
 
@@ -47,7 +51,7 @@ class STRRepository:
         if status:
             records = [r for r in records if r.get("status") == status]
         records.sort(key=lambda r: r.get("created_at", ""), reverse=True)
-        return [dict(r) for r in records[offset:offset + limit]]
+        return [dict(r) for r in records[offset : offset + limit]]
 
     def update_status(self, str_id: str, new_status: str, **kwargs) -> Optional[Dict]:
         record = self._store.get(str_id)
@@ -64,7 +68,7 @@ class STRRepository:
         updated = {
             **record,
             "status": new_status,
-            "updated_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             **kwargs,
         }
         self._store[str_id] = updated

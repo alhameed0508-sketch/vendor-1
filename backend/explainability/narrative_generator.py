@@ -76,11 +76,11 @@ def generate_narrative(
     account_count = alert.get("account_count", 0)
     txn_count = alert.get("txn_count", 0)
     nodes = alert.get("nodes", [])
-    edges = alert.get("edges", [])
     reason_codes = alert.get("reason_codes", [])
     shared_devices = alert.get("shared_devices", [])
     shared_ips = alert.get("shared_ips", [])
     gnn_score = alert.get("gnn_score")
+    anomaly_score = alert.get("anomaly_score")
     explanation = alert.get("explanation", {})
 
     role_counts = _count_roles(nodes)
@@ -134,10 +134,7 @@ def generate_narrative(
             f"- accounts accessed from same physical location"
         )
 
-    young_accounts = [
-        n for n in nodes
-        if n.get("account_age_days", 999) < 30
-    ]
+    young_accounts = [n for n in nodes if n.get("account_age_days", 999) < 30]
     if young_accounts:
         key_findings.append(
             f"{len(young_accounts)} account(s) less than 30 days old - "
@@ -156,7 +153,17 @@ def generate_narrative(
             f"as {round(gnn_score * 100)}% likely mule network"
         )
 
-    structuring_codes = [rc for rc in reason_codes if "threshold" in rc.lower() or "structur" in rc.lower()]
+    if anomaly_score is not None:
+        key_findings.append(
+            "Label-free peer analysis independently identified an account at "
+            f"{round(anomaly_score * 100)}% anomaly risk"
+        )
+
+    structuring_codes = [
+        rc
+        for rc in reason_codes
+        if "threshold" in rc.lower() or "structur" in rc.lower()
+    ]
     if structuring_codes:
         key_findings.append(
             "Transaction amounts deliberately structured below \u20b950,000 reporting threshold"
@@ -196,13 +203,9 @@ def generate_narrative(
     if shared_devices or shared_ips:
         evidence_parts = []
         if shared_devices:
-            evidence_parts.append(
-                f"{len(shared_devices)} shared device fingerprint(s)"
-            )
+            evidence_parts.append(f"{len(shared_devices)} shared device fingerprint(s)")
         if shared_ips:
-            evidence_parts.append(
-                f"{len(shared_ips)} shared IP address(es)"
-            )
+            evidence_parts.append(f"{len(shared_ips)} shared IP address(es)")
         paragraphs.append(
             f"Physical evidence strengthens this assessment: {' and '.join(evidence_parts)} "
             f"link multiple accounts to the same operator. This type of digital forensic "
@@ -228,10 +231,10 @@ def generate_narrative(
     # ── Regulatory Summary ──
     reg_parts = []
     reg_parts.append(
-        f"This Suspicious Transaction Report is generated pursuant to the "
-        f"Prevention of Money Laundering Act (PMLA) 2002 and RBI Master Directions "
-        f"on Fraud Risk Management (July 2024). The reporting entity is Indian Overseas Bank "
-        f"(IFSC: IOBA0000001)."
+        "This Suspicious Transaction Report is generated pursuant to the "
+        "Prevention of Money Laundering Act (PMLA) 2002 and RBI Master Directions "
+        "on Fraud Risk Management (July 2024). The reporting entity is Indian Overseas Bank "
+        "(IFSC: IOBA0000001)."
     )
     reg_parts.append(
         f"MuleCatch automated detection system identified {account_count} accounts "
@@ -246,8 +249,8 @@ def generate_narrative(
         f"Reason codes triggered: {', '.join(rc.split(':')[0] for rc in reason_codes[:6])}."
     )
     reg_parts.append(
-        f"Recommended action: File STR with FIU-IND (FIU-IND v2.1 format) and "
-        f"initiate enhanced due diligence on all accounts in this cluster."
+        "Recommended action: File STR with FIU-IND (FIU-IND v2.1 format) and "
+        "initiate enhanced due diligence on all accounts in this cluster."
     )
 
     regulatory_summary = " ".join(reg_parts)
@@ -255,27 +258,33 @@ def generate_narrative(
     # ── Recommended Actions ──
     recommended_actions = []
     if severity == "CRITICAL":
-        recommended_actions.extend([
-            "IMMEDIATE: Freeze SOURCE and AGGREGATOR accounts",
-            "File STR with FIU-IND within 24 hours",
-            "Escalate to Chief Compliance Officer",
-            "Preserve all transaction records and device logs",
-            "Coordinate with cyber cell if organized fraud suspected",
-        ])
+        recommended_actions.extend(
+            [
+                "IMMEDIATE: Freeze SOURCE and AGGREGATOR accounts",
+                "File STR with FIU-IND within 24 hours",
+                "Escalate to Chief Compliance Officer",
+                "Preserve all transaction records and device logs",
+                "Coordinate with cyber cell if organized fraud suspected",
+            ]
+        )
     elif severity == "HIGH":
-        recommended_actions.extend([
-            "Place transaction hold on flagged accounts",
-            "File STR with FIU-IND within 7 days",
-            "Initiate enhanced due diligence on all cluster accounts",
-            "Review and verify KYC documentation",
-        ])
+        recommended_actions.extend(
+            [
+                "Place transaction hold on flagged accounts",
+                "File STR with FIU-IND within 7 days",
+                "Initiate enhanced due diligence on all cluster accounts",
+                "Review and verify KYC documentation",
+            ]
+        )
     else:
-        recommended_actions.extend([
-            "Monitor accounts for escalating activity",
-            "Complete KYC verification for pending accounts",
-            "Review transaction patterns weekly",
-            "Consider STR filing if patterns persist",
-        ])
+        recommended_actions.extend(
+            [
+                "Monitor accounts for escalating activity",
+                "Complete KYC verification for pending accounts",
+                "Review transaction patterns weekly",
+                "Consider STR filing if patterns persist",
+            ]
+        )
 
     return AlertNarrative(
         alert_id=alert_id,

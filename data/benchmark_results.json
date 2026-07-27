@@ -421,5 +421,421 @@
       "train_accounts": 41,
       "test_accounts": 20
     }
+  },
+  {
+    "run_id": "BENCH_2BE3EAB99E84",
+    "benchmark_type": "synthetic",
+    "parameters": {
+      "num_clusters": 3,
+      "num_legit_accounts": 30
+    },
+    "completed_at": "2026-07-27T05:58:19.381911+00:00",
+    "result": {
+      "dataset_name": "synthetic_3clusters",
+      "total_accounts": 67,
+      "total_transactions": 363,
+      "alerts_generated": 3,
+      "true_positives": 37,
+      "false_positives": 0,
+      "true_negatives": 30,
+      "false_negatives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy": 1.0,
+      "auc_roc": 1.0,
+      "elapsed_seconds": 0.259
+    }
+  },
+  {
+    "run_id": "BENCH_B5B4523D8254",
+    "benchmark_type": "adversarial",
+    "parameters": {
+      "num_clusters": 3,
+      "num_legit": 30,
+      "num_adversarial": 20
+    },
+    "completed_at": "2026-07-27T05:58:34.732647+00:00",
+    "result": {
+      "dataset_name": "adversarial_3c_20adv",
+      "total_accounts": 27,
+      "total_transactions": 31,
+      "alerts_generated": 1,
+      "true_positives": 5,
+      "false_positives": 0,
+      "true_negatives": 15,
+      "false_negatives": 7,
+      "precision": 1.0,
+      "recall": 0.4167,
+      "f1_score": 0.5882,
+      "accuracy": 0.7407,
+      "auc_roc": 0.7083,
+      "elapsed_seconds": 0.075,
+      "split_metadata": {
+        "method": "holdout",
+        "train_ratio": 0.7,
+        "train_accounts": 59,
+        "test_accounts": 27,
+        "random_seed": 42
+      }
+    }
+  },
+  {
+    "run_id": "BENCH_C548569D4759",
+    "benchmark_type": "adversarial",
+    "parameters": {
+      "num_clusters": 3,
+      "num_legit": 30,
+      "num_adversarial": 20
+    },
+    "completed_at": "2026-07-27T05:58:47.476037+00:00",
+    "result": {
+      "dataset_name": "adversarial_3c_20adv",
+      "total_accounts": 27,
+      "total_transactions": 37,
+      "alerts_generated": 1,
+      "true_positives": 5,
+      "false_positives": 0,
+      "true_negatives": 15,
+      "false_negatives": 7,
+      "precision": 1.0,
+      "recall": 0.4167,
+      "f1_score": 0.5882,
+      "accuracy": 0.7407,
+      "auc_roc": 0.7083,
+      "elapsed_seconds": 0.063,
+      "split_metadata": {
+        "method": "holdout",
+        "train_ratio": 0.7,
+        "train_accounts": 59,
+        "test_accounts": 27,
+        "random_seed": 42
+      }
+    }
+  },
+  {
+    "run_id": "BENCH_038A8BE50081",
+    "benchmark_type": "cross_validation",
+    "parameters": {
+      "num_clusters": 3,
+      "num_legit": 30,
+      "num_folds": 5
+    },
+    "completed_at": "2026-07-27T05:58:49.061874+00:00",
+    "result": {
+      "dataset_name": "crossval_3clusters_5folds",
+      "num_folds": 5,
+      "fold_results": [
+        {
+          "fold": 1,
+          "test_accounts": 14,
+          "tp": 3,
+          "fp": 0,
+          "tn": 6,
+          "fn": 5,
+          "precision": 1.0,
+          "recall": 0.375,
+          "f1_score": 0.5455,
+          "accuracy": 0.6429
+        },
+        {
+          "fold": 2,
+          "test_accounts": 14,
+          "tp": 7,
+          "fp": 0,
+          "tn": 6,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.875,
+          "f1_score": 0.9333,
+          "accuracy": 0.9286
+        },
+        {
+          "fold": 3,
+          "test_accounts": 13,
+          "tp": 0,
+          "fp": 0,
+          "tn": 6,
+          "fn": 7,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.4615
+        },
+        {
+          "fold": 4,
+          "test_accounts": 13,
+          "tp": 3,
+          "fp": 0,
+          "tn": 6,
+          "fn": 4,
+          "precision": 1.0,
+          "recall": 0.4286,
+          "f1_score": 0.6,
+          "accuracy": 0.6923
+        },
+        {
+          "fold": 5,
+          "test_accounts": 13,
+          "tp": 0,
+          "fp": 0,
+          "tn": 6,
+          "fn": 7,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1_score": 0.0,
+          "accuracy": 0.4615
+        }
+      ],
+      "mean_precision": 0.6,
+      "mean_recall": 0.3357,
+      "mean_f1": 0.4158,
+      "mean_accuracy": 0.6374,
+      "std_precision": 0.4899,
+      "std_recall": 0.3245,
+      "std_f1": 0.3645,
+      "std_accuracy": 0.173,
+      "elapsed_seconds": 0.207
+    }
+  },
+  {
+    "run_id": "BENCH_C02BCCAA4E04",
+    "benchmark_type": "comparison",
+    "parameters": {
+      "cluster_counts": [
+        3,
+        5,
+        8
+      ]
+    },
+    "completed_at": "2026-07-27T05:58:54.230042+00:00",
+    "result": {
+      "benchmark_type": "comparison",
+      "benchmarks": [
+        {
+          "dataset_name": "synthetic_3clusters",
+          "total_accounts": 67,
+          "total_transactions": 355,
+          "alerts_generated": 3,
+          "true_positives": 37,
+          "false_positives": 0,
+          "true_negatives": 30,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "accuracy": 1.0,
+          "auc_roc": 1.0,
+          "elapsed_seconds": 0.184,
+          "config": "3 clusters"
+        },
+        {
+          "dataset_name": "synthetic_5clusters",
+          "total_accounts": 111,
+          "total_transactions": 494,
+          "alerts_generated": 5,
+          "true_positives": 61,
+          "false_positives": 0,
+          "true_negatives": 50,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "accuracy": 1.0,
+          "auc_roc": 1.0,
+          "elapsed_seconds": 0.353,
+          "config": "5 clusters"
+        },
+        {
+          "dataset_name": "synthetic_8clusters",
+          "total_accounts": 178,
+          "total_transactions": 645,
+          "alerts_generated": 8,
+          "true_positives": 98,
+          "false_positives": 0,
+          "true_negatives": 80,
+          "false_negatives": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "accuracy": 1.0,
+          "auc_roc": 1.0,
+          "elapsed_seconds": 0.559,
+          "config": "8 clusters"
+        }
+      ]
+    }
+  },
+  {
+    "run_id": "BENCH_94F8AB6ED52C",
+    "benchmark_type": "full_evaluation",
+    "parameters": {},
+    "completed_at": "2026-07-27T05:58:59.630026+00:00",
+    "result": {
+      "benchmark_type": "full_evaluation",
+      "summary": {
+        "dataset_name": "synthetic_3clusters",
+        "total_accounts": 67,
+        "total_transactions": 369,
+        "alerts_generated": 3,
+        "true_positives": 37,
+        "false_positives": 0,
+        "true_negatives": 30,
+        "false_negatives": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "auc_roc": 1.0,
+        "elapsed_seconds": 0.192
+      },
+      "standard": {
+        "dataset_name": "synthetic_3clusters",
+        "total_accounts": 67,
+        "total_transactions": 369,
+        "alerts_generated": 3,
+        "true_positives": 37,
+        "false_positives": 0,
+        "true_negatives": 30,
+        "false_negatives": 0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy": 1.0,
+        "auc_roc": 1.0,
+        "elapsed_seconds": 0.192
+      },
+      "adversarial": {
+        "dataset_name": "adversarial_3c_20adv",
+        "total_accounts": 27,
+        "total_transactions": 34,
+        "alerts_generated": 1,
+        "true_positives": 5,
+        "false_positives": 0,
+        "true_negatives": 15,
+        "false_negatives": 7,
+        "precision": 1.0,
+        "recall": 0.4167,
+        "f1_score": 0.5882,
+        "accuracy": 0.7407,
+        "auc_roc": 0.7083,
+        "elapsed_seconds": 0.071,
+        "split_metadata": {
+          "method": "holdout",
+          "train_ratio": 0.7,
+          "train_accounts": 59,
+          "test_accounts": 27,
+          "random_seed": 42
+        }
+      },
+      "cross_validation": {
+        "dataset_name": "crossval_3clusters_5folds",
+        "num_folds": 5,
+        "fold_results": [
+          {
+            "fold": 1,
+            "test_accounts": 14,
+            "tp": 0,
+            "fp": 0,
+            "tn": 6,
+            "fn": 8,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0,
+            "accuracy": 0.4286
+          },
+          {
+            "fold": 2,
+            "test_accounts": 14,
+            "tp": 3,
+            "fp": 0,
+            "tn": 6,
+            "fn": 5,
+            "precision": 1.0,
+            "recall": 0.375,
+            "f1_score": 0.5455,
+            "accuracy": 0.6429
+          },
+          {
+            "fold": 3,
+            "test_accounts": 13,
+            "tp": 0,
+            "fp": 0,
+            "tn": 6,
+            "fn": 7,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0,
+            "accuracy": 0.4615
+          },
+          {
+            "fold": 4,
+            "test_accounts": 13,
+            "tp": 3,
+            "fp": 0,
+            "tn": 6,
+            "fn": 4,
+            "precision": 1.0,
+            "recall": 0.4286,
+            "f1_score": 0.6,
+            "accuracy": 0.6923
+          },
+          {
+            "fold": 5,
+            "test_accounts": 13,
+            "tp": 0,
+            "fp": 0,
+            "tn": 6,
+            "fn": 7,
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1_score": 0.0,
+            "accuracy": 0.4615
+          }
+        ],
+        "mean_precision": 0.4,
+        "mean_recall": 0.1607,
+        "mean_f1": 0.2291,
+        "mean_accuracy": 0.5374,
+        "std_precision": 0.4899,
+        "std_recall": 0.1976,
+        "std_f1": 0.2811,
+        "std_accuracy": 0.1081,
+        "elapsed_seconds": 0.181
+      }
+    }
+  },
+  {
+    "run_id": "BENCH_827372E32D08",
+    "benchmark_type": "adversarial",
+    "parameters": {
+      "num_clusters": 3,
+      "num_legit": 30,
+      "num_adversarial": 20
+    },
+    "completed_at": "2026-07-27T05:59:17.110271+00:00",
+    "result": {
+      "dataset_name": "adversarial_3c_20adv",
+      "total_accounts": 27,
+      "total_transactions": 32,
+      "alerts_generated": 1,
+      "true_positives": 5,
+      "false_positives": 0,
+      "true_negatives": 15,
+      "false_negatives": 7,
+      "precision": 1.0,
+      "recall": 0.4167,
+      "f1_score": 0.5882,
+      "accuracy": 0.7407,
+      "auc_roc": 0.7083,
+      "elapsed_seconds": 0.053,
+      "split_metadata": {
+        "method": "holdout",
+        "train_ratio": 0.7,
+        "train_accounts": 59,
+        "test_accounts": 27,
+        "random_seed": 42
+      }
+    }
   }
 ]

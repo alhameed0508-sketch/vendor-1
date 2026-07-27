@@ -5,6 +5,7 @@ Run: python -m pytest backend/tests/test_explainability.py -v
 
 import sys
 import os
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 import pytest
@@ -42,15 +43,17 @@ def first_alert_dict(pipeline_results):
 
 # ── SHAP Explainer Tests ─────────────────────────────────────────────────────
 
-class TestSHAPExplainer:
 
+class TestSHAPExplainer:
     def test_compute_shap_values_returns_results(self, first_alert_dict):
         from backend.explainability.shap_explainer import compute_shap_values
+
         results = compute_shap_values(first_alert_dict)
         assert len(results) > 0
 
     def test_shap_result_has_required_fields(self, first_alert_dict):
         from backend.explainability.shap_explainer import compute_shap_values
+
         results = compute_shap_values(first_alert_dict)
         for r in results:
             assert r.account_id
@@ -61,6 +64,7 @@ class TestSHAPExplainer:
 
     def test_shap_feature_values_have_descriptions(self, first_alert_dict):
         from backend.explainability.shap_explainer import compute_shap_values
+
         results = compute_shap_values(first_alert_dict)
         for r in results:
             for sv in r.shap_values:
@@ -70,13 +74,18 @@ class TestSHAPExplainer:
     def test_shap_to_dict_serializable(self, first_alert_dict):
         from backend.explainability.shap_explainer import compute_shap_values
         import json
+
         results = compute_shap_values(first_alert_dict)
         for r in results:
             d = r.to_dict()
             json.dumps(d)  # must not raise
 
     def test_waterfall_chart_format(self, first_alert_dict):
-        from backend.explainability.shap_explainer import compute_shap_values, format_for_waterfall_chart
+        from backend.explainability.shap_explainer import (
+            compute_shap_values,
+            format_for_waterfall_chart,
+        )
+
         results = compute_shap_values(first_alert_dict)
         if results:
             chart = format_for_waterfall_chart(results[0])
@@ -87,55 +96,64 @@ class TestSHAPExplainer:
 
     def test_empty_alert_returns_empty(self):
         from backend.explainability.shap_explainer import compute_shap_values
+
         results = compute_shap_values({"nodes": [], "edges": []})
         assert results == []
 
 
 # ── Narrative Generator Tests ─────────────────────────────────────────────────
 
-class TestNarrativeGenerator:
 
+class TestNarrativeGenerator:
     def test_generates_narrative(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert narrative.alert_id == first_alert_dict["alert_id"]
 
     def test_executive_brief_not_empty(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert len(narrative.executive_brief) > 50
 
     def test_detailed_narrative_has_paragraphs(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert len(narrative.detailed_narrative) > 100
         assert "\n\n" in narrative.detailed_narrative
 
     def test_regulatory_summary_mentions_rbi(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert "RBI" in narrative.regulatory_summary
         assert "PMLA" in narrative.regulatory_summary
 
     def test_key_findings_populated(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert len(narrative.key_findings) >= 1
 
     def test_recommended_actions_by_severity(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         narrative = generate_narrative(first_alert_dict)
         assert len(narrative.recommended_actions) >= 2
 
     def test_narrative_to_dict_serializable(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
         import json
+
         narrative = generate_narrative(first_alert_dict)
         d = narrative.to_dict()
         json.dumps(d)  # must not raise
 
     def test_narrative_with_classification(self, first_alert_dict):
         from backend.explainability.narrative_generator import generate_narrative
+
         classification = {
             "classification": "COMPLICIT",
             "reasoning": "Device sharing and new account age indicate coordinated operation.",
@@ -147,10 +165,11 @@ class TestNarrativeGenerator:
 
 # ── Mule Classifier Tests ────────────────────────────────────────────────────
 
-class TestMuleClassifier:
 
+class TestMuleClassifier:
     def test_classify_single_account(self, first_alert_dict, pipeline_results):
         from backend.detection.mule_classifier import classify_mule_type
+
         node = first_alert_dict["nodes"][0]
         txns = pipeline_results["dataset"]["transactions"]
         result = classify_mule_type(node, txns)
@@ -160,6 +179,7 @@ class TestMuleClassifier:
 
     def test_classify_cluster(self, first_alert_dict, pipeline_results):
         from backend.detection.mule_classifier import classify_cluster
+
         txns = pipeline_results["dataset"]["transactions"]
         result = classify_cluster(first_alert_dict, txns)
         assert "cluster_classification" in result
@@ -171,6 +191,7 @@ class TestMuleClassifier:
 
     def test_young_account_flags_complicit(self):
         from backend.detection.mule_classifier import classify_mule_type
+
         account = {
             "account_id": "TEST_YOUNG",
             "account_age_days": 2,
@@ -178,18 +199,49 @@ class TestMuleClassifier:
             "role": "MULE",
         }
         txns = [
-            {"from_account": "TEST_YOUNG", "to_account": "X", "amount": 20000, "timestamp": "2024-01-01T02:00:00"},
-            {"from_account": "TEST_YOUNG", "to_account": "Y", "amount": 25000, "timestamp": "2024-01-01T03:00:00"},
-            {"from_account": "TEST_YOUNG", "to_account": "Z", "amount": 15000, "timestamp": "2024-01-01T04:00:00"},
-            {"from_account": "TEST_YOUNG", "to_account": "W", "amount": 30000, "timestamp": "2024-01-01T23:30:00"},
-            {"from_account": "TEST_YOUNG", "to_account": "V", "amount": 18000, "timestamp": "2024-01-02T00:15:00"},
-            {"from_account": "SRC", "to_account": "TEST_YOUNG", "amount": 120000, "timestamp": "2024-01-01T01:00:00"},
+            {
+                "from_account": "TEST_YOUNG",
+                "to_account": "X",
+                "amount": 20000,
+                "timestamp": "2024-01-01T02:00:00",
+            },
+            {
+                "from_account": "TEST_YOUNG",
+                "to_account": "Y",
+                "amount": 25000,
+                "timestamp": "2024-01-01T03:00:00",
+            },
+            {
+                "from_account": "TEST_YOUNG",
+                "to_account": "Z",
+                "amount": 15000,
+                "timestamp": "2024-01-01T04:00:00",
+            },
+            {
+                "from_account": "TEST_YOUNG",
+                "to_account": "W",
+                "amount": 30000,
+                "timestamp": "2024-01-01T23:30:00",
+            },
+            {
+                "from_account": "TEST_YOUNG",
+                "to_account": "V",
+                "amount": 18000,
+                "timestamp": "2024-01-02T00:15:00",
+            },
+            {
+                "from_account": "SRC",
+                "to_account": "TEST_YOUNG",
+                "amount": 120000,
+                "timestamp": "2024-01-01T01:00:00",
+            },
         ]
         result = classify_mule_type(account, txns)
         assert result.classification == "COMPLICIT"
 
     def test_old_dormant_flags_exploited(self):
         from backend.detection.mule_classifier import classify_mule_type
+
         account = {
             "account_id": "TEST_OLD",
             "account_age_days": 730,
@@ -197,16 +249,27 @@ class TestMuleClassifier:
             "role": "MULE",
         }
         txns = [
-            {"from_account": "TEST_OLD", "to_account": f"R{i}", "amount": 10000, "timestamp": f"2024-01-01T{10+i}:00:00"}
+            {
+                "from_account": "TEST_OLD",
+                "to_account": f"R{i}",
+                "amount": 10000,
+                "timestamp": f"2024-01-01T{10 + i}:00:00",
+            }
             for i in range(12)
         ] + [
-            {"from_account": "SRC", "to_account": "TEST_OLD", "amount": 130000, "timestamp": "2024-01-01T09:00:00"},
+            {
+                "from_account": "SRC",
+                "to_account": "TEST_OLD",
+                "amount": 130000,
+                "timestamp": "2024-01-01T09:00:00",
+            },
         ]
         result = classify_mule_type(account, txns)
         assert result.classification == "EXPLOITED"
 
     def test_signals_populated(self, first_alert_dict, pipeline_results):
         from backend.detection.mule_classifier import classify_mule_type
+
         node = first_alert_dict["nodes"][0]
         txns = pipeline_results["dataset"]["transactions"]
         result = classify_mule_type(node, txns)
@@ -215,8 +278,8 @@ class TestMuleClassifier:
 
 # ── Pipeline Integration with New Features ───────────────────────────────────
 
-class TestPipelineIntegration:
 
+class TestPipelineIntegration:
     def test_alerts_have_narrative(self, pipeline_results):
         for a in pipeline_results["alerts"]:
             assert a.narrative is not None, f"Alert {a.alert_id} missing narrative"
@@ -224,7 +287,9 @@ class TestPipelineIntegration:
 
     def test_alerts_have_mule_classification(self, pipeline_results):
         for a in pipeline_results["alerts"]:
-            assert a.mule_classification is not None, f"Alert {a.alert_id} missing classification"
+            assert a.mule_classification is not None, (
+                f"Alert {a.alert_id} missing classification"
+            )
             assert "cluster_classification" in a.mule_classification
 
     def test_r20_rule_exists(self):
@@ -239,10 +304,11 @@ class TestPipelineIntegration:
 
 # ── Explainer (existing) Integration ─────────────────────────────────────────
 
-class TestExplainer:
 
+class TestExplainer:
     def test_explain_alert_produces_full_explanation(self, first_alert_dict):
         from backend.explainability.explainer import explain_alert
+
         exp = explain_alert(first_alert_dict)
         assert exp.alert_id == first_alert_dict["alert_id"]
         assert len(exp.score_breakdown) > 0
@@ -252,6 +318,7 @@ class TestExplainer:
     def test_explanation_to_dict(self, first_alert_dict):
         from backend.explainability.explainer import explain_alert
         import json
+
         exp = explain_alert(first_alert_dict)
         d = exp.to_dict()
         json.dumps(d)

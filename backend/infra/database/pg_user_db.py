@@ -10,7 +10,7 @@ from typing import Optional, List, Dict
 import bcrypt
 from sqlalchemy import func, select, delete
 from sqlalchemy.engine import Engine
-from infra.database.postgres import users_table, failed_logins_table
+from backend.infra.database.postgres import users_table, failed_logins_table
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +35,29 @@ class PgUserDB:
     def seed_demo_users(self) -> None:
         """Seed default users for development/demo environments."""
         import os
+
         demo_users = [
-            ("investigator", os.getenv("DEMO_INVESTIGATOR_PASSWORD", "iob@2024"), "INVESTIGATOR", "Fraud Investigator", "Chennai HO"),
-            ("supervisor", os.getenv("DEMO_SUPERVISOR_PASSWORD", "supervisor@2024"), "SUPERVISOR", "Investigation Supervisor", "Chennai HO"),
-            ("admin", os.getenv("DEMO_ADMIN_PASSWORD", "admin@2024"), "ADMIN", "System Administrator", "HO IT"),
+            (
+                "investigator",
+                os.getenv("DEMO_INVESTIGATOR_PASSWORD", "iob@2024"),
+                "INVESTIGATOR",
+                "Fraud Investigator",
+                "Chennai HO",
+            ),
+            (
+                "supervisor",
+                os.getenv("DEMO_SUPERVISOR_PASSWORD", "supervisor@2024"),
+                "SUPERVISOR",
+                "Investigation Supervisor",
+                "Chennai HO",
+            ),
+            (
+                "admin",
+                os.getenv("DEMO_ADMIN_PASSWORD", "admin@2024"),
+                "ADMIN",
+                "System Administrator",
+                "HO IT",
+            ),
         ]
         for username, password, role, display_name, branch in demo_users:
             existing = self.find_by_username(username)
@@ -122,9 +141,7 @@ class PgUserDB:
         )
 
     def hash_password(self, password: str) -> str:
-        return bcrypt.hashpw(
-            password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+        return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
     # ── Failed login tracking ─────────────────────────────────────────────────
 

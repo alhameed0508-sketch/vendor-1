@@ -3,6 +3,7 @@ Authentication routes — /api/v1/auth/*
 """
 
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
 from slowapi import Limiter
@@ -50,12 +51,14 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
             # For demo mode, create a refresh token too
             user = DEMO_USERS.get(req.username, {})
             refresh = create_refresh_token(req.username, user.get("role", "READONLY"))
-            return success_response({
-                "access_token": token,
-                "refresh_token": refresh,
-                "token_type": "bearer",
-                "auth_enabled": settings.auth_enabled,
-            })
+            return success_response(
+                {
+                    "access_token": token,
+                    "refresh_token": refresh,
+                    "token_type": "bearer",
+                    "auth_enabled": settings.auth_enabled,
+                }
+            )
 
         # Production auth flow
         user_repo: UserRepository = get_user_repository()
@@ -70,6 +73,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         # Try LDAP first if enabled
         if settings.ldap_enabled:
             from infra.ldap.ldap_client import authenticate_ldap
+
             ldap_result = authenticate_ldap(
                 username=req.username,
                 password=req.password,
@@ -92,12 +96,14 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
                 user_repo.record_login_success(req.username)
                 access = create_access_token(req.username, ldap_result["role"])
                 refresh = create_refresh_token(req.username, ldap_result["role"])
-                return success_response({
-                    "access_token": access,
-                    "refresh_token": refresh,
-                    "token_type": "bearer",
-                    "auth_enabled": settings.auth_enabled,
-                })
+                return success_response(
+                    {
+                        "access_token": access,
+                        "refresh_token": refresh,
+                        "token_type": "bearer",
+                        "auth_enabled": settings.auth_enabled,
+                    }
+                )
 
         # Local DB authentication
         user = user_repo.find_by_username(req.username)
@@ -117,12 +123,14 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         access = create_access_token(req.username, user["role"])
         refresh = create_refresh_token(req.username, user["role"])
 
-        return success_response({
-            "access_token": access,
-            "refresh_token": refresh,
-            "token_type": "bearer",
-            "auth_enabled": settings.auth_enabled,
-        })
+        return success_response(
+            {
+                "access_token": access,
+                "refresh_token": refresh,
+                "token_type": "bearer",
+                "auth_enabled": settings.auth_enabled,
+            }
+        )
 
     @r.post("/refresh")
     @limiter.limit("30/minute")
@@ -143,16 +151,20 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         except AuthenticationError:
             raise
         except Exception as exc:
-            logger.warning("Redis blacklist check failed (graceful degradation): %s", exc)
+            logger.warning(
+                "Redis blacklist check failed (graceful degradation): %s", exc
+            )
 
         user_id = payload.get("sub")
         role = payload.get("role", "READONLY")
 
         new_access = create_access_token(user_id, role)
-        return success_response({
-            "access_token": new_access,
-            "token_type": "bearer",
-        })
+        return success_response(
+            {
+                "access_token": new_access,
+                "token_type": "bearer",
+            }
+        )
 
     @r.post("/logout")
     @limiter.limit("30/minute")
@@ -163,13 +175,14 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
             try:
                 redis: RedisClient = get_redis_client()
                 # Blacklist for the remaining TTL of the token
-                from datetime import datetime
                 exp = payload.get("exp", 0)
-                ttl = max(int(exp - datetime.utcnow().timestamp()), 0)
+                ttl = max(int(exp - datetime.now(timezone.utc).timestamp()), 0)
                 if ttl > 0:
                     redis.setex(f"{_BLACKLIST_PREFIX}{req.token}", ttl, "1")
             except Exception as exc:
-                logger.warning("Redis blacklist write failed (graceful degradation): %s", exc)
+                logger.warning(
+                    "Redis blacklist write failed (graceful degradation): %s", exc
+                )
 
         return success_response({"message": "Logged out successfully"})
 
@@ -178,9 +191,11 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
     def get_me(request: Request, user: dict = Depends(get_current_user)):
         """Return current user info from JWT."""
         settings = get_settings()
-        return success_response({
-            "user_id": user.get("sub"),
-            "username": user.get("sub"),
-            "role": user.get("role"),
-            "auth_enabled": settings.auth_enabled,
-        })
+        return success_response(
+            {
+                "user_id": user.get("sub"),
+                "username": user.get("sub"),
+                "role": user.get("role"),
+                "auth_enabled": settings.auth_enabled,
+            }
+        )

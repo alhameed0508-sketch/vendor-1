@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
-from middleware.auth import get_current_user, require_permission, require_role
+from middleware.auth import require_permission, require_role
 from api.deps import (
     get_detection_service,
     get_feedback_service,
@@ -76,11 +76,13 @@ def register_feedback_routes(r: APIRouter, limiter: Limiter) -> None:
             details=f"delta={delta}, feedback_count={summary['total_feedback']}",
         )
 
-        return success_response({
-            "status": "RETRAINING_STARTED",
-            "threshold_adjustment": delta,
-            "new_smurf_threshold": info["new_threshold"],
-            "feedback_count": summary["total_feedback"],
-            "false_positive_rate": summary["false_positive_rate"],
-            "message": "Pipeline re-running with adjusted thresholds",
-        })
+        return success_response(
+            {
+                "status": "RETRAINING_STARTED",
+                "threshold_adjustment": delta,
+                "new_smurf_threshold": info["new_threshold"],
+                "feedback_count": summary["total_feedback"],
+                "false_positive_rate": summary["false_positive_rate"],
+                "message": "Pipeline re-running with adjusted thresholds",
+            }
+        )

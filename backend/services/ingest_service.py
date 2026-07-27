@@ -3,8 +3,8 @@ Ingest service — Kafka consumer status and stream demo.
 """
 
 import random
-from datetime import datetime, timedelta
-from typing import Dict, List
+from datetime import datetime, timedelta, timezone
+from typing import Dict
 
 from ingest.kafka_consumer import TransactionConsumer
 
@@ -27,7 +27,7 @@ class IngestService:
             return {"transactions": [], "source": "demo"}
 
         sample = random.sample(txns, min(count, len(txns)))
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         stream = []
         for i, t in enumerate(sample):
             entry = dict(t)

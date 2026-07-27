@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, BarChart2,
   Moon, Sun, Zap, FileCheck,
-  Network, Upload
+  Network, Upload, UserCheck, Gauge
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 
@@ -22,7 +22,9 @@ const NAV_SECTIONS = [
     items: [
       { path: '/analytics',     label: 'ROI Analytics',  icon: BarChart2 },
       { path: '/compliance',    label: 'Compliance',     icon: FileCheck },
+      { path: '/risk-operations', label: 'Customer Risk', icon: UserCheck },
       { path: '/data-import',  label: 'Data Import',   icon: Upload },
+      { path: '/benchmarks',   label: 'Model Benchmarks', icon: Gauge },
     ],
   },
 ];

@@ -10,7 +10,11 @@ from typing import Optional
 from core.response import success_response, error_response
 from middleware.auth import require_permission, require_role
 from api.deps import get_compliance_service, get_detection_service, get_str_service
-from api.v1.schemas.compliance import STRExportRequest, STRCreateRequest, STRApproveRequest
+from api.v1.schemas.compliance import (
+    STRExportRequest,
+    STRCreateRequest,
+    STRApproveRequest,
+)
 from services.compliance_service import ComplianceService
 from services.detection_service import DetectionService
 from services.str_service import STRService
@@ -105,7 +109,9 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
         str_svc: STRService = Depends(get_str_service),
     ):
         """List STRs with optional status filter."""
-        return success_response(str_svc.list_strs(status=status, limit=limit, offset=offset))
+        return success_response(
+            str_svc.list_strs(status=status, limit=limit, offset=offset)
+        )
 
     @r.get("/str/{str_id}")
     @limiter.limit("100/minute")
@@ -118,7 +124,9 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
         """Get STR details."""
         result = str_svc.get_str(str_id)
         if result is None:
-            return error_response("NOT_FOUND", f"STR {str_id} not found", status_code=404)
+            return error_response(
+                "NOT_FOUND", f"STR {str_id} not found", status_code=404
+            )
         return success_response(result)
 
     @r.post("/str/{str_id}/approve")

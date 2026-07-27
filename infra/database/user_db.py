@@ -7,7 +7,7 @@ Seeds demo users when ENV != production.
 import sqlite3
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict
 
@@ -67,8 +67,20 @@ class UserDB:
     def seed_demo_users(self) -> None:
         """Seed default users for development/demo environments."""
         demo_users = [
-            ("investigator", "iob@2024", "INVESTIGATOR", "Fraud Investigator", "Chennai HO"),
-            ("supervisor", "supervisor@2024", "SUPERVISOR", "Investigation Supervisor", "Chennai HO"),
+            (
+                "investigator",
+                "iob@2024",
+                "INVESTIGATOR",
+                "Fraud Investigator",
+                "Chennai HO",
+            ),
+            (
+                "supervisor",
+                "supervisor@2024",
+                "SUPERVISOR",
+                "Investigation Supervisor",
+                "Chennai HO",
+            ),
             ("admin", "admin@2024", "ADMIN", "System Administrator", "HO IT"),
         ]
         for username, password, role, display_name, branch in demo_users:
@@ -91,8 +103,10 @@ class UserDB:
         display_name: str = "",
         branch: str = "",
     ) -> Dict:
-        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        now = datetime.utcnow().isoformat()
+        password_hash = bcrypt.hashpw(
+            password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+        now = datetime.now(timezone.utc).isoformat()
         self._conn.execute(
             """
             INSERT INTO users (username, password_hash, role, display_name, branch, created_at, updated_at)
@@ -114,12 +128,10 @@ class UserDB:
         updates = {k: v for k, v in kwargs.items() if k in allowed}
         if not updates:
             return self.find_by_username(username)
-        updates["updated_at"] = datetime.utcnow().isoformat()
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [username]
-        self._conn.execute(
-            f"UPDATE users SET {set_clause} WHERE username = ?", values
-        )
+        self._conn.execute(f"UPDATE users SET {set_clause} WHERE username = ?", values)
         self._conn.commit()
         return self.find_by_username(username)
 
@@ -157,9 +169,7 @@ class UserDB:
         return row["cnt"] if row else 0
 
     def clear_failed_logins(self, username: str) -> None:
-        self._conn.execute(
-            "DELETE FROM failed_logins WHERE username = ?", (username,)
-        )
+        self._conn.execute("DELETE FROM failed_logins WHERE username = ?", (username,))
         self._conn.commit()
 
     def close(self):

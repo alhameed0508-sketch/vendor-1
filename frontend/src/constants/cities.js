@@ -3,7 +3,7 @@
  * Used by IndiaMap, NetworkOverview, and RegionalStatsPanel.
  */
 
-// [longitude, latitude] for react-simple-maps Mercator projection
+// [longitude, latitude] for the shared D3 Mercator projection
 export const CITY_COORDS = {
   'Mumbai':              [72.8777, 19.0760],
   'Delhi':               [77.1025, 28.7041],

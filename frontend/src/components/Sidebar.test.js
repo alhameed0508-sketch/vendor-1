@@ -15,6 +15,8 @@ jest.mock('lucide-react', () => ({
   FileCheck: () => <div data-testid="icon-file-check" />,
   Network: () => <div data-testid="icon-network" />,
   Upload: () => <div data-testid="icon-upload" />,
+  UserCheck: () => <div data-testid="icon-user-check" />,
+  Gauge: () => <div data-testid="icon-gauge" />,
 }));
 
 // Helper to render Sidebar with all required providers
@@ -53,6 +55,7 @@ describe('Sidebar Component', () => {
       expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
       expect(screen.getByText('Data Import')).toBeInTheDocument();
+      expect(screen.getByText('Model Benchmarks')).toBeInTheDocument();
     });
 
     test('renders navigation items with correct links', () => {
@@ -62,11 +65,13 @@ describe('Sidebar Component', () => {
       const analyticsLink = screen.getByText('ROI Analytics').closest('a');
       const complianceLink = screen.getByText('Compliance').closest('a');
       const dataImportLink = screen.getByText('Data Import').closest('a');
+      const benchmarkLink = screen.getByText('Model Benchmarks').closest('a');
 
       expect(dashboardLink).toHaveAttribute('href', '/');
       expect(analyticsLink).toHaveAttribute('href', '/analytics');
       expect(complianceLink).toHaveAttribute('href', '/compliance');
       expect(dataImportLink).toHaveAttribute('href', '/data-import');
+      expect(benchmarkLink).toHaveAttribute('href', '/benchmarks');
     });
 
     test('renders navigation items with icons', () => {
@@ -75,6 +80,7 @@ describe('Sidebar Component', () => {
       expect(screen.getByTestId('icon-alert-triangle')).toBeInTheDocument();
       expect(screen.getByTestId('icon-bar-chart')).toBeInTheDocument();
       expect(screen.getByTestId('icon-file-check')).toBeInTheDocument();
+      expect(screen.getByTestId('icon-user-check')).toBeInTheDocument();
       expect(screen.getByTestId('icon-upload')).toBeInTheDocument();
     });
   });
@@ -422,7 +428,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(6); // 6 nav items
+      expect(links).toHaveLength(8); // 8 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -441,7 +447,8 @@ describe('Sidebar Component', () => {
       const links = screen.getAllByRole('link');
       const expectedTitles = [
         'Dashboard', 'Triage Queue', 'Network Graph',
-        'ROI Analytics', 'Compliance', 'Data Import',
+        'ROI Analytics', 'Compliance', 'Customer Risk', 'Data Import',
+        'Model Benchmarks',
       ];
       links.forEach(link => {
         const title = link.getAttribute('title');

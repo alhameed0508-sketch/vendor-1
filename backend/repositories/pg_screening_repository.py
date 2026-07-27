@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy.engine import Engine
 from sqlalchemy import delete
-from infra.database.postgres import screening_watchlist, screening_results
+from backend.infra.database.postgres import screening_watchlist, screening_results
 
 logger = logging.getLogger(__name__)
 
@@ -103,20 +103,40 @@ class PgScreeningRepository:
             if len(overlap) >= 2 or (len(overlap) == 1 and len(name_tokens) == 1):
                 confidence = len(overlap) / max(len(name_tokens), len(entry_tokens))
                 if confidence >= 0.5:
-                    matches.append({**entry, "match_type": "TOKEN_OVERLAP", "confidence": round(confidence, 2)})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "TOKEN_OVERLAP",
+                            "confidence": round(confidence, 2),
+                        }
+                    )
                     continue
 
             aliases = entry.get("aliases", [])
             for alias in aliases:
                 if alias.lower() == name_lower:
-                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": ALIAS_EXACT_CONFIDENCE})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "ALIAS_EXACT",
+                            "confidence": ALIAS_EXACT_CONFIDENCE,
+                        }
+                    )
                     break
 
-            if fuzzy and not any(m.get("entry_id") == entry.get("entry_id") for m in matches):
+            if fuzzy and not any(
+                m.get("entry_id") == entry.get("entry_id") for m in matches
+            ):
                 distance = _levenshtein(name_lower, entry_name)
                 if distance <= 2 and len(name_lower) > 4:
                     confidence = max(0.5, 1.0 - (distance / len(name_lower)))
-                    matches.append({**entry, "match_type": "FUZZY", "confidence": round(confidence, 2)})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "FUZZY",
+                            "confidence": round(confidence, 2),
+                        }
+                    )
 
         return sorted(matches, key=lambda m: -m["confidence"])
 
@@ -169,18 +189,24 @@ class PgScreeningRepository:
 
     def get_stats(self) -> Dict:
         from sqlalchemy import func, select
+
         with self._engine.connect() as conn:
-            total_entries = conn.execute(
-                select(func.count()).select_from(screening_watchlist)
-            ).scalar() or 0
-            total_results = conn.execute(
-                select(func.count()).select_from(screening_results)
-            ).scalar() or 0
+            total_entries = (
+                conn.execute(
+                    select(func.count()).select_from(screening_watchlist)
+                ).scalar()
+                or 0
+            )
+            total_results = (
+                conn.execute(
+                    select(func.count()).select_from(screening_results)
+                ).scalar()
+                or 0
+            )
 
             source_rows = conn.execute(
                 select(
-                    screening_watchlist.c.source,
-                    func.count().label("cnt")
+                    screening_watchlist.c.source, func.count().label("cnt")
                 ).group_by(screening_watchlist.c.source)
             ).fetchall()
         sources = {r._mapping["source"]: r._mapping["cnt"] for r in source_rows}

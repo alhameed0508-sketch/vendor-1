@@ -16,8 +16,8 @@ from __future__ import annotations
 import math
 import uuid
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ RECOMMENDATIONS = {
 
 
 # ── Result dataclass (frozen = immutable) ────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class OnboardingRiskResult:
@@ -84,6 +85,7 @@ SIGNAL_WEIGHTS: Dict[str, float] = {
 
 
 # ── Individual signal scorers (each returns 0.0 – 1.0) ──────────────────────
+
 
 def _score_account_age(days: float) -> float:
     """New accounts (<7d) score high; >90d score near zero."""
@@ -238,7 +240,10 @@ REASON_CODES = {
     "kyc_completeness": ("OB02", "KYC completeness below threshold"),
     "document_verification_speed": ("OB03", "Document verification suspiciously fast"),
     "device_fingerprint_overlap": ("OB04", "Device shared with flagged accounts"),
-    "ip_geolocation_mismatch": ("OB05", "IP geolocation mismatch with declared address"),
+    "ip_geolocation_mismatch": (
+        "OB05",
+        "IP geolocation mismatch with declared address",
+    ),
     "phone_number_age": ("OB06", "Phone number recently activated"),
     "email_age": ("OB07", "Email address recently created"),
     "address_verification": ("OB08", "Address not verified"),
@@ -248,7 +253,10 @@ REASON_CODES = {
     "high_risk_geography": ("OB12", "High-risk geographic region"),
     "nocturnal_application": ("OB13", "Application submitted during unusual hours"),
     "dormancy_after_onboarding": ("OB14", "Account dormant after onboarding"),
-    "graph_cross_check": ("OB15", "Device/IP/phone linked to known mule cluster in graph"),
+    "graph_cross_check": (
+        "OB15",
+        "Device/IP/phone linked to known mule cluster in graph",
+    ),
 }
 
 # Threshold above which a signal generates a reason code
@@ -256,6 +264,7 @@ REASON_THRESHOLD = 0.3
 
 
 # ── Helper functions ────────────────────────────────────────────────────────
+
 
 def _get_graph_check_result(application: Dict, graph_checker=None):
     """Get flagged count and cluster count from graph checker or application data."""
@@ -277,6 +286,7 @@ def _get_graph_check_result(application: Dict, graph_checker=None):
 
 
 # ── Main assessment function ────────────────────────────────────────────────
+
 
 def assess_onboarding_risk(
     application: Dict,
@@ -307,9 +317,7 @@ def assess_onboarding_risk(
     raw_signals: List[Dict] = []
 
     signal_scores = {
-        "account_age": _score_account_age(
-            application.get("account_age_days", 30)
-        ),
+        "account_age": _score_account_age(application.get("account_age_days", 30)),
         "kyc_completeness": _score_kyc_completeness(
             application.get("kyc_completeness", 1.0)
         ),
@@ -325,15 +333,11 @@ def assess_onboarding_risk(
         "phone_number_age": _score_phone_number_age(
             application.get("phone_age_days", 365)
         ),
-        "email_age": _score_email_age(
-            application.get("email_age_days", 365)
-        ),
+        "email_age": _score_email_age(application.get("email_age_days", 365)),
         "address_verification": _score_address_verification(
             application.get("address_verified", True)
         ),
-        "selfie_match": _score_selfie_match(
-            application.get("selfie_confidence", 0.95)
-        ),
+        "selfie_match": _score_selfie_match(application.get("selfie_confidence", 0.95)),
         "application_velocity": _score_application_velocity(
             application.get("application_velocity_count", 1)
         ),
@@ -357,17 +361,18 @@ def assess_onboarding_risk(
 
     # Build signal details list
     for name, score in signal_scores.items():
-        raw_signals.append({
-            "signal": name,
-            "score": round(score, 3),
-            "weight": SIGNAL_WEIGHTS[name],
-            "weighted": round(score * SIGNAL_WEIGHTS[name], 4),
-        })
+        raw_signals.append(
+            {
+                "signal": name,
+                "score": round(score, 3),
+                "weight": SIGNAL_WEIGHTS[name],
+                "weighted": round(score * SIGNAL_WEIGHTS[name], 4),
+            }
+        )
 
     # Weighted composite score
     composite = sum(
-        signal_scores[name] * SIGNAL_WEIGHTS[name]
-        for name in SIGNAL_WEIGHTS
+        signal_scores[name] * SIGNAL_WEIGHTS[name] for name in SIGNAL_WEIGHTS
     )
     # Normalize to 0-1 (weights already sum to ~1.0 but cap for safety)
     weight_total = sum(SIGNAL_WEIGHTS.values())
@@ -388,7 +393,10 @@ def assess_onboarding_risk(
 
     logger.info(
         "Onboarding risk assessed: account=%s score=%.4f level=%s signals=%d",
-        account_id, risk_score, level, len(reason_codes),
+        account_id,
+        risk_score,
+        level,
+        len(reason_codes),
     )
 
     return OnboardingRiskResult(
@@ -399,5 +407,5 @@ def assess_onboarding_risk(
         signals=tuple(raw_signals),
         reason_codes=tuple(reason_codes),
         recommendation=recommendation,
-        assessed_at=datetime.utcnow().isoformat(),
+        assessed_at=datetime.now(timezone.utc).isoformat(),
     )

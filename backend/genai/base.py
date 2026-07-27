@@ -8,10 +8,9 @@ Frozen dataclasses ensure immutability throughout the pipeline.
 from __future__ import annotations
 
 import logging
-import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import List, Optional
+from dataclasses import dataclass
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +18,15 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class LLMMessage:
     """Single message in a conversation."""
-    role: str          # "system" | "user" | "assistant"
+
+    role: str  # "system" | "user" | "assistant"
     content: str
 
 
 @dataclass(frozen=True)
 class LLMResponse:
     """Immutable response from an LLM provider."""
+
     content: str
     model: str
     provider: str
@@ -64,7 +65,9 @@ class LLMProvider(ABC):
             )
             return len(resp.content) > 0
         except Exception as exc:
-            logger.warning("LLM health check failed for %s: %s", self.provider_name, exc)
+            logger.warning(
+                "LLM health check failed for %s: %s", self.provider_name, exc
+            )
             return False
 
 

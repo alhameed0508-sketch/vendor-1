@@ -291,6 +291,43 @@ export default function DataImportPage() {
               <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} color="#10B981" icon={BarChart2} index={3} />
             </div>
 
+            {uploadResult.data_quality && (
+              <div style={{ ...cardStyle, marginBottom: 24 }}>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                }}>
+                  Data Quality & Linkage
+                </div>
+                <div style={{ display: 'flex', gap: 28, flexWrap: 'wrap', marginBottom: 14 }}>
+                  {[
+                    ['Source rows', uploadResult.data_quality.source_rows],
+                    ['Internal links', uploadResult.data_quality.internal_links],
+                    ['Linkage', uploadResult.data_quality.linkage_strategy],
+                    ['Confidence', uploadResult.data_quality.linkage_confidence],
+                    ['Distinct times', uploadResult.data_quality.distinct_timestamps],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', textTransform: 'uppercase' }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)', marginTop: 4 }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {(uploadResult.data_quality.warnings || []).map(warning => (
+                    <span key={warning} style={{
+                      padding: '4px 8px', borderRadius: 4,
+                      border: '1px solid rgba(251,146,60,0.25)',
+                      background: 'rgba(251,146,60,0.07)',
+                      color: '#FB923C', fontFamily: 'var(--font-mono)', fontSize: 9,
+                    }}>
+                      {warning.replaceAll('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Channel breakdown + date range */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
               {/* Channels */}

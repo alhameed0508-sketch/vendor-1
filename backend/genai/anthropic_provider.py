@@ -45,9 +45,7 @@ class AnthropicProvider(LLMProvider):
         start = time.perf_counter()
 
         # Anthropic separates system from conversation messages
-        system_text = "\n\n".join(
-            m.content for m in messages if m.role == "system"
-        )
+        system_text = "\n\n".join(m.content for m in messages if m.role == "system")
         conversation = [
             {"role": m.role, "content": m.content}
             for m in messages

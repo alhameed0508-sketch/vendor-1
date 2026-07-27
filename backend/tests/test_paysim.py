@@ -4,7 +4,6 @@ Tests for PaySim adapter — schema mapping, fraud label extraction.
 
 import sys
 import os
-import tempfile
 import csv
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -92,8 +91,13 @@ class TestPaySimAdapter:
         transactions, _ = adapter.load(paysim_csv)
 
         required_fields = {
-            "txn_id", "from_account", "to_account", "amount",
-            "timestamp", "is_suspicious", "pattern",
+            "txn_id",
+            "from_account",
+            "to_account",
+            "amount",
+            "timestamp",
+            "is_suspicious",
+            "pattern",
         }
         for txn in transactions:
             for field in required_fields:
@@ -145,14 +149,25 @@ class TestPaySimAdapter:
         _, accounts = adapter.load(paysim_csv)
 
         required_attrs = {
-            "account_id", "role", "bank", "city",
-            "account_age_days", "kyc_status",
+            "account_id",
+            "role",
+            "bank",
+            "city",
+            "account_age_days",
+            "kyc_status",
         }
         for acc in accounts:
             for attr in required_attrs:
                 assert attr in acc, f"Missing attribute: {attr}"
             assert acc["bank"] in [
-                "IOB", "SBI", "HDFC", "ICICI", "PNB", "BOB", "UNION", "CANARA"
+                "IOB",
+                "SBI",
+                "HDFC",
+                "ICICI",
+                "PNB",
+                "BOB",
+                "UNION",
+                "CANARA",
             ]
 
     def test_deterministic_output(self, paysim_csv):

@@ -2,7 +2,7 @@
 Feedback service — investigator feedback and active learning loop.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from core.exceptions import NotFoundError
@@ -62,7 +62,9 @@ class FeedbackService:
             self._alert_repo.update(alert_id, status="FALSE_POSITIVE")
 
         self._audit.log(
-            "FEEDBACK", user_id, alert_id,
+            "FEEDBACK",
+            user_id,
+            alert_id,
             f"is_true_positive={is_true_positive}",
         )
 
@@ -84,8 +86,9 @@ class FeedbackService:
             "false_positive_rate": summary["false_positive_rate"],
             "recommended_threshold_delta": summary["recommended_threshold_delta"],
             "retraining_recommended": summary["retraining_recommended"],
-            "current_smurf_threshold": self._config.base_smurf_threshold + self._store.get_threshold_adjustment(),
-            "timestamp": datetime.utcnow().isoformat(),
+            "current_smurf_threshold": self._config.base_smurf_threshold
+            + self._store.get_threshold_adjustment(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
     def get_retrain_info(self) -> Dict:

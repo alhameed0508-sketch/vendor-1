@@ -17,8 +17,8 @@ from .prompts import SYSTEM_PROMPT_TRIAGE
 logger = logging.getLogger(__name__)
 
 # -- LLM generation parameters for cluster triage ----------------------------
-TRIAGE_TEMPERATURE = 0.2   # Low temperature for consistent assessments
-TRIAGE_MAX_TOKENS = 512    # Max response length for triage output
+TRIAGE_TEMPERATURE = 0.2  # Low temperature for consistent assessments
+TRIAGE_MAX_TOKENS = 512  # Max response length for triage output
 
 _ASSESSMENT_ADJUSTMENTS = {
     "HIGH": 0.10,
@@ -82,14 +82,14 @@ def _build_triage_prompt(alert: Dict) -> str:
 
     return f"""Triage this suspicious cluster:
 
-Cluster: {alert.get('cluster_id', 'N/A')}
-Risk Score: {alert.get('risk_score', 0):.3f}
-Accounts: {alert.get('account_count', 0)}
-Transactions: {alert.get('txn_count', 0)}
-Total Amount: ₹{alert.get('total_amount', 0):,.0f}
-Shared Devices: {len(alert.get('shared_devices', []))}
+Cluster: {alert.get("cluster_id", "N/A")}
+Risk Score: {alert.get("risk_score", 0):.3f}
+Accounts: {alert.get("account_count", 0)}
+Transactions: {alert.get("txn_count", 0)}
+Total Amount: ₹{alert.get("total_amount", 0):,.0f}
+Shared Devices: {len(alert.get("shared_devices", []))}
 
-Reason Codes: {', '.join(reason_codes[:5])}
+Reason Codes: {", ".join(reason_codes[:5])}
 
 Accounts:
 {chr(10).join(node_lines)}
@@ -99,7 +99,9 @@ Money Flows:
 
 
 def _parse_triage_response(
-    cluster_id: str, response, latency_ms: float,
+    cluster_id: str,
+    response,
+    latency_ms: float,
 ) -> TriageResult:
     text = response.content.strip()
     try:

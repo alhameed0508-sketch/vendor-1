@@ -2,7 +2,7 @@
 Compliance request schemas.
 """
 
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,7 @@ class STRExportRequest(BaseModel):
 
 class STRCreateRequest(BaseModel):
     """Create a new Suspicious Transaction Report."""
+
     alert_ids: List[str] = Field(..., min_length=1, max_length=50)
     account_ids: List[str] = Field(default_factory=list, max_length=100)
     narrative: str = Field(..., min_length=10, max_length=10000)
@@ -21,4 +22,5 @@ class STRCreateRequest(BaseModel):
 
 class STRApproveRequest(BaseModel):
     """Supervisor approval for STR submission."""
+
     approved_by: str = Field(..., min_length=1, max_length=100)

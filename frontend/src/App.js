@@ -9,6 +9,8 @@ import CompliancePortal from './compliance_portal/CompliancePortal';
 import NetworkOverview from './network/NetworkOverview';
 import AlertQueue from './alert_queue/AlertQueue';
 import DataImportPage from './data_import/DataImportPage';
+import RiskOperationsPage from './risk_operations/RiskOperationsPage';
+import BenchmarkPage from './benchmark/BenchmarkPage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import BackgroundGrid from './components/ui/BackgroundGrid';
@@ -76,6 +78,8 @@ function AppContent() {
               <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
               <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
               <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
+              <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />
+              <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
             </Routes>
           </ErrorBoundary>
         </main>

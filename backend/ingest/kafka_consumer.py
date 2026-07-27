@@ -11,8 +11,9 @@ import os
 import queue
 import time
 import threading
+from collections import deque
 from typing import Dict, Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,20 @@ class TransactionConsumer:
         group_id: Optional[str] = None,
         batch_size: int = 100,
         batch_timeout_ms: int = 5000,
+        security_protocol: str = "PLAINTEXT",
+        ssl_cafile: Optional[str] = None,
+        ssl_certfile: Optional[str] = None,
+        ssl_keyfile: Optional[str] = None,
     ):
         self.bootstrap_servers = bootstrap_servers or KAFKA_BOOTSTRAP
         self.topic = topic or KAFKA_TOPIC
         self.group_id = group_id or KAFKA_GROUP
         self.batch_size = batch_size
         self.batch_timeout_ms = batch_timeout_ms
+        self.security_protocol = security_protocol
+        self.ssl_cafile = ssl_cafile
+        self.ssl_certfile = ssl_certfile
+        self.ssl_keyfile = ssl_keyfile
 
         self._consumer = None
         self._running = False
@@ -51,21 +60,40 @@ class TransactionConsumer:
             "alerts_generated": 0,
             "last_processed_at": None,
             "errors": 0,
+            "duplicates_skipped": 0,
             "status": "stopped",
         }
+        self._seen_txn_ids = set()
+        self._seen_txn_order = deque()
+        self._dedupe_capacity = 100_000
 
     def _create_consumer(self):
         try:
             from kafka import KafkaConsumer
+
+            security_options = {
+                "security_protocol": self.security_protocol,
+            }
+            if self.security_protocol in ("SSL", "SASL_SSL"):
+                security_options.update(
+                    {
+                        "ssl_cafile": self.ssl_cafile,
+                        "ssl_certfile": self.ssl_certfile,
+                        "ssl_keyfile": self.ssl_keyfile,
+                    }
+                )
             self._consumer = KafkaConsumer(
                 self.topic,
                 bootstrap_servers=self.bootstrap_servers,
                 group_id=self.group_id,
                 auto_offset_reset="earliest",
-                enable_auto_commit=True,
+                # Offsets are committed only after the batch has been
+                # processed and persisted successfully.
+                enable_auto_commit=False,
                 value_deserializer=lambda m: json.loads(m.decode("utf-8")),
                 consumer_timeout_ms=self.batch_timeout_ms,
                 max_poll_records=self.batch_size,
+                **security_options,
             )
             return True
         except Exception as exc:
@@ -121,25 +149,41 @@ class TransactionConsumer:
                         if isinstance(txn, str):
                             txn = parse_cbs_log_line(txn)
                         if txn and txn.get("txn_id"):
+                            txn_id = str(txn["txn_id"])
+                            if txn_id in self._seen_txn_ids:
+                                self._stats["duplicates_skipped"] += 1
+                                continue
+                            self._remember_txn_id(txn_id)
                             batch.append(txn)
                             self._stats["messages_consumed"] += 1
 
                 # Process batch when full or on timeout
                 if batch and (len(batch) >= self.batch_size or not records):
-                    self._process_batch(batch, pipeline, alert_repo, dataset_repo)
-                    batch = []
+                    if self._process_batch(batch, pipeline, alert_repo, dataset_repo):
+                        self._consumer.commit()
+                        batch = []
 
             except Exception as exc:
                 logger.error("Kafka consumer error: %s", exc)
                 self._stats["errors"] += 1
                 time.sleep(1)
 
-    def _process_batch(self, transactions: List[Dict], pipeline, alert_repo, dataset_repo):
+    def _remember_txn_id(self, txn_id: str) -> None:
+        """Bound in-process duplicate protection for replayed Kafka records."""
+        self._seen_txn_ids.add(txn_id)
+        self._seen_txn_order.append(txn_id)
+        while len(self._seen_txn_order) > self._dedupe_capacity:
+            oldest = self._seen_txn_order.popleft()
+            self._seen_txn_ids.discard(oldest)
+
+    def _process_batch(
+        self, transactions: List[Dict], pipeline, alert_repo, dataset_repo
+    ) -> bool:
         """Run detection on a batch of transactions."""
         try:
             if pipeline is None or alert_repo is None or dataset_repo is None:
                 logger.warning("Pipeline or repositories not available, skipping batch")
-                return
+                return False
 
             # We need account data — use what's in the dataset repo
             dataset = dataset_repo.get()
@@ -147,11 +191,12 @@ class TransactionConsumer:
 
             if not accounts:
                 logger.warning("No account data available for detection")
-                return
+                return False
 
             alerts = pipeline.run(transactions, accounts)
             if alerts:
                 from services.detection_service import alert_to_dict
+
                 alert_dicts = [alert_to_dict(a) for a in alerts]
                 alert_repo.store_batch(alert_dicts)
                 self._stats["alerts_generated"] += len(alerts)
@@ -161,7 +206,7 @@ class TransactionConsumer:
                     "type": "new_alerts",
                     "count": len(alerts),
                     "alert_ids": [getattr(a, "alert_id", str(a)) for a in alerts],
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
                 try:
                     self._alert_event_queue.put_nowait(event)
@@ -177,11 +222,13 @@ class TransactionConsumer:
                         pass
 
             self._stats["batches_processed"] += 1
-            self._stats["last_processed_at"] = datetime.utcnow().isoformat()
+            self._stats["last_processed_at"] = datetime.now(timezone.utc).isoformat()
+            return True
 
         except Exception as exc:
             logger.error("Batch processing error: %s", exc)
             self._stats["errors"] += 1
+            return False
 
     def get_status(self) -> Dict:
         return {
@@ -190,4 +237,5 @@ class TransactionConsumer:
             "group_id": self.group_id,
             "bootstrap_servers": self.bootstrap_servers,
             "kafka_enabled": KAFKA_ENABLED,
+            "security_protocol": self.security_protocol,
         }

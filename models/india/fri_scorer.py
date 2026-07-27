@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 class FRIRiskLevel(Enum):
     """Risk levels returned by the FRI API."""
+
     VERY_HIGH = "VERY_HIGH"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -35,13 +36,14 @@ class FRIRiskLevel(Enum):
 @dataclass(frozen=True)
 class FRIResult:
     """Immutable result from an FRI mobile risk query."""
+
     mobile_number: str
     risk_level: FRIRiskLevel
-    source: str              # "FRI_API" | "MOCK" | "UNAVAILABLE"
-    citizen_reports: int     # Chakshu complaint count
-    ncrp_complaints: int     # NCRP complaint count
+    source: str  # "FRI_API" | "MOCK" | "UNAVAILABLE"
+    citizen_reports: int  # Chakshu complaint count
+    ncrp_complaints: int  # NCRP complaint count
     last_updated: str
-    score: float             # 0.0-1.0 risk score
+    score: float  # 0.0-1.0 risk score
 
 
 # Regex for Indian mobile numbers: 10 digits starting with 6-9

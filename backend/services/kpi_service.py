@@ -2,10 +2,11 @@
 KPI service — business logic for KPI computation.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 
 from repositories.kpi_repository import KPIRepository
+from core.config import get_settings
 
 
 class KPIService:
@@ -17,11 +18,18 @@ class KPIService:
     def get_kpis(self) -> Dict:
         """Return enriched KPI snapshot."""
         k = self._repo.get()
+        hourly_cost = get_settings().analyst_hourly_cost_inr
         return {
             **k,
-            "manpower_saved_lakh": round(k["hours_saved"] * 500 / 100000, 2),
+            "manpower_saved_lakh": round(k["hours_saved"] * hourly_cost / 100000, 2),
             "fraud_prevented_crore": round(k["fraud_prevented_inr"] / 10_000_000, 2),
-            "false_positive_reduction_pct": 40,
-            "avg_investigation_time_min": 45,
-            "timestamp": datetime.utcnow().isoformat(),
+            # These require measured production baselines; do not fabricate
+            # values from synthetic or demonstration data.
+            "false_positive_reduction_pct": None,
+            "avg_investigation_time_min": None,
+            "roi_assumptions": {
+                "analyst_hourly_cost_inr": hourly_cost,
+                "financial_values_are_estimates": True,
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }

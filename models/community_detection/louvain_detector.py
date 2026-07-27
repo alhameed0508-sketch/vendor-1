@@ -13,9 +13,9 @@ Each community is scored for suspiciousness using:
 
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Tuple
 import networkx as nx
-from community import best_partition   # python-louvain
+from community import best_partition  # python-louvain
 
 
 @dataclass
@@ -86,6 +86,9 @@ SHARED_DEVICE_EDGE_WEIGHT = 2
 # Minimum cluster size for reason code CC04
 LARGE_GROUP_REASON_CODE_SIZE = 6
 
+# Stable graph partitioning for reproducible alerts and audit evidence.
+LOUVAIN_RANDOM_STATE = 42
+
 # -- CBS behavioral feature scoring constants ---------------------------------
 # CBS pass-through ratio scoring
 CBS_PASS_THROUGH_MIN = 0.5
@@ -116,7 +119,7 @@ class LouvainClusterDetector:
     """
 
     SUSPICION_THRESHOLD = SUSPICION_THRESHOLD
-    MIN_CLUSTER_SIZE    = MIN_CLUSTER_SIZE
+    MIN_CLUSTER_SIZE = MIN_CLUSTER_SIZE
     MIN_CLUSTER_DENSITY = MIN_CLUSTER_DENSITY
 
     def detect_clusters(
@@ -131,7 +134,11 @@ class LouvainClusterDetector:
         # Store graph for centrality queries
         self._graph = G
 
-        partition = best_partition(G, weight="weight")
+        partition = best_partition(
+            G,
+            weight="weight",
+            random_state=LOUVAIN_RANDOM_STATE,
+        )
         communities = self._build_communities(G, partition, transactions, accounts)
         return [c for c in communities if c.size >= self.MIN_CLUSTER_SIZE]
 
@@ -164,7 +171,6 @@ class LouvainClusterDetector:
         G = nx.Graph()
 
         # Add account nodes
-        acc_meta = {a["account_id"]: a for a in accounts}
         for acc in accounts:
             G.add_node(
                 acc["account_id"],
@@ -224,7 +230,7 @@ class LouvainClusterDetector:
         ip_to_accounts: Dict[str, List[str]] = {}
         for t in transactions:
             dev = t.get("device_id", "")
-            ip  = t.get("ip_address", "")
+            ip = t.get("ip_address", "")
             src = t["from_account"]
             if dev:
                 device_to_accounts.setdefault(dev, []).append(src)
@@ -244,11 +250,13 @@ class LouvainClusterDetector:
 
             # Shared devices within this community
             shared_devs = [
-                dev for dev, accs in device_to_accounts.items()
+                dev
+                for dev, accs in device_to_accounts.items()
                 if len(set(accs) & members) >= 2
             ]
             shared_ips = [
-                ip for ip, accs in ip_to_accounts.items()
+                ip
+                for ip, accs in ip_to_accounts.items()
                 if len(set(accs) & members) >= 2
             ]
 
@@ -262,9 +270,13 @@ class LouvainClusterDetector:
                 size=n,
             )
 
-            community.suspicion_score = self._score_community(community, accounts, members)
+            community.suspicion_score = self._score_community(
+                community, accounts, members
+            )
             community.reason_codes = self._reason_codes(community)
-            community.is_mule_cluster = community.suspicion_score >= self.SUSPICION_THRESHOLD
+            community.is_mule_cluster = (
+                community.suspicion_score >= self.SUSPICION_THRESHOLD
+            )
 
             results.append(community)
 
@@ -283,7 +295,9 @@ class LouvainClusterDetector:
         score += min(c.density * DENSITY_MULTIPLIER, DENSITY_SCORE_CAP)
 
         # Shared device fingerprints (0-SHARED_DEVICE_SCORE_CAP)
-        score += min(len(c.shared_devices) * SHARED_DEVICE_SCORE_PER, SHARED_DEVICE_SCORE_CAP)
+        score += min(
+            len(c.shared_devices) * SHARED_DEVICE_SCORE_PER, SHARED_DEVICE_SCORE_CAP
+        )
 
         # Shared IP addresses (0-SHARED_IP_SCORE_CAP)
         score += min(len(c.shared_ips) * SHARED_IP_SCORE_PER, SHARED_IP_SCORE_CAP)
@@ -294,11 +308,17 @@ class LouvainClusterDetector:
         young = sum(1 for age in ages if age < YOUNG_ACCOUNT_DAYS)
         young_ratio = young / max(len(ages), 1)
         very_young_ratio = very_young / max(len(ages), 1)
-        score += min(young_ratio * YOUNG_ACCOUNT_WEIGHT + very_young_ratio * VERY_YOUNG_ACCOUNT_WEIGHT, YOUNG_ACCOUNT_SCORE_CAP)
+        score += min(
+            young_ratio * YOUNG_ACCOUNT_WEIGHT
+            + very_young_ratio * VERY_YOUNG_ACCOUNT_WEIGHT,
+            YOUNG_ACCOUNT_SCORE_CAP,
+        )
 
         # Pending KYC ratio (0-PENDING_KYC_SCORE_CAP)
         pending = sum(1 for a in acc_map.values() if a.get("kyc_status") == "PENDING")
-        score += min(pending / max(len(acc_map), 1) * PENDING_KYC_WEIGHT, PENDING_KYC_SCORE_CAP)
+        score += min(
+            pending / max(len(acc_map), 1) * PENDING_KYC_WEIGHT, PENDING_KYC_SCORE_CAP
+        )
 
         # Mixed banks (multiple banks = intentional layering)
         banks = set(a.get("bank", "") for a in acc_map.values())
@@ -311,9 +331,7 @@ class LouvainClusterDetector:
 
         # CBS behavioral features (compensate when device/IP data is absent)
         # These features are set by MuleCSVAdapter for CBS transaction data.
-        has_cbs_features = any(
-            "pass_through_ratio" in a for a in acc_map.values()
-        )
+        has_cbs_features = any("pass_through_ratio" in a for a in acc_map.values())
         if has_cbs_features:
             score += self._score_cbs_features(acc_map)
 
@@ -342,7 +360,9 @@ class LouvainClusterDetector:
 
         # Debit/credit ratio near 1.0: in ~= out = pass-through behavior (0-CBS_DC_RATIO_CAP)
         dc_ratios = [a.get("debit_credit_ratio", 0.0) for a in acc_map.values()]
-        near_one = sum(1 for r in dc_ratios if CBS_DC_RATIO_LOW <= r <= CBS_DC_RATIO_HIGH)
+        near_one = sum(
+            1 for r in dc_ratios if CBS_DC_RATIO_LOW <= r <= CBS_DC_RATIO_HIGH
+        )
         near_one_ratio = near_one / n
         boost += min(near_one_ratio * CBS_DC_RATIO_WEIGHT, CBS_DC_RATIO_CAP)
 
@@ -367,9 +387,13 @@ class LouvainClusterDetector:
         if c.density >= self.MIN_CLUSTER_DENSITY:
             codes.append(f"CC01: Dense transaction cluster (density={c.density:.2f})")
         if c.shared_devices:
-            codes.append(f"CC02: {len(c.shared_devices)} shared device fingerprint(s) across accounts")
+            codes.append(
+                f"CC02: {len(c.shared_devices)} shared device fingerprint(s) across accounts"
+            )
         if c.shared_ips:
-            codes.append(f"CC03: {len(c.shared_ips)} shared IP address(es) across accounts")
+            codes.append(
+                f"CC03: {len(c.shared_ips)} shared IP address(es) across accounts"
+            )
         if c.size >= LARGE_GROUP_REASON_CODE_SIZE:
             codes.append(f"CC04: Large interconnected group ({c.size} accounts)")
         return codes
@@ -377,6 +401,7 @@ class LouvainClusterDetector:
 
 if __name__ == "__main__":
     import sys
+
     sys.path.insert(0, ".")
     from data.synthetic.generator import build_full_dataset
 
@@ -385,10 +410,14 @@ if __name__ == "__main__":
     communities = detector.detect_clusters(dataset["transactions"], dataset["accounts"])
 
     flagged = [c for c in communities if c.is_mule_cluster]
-    print(f"Found {len(communities)} communities — {len(flagged)} flagged as mule clusters")
+    print(
+        f"Found {len(communities)} communities — {len(flagged)} flagged as mule clusters"
+    )
     for c in flagged:
-        print(f"  Community {c.community_id}: {c.size} accounts, "
-              f"score={c.suspicion_score:.3f}, "
-              f"shared_devices={len(c.shared_devices)}")
+        print(
+            f"  Community {c.community_id}: {c.size} accounts, "
+            f"score={c.suspicion_score:.3f}, "
+            f"shared_devices={len(c.shared_devices)}"
+        )
         for rc in c.reason_codes:
             print(f"    {rc}")

@@ -5,7 +5,7 @@ Handles creation, approval, submission to FINGate 2.0, and acknowledgement.
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from repositories.str_repository import STRRepository
@@ -70,7 +70,7 @@ class STRService:
             str_id,
             "READY_FOR_SUBMISSION",
             approved_by=approved_by,
-            approved_at=datetime.utcnow().isoformat(),
+            approved_at=datetime.now(timezone.utc).isoformat(),
         )
         if result is None:
             raise ValueError(f"STR not found: {str_id}")
@@ -79,12 +79,13 @@ class STRService:
 
     def submit(self, str_id: str) -> Dict:
         """Submit to FINGate 2.0 (simulated). Moves to SUBMITTED."""
-        fiu_reference = f"FIU-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+        now = datetime.now(timezone.utc)
+        fiu_reference = f"FIU-{now.strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
         result = self._repo.update_status(
             str_id,
             "SUBMITTED",
             fiu_reference=fiu_reference,
-            submitted_at=datetime.utcnow().isoformat(),
+            submitted_at=now.isoformat(),
         )
         if result is None:
             raise ValueError(f"STR not found: {str_id}")
@@ -96,7 +97,7 @@ class STRService:
         result = self._repo.update_status(
             str_id,
             "ACKNOWLEDGED",
-            acknowledged_at=datetime.utcnow().isoformat(),
+            acknowledged_at=datetime.now(timezone.utc).isoformat(),
         )
         if result is None:
             raise ValueError(f"STR not found: {str_id}")

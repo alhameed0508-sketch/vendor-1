@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy.engine import Engine
-from infra.database.postgres import str_reports
+from backend.infra.database.postgres import str_reports
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +112,7 @@ class PgSTRRepository:
 
     def count(self, status: Optional[str] = None) -> int:
         from sqlalchemy import func
+
         query = str_reports.select().with_only_columns(func.count())
         if status:
             query = query.where(str_reports.c.status == status)

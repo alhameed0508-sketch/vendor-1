@@ -79,6 +79,7 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
         transactions = parsed["transactions"]
         accounts = parsed["accounts"]
         anomaly_flags = parsed.get("anomaly_flags", [])
+        data_quality = parsed.get("data_quality", {})
 
         if not transactions:
             return error_response(
@@ -88,7 +89,11 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
             )
 
         # Clear existing data + alerts, then store parsed dataset
-        dataset = {"transactions": transactions, "accounts": accounts}
+        dataset = {
+            "transactions": transactions,
+            "accounts": accounts,
+            "data_quality": data_quality,
+        }
         dataset_repo.clear()
         dataset_repo.set(dataset)
 
@@ -114,7 +119,8 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
         # Count internal vs external links
         account_ids = {a["account_id"] for a in accounts}
         internal_txns = sum(
-            1 for t in transactions
+            1
+            for t in transactions
             if t["from_account"] in account_ids and t["to_account"] in account_ids
         )
 
@@ -127,17 +133,20 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
             len(alerts),
         )
 
-        return success_response({
-            "accounts": len(accounts),
-            "transactions": len(transactions),
-            "internal_links": internal_txns,
-            "alerts_generated": len(alerts),
-            "anomaly_flags": anomaly_flags,
-            "channels": channels,
-            "date_range": date_range,
-            "preview_rows": preview_rows,
-            "account_summaries": accounts[:50],
-        })
+        return success_response(
+            {
+                "accounts": len(accounts),
+                "transactions": len(transactions),
+                "internal_links": internal_txns,
+                "alerts_generated": len(alerts),
+                "anomaly_flags": anomaly_flags,
+                "data_quality": data_quality,
+                "channels": channels,
+                "date_range": date_range,
+                "preview_rows": preview_rows,
+                "account_summaries": accounts[:50],
+            }
+        )
 
     @r.get("/preview")
     @limiter.limit("30/minute")
@@ -150,10 +159,12 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
         """Get current uploaded data summary and detection results."""
         dataset = dataset_repo.get()
         if dataset is None:
-            return success_response({
-                "loaded": False,
-                "message": "No data has been uploaded yet",
-            })
+            return success_response(
+                {
+                    "loaded": False,
+                    "message": "No data has been uploaded yet",
+                }
+            )
 
         transactions = dataset.get("transactions", [])
         accounts = dataset.get("accounts", [])
@@ -170,15 +181,18 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
             ch = txn.get("channel", "UNKNOWN")
             channels[ch] = channels.get(ch, 0) + 1
 
-        return success_response({
-            "loaded": True,
-            "accounts": len(accounts),
-            "transactions": len(transactions),
-            "alerts": len(alerts),
-            "severity_counts": severity_counts,
-            "channels": channels,
-            "account_summaries": accounts[:50],
-        })
+        return success_response(
+            {
+                "loaded": True,
+                "accounts": len(accounts),
+                "transactions": len(transactions),
+                "alerts": len(alerts),
+                "severity_counts": severity_counts,
+                "channels": channels,
+                "account_summaries": accounts[:50],
+                "data_quality": dataset.get("data_quality", {}),
+            }
+        )
 
     @r.post("/analyze")
     @limiter.limit("10/minute")
@@ -258,7 +272,10 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
                             role = member.get("classification", "UNKNOWN")
                             if role in ("COMPLICIT_MULE", "COMPLICIT"):
                                 mule_classification = "COMPLICIT"
-                            elif role in ("EXPLOITED_MULE", "EXPLOITED") and mule_classification != "COMPLICIT":
+                            elif (
+                                role in ("EXPLOITED_MULE", "EXPLOITED")
+                                and mule_classification != "COMPLICIT"
+                            ):
                                 mule_classification = "EXPLOITED"
                             elif role == "UNKNOWN" and mule_classification == "CLEAN":
                                 mule_classification = "EXPLOITED"
@@ -267,30 +284,32 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
             # Deduplicate reason codes
             unique_reasons = list(dict.fromkeys(all_reason_codes))
 
-            per_account.append({
-                "account_id": acc_id[:12] + "..." if len(acc_id) > 12 else acc_id,
-                "account_id_full": acc_id,
-                "risk_score": round(max_risk, 3),
-                "mule_classification": mule_classification,
-                "smurf_score": round(smurf_score, 3),
-                "rule_hits": unique_reasons[:10],
-                "alert_count": len(related_alerts),
-                # CBS features
-                "account_age_days": acc.get("account_age_days", 0),
-                "debit_count": acc.get("debit_count", 0),
-                "credit_count": acc.get("credit_count", 0),
-                "debit_volume": acc.get("debit_volume", 0),
-                "credit_volume": acc.get("credit_volume", 0),
-                "pass_through_ratio": acc.get("pass_through_ratio", 0),
-                "balance_volatility": acc.get("balance_volatility", 0),
-                "negative_balance_count": acc.get("negative_balance_count", 0),
-                "debit_credit_ratio": acc.get("debit_credit_ratio", 0),
-                "max_single_txn_ratio": acc.get("max_single_txn_ratio", 0),
-                # Node-level scores if available
-                "betweenness": node_data.get("betweenness", 0),
-                "pagerank": node_data.get("pagerank", 0),
-                "baseline_deviation": node_data.get("baseline_deviation", 0),
-            })
+            per_account.append(
+                {
+                    "account_id": acc_id[:12] + "..." if len(acc_id) > 12 else acc_id,
+                    "account_id_full": acc_id,
+                    "risk_score": round(max_risk, 3),
+                    "mule_classification": mule_classification,
+                    "smurf_score": round(smurf_score, 3),
+                    "rule_hits": unique_reasons[:10],
+                    "alert_count": len(related_alerts),
+                    # CBS features
+                    "account_age_days": acc.get("account_age_days", 0),
+                    "debit_count": acc.get("debit_count", 0),
+                    "credit_count": acc.get("credit_count", 0),
+                    "debit_volume": acc.get("debit_volume", 0),
+                    "credit_volume": acc.get("credit_volume", 0),
+                    "pass_through_ratio": acc.get("pass_through_ratio", 0),
+                    "balance_volatility": acc.get("balance_volatility", 0),
+                    "negative_balance_count": acc.get("negative_balance_count", 0),
+                    "debit_credit_ratio": acc.get("debit_credit_ratio", 0),
+                    "max_single_txn_ratio": acc.get("max_single_txn_ratio", 0),
+                    # Node-level scores if available
+                    "betweenness": node_data.get("betweenness", 0),
+                    "pagerank": node_data.get("pagerank", 0),
+                    "baseline_deviation": node_data.get("baseline_deviation", 0),
+                }
+            )
 
         # Sort by risk score descending
         per_account.sort(key=lambda x: -x["risk_score"])
@@ -325,32 +344,39 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
                 if n.get("account_id", "") in account_ids
             ]
             if cluster_members:
-                clusters.append({
-                    "alert_id": alert.get("alert_id", ""),
-                    "severity": alert.get("severity", ""),
-                    "risk_score": alert.get("risk_score", 0),
-                    "members": cluster_members,
-                    "member_count": len(cluster_members),
-                    "total_amount": alert.get("total_amount", 0),
-                })
+                clusters.append(
+                    {
+                        "alert_id": alert.get("alert_id", ""),
+                        "severity": alert.get("severity", ""),
+                        "risk_score": alert.get("risk_score", 0),
+                        "members": cluster_members,
+                        "member_count": len(cluster_members),
+                        "total_amount": alert.get("total_amount", 0),
+                    }
+                )
 
         # Internal link stats
         internal_txns = sum(
-            1 for t in transactions
+            1
+            for t in transactions
             if t["from_account"] in account_ids and t["to_account"] in account_ids
         )
 
-        return success_response({
-            "per_account": per_account,
-            "aggregate": {
-                "total_accounts": len(accounts),
-                "total_transactions": len(transactions),
-                "internal_links": internal_txns,
-                "total_alerts": len(alerts),
-                "mule_candidates": classification_counts["COMPLICIT"] + classification_counts["EXPLOITED"],
-                "severity_counts": severity_counts,
-                "classification_counts": classification_counts,
-                "feature_importance": feature_importance[:15],
-            },
-            "clusters": clusters,
-        })
+        return success_response(
+            {
+                "per_account": per_account,
+                "aggregate": {
+                    "total_accounts": len(accounts),
+                    "total_transactions": len(transactions),
+                    "internal_links": internal_txns,
+                    "total_alerts": len(alerts),
+                    "mule_candidates": classification_counts["COMPLICIT"]
+                    + classification_counts["EXPLOITED"],
+                    "severity_counts": severity_counts,
+                    "classification_counts": classification_counts,
+                    "feature_importance": feature_importance[:15],
+                    "data_quality": dataset.get("data_quality", {}),
+                },
+                "clusters": clusters,
+            }
+        )

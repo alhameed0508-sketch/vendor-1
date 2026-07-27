@@ -3,10 +3,11 @@ UNSC consolidated sanctions list fetcher and parser.
 Downloads XML from UN sanctions website, parses individuals and entities.
 Falls back to bundled snapshot when live fetch fails.
 """
+
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Tuple
 from xml.etree import ElementTree
 
@@ -16,7 +17,12 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_UNSC_URL = "https://scsanctions.un.org/resources/xml/en/consolidated.xml"
 BUNDLED_SNAPSHOT_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "..", "data", "watchlists",
+    os.path.dirname(__file__),
+    "..",
+    "..",
+    "..",
+    "data",
+    "watchlists",
     "unsc_consolidated_snapshot.xml",
 )
 
@@ -48,12 +54,14 @@ def fetch_unsc_with_fallback(url: str = DEFAULT_UNSC_URL) -> UNSCFetchResult:
         root = ElementTree.fromstring(response.content)
         entries = _parse_entries(root)
         logger.info(
-            "UNSC live fetch: %d entries from %s [source=LIVE]", len(entries), url,
+            "UNSC live fetch: %d entries from %s [source=LIVE]",
+            len(entries),
+            url,
         )
         return UNSCFetchResult(
             entries=tuple(entries),
             source="LIVE",
-            last_updated=datetime.utcnow().isoformat(),
+            last_updated=datetime.now(timezone.utc).isoformat(),
             entry_count=len(entries),
         )
     except Exception as exc:
@@ -73,7 +81,7 @@ def fetch_unsc_with_fallback(url: str = DEFAULT_UNSC_URL) -> UNSCFetchResult:
             return UNSCFetchResult(
                 entries=tuple(entries),
                 source="BUNDLED",
-                last_updated=datetime.utcnow().isoformat(),
+                last_updated=datetime.now(timezone.utc).isoformat(),
                 entry_count=len(entries),
             )
         except Exception as exc:
@@ -83,7 +91,7 @@ def fetch_unsc_with_fallback(url: str = DEFAULT_UNSC_URL) -> UNSCFetchResult:
     return UNSCFetchResult(
         entries=(),
         source="NONE",
-        last_updated=datetime.utcnow().isoformat(),
+        last_updated=datetime.now(timezone.utc).isoformat(),
         entry_count=0,
     )
 

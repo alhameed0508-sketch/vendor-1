@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from services.investigation.case_assembler import CaseFile
 
@@ -96,8 +96,11 @@ class NarrativeAgent:
 
         # Check all sections are non-empty
         for section_name in (
-            "subject_info", "activity_description",
-            "transaction_details", "supporting_evidence", "conclusion",
+            "subject_info",
+            "activity_description",
+            "transaction_details",
+            "supporting_evidence",
+            "conclusion",
         ):
             value = getattr(narrative, section_name, "")
             if not value or not value.strip():
@@ -118,6 +121,7 @@ class NarrativeAgent:
     def _check_pii_leakage(text: str, issues: List[str]) -> None:
         """Check for un-masked account IDs in narrative text."""
         import re
+
         # Pattern: AC followed by 6+ digits (raw account IDs)
         raw_ids = re.findall(r"\bAC\d{6,}\b", text)
         for raw_id in raw_ids:
@@ -155,11 +159,11 @@ class NarrativeAgent:
 
 Alert: {case_file.alert_id}
 Case Strength: {case_file.case_strength}
-Accounts: {', '.join(masked_ids)}
-Total Amount: INR {case_file.transaction_summary.get('total_amount', 0):,.0f}
-Transaction Count: {case_file.transaction_summary.get('txn_count', 0)}
-Shared Devices: {case_file.graph_context.get('shared_device_count', 0)}
-Shared IPs: {case_file.graph_context.get('shared_ip_count', 0)}
+Accounts: {", ".join(masked_ids)}
+Total Amount: INR {case_file.transaction_summary.get("total_amount", 0):,.0f}
+Transaction Count: {case_file.transaction_summary.get("txn_count", 0)}
+Shared Devices: {case_file.graph_context.get("shared_device_count", 0)}
+Shared IPs: {case_file.graph_context.get("shared_ip_count", 0)}
 
 Evidence:
 {chr(10).join(evidence_lines)}
@@ -168,7 +172,9 @@ Generate sections: Subject Information, Suspicious Activity Description,
 Transaction Details, Supporting Evidence, Conclusion."""
 
     def _parse_llm_response(
-        self, alert_id: str, response,
+        self,
+        alert_id: str,
+        response,
     ) -> STRNarrative:
         """Parse LLM response into structured STRNarrative."""
         text = response.content
@@ -218,7 +224,8 @@ Transaction Details, Supporting Evidence, Conclusion."""
 
         full_narrative = "\n\n".join(
             f"## {name.replace('_', ' ').title()}\n{body}"
-            for name, body in sections.items() if body
+            for name, body in sections.items()
+            if body
         )
 
         return STRNarrative(
@@ -253,10 +260,14 @@ Transaction Details, Supporting Evidence, Conclusion."""
         )
 
         # Activity Description
-        severity = "CRITICAL" if case_file.case_strength == "STRONG" else (
-            "HIGH" if case_file.case_strength == "MODERATE" else "MEDIUM"
+        severity = (
+            "CRITICAL"
+            if case_file.case_strength == "STRONG"
+            else ("HIGH" if case_file.case_strength == "MODERATE" else "MEDIUM")
         )
-        rule_summary = "; ".join(rules[:3]) if rules else "Multiple detection rules triggered"
+        rule_summary = (
+            "; ".join(rules[:3]) if rules else "Multiple detection rules triggered"
+        )
         activity_description = (
             f"Severity: {severity}. Case strength: {case_file.case_strength}. "
             f"Key indicators: {rule_summary}."
@@ -287,7 +298,8 @@ Transaction Details, Supporting Evidence, Conclusion."""
             evidence_lines.append(f"GNN anomaly score: {gnn}")
         supporting_evidence = (
             "Supporting indicators: " + "; ".join(evidence_lines)
-            if evidence_lines else "No additional supporting evidence."
+            if evidence_lines
+            else "No additional supporting evidence."
         )
 
         # Conclusion

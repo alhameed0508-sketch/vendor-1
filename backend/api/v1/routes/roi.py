@@ -4,7 +4,7 @@ Reads from PostgreSQL tables when available, returns empty lists otherwise.
 """
 
 import logging
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from slowapi import Limiter
 
 from core.response import success_response
@@ -19,10 +19,12 @@ def register_roi_routes(router: APIRouter, limiter: Limiter) -> None:
         """Combined ROI data: trends + breakdown in one call."""
         trends = _get_monthly_trends()
         breakdown = _get_detection_breakdown()
-        return success_response({
-            "monthly_trends": trends,
-            "detection_breakdown": breakdown,
-        })
+        return success_response(
+            {
+                "monthly_trends": trends,
+                "detection_breakdown": breakdown,
+            }
+        )
 
     @router.get("/monthly-trends")
     def monthly_trends():
@@ -39,9 +41,11 @@ def _get_monthly_trends():
     """Query monthly_trends table if PG is available."""
     try:
         from api.deps import _get_pg_engine
+
         engine = _get_pg_engine()
         if engine is not None:
-            from infra.database.postgres import monthly_trends
+            from backend.infra.database.postgres import monthly_trends
+
             with engine.connect() as conn:
                 rows = conn.execute(
                     monthly_trends.select().order_by(monthly_trends.c.month)
@@ -57,13 +61,16 @@ def _get_detection_breakdown():
     """Query detection_breakdown table if PG is available."""
     try:
         from api.deps import _get_pg_engine
+
         engine = _get_pg_engine()
         if engine is not None:
-            from infra.database.postgres import detection_breakdown
+            from backend.infra.database.postgres import detection_breakdown
+
             with engine.connect() as conn:
                 rows = conn.execute(
-                    detection_breakdown.select()
-                    .order_by(detection_breakdown.c.count.desc())
+                    detection_breakdown.select().order_by(
+                        detection_breakdown.c.count.desc()
+                    )
                 ).fetchall()
             if rows:
                 return [dict(r._mapping) for r in rows]

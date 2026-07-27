@@ -51,14 +51,16 @@ class GeminiProvider(LLMProvider):
 
         # Gemini uses a flat prompt model — combine system + user messages
         system_parts = [m.content for m in messages if m.role == "system"]
-        user_parts = [m.content for m in messages if m.role == "user"]
-        assistant_parts = [m.content for m in messages if m.role == "assistant"]
-
         # Build conversation content
         contents = []
         if system_parts:
             contents.append({"role": "user", "parts": ["\n".join(system_parts)]})
-            contents.append({"role": "model", "parts": ["Understood. I will follow these instructions."]})
+            contents.append(
+                {
+                    "role": "model",
+                    "parts": ["Understood. I will follow these instructions."],
+                }
+            )
 
         for msg in messages:
             if msg.role == "system":
@@ -87,7 +89,9 @@ class GeminiProvider(LLMProvider):
         completion_tokens = 0
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             prompt_tokens = getattr(response.usage_metadata, "prompt_token_count", 0)
-            completion_tokens = getattr(response.usage_metadata, "candidates_token_count", 0)
+            completion_tokens = getattr(
+                response.usage_metadata, "candidates_token_count", 0
+            )
 
         return LLMResponse(
             content=response.text or "",

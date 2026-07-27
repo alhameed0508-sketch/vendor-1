@@ -9,7 +9,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
-from infra.database.postgres import onboarding_assessments
+from backend.infra.database.postgres import onboarding_assessments
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class PgOnboardingRepository:
             "signals": assessment.get("signals", []),
             "reason_codes": assessment.get("reason_codes", []),
             "recommendation": assessment.get("recommendation", ""),
+            "entity_resolution": assessment.get("entity_resolution", {}),
             "assessed_at": now,
         }
         with self._engine.connect() as conn:
@@ -65,9 +66,7 @@ class PgOnboardingRepository:
             onboarding_assessments.c.assessed_at.desc()
         )
         if risk_level:
-            query = query.where(
-                onboarding_assessments.c.risk_level == risk_level
-            )
+            query = query.where(onboarding_assessments.c.risk_level == risk_level)
         query = query.limit(limit).offset(offset)
         with self._engine.connect() as conn:
             rows = conn.execute(query).fetchall()
@@ -77,19 +76,22 @@ class PgOnboardingRepository:
         """Return aggregate statistics."""
         t = onboarding_assessments
         with self._engine.connect() as conn:
-            total = conn.execute(
-                select(func.count()).select_from(t)
-            ).scalar() or 0
+            total = conn.execute(select(func.count()).select_from(t)).scalar() or 0
 
             level_rows = conn.execute(
-                select(t.c.risk_level, func.count().label("cnt"))
-                .group_by(t.c.risk_level)
+                select(t.c.risk_level, func.count().label("cnt")).group_by(
+                    t.c.risk_level
+                )
             ).fetchall()
 
-            blocked = conn.execute(
-                select(func.count()).select_from(t)
-                .where(t.c.recommendation.like("BLOCK%"))
-            ).scalar() or 0
+            blocked = (
+                conn.execute(
+                    select(func.count())
+                    .select_from(t)
+                    .where(t.c.recommendation.like("BLOCK%"))
+                ).scalar()
+                or 0
+            )
 
         levels = {r._mapping["risk_level"]: r._mapping["cnt"] for r in level_rows}
         high_risk = levels.get("HIGH", 0) + levels.get("CRITICAL", 0)

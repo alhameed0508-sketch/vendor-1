@@ -18,17 +18,15 @@ Test Coverage:
 import sys
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
-from jose import jwt
+import jwt
 
-from api.app import create_app
 from core.config import Settings, get_settings
 from infra.security.auth import (
     create_access_token,
@@ -53,7 +51,6 @@ def demo_settings(monkeypatch) -> Settings:
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("CORS_ORIGINS", '["*"]')
     # Clear the cache to force reload
-    from core.config import get_settings
     get_settings.cache_clear()
     return get_settings()
 
@@ -67,7 +64,6 @@ def production_settings(monkeypatch) -> Settings:
     monkeypatch.setenv("CORS_ORIGINS", '["http://localhost:3000"]')
     monkeypatch.setenv("JWT_SECRET", "test_secret_key_for_testing_only")
     # Clear the cache to force reload
-    from core.config import get_settings
     get_settings.cache_clear()
     return get_settings()
 
@@ -111,8 +107,8 @@ def expired_access_token() -> str:
         "sub": "investigator",
         "role": "INVESTIGATOR",
         "type": "access",
-        "iat": datetime.utcnow() - timedelta(hours=1),
-        "exp": datetime.utcnow() - timedelta(minutes=30),
+        "iat": datetime.now(timezone.utc) - timedelta(hours=1),
+        "exp": datetime.now(timezone.utc) - timedelta(minutes=30),
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -279,8 +275,8 @@ async def test_refresh_expired_token(demo_client: AsyncClient):
         "sub": "investigator",
         "role": "INVESTIGATOR",
         "type": "refresh",
-        "iat": datetime.utcnow() - timedelta(days=10),
-        "exp": datetime.utcnow() - timedelta(days=3),
+        "iat": datetime.now(timezone.utc) - timedelta(days=10),
+        "exp": datetime.now(timezone.utc) - timedelta(days=3),
     }
     expired_refresh = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
 
@@ -293,7 +289,9 @@ async def test_refresh_expired_token(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_refresh_using_access_token(demo_client: AsyncClient, valid_access_token: str):
+async def test_refresh_using_access_token(
+    demo_client: AsyncClient, valid_access_token: str
+):
     """Access token should not work for refresh endpoint."""
     response = await demo_client.post(
         "/api/v1/auth/refresh",
@@ -379,7 +377,9 @@ async def test_logout_then_refresh_fails(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_valid_token(demo_client: AsyncClient, valid_access_token: str):
+async def test_get_me_with_valid_token(
+    demo_client: AsyncClient, valid_access_token: str
+):
     """Valid token should return user info."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -423,7 +423,9 @@ async def test_get_me_with_invalid_token(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_expired_token(demo_client: AsyncClient, expired_access_token: str):
+async def test_get_me_with_expired_token(
+    demo_client: AsyncClient, expired_access_token: str
+):
     """Expired token should return 401."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -435,7 +437,9 @@ async def test_get_me_with_expired_token(demo_client: AsyncClient, expired_acces
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_refresh_token(demo_client: AsyncClient, valid_refresh_token: str):
+async def test_get_me_with_refresh_token(
+    demo_client: AsyncClient, valid_refresh_token: str
+):
     """Refresh token should not work for API access."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -451,7 +455,9 @@ async def test_get_me_with_refresh_token(demo_client: AsyncClient, valid_refresh
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_with_valid_permission(demo_client: AsyncClient, valid_access_token: str):
+async def test_protected_endpoint_with_valid_permission(
+    demo_client: AsyncClient, valid_access_token: str
+):
     """User with correct permission should access protected endpoint."""
     # INVESTIGATOR has "alerts:read" permission
     response = await demo_client.get(
@@ -465,7 +471,9 @@ async def test_protected_endpoint_with_valid_permission(demo_client: AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_without_permission(demo_client: AsyncClient, readonly_token: str):
+async def test_protected_endpoint_without_permission(
+    demo_client: AsyncClient, readonly_token: str
+):
     """User without required permission should get 403."""
     # READONLY doesn't have "config:write" permission
     # Try to access an admin-only endpoint (if available)
@@ -494,7 +502,9 @@ async def test_protected_endpoint_without_token_demo_mode(demo_client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_admin_only_endpoint_with_admin_token(demo_client: AsyncClient, admin_token: str):
+async def test_admin_only_endpoint_with_admin_token(
+    demo_client: AsyncClient, admin_token: str
+):
     """Admin token should access admin-only endpoints."""
     # Test metrics endpoint which requires ADMIN role
     response = await demo_client.get(
@@ -507,7 +517,9 @@ async def test_admin_only_endpoint_with_admin_token(demo_client: AsyncClient, ad
 
 
 @pytest.mark.asyncio
-async def test_admin_only_endpoint_with_non_admin_token(demo_client: AsyncClient, valid_access_token: str):
+async def test_admin_only_endpoint_with_non_admin_token(
+    demo_client: AsyncClient, valid_access_token: str
+):
     """Non-admin token should be denied from admin endpoints."""
     # Test metrics endpoint which requires ADMIN role
     response = await demo_client.get(
@@ -535,14 +547,14 @@ async def test_token_expiry_structure():
     assert refresh_payload is not None
 
     # Access token should expire soon (default is 15 minutes, can be configured)
-    access_exp = datetime.fromtimestamp(access_payload["exp"])
-    access_lifetime = access_exp - datetime.utcnow()
+    access_exp = datetime.fromtimestamp(access_payload["exp"], timezone.utc)
+    access_lifetime = access_exp - datetime.now(timezone.utc)
     # Should be between 0 and 24 hours (allowing for different configurations)
     assert 0 < access_lifetime.total_seconds() <= 86400  # 0 to 24 hours
 
     # Refresh token should expire later (default is 7 days, can be configured)
-    refresh_exp = datetime.fromtimestamp(refresh_payload["exp"])
-    refresh_lifetime = refresh_exp - datetime.utcnow()
+    refresh_exp = datetime.fromtimestamp(refresh_payload["exp"], timezone.utc)
+    refresh_lifetime = refresh_exp - datetime.now(timezone.utc)
     # Should be more than 1 day
     assert refresh_lifetime.total_seconds() > 86400  # More than 1 day
     # Refresh token should last longer than access token
@@ -550,7 +562,9 @@ async def test_token_expiry_structure():
 
 
 @pytest.mark.asyncio
-async def test_expired_token_rejected(demo_client: AsyncClient, expired_access_token: str):
+async def test_expired_token_rejected(
+    demo_client: AsyncClient, expired_access_token: str
+):
     """Expired access token should be rejected."""
     response = await demo_client.get(
         "/api/v1/auth/me",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { alertPath, isSafeInternalPath } from '../utils/safeNavigation';
 
 const PAGES = [
   { name: 'Alert Queue', path: '/', icon: '\u26A0', category: 'Pages' },
@@ -30,7 +31,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
 
   const onSelect = useCallback((value) => {
     setOpen(false);
-    if (value.startsWith('/')) {
+    if (isSafeInternalPath(value)) {
       navigate(value);
     }
   }, [navigate]);
@@ -148,7 +149,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
                       <Command.Item
                         key={alert.alert_id}
                         value={`${alert.alert_id} ${alert.severity} ${alert.reason_codes?.[0] || ''}`}
-                        onSelect={() => onSelect(`/alert/${alert.alert_id}`)}
+                        onSelect={() => onSelect(alertPath(alert.alert_id))}
                         style={{
                           padding: '10px 12px',
                           borderRadius: 8,

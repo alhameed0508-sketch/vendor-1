@@ -12,7 +12,6 @@ Covers:
 
 import pytest
 import torch
-import numpy as np
 
 from models.gnn.gnn_model import (
     MuleCatchGNN,
@@ -33,6 +32,7 @@ pytestmark = pytest.mark.skipif(
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_accounts(n: int = 4, roles=None):
     """Create ``n`` test account dicts.
@@ -73,6 +73,7 @@ def _make_transactions(accounts, payment_type="UPI"):
 # ---------------------------------------------------------------------------
 # 1. Directed edges: no reverse edges
 # ---------------------------------------------------------------------------
+
 
 class TestDirectedEdges:
     """build_graph_data with directed=True should NOT add reverse edges."""
@@ -151,6 +152,7 @@ class TestDirectedEdges:
 # ---------------------------------------------------------------------------
 # 2. Edge feature computation
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeFeatures:
     """Verify that edge_attr is correctly computed."""
@@ -337,11 +339,14 @@ class TestEdgeFeatures:
 # 3. Model training with edge features
 # ---------------------------------------------------------------------------
 
+
 class TestModelTrainingWithEdgeFeatures:
     """Verify the model trains and converges with edge features."""
 
     def test_train_with_edge_features(self):
-        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
+        accounts = _make_accounts(
+            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
+        )
         txns = _make_transactions(accounts, payment_type="UPI")
         data, ids = build_graph_data(accounts, txns, directed=True)
 
@@ -380,6 +385,7 @@ class TestModelTrainingWithEdgeFeatures:
 # ---------------------------------------------------------------------------
 # 4. Backward compatibility (edge_attr=None)
 # ---------------------------------------------------------------------------
+
 
 class TestBackwardCompatibility:
     """The model MUST work identically when edge_attr is None."""
@@ -453,6 +459,7 @@ class TestBackwardCompatibility:
 # 5. Predictions change with edge features
 # ---------------------------------------------------------------------------
 
+
 class TestEdgeFeaturesAffectPredictions:
     """Verify that edge features actually influence model output."""
 
@@ -504,8 +511,12 @@ class TestEdgeFeaturesAffectPredictions:
         model.eval()
 
         with torch.no_grad():
-            logits_small, _ = model(data_small.x, data_small.edge_index, data_small.edge_attr)
-            logits_large, _ = model(data_large.x, data_large.edge_index, data_large.edge_attr)
+            logits_small, _ = model(
+                data_small.x, data_small.edge_index, data_small.edge_attr
+            )
+            logits_large, _ = model(
+                data_large.x, data_large.edge_index, data_large.edge_attr
+            )
 
         assert not torch.allclose(logits_small, logits_large, atol=1e-6)
 
@@ -513,6 +524,7 @@ class TestEdgeFeaturesAffectPredictions:
 # ---------------------------------------------------------------------------
 # 6. Edge cases
 # ---------------------------------------------------------------------------
+
 
 class TestEdgeCases:
     """Edge cases: no edges, single edge, self-loops."""
@@ -615,6 +627,7 @@ class TestEdgeCases:
 # 7. Timestamp parsing
 # ---------------------------------------------------------------------------
 
+
 class TestTimestampParsing:
     """Verify _parse_timestamp handles various formats."""
 
@@ -647,6 +660,7 @@ class TestTimestampParsing:
 # 8. Payment type encoding map
 # ---------------------------------------------------------------------------
 
+
 class TestPaymentTypeEncoding:
     """Verify the payment type encoding constants."""
 
@@ -667,16 +681,19 @@ class TestPaymentTypeEncoding:
 # 9. GNNScorer integration
 # ---------------------------------------------------------------------------
 
+
 class TestGNNScorerIntegration:
     """End-to-end tests through the GNNScorer wrapper."""
 
     def test_scorer_train_with_edge_features(self):
-        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
+        accounts = _make_accounts(
+            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
+        )
         txns = _make_transactions(accounts, payment_type="NEFT")
         scorer = GNNScorer(model_path="/tmp/test_gnn_directed.pt")
         losses = scorer.train(accounts, txns, {}, epochs=5)
         assert len(losses) == 5
-        assert all(isinstance(l, float) for l in losses)
+        assert all(isinstance(loss, float) for loss in losses)
 
     def test_scorer_predict_with_edge_features(self):
         accounts = _make_accounts(4)
@@ -689,11 +706,17 @@ class TestGNNScorerIntegration:
             assert p.embedding is not None
 
     def test_scorer_train_and_predict(self):
-        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
+        accounts = _make_accounts(
+            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
+        )
         txns = _make_transactions(accounts, payment_type="IMPS")
         scorer = GNNScorer(model_path="/tmp/test_gnn_directed_tap.pt")
         preds, metrics = scorer.train_and_predict(
-            accounts, txns, {}, epochs=5, train_ratio=0.5,
+            accounts,
+            txns,
+            {},
+            epochs=5,
+            train_ratio=0.5,
         )
         assert len(preds) == 6
         assert metrics.epochs == 5

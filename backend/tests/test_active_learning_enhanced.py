@@ -1,12 +1,11 @@
 """Tests for enhanced active learning (uncertainty sampling)."""
+
 import pytest
 from models.active_learning.feedback_loop import (
     ActiveLearningEngine,
     FeedbackStore,
     FeedbackRecord,
 )
-from pathlib import Path
-import tempfile
 
 
 @pytest.fixture

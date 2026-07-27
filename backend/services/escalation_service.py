@@ -3,7 +3,7 @@ Escalation service — escalation workflow business logic.
 """
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from core.exceptions import NotFoundError, ConflictError
@@ -41,7 +41,7 @@ class EscalationService:
             "priority": priority,
             "status": "PENDING",
             "escalated_by": user_id,
-            "escalated_at": datetime.utcnow().isoformat(),
+            "escalated_at": datetime.now(timezone.utc).isoformat(),
             "resolved_by": None,
             "resolved_at": None,
             "action": None,
@@ -74,7 +74,7 @@ class EscalationService:
             escalation_id,
             status=action,
             resolved_by=user_id,
-            resolved_at=datetime.utcnow().isoformat(),
+            resolved_at=datetime.now(timezone.utc).isoformat(),
             supervisor_notes=notes,
         )
 

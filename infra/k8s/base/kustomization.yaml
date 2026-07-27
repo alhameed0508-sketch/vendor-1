@@ -6,7 +6,8 @@ namespace: mulecatch
 resources:
   - namespace.yaml
   - configmap.yaml
-  - secrets.yaml
+  # A Secret named "mulecatch-secrets" must be provisioned separately by
+  # External Secrets, Sealed Secrets, Vault, or the deployment pipeline.
   # Data stores
   - postgres-statefulset.yaml
   - postgres-service.yaml
@@ -24,6 +25,8 @@ resources:
   # Networking
   - ingress.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: mulecatch
-  app.kubernetes.io/managed-by: kustomize
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: mulecatch
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: true

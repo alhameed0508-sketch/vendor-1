@@ -26,27 +26,27 @@ import math
 @dataclass
 class BaselineDeviation:
     account_id: str
-    volume_deviation: float = 0.0      # 0-1, how much txn count exceeds baseline
-    amount_deviation: float = 0.0      # 0-1, how much avg amount deviates
-    recipient_burst: float = 0.0       # 0-1, unusual recipient diversity
-    balance_retention: float = 0.0     # 0-1, low retention = mule-like
-    beneficiary_entropy: float = 0.0   # 0-1, high entropy = distributing widely
-    temporal_regularity: float = 0.0   # 0-1, bot-like regular timing
+    volume_deviation: float = 0.0  # 0-1, how much txn count exceeds baseline
+    amount_deviation: float = 0.0  # 0-1, how much avg amount deviates
+    recipient_burst: float = 0.0  # 0-1, unusual recipient diversity
+    balance_retention: float = 0.0  # 0-1, low retention = mule-like
+    beneficiary_entropy: float = 0.0  # 0-1, high entropy = distributing widely
+    temporal_regularity: float = 0.0  # 0-1, bot-like regular timing
     inbound_outbound_asymmetry: float = 0.0  # 0-1, mules receive >> spend
-    dormancy_burst: float = 0.0        # 0-1, dormant then sudden activity
-    composite_score: float = 0.0       # weighted blend of above
+    dormancy_burst: float = 0.0  # 0-1, dormant then sudden activity
+    composite_score: float = 0.0  # weighted blend of above
     reason_codes: List[str] = field(default_factory=list)
 
 
 WEIGHTS = {
-    "volume":    0.25,
-    "amount":    0.15,
+    "volume": 0.25,
+    "amount": 0.15,
     "recipient": 0.12,
     "retention": 0.12,
-    "entropy":   0.10,
-    "temporal":  0.08,
+    "entropy": 0.10,
+    "temporal": 0.08,
     "asymmetry": 0.10,
-    "dormancy":  0.08,
+    "dormancy": 0.08,
 }
 
 # Default baseline assumptions when historical data is sparse
@@ -91,7 +91,9 @@ def _score_account(
         return dev
 
     # Historical baseline from account metadata
-    avg_monthly = acc.get("avg_monthly_txn", DEFAULT_AVG_MONTHLY_TXN) or DEFAULT_AVG_MONTHLY_TXN
+    avg_monthly = (
+        acc.get("avg_monthly_txn", DEFAULT_AVG_MONTHLY_TXN) or DEFAULT_AVG_MONTHLY_TXN
+    )
     account_age = acc.get("account_age_days", 30)
 
     # ── 1. Volume deviation ──────────────────────────────────────────────
@@ -108,7 +110,9 @@ def _score_account(
     avg_amount = sum(amounts) / len(amounts) if amounts else 0
     expected_avg = DEFAULT_AVG_AMOUNT
     if avg_amount > expected_avg * 2:
-        dev.amount_deviation = min(1.0, (avg_amount - expected_avg) / (expected_avg * 3))
+        dev.amount_deviation = min(
+            1.0, (avg_amount - expected_avg) / (expected_avg * 3)
+        )
     elif avg_amount < expected_avg * 0.2 and current_count > 10:
         dev.amount_deviation = min(1.0, 0.5 + (10 - avg_amount / 1000) * 0.05)
 
@@ -134,7 +138,9 @@ def _score_account(
     if txns:
         recipient_counts: Dict[str, int] = {}
         for t in txns:
-            recipient_counts[t["to_account"]] = recipient_counts.get(t["to_account"], 0) + 1
+            recipient_counts[t["to_account"]] = (
+                recipient_counts.get(t["to_account"], 0) + 1
+            )
         total = sum(recipient_counts.values())
         if total > 0 and len(recipient_counts) > 1:
             entropy = -sum(
@@ -155,6 +161,7 @@ def _score_account(
             if isinstance(ts, str) and len(ts) >= 19:
                 try:
                     from datetime import datetime
+
                     dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                     timestamps.append(dt.timestamp())
                 except (ValueError, TypeError):
@@ -162,8 +169,7 @@ def _score_account(
         if len(timestamps) >= 3:
             timestamps.sort()
             intervals = [
-                timestamps[i + 1] - timestamps[i]
-                for i in range(len(timestamps) - 1)
+                timestamps[i + 1] - timestamps[i] for i in range(len(timestamps) - 1)
             ]
             mean_interval = sum(intervals) / len(intervals)
             if mean_interval > 0:
@@ -198,14 +204,14 @@ def _score_account(
 
     # ── Composite ────────────────────────────────────────────────────────
     dev.composite_score = (
-        WEIGHTS["volume"]    * dev.volume_deviation +
-        WEIGHTS["amount"]    * dev.amount_deviation +
-        WEIGHTS["recipient"] * dev.recipient_burst +
-        WEIGHTS["retention"] * dev.balance_retention +
-        WEIGHTS["entropy"]   * dev.beneficiary_entropy +
-        WEIGHTS["temporal"]  * dev.temporal_regularity +
-        WEIGHTS["asymmetry"] * dev.inbound_outbound_asymmetry +
-        WEIGHTS["dormancy"]  * dev.dormancy_burst
+        WEIGHTS["volume"] * dev.volume_deviation
+        + WEIGHTS["amount"] * dev.amount_deviation
+        + WEIGHTS["recipient"] * dev.recipient_burst
+        + WEIGHTS["retention"] * dev.balance_retention
+        + WEIGHTS["entropy"] * dev.beneficiary_entropy
+        + WEIGHTS["temporal"] * dev.temporal_regularity
+        + WEIGHTS["asymmetry"] * dev.inbound_outbound_asymmetry
+        + WEIGHTS["dormancy"] * dev.dormancy_burst
     )
     dev.composite_score = min(dev.composite_score, 1.0)
 

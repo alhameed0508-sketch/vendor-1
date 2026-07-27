@@ -16,11 +16,11 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 # -- Priority component weights (must sum to 1.0) -----------------------------
-WEIGHT_RISK_SCORE = 0.30          # Direct risk score from the alert
-WEIGHT_AMOUNT_FACTOR = 0.20       # Log-scaled transaction amount
+WEIGHT_RISK_SCORE = 0.30  # Direct risk score from the alert
+WEIGHT_AMOUNT_FACTOR = 0.20  # Log-scaled transaction amount
 WEIGHT_NETWORK_CENTRALITY = 0.20  # Max betweenness centrality from nodes
 WEIGHT_EVIDENCE_DIVERSITY = 0.15  # Unique reason code prefixes / 10
-WEIGHT_TIME_SENSITIVITY = 0.15    # Newer alerts + new accounts boost
+WEIGHT_TIME_SENSITIVITY = 0.15  # Newer alerts + new accounts boost
 
 # -- SAR filing base probabilities by severity --------------------------------
 SAR_BASE_PROBABILITY = {
@@ -82,9 +82,7 @@ class AlertPriorityScorer:
     def score_alert(self, alert_data: Dict) -> AlertPriorityResult:
         """Score a single alert for priority (rank = 1)."""
         breakdown = self._compute_breakdown(alert_data)
-        priority_score = sum(
-            self.WEIGHTS[k] * breakdown[k] for k in self.WEIGHTS
-        )
+        priority_score = sum(self.WEIGHTS[k] * breakdown[k] for k in self.WEIGHTS)
         priority_score = max(0.0, min(1.0, priority_score))
 
         sar_prob = self.predict_sar_likelihood(alert_data)
@@ -112,14 +110,16 @@ class AlertPriorityScorer:
         # Assign ranks (1-based)
         ranked = []
         for idx, result in enumerate(scored):
-            ranked.append(AlertPriorityResult(
-                alert_id=result.alert_id,
-                priority_score=result.priority_score,
-                sar_filing_probability=result.sar_filing_probability,
-                investigation_complexity=result.investigation_complexity,
-                estimated_priority_rank=idx + 1,
-                score_breakdown=result.score_breakdown,
-            ))
+            ranked.append(
+                AlertPriorityResult(
+                    alert_id=result.alert_id,
+                    priority_score=result.priority_score,
+                    sar_filing_probability=result.sar_filing_probability,
+                    investigation_complexity=result.investigation_complexity,
+                    estimated_priority_rank=idx + 1,
+                    score_breakdown=result.score_breakdown,
+                )
+            )
         return ranked
 
     def predict_sar_likelihood(self, alert_data: Dict) -> float:
@@ -176,9 +176,7 @@ class AlertPriorityScorer:
         nodes = alert_data.get("nodes", [])
         if not nodes:
             return 0.0
-        max_betweenness = max(
-            float(n.get("betweenness_centrality", 0)) for n in nodes
-        )
+        max_betweenness = max(float(n.get("betweenness_centrality", 0)) for n in nodes)
         return max(0.0, min(1.0, max_betweenness))
 
     @staticmethod
@@ -188,7 +186,9 @@ class AlertPriorityScorer:
         prefixes = set()
         for rc in reason_codes:
             # Extract prefix: "R01: ..." -> "R01", "Device shared..." -> "Device"
-            prefix = rc.split(":")[0].strip() if ":" in rc else rc.split()[0] if rc else ""
+            prefix = (
+                rc.split(":")[0].strip() if ":" in rc else rc.split()[0] if rc else ""
+            )
             if prefix:
                 prefixes.add(prefix)
         return min(1.0, len(prefixes) / 10.0)
@@ -202,8 +202,7 @@ class AlertPriorityScorer:
 
         # Check for new accounts (< 7 days)
         new_account_count = sum(
-            1 for n in nodes
-            if (n.get("account_age_days") or 999) < 7
+            1 for n in nodes if (n.get("account_age_days") or 999) < 7
         )
         total = len(nodes)
 

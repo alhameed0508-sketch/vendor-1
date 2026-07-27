@@ -1,18 +1,22 @@
 """Tests for distribution drift detector."""
+
 import pytest
 from models.active_learning.drift_detector import (
     DriftDetector,
     DriftResult,
-    DEFAULT_DRIFT_THRESHOLD,
 )
 
 
 class TestDriftResult:
     def test_frozen(self):
         result = DriftResult(
-            is_drifting=False, historical_mean=0.5, recent_mean=0.5,
-            divergence=0.0, recommendation="NO_ACTION",
-            window_size=200, sample_count=100,
+            is_drifting=False,
+            historical_mean=0.5,
+            recent_mean=0.5,
+            divergence=0.0,
+            recommendation="NO_ACTION",
+            window_size=200,
+            sample_count=100,
         )
         with pytest.raises(AttributeError):
             result.is_drifting = True
@@ -88,6 +92,7 @@ class TestGradualDrift:
 
     def test_no_drift_with_noise(self):
         import random
+
         random.seed(42)
         detector = DriftDetector(window_size=100)
         for _ in range(200):

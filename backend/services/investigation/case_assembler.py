@@ -8,9 +8,9 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 
 # -- Behavioral profile thresholds ---------------------------------------------
 # Account younger than this (days) is flagged as new
@@ -76,8 +76,11 @@ class CaseAssemblyAgent:
         typology = self._extract_typology(alert_data)
         timeline = self._build_timeline(alert_data, transactions)
         evidence_items = self._classify_evidence(
-            alert_data, transaction_summary, graph_context,
-            behavioral_profile, screening_results,
+            alert_data,
+            transaction_summary,
+            graph_context,
+            behavioral_profile,
+            screening_results,
         )
         case_strength = self._assess_case_strength(evidence_items)
 
@@ -91,7 +94,7 @@ class CaseAssemblyAgent:
             typology=typology,
             timeline=tuple(timeline),
             evidence_items=tuple(evidence_items),
-            created_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
             case_strength=case_strength,
         )
 
@@ -113,7 +116,8 @@ class CaseAssemblyAgent:
 
     @staticmethod
     def _build_transaction_summary(
-        alert_data: Dict, transactions: List[Dict],
+        alert_data: Dict,
+        transactions: List[Dict],
     ) -> Dict:
         """Summarize transaction amounts, count, date range, counterparties."""
         total_amount = alert_data.get("total_amount", 0.0)
@@ -144,7 +148,9 @@ class CaseAssemblyAgent:
                 txn_count = max(txn_count, edge.get("txn_count", 0))
 
         top_counterparties = sorted(
-            counterparties.items(), key=lambda kv: kv[1], reverse=True,
+            counterparties.items(),
+            key=lambda kv: kv[1],
+            reverse=True,
         )[:5]
 
         return {
@@ -203,12 +209,14 @@ class CaseAssemblyAgent:
                 flags.append(f"high_centrality ({betweenness:.2f})")
 
             if flags:
-                deviations.append({
-                    "account_id": node.get("account_id"),
-                    "flags": flags,
-                    "smurf_score": smurf_score,
-                    "account_age_days": account_age,
-                })
+                deviations.append(
+                    {
+                        "account_id": node.get("account_id"),
+                        "flags": flags,
+                        "smurf_score": smurf_score,
+                        "account_age_days": account_age,
+                    }
+                )
 
         return {
             "deviation_count": len(deviations),
@@ -263,31 +271,37 @@ class CaseAssemblyAgent:
         for node in alert_data.get("nodes", []):
             age = node.get("account_age_days")
             if age is not None:
-                events.append({
-                    "event_type": "account_created",
-                    "account_id": node.get("account_id"),
-                    "days_ago": age,
-                    "detail": f"Account opened {age} days ago",
-                })
+                events.append(
+                    {
+                        "event_type": "account_created",
+                        "account_id": node.get("account_id"),
+                        "days_ago": age,
+                        "detail": f"Account opened {age} days ago",
+                    }
+                )
 
         # Add transaction events
         for txn in transactions:
             txn_date = txn.get("date") or txn.get("timestamp")
-            events.append({
-                "event_type": "transaction",
-                "date": str(txn_date) if txn_date else "unknown",
-                "from": txn.get("from_account"),
-                "to": txn.get("to_account"),
-                "amount": float(txn.get("amount", 0)),
-            })
+            events.append(
+                {
+                    "event_type": "transaction",
+                    "date": str(txn_date) if txn_date else "unknown",
+                    "from": txn.get("from_account"),
+                    "to": txn.get("to_account"),
+                    "amount": float(txn.get("amount", 0)),
+                }
+            )
 
         # Add alert generation event
-        events.append({
-            "event_type": "alert_generated",
-            "alert_id": alert_data.get("alert_id"),
-            "severity": alert_data.get("severity"),
-            "risk_score": alert_data.get("risk_score"),
-        })
+        events.append(
+            {
+                "event_type": "alert_generated",
+                "alert_id": alert_data.get("alert_id"),
+                "severity": alert_data.get("severity"),
+                "risk_score": alert_data.get("risk_score"),
+            }
+        )
 
         return events
 
@@ -305,50 +319,62 @@ class CaseAssemblyAgent:
         # Transaction evidence
         total = transaction_summary.get("total_amount", 0)
         if total > 0:
-            severity = "HIGH" if total > 500_000 else ("MEDIUM" if total > 100_000 else "LOW")
-            items.append(EvidenceItem(
-                evidence_type="transaction",
-                description=f"Total transactions: INR {total:,.0f} across {transaction_summary.get('txn_count', 0)} transactions",
-                data=transaction_summary,
-                severity=severity,
-            ))
+            severity = (
+                "HIGH" if total > 500_000 else ("MEDIUM" if total > 100_000 else "LOW")
+            )
+            items.append(
+                EvidenceItem(
+                    evidence_type="transaction",
+                    description=f"Total transactions: INR {total:,.0f} across {transaction_summary.get('txn_count', 0)} transactions",
+                    data=transaction_summary,
+                    severity=severity,
+                )
+            )
 
         # Graph / device evidence
         if graph_context.get("shared_device_count", 0) > 0:
-            items.append(EvidenceItem(
-                evidence_type="device",
-                description=f"{graph_context['shared_device_count']} shared device(s) detected across accounts",
-                data={"shared_devices": graph_context["shared_devices"]},
-                severity="HIGH",
-            ))
+            items.append(
+                EvidenceItem(
+                    evidence_type="device",
+                    description=f"{graph_context['shared_device_count']} shared device(s) detected across accounts",
+                    data={"shared_devices": graph_context["shared_devices"]},
+                    severity="HIGH",
+                )
+            )
 
         if graph_context.get("shared_ip_count", 0) > 0:
-            items.append(EvidenceItem(
-                evidence_type="graph",
-                description=f"{graph_context['shared_ip_count']} shared IP(s) detected",
-                data={"shared_ips": graph_context["shared_ips"]},
-                severity="MEDIUM",
-            ))
+            items.append(
+                EvidenceItem(
+                    evidence_type="graph",
+                    description=f"{graph_context['shared_ip_count']} shared IP(s) detected",
+                    data={"shared_ips": graph_context["shared_ips"]},
+                    severity="MEDIUM",
+                )
+            )
 
         # Behavioral evidence
         for dev in behavioral_profile.get("deviations", []):
             smurf = dev.get("smurf_score", 0)
             severity = "HIGH" if smurf > THRESHOLD_HIGH_SEVERITY_SMURF else "MEDIUM"
-            items.append(EvidenceItem(
-                evidence_type="behavioral",
-                description=f"Account {dev.get('account_id')}: {', '.join(dev.get('flags', []))}",
-                data=dev,
-                severity=severity,
-            ))
+            items.append(
+                EvidenceItem(
+                    evidence_type="behavioral",
+                    description=f"Account {dev.get('account_id')}: {', '.join(dev.get('flags', []))}",
+                    data=dev,
+                    severity=severity,
+                )
+            )
 
         # Screening evidence
         for hit in screening_results.get("screening_hits", []):
-            items.append(EvidenceItem(
-                evidence_type="screening",
-                description=hit,
-                data={"hit": hit},
-                severity="HIGH",
-            ))
+            items.append(
+                EvidenceItem(
+                    evidence_type="screening",
+                    description=hit,
+                    data={"hit": hit},
+                    severity="HIGH",
+                )
+            )
 
         return items
 

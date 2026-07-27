@@ -8,15 +8,15 @@ with middleware, error handlers, routers, and startup events.
 import os
 import sys
 import time
+from contextlib import asynccontextmanager
 
-os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Ensure parent paths are importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from core.config import get_settings
@@ -25,19 +25,46 @@ from core.rate_limiter import create_limiter
 from core.response import error_response
 from api.v1.router import create_v1_router
 from api.v1.routes.health import register_health_routes
-from api.deps import get_persistence, get_kafka_consumer
+from api.deps import get_kafka_consumer
 from ingest.kafka_consumer import KAFKA_ENABLED
-from api.deps import get_detection_service
 
 
 def create_app() -> FastAPI:
     """Application factory — builds and configures the FastAPI app."""
     settings = get_settings()
 
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        """Own startup validation and background-consumer shutdown."""
+        if not settings.demo_mode:
+            from core.production_validator import validate_or_die
+
+            validate_or_die(settings)
+
+        consumer = None
+        if KAFKA_ENABLED:
+            from api.deps import get_pipeline, get_alert_repo, get_dataset_repo
+
+            consumer = get_kafka_consumer()
+            consumer.start(
+                pipeline=get_pipeline(),
+                alert_repo=get_alert_repo(),
+                dataset_repo=get_dataset_repo(),
+            )
+        try:
+            yield
+        finally:
+            if consumer is not None:
+                consumer.stop()
+            from api.deps import close_runtime_resources
+
+            close_runtime_resources()
+
     application = FastAPI(
         title="MuleCatch API",
         description="Mule account detection via explainable graph intelligence",
         version="1.0.0",
+        lifespan=lifespan,
     )
 
     # ── CORS ──────────────────────────────────────────────────────────────────
@@ -65,11 +92,12 @@ def create_app() -> FastAPI:
             code="RATE_LIMIT_EXCEEDED",
             message="Too many requests. Please slow down.",
             status_code=429,
-            details=str(exc.detail) if hasattr(exc, 'detail') else None,
+            details=str(exc.detail) if hasattr(exc, "detail") else None,
         )
 
     # ── Security Headers ───────────────────────────────────────────────────────
     from middleware.security_headers import SecurityHeadersMiddleware
+
     application.add_middleware(SecurityHeadersMiddleware)
 
     # ── Error Handlers ────────────────────────────────────────────────────────
@@ -78,33 +106,50 @@ def create_app() -> FastAPI:
     # ── Prometheus Metrics ────────────────────────────────────────────────────
     try:
         from prometheus_client import (
-            Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+            CONTENT_TYPE_LATEST,
+            CollectorRegistry,
+            Counter,
+            Histogram,
+            generate_latest,
         )
         from starlette.responses import Response
 
+        metrics_registry = CollectorRegistry(auto_describe=True)
         REQUEST_COUNT = Counter(
-            "mulecatch_api_requests_total", "Total API requests",
+            "mulecatch_api_requests_total",
+            "Total API requests",
             ["method", "endpoint", "status"],
+            registry=metrics_registry,
         )
         REQUEST_DURATION = Histogram(
-            "mulecatch_api_request_duration_seconds", "API request duration",
+            "mulecatch_api_request_duration_seconds",
+            "API request duration",
             ["endpoint"],
+            registry=metrics_registry,
         )
 
         # Detection-specific metrics
         ALERTS_GENERATED = Counter(
-            "mulecatch_alerts_generated_total", "Total alerts generated",
+            "mulecatch_alerts_generated_total",
+            "Total alerts generated",
             ["severity", "pattern"],
+            registry=metrics_registry,
         )
         DETECTION_DURATION = Histogram(
-            "mulecatch_detection_duration_seconds", "Detection pipeline duration",
+            "mulecatch_detection_duration_seconds",
+            "Detection pipeline duration",
+            registry=metrics_registry,
         )
         STRS_FILED = Counter(
-            "mulecatch_strs_filed_total", "Total STRs filed",
+            "mulecatch_strs_filed_total",
+            "Total STRs filed",
+            registry=metrics_registry,
         )
         DB_QUERY_DURATION = Histogram(
-            "mulecatch_db_query_duration_seconds", "Database query duration",
+            "mulecatch_db_query_duration_seconds",
+            "Database query duration",
             ["operation"],
+            registry=metrics_registry,
         )
 
         # Store metrics on app state for access from services
@@ -133,15 +178,19 @@ def create_app() -> FastAPI:
         @application.get("/metrics", tags=["monitoring"])
         def metrics(user: dict = _Depends(_require_role("ADMIN"))):
             return Response(
-                content=generate_latest(), media_type=CONTENT_TYPE_LATEST
+                content=generate_latest(metrics_registry),
+                media_type=CONTENT_TYPE_LATEST,
             )
 
         # Unauthenticated internal metrics endpoint for Prometheus scraping
         # Only accessible within Docker network (not exposed externally)
-        @application.get("/internal/metrics", tags=["monitoring"], include_in_schema=False)
+        @application.get(
+            "/internal/metrics", tags=["monitoring"], include_in_schema=False
+        )
         def internal_metrics():
             return Response(
-                content=generate_latest(), media_type=CONTENT_TYPE_LATEST
+                content=generate_latest(metrics_registry),
+                media_type=CONTENT_TYPE_LATEST,
             )
 
     except ImportError:
@@ -149,6 +198,7 @@ def create_app() -> FastAPI:
 
     # ── Audit Middleware ──────────────────────────────────────────────────────
     from middleware.auth import audit_middleware
+
     application.middleware("http")(audit_middleware)
 
     # ── Routes ────────────────────────────────────────────────────────────────
@@ -162,23 +212,6 @@ def create_app() -> FastAPI:
     application.include_router(v1_router)
 
     # ── Startup Events ────────────────────────────────────────────────────────
-    @application.on_event("startup")
-    async def startup_event():
-        """Validate production config and start Kafka consumer if enabled."""
-        # Fail fast on insecure production configuration
-        if not settings.demo_mode:
-            from core.production_validator import validate_or_die
-            validate_or_die(settings)
-
-        if KAFKA_ENABLED:
-            from api.deps import get_pipeline, get_alert_repo, get_dataset_repo
-            consumer = get_kafka_consumer()
-            consumer.start(
-                pipeline=get_pipeline(),
-                alert_repo=get_alert_repo(),
-                dataset_repo=get_dataset_repo(),
-            )
-
     return application
 
 

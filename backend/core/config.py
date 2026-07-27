@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # Kafka
     kafka_bootstrap: str = Field("kafka:9092", alias="KAFKA_BOOTSTRAP")
     kafka_enabled: bool = Field(False, alias="KAFKA_ENABLED")
+    kafka_security_protocol: str = Field("PLAINTEXT", alias="KAFKA_SECURITY_PROTOCOL")
+    kafka_ssl_cafile: str = Field("", alias="KAFKA_SSL_CAFILE")
+    kafka_ssl_certfile: str = Field("", alias="KAFKA_SSL_CERTFILE")
+    kafka_ssl_keyfile: str = Field("", alias="KAFKA_SSL_KEYFILE")
 
     # Auth
     jwt_secret: str = Field("change_me_before_deployment", alias="JWT_SECRET")
@@ -48,6 +52,7 @@ class Settings(BaseSettings):
         "https://scsanctions.un.org/resources/xml/en/consolidated.xml",
         alias="UNSC_URL",
     )
+    fri_api_url: str = Field("", alias="FRI_API_URL")
 
     # PostgreSQL (set to enable persistent storage for STRs, audit, etc.)
     postgres_url: str = Field("", alias="POSTGRES_URL")
@@ -69,6 +74,11 @@ class Settings(BaseSettings):
     reporting_entity: str = Field("Indian Overseas Bank", alias="REPORTING_ENTITY")
     reporting_ifsc: str = Field("IOBA0000001", alias="REPORTING_IFSC")
     fiu_format_version: str = Field("2.1", alias="FIU_FORMAT_VERSION")
+    analyst_hourly_cost_inr: float = Field(0.0, alias="ANALYST_HOURLY_COST_INR", ge=0)
+    benchmark_results_path: str = Field(
+        "data/benchmark_results.json",
+        alias="BENCHMARK_RESULTS_PATH",
+    )
 
     # Detection thresholds
     smurf_flag_threshold: float = Field(0.55, alias="SMURF_FLAG_THRESHOLD")
@@ -86,6 +96,8 @@ class Settings(BaseSettings):
 
     # GNN model persistence
     gnn_model_path: str = Field("models/gnn/trained_model.pt", alias="GNN_MODEL_PATH")
+    model_version: str = Field("unvalidated-dev", alias="MODEL_VERSION")
+    rule_version: str = Field("rules-2026.1", alias="RULE_VERSION")
 
     # GenAI / LLM
     genai_enabled: bool = Field(False, alias="GENAI_ENABLED")
@@ -106,6 +118,7 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "populate_by_name": True,
+        "protected_namespaces": ("settings_",),
     }
 
 

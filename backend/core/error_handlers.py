@@ -2,6 +2,7 @@
 Global exception handlers registered on the FastAPI app.
 Maps domain exceptions to consistent error envelope responses.
 """
+
 import logging
 
 from fastapi import FastAPI, Request
@@ -28,7 +29,6 @@ _EXCEPTION_MAP = {
     ValidationError: (400, "VALIDATION_ERROR"),
     ConflictError: (409, "CONFLICT"),
     ServiceUnavailableError: (503, "SERVICE_UNAVAILABLE"),
-    
 }
 
 

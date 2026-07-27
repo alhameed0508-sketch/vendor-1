@@ -15,8 +15,8 @@ from .prompts import SYSTEM_PROMPT_INVESTIGATION
 logger = logging.getLogger(__name__)
 
 # -- LLM generation parameters for investigation copilot ---------------------
-COPILOT_TEMPERATURE = 0.3      # Balanced creativity for investigation Q&A
-COPILOT_MAX_TOKENS = 1024      # Max response length for investigation queries
+COPILOT_TEMPERATURE = 0.3  # Balanced creativity for investigation Q&A
+COPILOT_MAX_TOKENS = 1024  # Max response length for investigation queries
 COPILOT_SUMMARY_MAX_TOKENS = 512  # Max response length for summaries and next steps
 
 
@@ -67,7 +67,9 @@ def investigate_query(
 
 
 def _template_investigate_query(
-    alert_id: str, question: str, case_context: Optional[Dict] = None,
+    alert_id: str,
+    question: str,
+    case_context: Optional[Dict] = None,
 ) -> ChatResponse:
     """Template fallback for investigation queries."""
     lines = [f"Investigation query for alert {alert_id}:"]
@@ -177,9 +179,8 @@ def _template_next_steps(case_data: Dict) -> ChatResponse:
             break
 
     return ChatResponse(
-        message="Suggested next steps:\n" + "\n".join(
-            f"  {i + 1}. {s}" for i, s in enumerate(steps)
-        ),
+        message="Suggested next steps:\n"
+        + "\n".join(f"  {i + 1}. {s}" for i, s in enumerate(steps)),
         provider="template_fallback",
         model="template",
         latency_ms=0.0,
@@ -246,8 +247,7 @@ def _template_summary(case_data: Dict) -> ChatResponse:
     )
     if device_count > 0:
         summary += (
-            f"{device_count} shared device(s) indicate potential "
-            "coordinated activity. "
+            f"{device_count} shared device(s) indicate potential coordinated activity. "
         )
     if reason_codes:
         summary += f"Key indicators: {'; '.join(reason_codes[:3])}. "

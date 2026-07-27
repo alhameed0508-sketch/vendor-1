@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import redis
+
     HAS_REDIS = True
 except ImportError:
     HAS_REDIS = False
@@ -43,6 +44,16 @@ class RedisClient:
     def available(self) -> bool:
         return self._available
 
+    def ping(self) -> bool:
+        """Return live Redis connectivity without leaking client exceptions."""
+        if not self._available or self._client is None:
+            return False
+        try:
+            return bool(self._client.ping())
+        except Exception as exc:
+            logger.warning("Redis PING failed: %s", exc)
+            return False
+
     def get(self, key: str) -> Optional[Any]:
         if not self._available:
             return None
@@ -55,11 +66,15 @@ class RedisClient:
             logger.warning("Redis GET failed for key=%s: %s", key, exc)
             return None
 
-    def set(self, key: str, value: Any, ttl: int = 600) -> bool:
+    def set(self, key: str, value: Any, ttl: Optional[int] = 600) -> bool:
         if not self._available:
             return False
         try:
-            self._client.setex(key, ttl, json.dumps(value, default=str))
+            serialized = json.dumps(value, default=str)
+            if ttl is None:
+                self._client.set(key, serialized)
+            else:
+                self._client.set(key, serialized, ex=ttl)
             return True
         except Exception as exc:
             logger.warning("Redis SET failed for key=%s: %s", key, exc)
@@ -91,5 +106,17 @@ class RedisClient:
                     break
             return count
         except Exception as exc:
-            logger.warning("Redis DELETE_PATTERN failed for pattern=%s: %s", pattern, exc)
+            logger.warning(
+                "Redis DELETE_PATTERN failed for pattern=%s: %s", pattern, exc
+            )
             return 0
+
+    def close(self) -> None:
+        """Release the Redis connection pool during application shutdown."""
+        if self._client is not None:
+            try:
+                self._client.close()
+            except Exception as exc:
+                logger.warning("Redis close failed: %s", exc)
+        self._client = None
+        self._available = False

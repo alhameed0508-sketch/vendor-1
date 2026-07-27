@@ -48,6 +48,7 @@ def _check_shap_available() -> bool:
     if _shap_available is None:
         try:
             import shap  # noqa: F401
+
             _shap_available = True
         except ImportError:
             _shap_available = False
@@ -99,7 +100,9 @@ def _build_node_features(alert: Dict) -> tuple:
     feature_rows = []
 
     for node in nodes:
-        acc_id = node.get("account_id", "") if isinstance(node, dict) else node.account_id
+        acc_id = (
+            node.get("account_id", "") if isinstance(node, dict) else node.account_id
+        )
         account_ids.append(acc_id)
 
         if isinstance(node, dict):
@@ -130,16 +133,18 @@ def _build_predict_fn(model_predict_fn: Optional[Callable]) -> Callable:
     if model_predict_fn is not None:
         return model_predict_fn
 
-    weights = np.array([
-        -0.15,  # account_age (older = less risky)
-        0.05,   # avg_monthly_txn
-        -0.10,  # kyc_verified (verified = less risky)
-        0.10,   # high_risk_flag
-        0.25,   # velocity_score
-        0.20,   # amount_ceiling_score
-        0.15,   # fan_out_score
-        0.30,   # smurf_score
-    ])
+    weights = np.array(
+        [
+            -0.15,  # account_age (older = less risky)
+            0.05,  # avg_monthly_txn
+            -0.10,  # kyc_verified (verified = less risky)
+            0.10,  # high_risk_flag
+            0.25,  # velocity_score
+            0.20,  # amount_ceiling_score
+            0.15,  # fan_out_score
+            0.30,  # smurf_score
+        ]
+    )
 
     def heuristic_predict(features: np.ndarray) -> np.ndarray:
         if features.ndim == 1:
@@ -182,7 +187,11 @@ def _compute_with_shap(
 
     try:
         explainer = shap.KernelExplainer(predict_fn, background)
-        shap_values = explainer.shap_values(features, nsamples=min(100, max_samples * 2))
+        shap_values = explainer.shap_values(
+            features,
+            nsamples=min(100, max_samples * 2),
+            silent=True,
+        )
     except Exception as exc:
         print(f"SHAP KernelExplainer failed ({exc}), using manual decomposition")
         return _compute_manual_decomposition(features, account_ids, predict_fn)
@@ -199,27 +208,31 @@ def _compute_with_shap(
     for i, acc_id in enumerate(account_ids):
         sv_row = shap_values[i] if shap_values.ndim > 1 else shap_values
         feature_values = []
-        row_len = sv_row.shape[-1] if hasattr(sv_row, 'shape') else len(sv_row)
+        row_len = sv_row.shape[-1] if hasattr(sv_row, "shape") else len(sv_row)
         for j, feat_name in enumerate(FEATURE_NAMES):
             if j >= row_len:
                 break
-            feature_values.append(SHAPFeatureValue(
-                feature=feat_name,
-                shap_value=round(float(sv_row[j]), 6),
-                base_value=round(base_value, 6),
-                feature_value=round(float(features[i, j]), 4),
-                description=FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
-            ))
+            feature_values.append(
+                SHAPFeatureValue(
+                    feature=feat_name,
+                    shap_value=round(float(sv_row[j]), 6),
+                    base_value=round(base_value, 6),
+                    feature_value=round(float(features[i, j]), 4),
+                    description=FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
+                )
+            )
 
         feature_values = sorted(feature_values, key=lambda fv: -abs(fv.shap_value))
 
-        results.append(SHAPResult(
-            account_id=acc_id,
-            base_value=round(base_value, 6),
-            shap_values=feature_values,
-            predicted_probability=round(float(predictions[i]), 4),
-            method="kernel_shap",
-        ))
+        results.append(
+            SHAPResult(
+                account_id=acc_id,
+                base_value=round(base_value, 6),
+                shap_values=feature_values,
+                predicted_probability=round(float(predictions[i]), 4),
+                method="kernel_shap",
+            )
+        )
 
     return sorted(results, key=lambda r: -r.predicted_probability)
 
@@ -247,23 +260,27 @@ def _compute_manual_decomposition(
             pred_without = float(predict_fn(modified.reshape(1, -1)).flat[0])
             contribution = float(predictions[i]) - pred_without
 
-            feature_values.append(SHAPFeatureValue(
-                feature=feat_name,
-                shap_value=round(contribution, 6),
-                base_value=round(base_prediction, 6),
-                feature_value=round(float(features[i, j]), 4),
-                description=FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
-            ))
+            feature_values.append(
+                SHAPFeatureValue(
+                    feature=feat_name,
+                    shap_value=round(contribution, 6),
+                    base_value=round(base_prediction, 6),
+                    feature_value=round(float(features[i, j]), 4),
+                    description=FEATURE_DESCRIPTIONS.get(feat_name, feat_name),
+                )
+            )
 
         feature_values = sorted(feature_values, key=lambda fv: -abs(fv.shap_value))
 
-        results.append(SHAPResult(
-            account_id=acc_id,
-            base_value=round(base_prediction, 6),
-            shap_values=feature_values,
-            predicted_probability=round(float(predictions[i]), 4),
-            method="manual_decomposition",
-        ))
+        results.append(
+            SHAPResult(
+                account_id=acc_id,
+                base_value=round(base_prediction, 6),
+                shap_values=feature_values,
+                predicted_probability=round(float(predictions[i]), 4),
+                method="manual_decomposition",
+            )
+        )
 
     return sorted(results, key=lambda r: -r.predicted_probability)
 
@@ -272,33 +289,39 @@ def format_for_waterfall_chart(shap_result: SHAPResult) -> Dict:
     waterfall_data = []
     running_total = shap_result.base_value
 
-    waterfall_data.append({
-        "name": "Base Rate",
-        "value": round(shap_result.base_value, 4),
-        "cumulative": round(running_total, 4),
-        "fill": "#94a3b8",
-        "type": "base",
-    })
+    waterfall_data.append(
+        {
+            "name": "Base Rate",
+            "value": round(shap_result.base_value, 4),
+            "cumulative": round(running_total, 4),
+            "fill": "#94a3b8",
+            "type": "base",
+        }
+    )
 
     for sv in shap_result.shap_values:
         running_total += sv.shap_value
-        waterfall_data.append({
-            "name": sv.feature.replace("_", " ").title(),
-            "value": round(sv.shap_value, 4),
-            "cumulative": round(running_total, 4),
-            "feature_value": sv.feature_value,
-            "fill": "#ef4444" if sv.shap_value > 0 else "#22c55e",
-            "type": "positive" if sv.shap_value > 0 else "negative",
-            "description": sv.description,
-        })
+        waterfall_data.append(
+            {
+                "name": sv.feature.replace("_", " ").title(),
+                "value": round(sv.shap_value, 4),
+                "cumulative": round(running_total, 4),
+                "feature_value": sv.feature_value,
+                "fill": "#ef4444" if sv.shap_value > 0 else "#22c55e",
+                "type": "positive" if sv.shap_value > 0 else "negative",
+                "description": sv.description,
+            }
+        )
 
-    waterfall_data.append({
-        "name": "Prediction",
-        "value": round(shap_result.predicted_probability, 4),
-        "cumulative": round(shap_result.predicted_probability, 4),
-        "fill": "#f97316" if shap_result.predicted_probability > 0.5 else "#3b82f6",
-        "type": "total",
-    })
+    waterfall_data.append(
+        {
+            "name": "Prediction",
+            "value": round(shap_result.predicted_probability, 4),
+            "cumulative": round(shap_result.predicted_probability, 4),
+            "fill": "#f97316" if shap_result.predicted_probability > 0.5 else "#3b82f6",
+            "type": "total",
+        }
+    )
 
     return {
         "account_id": shap_result.account_id,

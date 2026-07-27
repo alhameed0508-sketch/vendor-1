@@ -39,6 +39,7 @@ from models.explainability.shap_explainer import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_alert() -> dict:
     """A realistic alert dict matching the pipeline's output structure."""
@@ -233,8 +234,8 @@ def single_feature_alert() -> dict:
 # Feature extraction tests
 # ---------------------------------------------------------------------------
 
-class TestFeatureExtraction:
 
+class TestFeatureExtraction:
     def test_extract_features_shape(self, sample_alert):
         features = _extract_features(sample_alert)
         assert features.shape == (len(FEATURE_NAMES),)
@@ -277,8 +278,8 @@ class TestFeatureExtraction:
 # Surrogate scoring tests
 # ---------------------------------------------------------------------------
 
-class TestSurrogateScore:
 
+class TestSurrogateScore:
     def test_output_shape(self):
         features = np.random.rand(5, len(FEATURE_NAMES))
         scores = _surrogate_score(features)
@@ -305,8 +306,8 @@ class TestSurrogateScore:
 # Global importance tests
 # ---------------------------------------------------------------------------
 
-class TestGlobalImportance:
 
+class TestGlobalImportance:
     def test_returns_global_importance(self, explainer, sample_alerts):
         result = explainer.compute_global_importance(sample_alerts)
         assert isinstance(result, GlobalImportance)
@@ -358,8 +359,8 @@ class TestGlobalImportance:
 # Per-alert explanation tests
 # ---------------------------------------------------------------------------
 
-class TestAlertExplanation:
 
+class TestAlertExplanation:
     def test_returns_alert_explanation(self, explainer, sample_alert):
         result = explainer.explain_alert(sample_alert)
         assert isinstance(result, AlertExplanation)
@@ -378,7 +379,9 @@ class TestAlertExplanation:
         assert set(result.feature_contributions.keys()) == set(FEATURE_NAMES)
 
     def test_shapley_values_sum_approximately_equals_prediction_minus_base(
-        self, explainer, sample_alert,
+        self,
+        explainer,
+        sample_alert,
     ):
         """
         Fundamental SHAP property: sum of Shapley values should
@@ -427,8 +430,8 @@ class TestAlertExplanation:
 # Explanation text tests
 # ---------------------------------------------------------------------------
 
-class TestExplanationText:
 
+class TestExplanationText:
     def test_text_is_non_empty(self, explainer, sample_alert):
         result = explainer.explain_alert(sample_alert)
         assert len(result.explanation_text) > 0
@@ -457,8 +460,7 @@ class TestExplanationText:
         text = result.explanation_text.lower()
         # High-risk alert should have urgent language
         assert any(
-            word in text
-            for word in ["immediate", "priority", "high-confidence"]
+            word in text for word in ["immediate", "priority", "high-confidence"]
         )
 
 
@@ -466,8 +468,8 @@ class TestExplanationText:
 # Regulatory report tests
 # ---------------------------------------------------------------------------
 
-class TestRegulatoryReport:
 
+class TestRegulatoryReport:
     def test_contains_required_fields(self, explainer, sample_alert):
         explanation = explainer.explain_alert(sample_alert)
         report = explainer.generate_regulatory_report(explanation)
@@ -544,8 +546,8 @@ class TestRegulatoryReport:
 # Fallback / permutation-based tests
 # ---------------------------------------------------------------------------
 
-class TestFallback:
 
+class TestFallback:
     def test_permutation_fallback_works(self, sample_alert):
         """Verify that the permutation fallback produces valid results."""
         explainer = SHAPAlertExplainer()
@@ -597,8 +599,8 @@ class TestFallback:
 # Edge cases
 # ---------------------------------------------------------------------------
 
-class TestEdgeCases:
 
+class TestEdgeCases:
     def test_all_features_zero(self, explainer, zero_alert):
         result = explainer.explain_alert(zero_alert)
         assert result.alert_id == "ALT_ZERO"
@@ -643,35 +645,40 @@ class TestEdgeCases:
             ],
         }
         result = explainer.explain_alert(alert)
-        assert result.feature_contributions["rule_hit_count"] == pytest.approx(0.0, abs=0.01)
+        assert result.feature_contributions["rule_hit_count"] == pytest.approx(
+            0.0, abs=0.01
+        )
 
     def test_large_batch_global_importance(self, explainer):
         """Test with a larger batch to ensure no performance/correctness issues."""
         alerts = []
         for i in range(20):
-            alerts.append({
-                "alert_id": f"ALT_BATCH_{i}",
-                "nodes": [
-                    {
-                        "account_id": f"ACC_{i}",
-                        "smurf_score": np.random.rand(),
-                        "baseline_deviation": np.random.rand(),
-                        "device_trust_score": np.random.rand(),
-                        "semantics_score": np.random.rand(),
-                        "betweenness": np.random.rand() * 0.5,
-                        "pagerank": np.random.rand() * 0.1,
-                        "account_age_days": int(np.random.rand() * 730),
-                        "kyc_status": "VERIFIED",
-                    },
-                ],
-                "reason_codes": [f"R0{j}: Rule {j}" for j in range(1, 4)],
-            })
+            alerts.append(
+                {
+                    "alert_id": f"ALT_BATCH_{i}",
+                    "nodes": [
+                        {
+                            "account_id": f"ACC_{i}",
+                            "smurf_score": np.random.rand(),
+                            "baseline_deviation": np.random.rand(),
+                            "device_trust_score": np.random.rand(),
+                            "semantics_score": np.random.rand(),
+                            "betweenness": np.random.rand() * 0.5,
+                            "pagerank": np.random.rand() * 0.1,
+                            "account_age_days": int(np.random.rand() * 730),
+                            "kyc_status": "VERIFIED",
+                        },
+                    ],
+                    "reason_codes": [f"R0{j}: Rule {j}" for j in range(1, 4)],
+                }
+            )
         result = explainer.compute_global_importance(alerts)
         assert len(result.feature_rankings) == len(FEATURE_NAMES)
         assert len(result.top_features) == 3
 
     def test_custom_score_function(self, sample_alert):
         """SHAPAlertExplainer should work with a custom scoring function."""
+
         def custom_fn(features):
             if features.ndim == 1:
                 features = features.reshape(1, -1)
@@ -689,8 +696,8 @@ class TestEdgeCases:
 # Immutability tests
 # ---------------------------------------------------------------------------
 
-class TestImmutability:
 
+class TestImmutability:
     def test_alert_explanation_is_frozen(self, explainer, sample_alert):
         result = explainer.explain_alert(sample_alert)
         with pytest.raises(AttributeError):

@@ -3,6 +3,7 @@ Audit repository — append-only in-memory audit log.
 """
 
 from typing import Dict, List, Optional
+from threading import Lock
 
 
 class AuditRepository:
@@ -10,12 +11,18 @@ class AuditRepository:
 
     def __init__(self):
         self._entries: List[Dict] = []
+        self._lock = Lock()
 
     def append(self, entry: Dict) -> Dict:
         """Append an audit entry. Returns a copy of the stored entry."""
-        stored = dict(entry)
-        self._entries.append(stored)
+        with self._lock:
+            stored = dict(entry)
+            self._entries.append(stored)
         return dict(stored)
+
+    def latest_hash(self) -> str:
+        """Return the current hash-chain head."""
+        return self._entries[-1].get("entry_hash", "") if self._entries else ""
 
     def find_all(
         self,

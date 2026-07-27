@@ -16,7 +16,7 @@ import logging
 import os
 import pickle
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +68,18 @@ HEURISTIC_WEIGHTS = (
 )
 
 FEATURE_NAMES = (
-    "account_age", "kyc_numeric", "smurf_score", "velocity",
-    "fan_out", "fan_in", "rhythm", "consolidation",
-    "in_degree", "out_degree", "betweenness", "pagerank",
+    "account_age",
+    "kyc_numeric",
+    "smurf_score",
+    "velocity",
+    "fan_out",
+    "fan_in",
+    "rhythm",
+    "consolidation",
+    "in_degree",
+    "out_degree",
+    "betweenness",
+    "pagerank",
     "baseline_deviation",
 )
 
@@ -136,13 +145,21 @@ def extract_features(
         smurf = ss.smurf_score if ss and hasattr(ss, "smurf_score") else 0.0
 
         velocity = min(outgoing_count.get(acc_id, 0) / NORM_VELOCITY_TXNS, 1.0)
-        fan_out = min(len(unique_recipients.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
-        fan_in = min(len(unique_senders.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
+        fan_out = min(
+            len(unique_recipients.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0
+        )
+        fan_in = min(
+            len(unique_senders.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0
+        )
 
         out_amt = outgoing_total.get(acc_id, 0.0)
         in_amt = incoming_total.get(acc_id, 0.0)
         total_flow = out_amt + in_amt
-        rhythm = min(out_amt / max(in_amt, 1.0), NORM_RHYTHM_CAP) / NORM_RHYTHM_CAP if in_amt > 0 else 0.5
+        rhythm = (
+            min(out_amt / max(in_amt, 1.0), NORM_RHYTHM_CAP) / NORM_RHYTHM_CAP
+            if in_amt > 0
+            else 0.5
+        )
         consolidation = in_amt / max(total_flow, 1.0)
 
         in_deg = min(incoming_count.get(acc_id, 0) / NORM_DEGREE, 1.0)
@@ -153,13 +170,27 @@ def extract_features(
         pagerank = cs.get("pagerank", 0.0)
 
         bl = baselines.get(acc_id)
-        baseline_dev = bl.composite_score if bl and hasattr(bl, "composite_score") else 0.0
+        baseline_dev = (
+            bl.composite_score if bl and hasattr(bl, "composite_score") else 0.0
+        )
 
-        feature_matrix.append([
-            age, kyc, smurf, velocity, fan_out, fan_in, rhythm,
-            consolidation, in_deg, out_deg, betweenness, pagerank,
-            baseline_dev,
-        ])
+        feature_matrix.append(
+            [
+                age,
+                kyc,
+                smurf,
+                velocity,
+                fan_out,
+                fan_in,
+                rhythm,
+                consolidation,
+                in_deg,
+                out_deg,
+                betweenness,
+                pagerank,
+                baseline_dev,
+            ]
+        )
 
     return account_ids, feature_matrix
 
@@ -197,7 +228,10 @@ class LightweightScorer:
     ) -> Dict:
         """Train on labeled data. Tries LightGBM, then XGBoost, then skips."""
         if len(feature_matrix) < 10:
-            logger.warning("Not enough data to train lightweight model (%d samples)", len(feature_matrix))
+            logger.warning(
+                "Not enough data to train lightweight model (%d samples)",
+                len(feature_matrix),
+            )
             return {"trained": False, "reason": "insufficient_data"}
 
         model = None
@@ -206,6 +240,7 @@ class LightweightScorer:
         # Try LightGBM
         try:
             import lightgbm as lgb
+
             dataset = lgb.Dataset(feature_matrix, label=labels)
             params = {
                 "objective": "binary",
@@ -223,6 +258,7 @@ class LightweightScorer:
         if model is None:
             try:
                 import xgboost as xgb
+
                 dtrain = xgb.DMatrix(feature_matrix, label=labels)
                 params = {
                     "objective": "binary:logistic",
@@ -237,7 +273,9 @@ class LightweightScorer:
                 pass
 
         if model is None:
-            logger.info("Neither LightGBM nor XGBoost available; using heuristic fallback")
+            logger.info(
+                "Neither LightGBM nor XGBoost available; using heuristic fallback"
+            )
             return {"trained": False, "reason": "no_ml_library"}
 
         self._model = model
@@ -252,7 +290,11 @@ class LightweightScorer:
         except Exception as exc:
             logger.warning("Failed to save lightweight model: %s", exc)
 
-        return {"trained": True, "model_type": model_type, "samples": len(feature_matrix)}
+        return {
+            "trained": True,
+            "model_type": model_type,
+            "samples": len(feature_matrix),
+        }
 
     def predict(
         self,
@@ -264,7 +306,11 @@ class LightweightScorer:
     ) -> List[LightweightPrediction]:
         """Predict mule probability for each account."""
         account_ids, features = extract_features(
-            accounts, transactions, smurf_scores, centrality, baselines,
+            accounts,
+            transactions,
+            smurf_scores,
+            centrality,
+            baselines,
         )
 
         if not account_ids:
@@ -278,14 +324,15 @@ class LightweightScorer:
         results = []
         for acc_id, prob, feat in zip(account_ids, probabilities, features):
             importances = tuple(
-                (name, round(abs(val), 4))
-                for name, val in zip(FEATURE_NAMES, feat)
+                (name, round(abs(val), 4)) for name, val in zip(FEATURE_NAMES, feat)
             )
-            results.append(LightweightPrediction(
-                account_id=acc_id,
-                mule_probability=round(prob, 4),
-                feature_importances=importances,
-            ))
+            results.append(
+                LightweightPrediction(
+                    account_id=acc_id,
+                    mule_probability=round(prob, 4),
+                    feature_importances=importances,
+                )
+            )
 
         return results
 
@@ -296,6 +343,7 @@ class LightweightScorer:
                 return list(self._model.predict(features))
             elif self._model_type == "xgboost":
                 import xgboost as xgb
+
                 dmatrix = xgb.DMatrix(features)
                 return list(self._model.predict(dmatrix))
         except Exception as exc:

@@ -59,7 +59,9 @@ def register_alert_routes(r: APIRouter, limiter: Limiter) -> None:
         detection_svc.ensure_alerts()
         return success_response(
             alert_svc.update_alert(
-                alert_id, req.status, req.investigator_notes,
+                alert_id,
+                req.status,
+                req.investigator_notes,
                 user.get("sub", "unknown"),
             )
         )

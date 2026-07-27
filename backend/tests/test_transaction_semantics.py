@@ -1,4 +1,5 @@
 """Tests for transaction semantics analyzer."""
+
 import pytest
 from models.semantics.transaction_analyzer import (
     TransactionSemanticsAnalyzer,
@@ -12,7 +13,9 @@ def analyzer():
     return TransactionSemanticsAnalyzer()
 
 
-def _txn(from_acc="A", to_acc="B", amount=10000, narration="", to_upi="", merchant_id=""):
+def _txn(
+    from_acc="A", to_acc="B", amount=10000, narration="", to_upi="", merchant_id=""
+):
     return {
         "from_account": from_acc,
         "to_account": to_acc,
@@ -111,7 +114,12 @@ class TestTS04CryptoGaming:
 class TestComposite:
     def test_composite_bounded(self, analyzer):
         txns = [
-            _txn(amount=45000, narration="crypto commission", to_upi="9876543210123@ybl", merchant_id="wazirx")
+            _txn(
+                amount=45000,
+                narration="crypto commission",
+                to_upi="9876543210123@ybl",
+                merchant_id="wazirx",
+            )
             for _ in range(10)
         ]
         result = analyzer.analyze("A", txns)

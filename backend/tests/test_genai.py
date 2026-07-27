@@ -18,6 +18,7 @@ from genai.base import LLMProvider
 
 class _MockLLMProviderForTriage(LLMProvider):
     """Local mock for triage/pattern tests with custom response text."""
+
     def __init__(self, response_text: str):
         self._text = response_text
 
@@ -27,9 +28,14 @@ class _MockLLMProviderForTriage(LLMProvider):
 
     def generate(self, messages, **kwargs) -> LLMResponse:
         return LLMResponse(
-            content=self._text, model="mock-model", provider="mock",
-            prompt_tokens=10, completion_tokens=20, latency_ms=5.0,
+            content=self._text,
+            model="mock-model",
+            provider="mock",
+            prompt_tokens=10,
+            completion_tokens=20,
+            latency_ms=5.0,
         )
+
 
 MockLLMProvider = _MockLLMProviderForTriage
 
@@ -136,7 +142,10 @@ class TestGenAIServiceWithMock:
         assert result.alert_id == "ALT_TEST12345"
         assert result.is_llm_generated is True
         assert result.provider == "mock"
-        assert "critical" in result.executive_brief.lower() or len(result.executive_brief) > 0
+        assert (
+            "critical" in result.executive_brief.lower()
+            or len(result.executive_brief) > 0
+        )
 
     def test_chat(self, mock_provider):
         svc = GenAIService(provider=mock_provider)
@@ -184,7 +193,10 @@ class TestGenAIServiceFallback:
         svc = GenAIService(provider=None)
         result = svc.chat("Test question")
         assert result.is_llm_generated is False
-        assert "not configured" in result.message.lower() or "genai" in result.message.lower()
+        assert (
+            "not configured" in result.message.lower()
+            or "genai" in result.message.lower()
+        )
 
     def test_explain_onboarding_template(self, sample_onboarding_assessment):
         svc = GenAIService(provider=None)
@@ -220,7 +232,9 @@ class TestGenAIServiceWithFailingProvider:
         result = svc.chat("Test")
         assert "error" in result.message.lower() or not result.is_llm_generated
 
-    def test_explain_onboarding_falls_back(self, failing_provider, sample_onboarding_assessment):
+    def test_explain_onboarding_falls_back(
+        self, failing_provider, sample_onboarding_assessment
+    ):
         svc = GenAIService(provider=failing_provider)
         result = svc.explain_onboarding(sample_onboarding_assessment)
         assert result.is_llm_generated is False
@@ -310,15 +324,30 @@ class TestTriageFallback:
 class TestPatternDiscovery:
     def test_discover_patterns_mock(self):
         provider = MockLLMProvider(
-            response_text=json.dumps({
-                "patterns": [{"name": "circular_upi", "description": "Circular UPI transfers", "risk_level": "HIGH"}],
-                "risk_indicators": ["rapid round-trip"],
-                "novel_signals": ["UPI handle reuse"],
-            })
+            response_text=json.dumps(
+                {
+                    "patterns": [
+                        {
+                            "name": "circular_upi",
+                            "description": "Circular UPI transfers",
+                            "risk_level": "HIGH",
+                        }
+                    ],
+                    "risk_indicators": ["rapid round-trip"],
+                    "novel_signals": ["UPI handle reuse"],
+                }
+            )
         )
         svc = GenAIService(provider=provider)
         result = svc.discover_patterns(
-            transactions=[{"from_account": "A", "to_account": "B", "amount": 1000, "pattern": "NORMAL"}],
+            transactions=[
+                {
+                    "from_account": "A",
+                    "to_account": "B",
+                    "amount": 1000,
+                    "pattern": "NORMAL",
+                }
+            ],
             accounts=[{"account_id": "A", "role": "LEGIT"}],
         )
         assert isinstance(result, PatternDiscovery)

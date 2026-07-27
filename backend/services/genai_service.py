@@ -46,8 +46,7 @@ class GenAIService:
     def __init__(self, provider: Optional[LLMProvider] = None):
         self._provider = provider
         self._is_real_llm = (
-            provider is not None
-            and provider.provider_name != "template_fallback"
+            provider is not None and provider.provider_name != "template_fallback"
         )
 
     @property
@@ -72,7 +71,9 @@ class GenAIService:
 
     def analyze_alert(self, alert_data: Dict) -> ForensicAnalysis:
         return _forensic_mod.analyze_alert(
-            self._provider, self._is_real_llm, alert_data,
+            self._provider,
+            self._is_real_llm,
+            alert_data,
         )
 
     # ── 2. Investigation Chat ─────────────────────────────────────────────
@@ -84,8 +85,11 @@ class GenAIService:
         conversation_history: Optional[List[Dict]] = None,
     ) -> ChatResponse:
         return _chat_mod.chat(
-            self._provider, self._is_real_llm,
-            user_message, alert_context, conversation_history,
+            self._provider,
+            self._is_real_llm,
+            user_message,
+            alert_context,
+            conversation_history,
         )
 
     def get_suggested_questions(self, alert_data: Optional[Dict] = None) -> List[str]:
@@ -95,14 +99,18 @@ class GenAIService:
 
     def explain_onboarding(self, assessment: Dict) -> ChatResponse:
         return _onboarding_mod.explain_onboarding(
-            self._provider, self._is_real_llm, assessment,
+            self._provider,
+            self._is_real_llm,
+            assessment,
         )
 
     # ── 4. Cluster Triage ────────────────────────────────────────────────
 
     def triage_cluster(self, alert_data: Dict) -> TriageResult:
         return _triage_mod.triage_cluster(
-            self._provider, self._is_real_llm, alert_data,
+            self._provider,
+            self._is_real_llm,
+            alert_data,
         )
 
     # ── 5. Pattern Discovery ─────────────────────────────────────────────
@@ -113,7 +121,10 @@ class GenAIService:
         accounts: List[Dict],
     ) -> PatternDiscovery:
         return _patterns_mod.discover_patterns(
-            self._provider, self._is_real_llm, transactions, accounts,
+            self._provider,
+            self._is_real_llm,
+            transactions,
+            accounts,
         )
 
     # ── 6. Investigation Copilot ────────────────────────────────────────
@@ -125,16 +136,23 @@ class GenAIService:
         case_context: Optional[Dict] = None,
     ) -> ChatResponse:
         return _copilot_mod.investigate_query(
-            self._provider, self._is_real_llm,
-            alert_id, question, case_context,
+            self._provider,
+            self._is_real_llm,
+            alert_id,
+            question,
+            case_context,
         )
 
     def suggest_next_steps(self, case_data: Dict) -> ChatResponse:
         return _copilot_mod.suggest_next_steps(
-            self._provider, self._is_real_llm, case_data,
+            self._provider,
+            self._is_real_llm,
+            case_data,
         )
 
     def generate_summary(self, case_data: Dict) -> ChatResponse:
         return _copilot_mod.generate_summary(
-            self._provider, self._is_real_llm, case_data,
+            self._provider,
+            self._is_real_llm,
+            case_data,
         )

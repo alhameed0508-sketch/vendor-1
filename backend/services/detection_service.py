@@ -36,12 +36,17 @@ def alert_to_dict(a: Alert) -> Dict:
         "status": a.status,
         "investigator_notes": a.investigator_notes,
         "gnn_score": a.gnn_score,
+        "anomaly_score": a.anomaly_score,
+        "model_version": a.model_version,
+        "rule_version": a.rule_version,
         "genai_triage": a.genai_triage,
         "nodes": [vars(n) for n in a.nodes],
         "edges": [vars(e) for e in a.edges],
         "explanation": a.explanation,
         "narrative": a.narrative,
         "mule_classification": a.mule_classification,
+        "shap_explanation": a.shap_explanation,
+        "regulatory_report": a.regulatory_report,
     }
 
 
@@ -73,6 +78,7 @@ class DetectionService:
                 # Production should never generate synthetic data
                 return {"transactions": [], "accounts": []}
             from data.synthetic.generator import build_full_dataset
+
             ds = build_full_dataset(num_clusters=8, num_legit_accounts=60)
             self._dataset_repo.set(ds)
         return ds
@@ -94,7 +100,9 @@ class DetectionService:
         settings = get_settings()
         threshold_delta = self._feedback_store.get_threshold_adjustment()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
+            self._pipeline._smurf_threshold = (
+                settings.smurf_flag_threshold + threshold_delta
+            )
 
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]
@@ -104,8 +112,14 @@ class DetectionService:
             # Assign diverse statuses for realistic demo
             alert_dicts = sorted(alert_dicts, key=lambda a: -a["risk_score"])
             demo_statuses = [
-                "OPEN", "OPEN", "UNDER_REVIEW", "OPEN", "RESOLVED",
-                "UNDER_REVIEW", "OPEN", "FALSE_POSITIVE",
+                "OPEN",
+                "OPEN",
+                "UNDER_REVIEW",
+                "OPEN",
+                "RESOLVED",
+                "UNDER_REVIEW",
+                "OPEN",
+                "FALSE_POSITIVE",
             ]
             enriched = []
             for i, ad in enumerate(alert_dicts):
@@ -137,7 +151,9 @@ class DetectionService:
             total_alerts=len(alerts),
             fraud_prevented_inr=sum(a.total_amount for a in alerts),
             hours_saved=len(alerts) * HOURS_SAVED_PER_ALERT,
-            strs_filed=len([a for a in alerts if a.risk_score > SAR_PROBABILITY_THRESHOLD]),
+            strs_filed=len(
+                [a for a in alerts if a.risk_score > SAR_PROBABILITY_THRESHOLD]
+            ),
         )
 
         # Update detection breakdown counters in PG if available
@@ -149,11 +165,15 @@ class DetectionService:
         """Increment detection_breakdown and monthly_trends in PG if available."""
         try:
             from api.deps import _get_pg_engine
+
             engine = _get_pg_engine()
             if engine is None:
                 return
 
-            from infra.database.postgres import detection_breakdown, monthly_trends
+            from backend.infra.database.postgres import (
+                detection_breakdown,
+                monthly_trends,
+            )
             from datetime import datetime, timezone
             from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -166,37 +186,44 @@ class DetectionService:
             with engine.connect() as conn:
                 # Upsert detection breakdown
                 for pattern, count in pattern_counts.items():
-                    stmt = pg_insert(detection_breakdown).values(
-                        pattern=pattern, count=count
-                    ).on_conflict_do_update(
-                        index_elements=["pattern"],
-                        set_={"count": count},
+                    stmt = (
+                        pg_insert(detection_breakdown)
+                        .values(pattern=pattern, count=count)
+                        .on_conflict_do_update(
+                            index_elements=["pattern"],
+                            set_={"count": count},
+                        )
                     )
                     conn.execute(stmt)
 
                 # Upsert monthly trends
                 now = datetime.now(timezone.utc)
                 month_key = now.strftime("%b")
-                total_prevented = sum(
-                    a.get("total_amount", 0) for a in alerts
-                ) / 100_000  # Convert to lakh
-                stmt = pg_insert(monthly_trends).values(
-                    month=month_key,
-                    alerts=len(alerts),
-                    prevented=round(total_prevented, 1),
-                    hours=len(alerts) * HOURS_SAVED_PER_ALERT,
-                ).on_conflict_do_update(
-                    index_elements=["month"],
-                    set_={
-                        "alerts": len(alerts),
-                        "prevented": round(total_prevented, 1),
-                        "hours": len(alerts) * HOURS_SAVED_PER_ALERT,
-                    },
+                total_prevented = (
+                    sum(a.get("total_amount", 0) for a in alerts) / 100_000
+                )  # Convert to lakh
+                stmt = (
+                    pg_insert(monthly_trends)
+                    .values(
+                        month=month_key,
+                        alerts=len(alerts),
+                        prevented=round(total_prevented, 1),
+                        hours=len(alerts) * HOURS_SAVED_PER_ALERT,
+                    )
+                    .on_conflict_do_update(
+                        index_elements=["month"],
+                        set_={
+                            "alerts": len(alerts),
+                            "prevented": round(total_prevented, 1),
+                            "hours": len(alerts) * HOURS_SAVED_PER_ALERT,
+                        },
+                    )
                 )
                 conn.execute(stmt)
                 conn.commit()
         except Exception as exc:
             import logging
+
             logging.getLogger(__name__).warning(
                 "Failed to update detection breakdown: %s", exc
             )
@@ -211,7 +238,9 @@ class DetectionService:
         settings = get_settings()
         self._dataset_repo.clear()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
+            self._pipeline._smurf_threshold = (
+                settings.smurf_flag_threshold + threshold_delta
+            )
         dataset = self.get_or_generate_dataset()
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]

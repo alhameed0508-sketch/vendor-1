@@ -17,8 +17,8 @@ from .prompts import SYSTEM_PROMPT_PATTERN_DISCOVERY
 logger = logging.getLogger(__name__)
 
 # -- LLM generation parameters for pattern discovery -------------------------
-PATTERNS_TEMPERATURE = 0.4    # Higher temperature for creative pattern discovery
-PATTERNS_MAX_TOKENS = 1024    # Max response length for pattern output
+PATTERNS_TEMPERATURE = 0.4  # Higher temperature for creative pattern discovery
+PATTERNS_MAX_TOKENS = 1024  # Max response length for pattern output
 
 
 def discover_patterns(
@@ -52,7 +52,8 @@ def discover_patterns(
 
 
 def _build_pattern_prompt(
-    transactions: List[Dict], accounts: List[Dict],
+    transactions: List[Dict],
+    accounts: List[Dict],
 ) -> str:
     # Summarize rather than send raw data
     total_txns = len(transactions)
@@ -80,10 +81,12 @@ Summary:
 - Transaction patterns: {patterns}
 
 Sample transactions (first 20):
-{chr(10).join(
-    f"  {_mask(t.get('from_account'))} -> {_mask(t.get('to_account'))}: ₹{float(t['amount']):,.0f} ({t.get('pattern', 'N/A')})"
-    for t in transactions[:20]
-)}
+{
+        chr(10).join(
+            f"  {_mask(t.get('from_account'))} -> {_mask(t.get('to_account'))}: ₹{float(t['amount']):,.0f} ({t.get('pattern', 'N/A')})"
+            for t in transactions[:20]
+        )
+    }
 
 Identify novel patterns, risk indicators, and signals not covered
 by standard MuleHunter.AI rules (R01-R20)."""

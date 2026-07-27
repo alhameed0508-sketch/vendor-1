@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { alertPath } from '../utils/safeNavigation';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { RefreshCw, ArrowUp, ArrowDown, AlertTriangle, Activity, Shield, DollarSign, ChevronRight } from 'lucide-react';
@@ -88,7 +89,7 @@ export default function Dashboard() {
       if (e.key === 'k') setSelectedIndex(i => Math.max(i - 1, 0));
       if (e.key === 'Enter' && selectedIndex >= 0) {
         const a = filtered[selectedIndex];
-        if (a) navigate(`/alert/${a.alert_id}`);
+        if (a) navigate(alertPath(a.alert_id));
       }
     };
     window.addEventListener('keydown', handler);
@@ -263,10 +264,10 @@ export default function Dashboard() {
                       <tr
                         key={alert.alert_id}
                         className={`clickable ${idx === selectedIndex ? 'selected' : ''}`}
-                        onClick={() => navigate(`/alert/${alert.alert_id}`)}
+                        onClick={() => navigate(alertPath(alert.alert_id))}
                         tabIndex={0}
                         role="row"
-                        onKeyDown={e => { if (e.key === 'Enter') navigate(`/alert/${alert.alert_id}`); }}
+                        onKeyDown={e => { if (e.key === 'Enter') navigate(alertPath(alert.alert_id)); }}
                       >
                         <td style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'var(--font-mono)', paddingLeft: 16 }}>
                           {idx + 1}

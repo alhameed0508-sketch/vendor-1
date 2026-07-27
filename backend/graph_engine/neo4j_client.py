@@ -7,6 +7,7 @@ Connection pooling via the neo4j driver. All queries use parameterized Cypher.
 import os
 import time
 import logging
+import json
 from typing import List, Dict, Optional
 from neo4j import GraphDatabase
 from neo4j.exceptions import ServiceUnavailable, SessionExpired, AuthError
@@ -27,8 +28,12 @@ class Neo4jClient:
     ):
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
-        self._password = password or os.getenv("NEO4J_PASSWORD", "CHANGE_ME_NOT_FOR_PRODUCTION")
-        self._tls_enabled = tls_enabled or os.getenv("NEO4J_TLS_ENABLED", "false").lower() == "true"
+        self._password = password or os.getenv(
+            "NEO4J_PASSWORD", "CHANGE_ME_NOT_FOR_PRODUCTION"
+        )
+        self._tls_enabled = (
+            tls_enabled or os.getenv("NEO4J_TLS_ENABLED", "false").lower() == "true"
+        )
 
         driver_kwargs = {
             "auth": (self._user, self._password),
@@ -65,7 +70,7 @@ class Neo4jClient:
                         "Neo4j query failed after %d retries: %s", max_retries, exc
                     )
                     raise
-                wait_time = 2 ** attempt  # 1s, 2s, 4s
+                wait_time = 2**attempt  # 1s, 2s, 4s
                 logger.warning(
                     "Neo4j transient error (attempt %d/%d), retrying in %ds: %s",
                     attempt + 1,
@@ -194,7 +199,8 @@ class Neo4jClient:
                 al.created_at   = $created_at,
                 al.status       = $status,
                 al.investigator_notes = $investigator_notes,
-                al.gnn_score    = $gnn_score
+                al.gnn_score    = $gnn_score,
+                al.payload_json = $payload_json
             RETURN properties(al) AS props
             """,
             alert_id=alert["alert_id"],
@@ -212,6 +218,7 @@ class Neo4jClient:
             status=alert.get("status", "OPEN"),
             investigator_notes=alert.get("investigator_notes", ""),
             gnn_score=alert.get("gnn_score"),
+            payload_json=json.dumps(alert, default=str),
         )
         return result[0]["props"] if result else {}
 
@@ -249,6 +256,10 @@ class Neo4jClient:
         )
         return result[0]["props"] if result else None
 
+    def delete_all_alerts(self) -> None:
+        """Remove detection alerts before replacing an uploaded dataset."""
+        self.run("MATCH (al:Alert) DETACH DELETE al")
+
     def update_alert_status(
         self, alert_id: str, status: Optional[str] = None, notes: Optional[str] = None
     ) -> Optional[Dict]:
@@ -266,7 +277,7 @@ class Neo4jClient:
         result = self.run(
             f"""
             MATCH (al:Alert {{alert_id: $alert_id}})
-            SET {', '.join(sets)}
+            SET {", ".join(sets)}
             RETURN properties(al) AS props
             """,
             **params,

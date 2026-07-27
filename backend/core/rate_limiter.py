@@ -11,6 +11,7 @@ def create_limiter(redis_url: str = "redis://localhost:6379/0") -> Limiter:
     """Create a slowapi Limiter with Redis or in-memory storage."""
     try:
         import redis
+
         client = redis.from_url(redis_url, socket_connect_timeout=1)
         client.ping()
         storage_uri = redis_url

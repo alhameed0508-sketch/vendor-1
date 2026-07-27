@@ -6,6 +6,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from slowapi import Limiter
 
 from core.response import success_response
+from core.config import get_settings
+from core.exceptions import ConflictError
 from middleware.auth import require_role
 from api.deps import get_detection_service
 from services.detection_service import DetectionService
@@ -24,8 +26,15 @@ def register_detection_routes(r: APIRouter, limiter: Limiter) -> None:
         user: dict = Depends(require_role("ADMIN", "SUPERVISOR")),
         detection_svc: DetectionService = Depends(get_detection_service),
     ):
-        """Trigger a fresh detection run on the synthetic dataset."""
+        """Trigger a fresh synthetic detection run in demonstration mode."""
+        if not get_settings().demo_mode:
+            raise ConflictError(
+                "Synthetic detection runs are disabled in production",
+                "Production detection is driven by validated ingest sources.",
+            )
         background_tasks.add_task(detection_svc.run_fresh_detection)
-        return success_response({
-            "message": "Detection pipeline triggered",
-        })
+        return success_response(
+            {
+                "message": "Detection pipeline triggered",
+            }
+        )

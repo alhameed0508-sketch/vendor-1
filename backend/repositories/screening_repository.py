@@ -2,9 +2,10 @@
 Screening repository — data access for watchlist and screening results.
 Uses Neo4j for persistence with in-memory fallback.
 """
+
 import logging
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class ScreeningRepository:
         self._watchlist = [e for e in self._watchlist if e.get("source") != source]
         for entry in entries:
             entry["source"] = source
-            entry["added_date"] = datetime.utcnow().isoformat()
+            entry["added_date"] = datetime.now(timezone.utc).isoformat()
         self._watchlist.extend(entries)
         return len(entries)
 
@@ -47,22 +48,42 @@ class ScreeningRepository:
             if len(overlap) >= 2 or (len(overlap) == 1 and len(name_tokens) == 1):
                 confidence = len(overlap) / max(len(name_tokens), len(entry_tokens))
                 if confidence >= 0.5:
-                    matches.append({**entry, "match_type": "TOKEN_OVERLAP", "confidence": round(confidence, 2)})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "TOKEN_OVERLAP",
+                            "confidence": round(confidence, 2),
+                        }
+                    )
                     continue
 
             # Check aliases
             aliases = entry.get("aliases", [])
             for alias in aliases:
                 if alias.lower() == name_lower:
-                    matches.append({**entry, "match_type": "ALIAS_EXACT", "confidence": ALIAS_EXACT_CONFIDENCE})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "ALIAS_EXACT",
+                            "confidence": ALIAS_EXACT_CONFIDENCE,
+                        }
+                    )
                     break
 
             # Fuzzy (Levenshtein) if enabled
-            if fuzzy and not any(m.get("entry_id") == entry.get("entry_id") for m in matches):
+            if fuzzy and not any(
+                m.get("entry_id") == entry.get("entry_id") for m in matches
+            ):
                 distance = _levenshtein(name_lower, entry_name)
                 if distance <= 2 and len(name_lower) > 4:
                     confidence = max(0.5, 1.0 - (distance / len(name_lower)))
-                    matches.append({**entry, "match_type": "FUZZY", "confidence": round(confidence, 2)})
+                    matches.append(
+                        {
+                            **entry,
+                            "match_type": "FUZZY",
+                            "confidence": round(confidence, 2),
+                        }
+                    )
 
         return sorted(matches, key=lambda m: -m["confidence"])
 
