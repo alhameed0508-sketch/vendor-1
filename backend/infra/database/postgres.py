@@ -142,6 +142,28 @@ Index("idx_identity_email", identity_profiles.c.email_hash)
 Index("idx_identity_gov", identity_profiles.c.government_id_hash)
 Index("idx_identity_device", identity_profiles.c.device_fingerprint)
 
+alerts_table = Table(
+    "alerts",
+    metadata,
+    Column("alert_id", Text, primary_key=True),
+    Column("severity", Text, nullable=False, server_default="MEDIUM"),
+    Column("status", Text, nullable=False, server_default="OPEN"),
+    Column("investigator_notes", Text, nullable=False, server_default=""),
+    Column("payload", JSONB, nullable=False, server_default="{}"),
+    Column("created_at", DateTime(timezone=True)),
+    Column("updated_at", DateTime(timezone=True)),
+)
+Index("idx_alerts_severity", alerts_table.c.severity)
+Index("idx_alerts_status", alerts_table.c.status)
+
+uploaded_datasets = Table(
+    "uploaded_datasets",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("payload", JSONB, nullable=False),
+    Column("uploaded_at", DateTime(timezone=True)),
+)
+
 kpi_snapshots = Table(
     "kpi_snapshots",
     metadata,

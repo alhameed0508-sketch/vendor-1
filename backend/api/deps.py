@@ -173,7 +173,12 @@ def get_cache_manager() -> CacheManager:
 
 
 @lru_cache(maxsize=1)
-def get_alert_repo() -> AlertRepository:
+def get_alert_repo():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_alert_repository import PgAlertRepository
+
+        return PgAlertRepository(engine)
     return AlertRepository(get_persistence(), get_redis_client())
 
 
@@ -208,7 +213,12 @@ def get_kpi_repo():
 
 
 @lru_cache(maxsize=1)
-def get_dataset_repo() -> DatasetRepository:
+def get_dataset_repo():
+    engine = _get_pg_engine()
+    if engine is not None:
+        from repositories.pg_dataset_repository import PgDatasetRepository
+
+        return PgDatasetRepository(engine)
     return DatasetRepository(get_persistence(), get_redis_client())
 
 
