@@ -18,9 +18,7 @@ from detection.pipeline import DetectionPipeline
 
 logger = logging.getLogger(__name__)
 
-RESULTS_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "..", "data", "benchmark_results.json"
-)
+RESULTS_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "benchmark_results.json")
 
 
 class BenchmarkService:
@@ -39,9 +37,7 @@ class BenchmarkService:
         """Run one supported benchmark while preventing overlapping evaluations."""
         parameters = parameters or {}
         if not self._run_lock.acquire(blocking=False):
-            raise BenchmarkBusyError(
-                "Another benchmark is already running in this API worker"
-            )
+            raise BenchmarkBusyError("Another benchmark is already running in this API worker")
         try:
             if benchmark_type == "synthetic":
                 result = self.run_synthetic(**parameters)

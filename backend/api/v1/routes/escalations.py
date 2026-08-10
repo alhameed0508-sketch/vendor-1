@@ -4,14 +4,13 @@ Escalation routes — /api/v1/escalations/*
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission, require_role
 from api.deps import get_escalation_service
-from api.v1.schemas.escalations import EscalationRequest, EscalationActionRequest
+from api.v1.schemas.escalations import EscalationActionRequest, EscalationRequest
+from core.response import success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission, require_role
 from services.escalation_service import EscalationService
+from slowapi import Limiter
 
 router = APIRouter(prefix="/escalations", tags=["escalations"])
 

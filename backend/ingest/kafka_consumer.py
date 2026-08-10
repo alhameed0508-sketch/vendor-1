@@ -9,11 +9,11 @@ import json
 import logging
 import os
 import queue
-import time
 import threading
+import time
 from collections import deque
-from typing import Dict, Optional, List
 from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -176,9 +176,7 @@ class TransactionConsumer:
             oldest = self._seen_txn_order.popleft()
             self._seen_txn_ids.discard(oldest)
 
-    def _process_batch(
-        self, transactions: List[Dict], pipeline, alert_repo, dataset_repo
-    ) -> bool:
+    def _process_batch(self, transactions: List[Dict], pipeline, alert_repo, dataset_repo) -> bool:
         """Run detection on a batch of transactions."""
         try:
             if pipeline is None or alert_repo is None or dataset_repo is None:

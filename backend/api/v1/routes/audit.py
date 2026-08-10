@@ -4,13 +4,12 @@ Audit log routes — /api/v1/audit-log
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission, require_role
 from api.deps import get_audit_service
+from core.response import success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission, require_role
 from services.audit_service import AuditService
+from slowapi import Limiter
 
 router = APIRouter(tags=["audit"])
 
@@ -29,9 +28,7 @@ def register_audit_routes(r: APIRouter, limiter: Limiter) -> None:
         audit_svc: AuditService = Depends(get_audit_service),
     ):
         """Query the audit trail."""
-        return success_response(
-            audit_svc.get_log(alert_id=alert_id, action=action, limit=limit)
-        )
+        return success_response(audit_svc.get_log(alert_id=alert_id, action=action, limit=limit))
 
     @r.get("/audit-log/integrity")
     @limiter.limit("10/minute")

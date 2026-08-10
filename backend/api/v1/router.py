@@ -2,26 +2,25 @@
 Master v1 router — includes all sub-routers under /api/v1.
 """
 
+from api.v1.routes.alerts import register_alert_routes
+from api.v1.routes.audit import register_audit_routes
+from api.v1.routes.auth import register_auth_routes
+from api.v1.routes.benchmark import register_benchmark_routes
+from api.v1.routes.compliance import register_compliance_routes
+from api.v1.routes.csv_upload import register_csv_upload_routes
+from api.v1.routes.detection import register_detection_routes
+from api.v1.routes.device import register_device_routes
+from api.v1.routes.escalations import register_escalation_routes
+from api.v1.routes.feedback import register_feedback_routes
+from api.v1.routes.genai import register_genai_routes
+from api.v1.routes.graph import register_graph_routes
+from api.v1.routes.ingest import register_ingest_routes
+from api.v1.routes.kpi import register_kpi_routes
+from api.v1.routes.onboarding import register_onboarding_routes
+from api.v1.routes.roi import register_roi_routes
+from api.v1.routes.screening import register_screening_routes
 from fastapi import APIRouter
 from slowapi import Limiter
-
-from api.v1.routes.auth import register_auth_routes
-from api.v1.routes.alerts import register_alert_routes
-from api.v1.routes.feedback import register_feedback_routes
-from api.v1.routes.escalations import register_escalation_routes
-from api.v1.routes.compliance import register_compliance_routes
-from api.v1.routes.detection import register_detection_routes
-from api.v1.routes.ingest import register_ingest_routes
-from api.v1.routes.graph import register_graph_routes
-from api.v1.routes.kpi import register_kpi_routes
-from api.v1.routes.audit import register_audit_routes
-from api.v1.routes.genai import register_genai_routes
-from api.v1.routes.device import register_device_routes
-from api.v1.routes.roi import register_roi_routes
-from api.v1.routes.csv_upload import register_csv_upload_routes
-from api.v1.routes.onboarding import register_onboarding_routes
-from api.v1.routes.screening import register_screening_routes
-from api.v1.routes.benchmark import register_benchmark_routes
 
 
 def create_v1_router(limiter: Limiter) -> APIRouter:

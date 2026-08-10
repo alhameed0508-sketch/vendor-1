@@ -42,13 +42,9 @@ class AlertRepository:
                 limit=limit,
             )
         if severity:
-            alerts = [
-                alert for alert in alerts if alert.get("severity") == severity.upper()
-            ]
+            alerts = [alert for alert in alerts if alert.get("severity") == severity.upper()]
         if status:
-            alerts = [
-                alert for alert in alerts if alert.get("status") == status.upper()
-            ]
+            alerts = [alert for alert in alerts if alert.get("status") == status.upper()]
         return alerts[:limit]
 
     def find_by_id(self, alert_id: str) -> Optional[Dict]:

@@ -26,9 +26,7 @@ class GeminiProvider(LLMProvider):
         try:
             import google.generativeai as genai
         except ImportError as exc:
-            raise ImportError(
-                "google-generativeai package required: pip install google-generativeai"
-            ) from exc
+            raise ImportError("google-generativeai package required: pip install google-generativeai") from exc
 
         genai.configure(api_key=api_key)
         self._model_name = model
@@ -89,9 +87,7 @@ class GeminiProvider(LLMProvider):
         completion_tokens = 0
         if hasattr(response, "usage_metadata") and response.usage_metadata:
             prompt_tokens = getattr(response.usage_metadata, "prompt_token_count", 0)
-            completion_tokens = getattr(
-                response.usage_metadata, "candidates_token_count", 0
-            )
+            completion_tokens = getattr(response.usage_metadata, "candidates_token_count", 0)
 
         return LLMResponse(
             content=response.text or "",

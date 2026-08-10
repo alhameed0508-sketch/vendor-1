@@ -15,18 +15,17 @@ os.environ["PYTHONIOENCODING"] = "utf-8"
 # Ensure parent paths are importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi.errors import RateLimitExceeded
-
+from api.deps import get_kafka_consumer
+from api.v1.router import create_v1_router
+from api.v1.routes.health import register_health_routes
 from core.config import get_settings
 from core.error_handlers import register_error_handlers
 from core.rate_limiter import create_limiter
 from core.response import error_response
-from api.v1.router import create_v1_router
-from api.v1.routes.health import register_health_routes
-from api.deps import get_kafka_consumer
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from ingest.kafka_consumer import KAFKA_ENABLED
+from slowapi.errors import RateLimitExceeded
 
 
 def create_app() -> FastAPI:
@@ -43,7 +42,7 @@ def create_app() -> FastAPI:
 
         consumer = None
         if KAFKA_ENABLED:
-            from api.deps import get_pipeline, get_alert_repo, get_dataset_repo
+            from api.deps import get_alert_repo, get_dataset_repo, get_pipeline
 
             consumer = get_kafka_consumer()
             consumer.start(
@@ -166,9 +165,7 @@ def create_app() -> FastAPI:
             response = await call_next(request)
             duration = time.time() - start
             endpoint = request.url.path
-            REQUEST_COUNT.labels(
-                method=request.method, endpoint=endpoint, status=response.status_code
-            ).inc()
+            REQUEST_COUNT.labels(method=request.method, endpoint=endpoint, status=response.status_code).inc()
             REQUEST_DURATION.labels(endpoint=endpoint).observe(duration)
             return response
 
@@ -184,9 +181,7 @@ def create_app() -> FastAPI:
 
         # Unauthenticated internal metrics endpoint for Prometheus scraping
         # Only accessible within Docker network (not exposed externally)
-        @application.get(
-            "/internal/metrics", tags=["monitoring"], include_in_schema=False
-        )
+        @application.get("/internal/metrics", tags=["monitoring"], include_in_schema=False)
         def internal_metrics():
             return Response(
                 content=generate_latest(metrics_registry),

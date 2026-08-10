@@ -2,15 +2,14 @@
 Detection routes — /api/v1/run-detection
 """
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
+from api.deps import get_detection_service
 from core.config import get_settings
 from core.exceptions import ConflictError
+from core.response import success_response
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from middleware.auth import require_role
-from api.deps import get_detection_service
 from services.detection_service import DetectionService
+from slowapi import Limiter
 
 router = APIRouter(tags=["detection"])
 

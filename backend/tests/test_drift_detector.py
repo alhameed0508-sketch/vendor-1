@@ -1,6 +1,7 @@
 """Tests for distribution drift detector."""
 
 import pytest
+
 from models.active_learning.drift_detector import (
     DriftDetector,
     DriftResult,

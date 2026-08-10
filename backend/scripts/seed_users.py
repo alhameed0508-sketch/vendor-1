@@ -3,9 +3,9 @@ CLI script to create initial admin user for production deployment.
 Usage: python -m scripts.seed_users
 """
 
+import getpass
 import os
 import sys
-import getpass
 
 _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _project_dir = os.path.dirname(_backend_dir)
@@ -37,11 +37,7 @@ def main():
         print("Error: password must be at least 8 characters")
         sys.exit(1)
 
-    display_name = (
-        os.getenv("ADMIN_DISPLAY_NAME")
-        or input("Display name [Admin]: ").strip()
-        or "Admin"
-    )
+    display_name = os.getenv("ADMIN_DISPLAY_NAME") or input("Display name [Admin]: ").strip() or "Admin"
     branch = os.getenv("ADMIN_BRANCH") or input("Branch [HO IT]: ").strip() or "HO IT"
 
     user = db.create_user(

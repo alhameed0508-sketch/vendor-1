@@ -21,13 +21,14 @@ Produces consolidated Alert objects with subgraph data.
 # ruff: noqa: E402
 
 from __future__ import annotations
+
 import logging
-import uuid
-from datetime import datetime, timezone
-from typing import List, Dict, Optional
-from dataclasses import dataclass
-import sys
 import os
+import sys
+import uuid
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -67,31 +68,31 @@ EARLY_ANOMALY_AGE_DAYS = 3  # account age threshold (days)
 EARLY_ANOMALY_MIN_TXNS = 5  # minimum outgoing txns
 EARLY_ANOMALY_MIN_AMOUNT = 100000  # minimum outgoing volume (₹1L)
 
-from models.temporal_weighting.smurf_weighting import (
-    score_transaction_batch,
-    AccountScore,
-)  # noqa: E402
-from models.community_detection.louvain_detector import (
-    LouvainClusterDetector,
-    Community,
-)  # noqa: E402
-from models.behavioral.baseline import compute_baselines, BaselineDeviation  # noqa: E402
-from models.gnn.lightweight_scorer import LightweightScorer  # noqa: E402
-from models.semantics.transaction_analyzer import (
-    TransactionSemanticsAnalyzer,
-    SemanticsResult,
-)  # noqa: E402
-from models.device.device_profiler import DeviceProfiler, DeviceTrustResult  # noqa: E402
-from models.temporal.markov_state import MarkovStateScorer, MarkovStateResult  # noqa: E402
-from models.explainability.shap_explainer import SHAPAlertExplainer  # noqa: E402
+from detection.mule_classifier import classify_cluster  # noqa: E402
+from explainability.explainer import explain_alert  # noqa: E402
+from explainability.narrative_generator import generate_narrative  # noqa: E402
+
 from models.anomaly.unsupervised_scorer import (  # noqa: E402
     AnomalyPrediction,
     UnsupervisedAccountScorer,
 )
-from explainability.explainer import explain_alert  # noqa: E402
-from explainability.narrative_generator import generate_narrative  # noqa: E402
-from detection.mule_classifier import classify_cluster  # noqa: E402
-
+from models.behavioral.baseline import BaselineDeviation, compute_baselines  # noqa: E402
+from models.community_detection.louvain_detector import (
+    Community,
+    LouvainClusterDetector,
+)  # noqa: E402
+from models.device.device_profiler import DeviceProfiler, DeviceTrustResult  # noqa: E402
+from models.explainability.shap_explainer import SHAPAlertExplainer  # noqa: E402
+from models.gnn.lightweight_scorer import LightweightScorer  # noqa: E402
+from models.semantics.transaction_analyzer import (
+    SemanticsResult,
+    TransactionSemanticsAnalyzer,
+)  # noqa: E402
+from models.temporal.markov_state import MarkovStateResult, MarkovStateScorer  # noqa: E402
+from models.temporal_weighting.smurf_weighting import (
+    AccountScore,
+    score_transaction_batch,
+)  # noqa: E402
 
 # ── Data models ───────────────────────────────────────────────────────────
 
@@ -185,9 +186,7 @@ class RuleEngine:
         (
             "R03",
             "KYC pending with high volume",
-            lambda a, txns: (
-                a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > 5
-            ),
+            lambda a, txns: a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > 5,
         ),
         (
             "R04",
@@ -199,9 +198,7 @@ class RuleEngine:
             "R05",
             "Dormant account suddenly activated",
             lambda a, txns: (
-                a.get("account_age_days", 0) > 180
-                and a.get("avg_monthly_txn", 0) < 3
-                and _count_outgoing(a, txns) > 8
+                a.get("account_age_days", 0) > 180 and a.get("avg_monthly_txn", 0) < 3 and _count_outgoing(a, txns) > 8
             ),
         ),
         (
@@ -278,16 +275,10 @@ class RuleEngine:
         ),
     ]
 
-    def evaluate(
-        self, accounts: List[Dict], transactions: List[Dict]
-    ) -> Dict[str, List[str]]:
+    def evaluate(self, accounts: List[Dict], transactions: List[Dict]) -> Dict[str, List[str]]:
         results: Dict[str, List[str]] = {}
         for acc in accounts:
-            hits = [
-                f"{code}: {desc}"
-                for code, desc, fn in self.RULES
-                if fn(acc, transactions)
-            ]
+            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, transactions)]
             if hits:
                 results[acc["account_id"]] = hits
         return results
@@ -304,14 +295,10 @@ def _all_near_ceiling(account_id: str, transactions: List[Dict]) -> bool:
     amounts = [
         t["amount"]
         for t in transactions
-        if t["from_account"] == account_id
-        and STRUCTURED_AMOUNT_LOWER <= float(t["amount"]) < STRUCTURED_AMOUNT_UPPER
+        if t["from_account"] == account_id and STRUCTURED_AMOUNT_LOWER <= float(t["amount"]) < STRUCTURED_AMOUNT_UPPER
     ]
     total = sum(1 for t in transactions if t["from_account"] == account_id)
-    return (
-        total > STRUCTURED_MIN_TXNS
-        and len(amounts) / max(total, 1) > STRUCTURED_RATIO_THRESHOLD
-    )
+    return total > STRUCTURED_MIN_TXNS and len(amounts) / max(total, 1) > STRUCTURED_RATIO_THRESHOLD
 
 
 def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
@@ -319,11 +306,7 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
     incoming_days = set()
     outgoing_days = set()
     for t in txns:
-        day = (
-            t["timestamp"][:10]
-            if isinstance(t["timestamp"], str)
-            else str(t["timestamp"])[:10]
-        )
+        day = t["timestamp"][:10] if isinstance(t["timestamp"], str) else str(t["timestamp"])[:10]
         if t["to_account"] == account_id:
             incoming_days.add(day)
         if t["from_account"] == account_id:
@@ -356,9 +339,7 @@ def _night_transactions(account_id: str, txns: List[Dict]) -> bool:
 def _round_trip(account_id: str, txns: List[Dict]) -> bool:
     """Detects A→B and B→A transfers."""
     sent_to = set(t["to_account"] for t in txns if t["from_account"] == account_id)
-    received_from = set(
-        t["from_account"] for t in txns if t["to_account"] == account_id
-    )
+    received_from = set(t["from_account"] for t in txns if t["to_account"] == account_id)
     return len(sent_to & received_from) >= 1
 
 
@@ -432,18 +413,12 @@ def _velocity_acceleration(account_id: str, txns: List[Dict]) -> bool:
 
 def _shared_device(account_id: str, txns: List[Dict]) -> bool:
     """Multiple accounts using the same device_id."""
-    my_devices = set(
-        t.get("device_id", "")
-        for t in txns
-        if t["from_account"] == account_id and t.get("device_id")
-    )
+    my_devices = set(t.get("device_id", "") for t in txns if t["from_account"] == account_id and t.get("device_id"))
     if not my_devices:
         return False
     for dev in my_devices:
         other_accounts = set(
-            t["from_account"]
-            for t in txns
-            if t.get("device_id") == dev and t["from_account"] != account_id
+            t["from_account"] for t in txns if t.get("device_id") == dev and t["from_account"] != account_id
         )
         if other_accounts:
             return True
@@ -452,12 +427,8 @@ def _shared_device(account_id: str, txns: List[Dict]) -> bool:
 
 def _rapid_fund_sweep(account_id: str, txns: List[Dict]) -> bool:
     """Incoming funds swept out within same window (balance near zero)."""
-    incoming_total = sum(
-        float(t["amount"]) for t in txns if t["to_account"] == account_id
-    )
-    outgoing_total = sum(
-        float(t["amount"]) for t in txns if t["from_account"] == account_id
-    )
+    incoming_total = sum(float(t["amount"]) for t in txns if t["to_account"] == account_id)
+    outgoing_total = sum(float(t["amount"]) for t in txns if t["from_account"] == account_id)
     if incoming_total < FUND_SWEEP_MIN_INCOMING:
         return False
     # If >90% of incoming is swept out, flag it
@@ -474,14 +445,9 @@ def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict]) -> bool:
     if age_days > EARLY_ANOMALY_AGE_DAYS:
         return False
     outgoing = sum(1 for t in txns if t["from_account"] == a["account_id"])
-    outgoing_amount = sum(
-        float(t["amount"]) for t in txns if t["from_account"] == a["account_id"]
-    )
+    outgoing_amount = sum(float(t["amount"]) for t in txns if t["from_account"] == a["account_id"])
     # Account <72h old with 5+ outgoing txns or >₹1L outgoing volume
-    return (
-        outgoing >= EARLY_ANOMALY_MIN_TXNS
-        or outgoing_amount >= EARLY_ANOMALY_MIN_AMOUNT
-    )
+    return outgoing >= EARLY_ANOMALY_MIN_TXNS or outgoing_amount >= EARLY_ANOMALY_MIN_AMOUNT
 
 
 # ── GNN scorer (lazy import, optional) ───────────────────────────────────
@@ -718,11 +684,7 @@ class DetectionPipeline:
         # Layer 5: GenAI triage — LLM reviews uncertain alerts
         if self._genai_service is not None:
             for alert in alerts:
-                if (
-                    self.GENAI_TRIAGE_LOWER
-                    <= alert.risk_score
-                    <= self.GENAI_TRIAGE_UPPER
-                ):
+                if self.GENAI_TRIAGE_LOWER <= alert.risk_score <= self.GENAI_TRIAGE_UPPER:
                     try:
                         triage = self._genai_service.triage_cluster(
                             alert_data={
@@ -738,9 +700,7 @@ class DetectionPipeline:
                             }
                         )
                         adjusted = alert.risk_score + triage.confidence_adjustment
-                        alert.risk_score = round(
-                            min(max(adjusted, 0.0), self.RISK_SCORE_CAP), 3
-                        )
+                        alert.risk_score = round(min(max(adjusted, 0.0), self.RISK_SCORE_CAP), 3)
                         # Recalculate severity after adjustment
                         alert.severity = (
                             "CRITICAL"
@@ -780,17 +740,11 @@ class DetectionPipeline:
 
             # SHAP-based explanation (RBI FREE-AI compliant)
             try:
-                shap_explanation = self._shap_explainer.explain_alert(
-                    alert_dict, smurf_scores
-                )
+                shap_explanation = self._shap_explainer.explain_alert(alert_dict, smurf_scores)
                 alert.shap_explanation = shap_explanation.to_dict()
-                alert.regulatory_report = (
-                    self._shap_explainer.generate_regulatory_report(shap_explanation)
-                )
+                alert.regulatory_report = self._shap_explainer.generate_regulatory_report(shap_explanation)
             except Exception as exc:
-                logger.warning(
-                    "SHAP explanation failed for %s: %s", alert.alert_id, exc
-                )
+                logger.warning("SHAP explanation failed for %s: %s", alert.alert_id, exc)
 
         # Layer 7: Mule type classification + narrative generation
         for alert in alerts:
@@ -817,9 +771,7 @@ class DetectionPipeline:
                 narrative = generate_narrative(alert_dict, classification)
                 alert.narrative = narrative.to_dict()
             except Exception as exc:
-                logger.warning(
-                    "Classification/narrative failed for %s: %s", alert.alert_id, exc
-                )
+                logger.warning("Classification/narrative failed for %s: %s", alert.alert_id, exc)
 
         elapsed = (datetime.now(timezone.utc) - start).total_seconds()
         gnn_status = "with GNN" if gnn_predictions else "without GNN"
@@ -874,11 +826,7 @@ class DetectionPipeline:
         members = community.accounts
 
         # Filter transactions within this community
-        community_txns = [
-            t
-            for t in transactions
-            if t["from_account"] in members or t["to_account"] in members
-        ]
+        community_txns = [t for t in transactions if t["from_account"] in members or t["to_account"] in members]
 
         # Build nodes
         centrality = centrality or {}
@@ -960,59 +908,42 @@ class DetectionPipeline:
                 all_codes.extend(mk.reason_codes)
             anomaly = anomaly_predictions.get(acc_id)
             if anomaly and anomaly.is_anomaly:
-                all_codes.append(
-                    "AD01: PyOD ECOD peer-group anomaly "
-                    f"(score={anomaly.anomaly_score:.2f})"
-                )
+                all_codes.append(f"AD01: PyOD ECOD peer-group anomaly (score={anomaly.anomaly_score:.2f})")
         unique_codes = list(dict.fromkeys(all_codes))[: self.MAX_REASON_CODES]
 
         # Composite risk score with optional GNN layer
         # Use blend of max + avg smurf scores: cluster risk is driven by
         # the highest-scoring member (SOURCE), not diluted by low-scoring mules
-        member_smurf = [
-            smurf_scores[a].smurf_score for a in members if a in smurf_scores
-        ]
+        member_smurf = [smurf_scores[a].smurf_score for a in members if a in smurf_scores]
         if member_smurf:
             max_smurf = max(member_smurf)
             mean_smurf = sum(member_smurf) / len(member_smurf)
-            avg_smurf = (
-                self.AGG_MAX_WEIGHT * max_smurf + self.AGG_MEAN_WEIGHT * mean_smurf
-            )
+            avg_smurf = self.AGG_MAX_WEIGHT * max_smurf + self.AGG_MEAN_WEIGHT * mean_smurf
         else:
             avg_smurf = 0.0
 
         avg_gnn = None
         if gnn_predictions:
-            gnn_scores = [
-                gnn_predictions[a].mule_probability
-                for a in members
-                if a in gnn_predictions
-            ]
+            gnn_scores = [gnn_predictions[a].mule_probability for a in members if a in gnn_predictions]
             if gnn_scores:
                 max_gnn = max(gnn_scores)
                 mean_gnn = sum(gnn_scores) / len(gnn_scores)
-                avg_gnn = (
-                    self.AGG_MAX_WEIGHT * max_gnn + self.AGG_MEAN_WEIGHT * mean_gnn
-                )
+                avg_gnn = self.AGG_MAX_WEIGHT * max_gnn + self.AGG_MEAN_WEIGHT * mean_gnn
 
         # Centrality amplifier: accounts with high betweenness are network
         # bridges (money laundering bottlenecks); high PageRank means they
         # receive flow from many paths.  max() captures the most critical node.
-        member_betweenness = [
-            centrality.get(a, {}).get("betweenness", 0) for a in members
-        ]
+        member_betweenness = [centrality.get(a, {}).get("betweenness", 0) for a in members]
         member_pagerank = [centrality.get(a, {}).get("pagerank", 0) for a in members]
         max_betweenness = max(member_betweenness) if member_betweenness else 0
         max_pagerank = max(member_pagerank) if member_pagerank else 0
         # Centrality boost from betweenness + PageRank
-        centrality_boost = min(
-            max_betweenness * self.BETWEENNESS_MULTIPLIER, self.BETWEENNESS_BOOST_CAP
-        ) + min(max_pagerank * self.PAGERANK_MULTIPLIER, self.PAGERANK_BOOST_CAP)
+        centrality_boost = min(max_betweenness * self.BETWEENNESS_MULTIPLIER, self.BETWEENNESS_BOOST_CAP) + min(
+            max_pagerank * self.PAGERANK_MULTIPLIER, self.PAGERANK_BOOST_CAP
+        )
 
         # Behavioral baseline boost: up to +0.06 from deviation
-        member_baselines = [
-            baselines.get(a, BaselineDeviation(a)).composite_score for a in members
-        ]
+        member_baselines = [baselines.get(a, BaselineDeviation(a)).composite_score for a in members]
         max_baseline_dev = max(member_baselines) if member_baselines else 0
         baseline_boost = min(
             max_baseline_dev * self.BASELINE_DEVIATION_MULTIPLIER,
@@ -1021,27 +952,19 @@ class DetectionPipeline:
 
         # Semantics boost: up to +0.05 from transaction semantics
         _empty_sem = SemanticsResult("", 0.0, 0.0, 0.0, 0.0, 0.0, ())
-        member_semantics = [
-            semantics.get(a, _empty_sem).composite_score for a in members
-        ]
+        member_semantics = [semantics.get(a, _empty_sem).composite_score for a in members]
         max_semantics = max(member_semantics) if member_semantics else 0
-        semantics_boost = min(
-            max_semantics * self.SEMANTICS_MULTIPLIER, self.SEMANTICS_BOOST_CAP
-        )
+        semantics_boost = min(max_semantics * self.SEMANTICS_MULTIPLIER, self.SEMANTICS_BOOST_CAP)
 
         # Device trust boost: up to +0.06 from device profiling
         _empty_dev = DeviceTrustResult("", 0.0, 0, 0, (), ())
-        member_device = [
-            device_results.get(a, _empty_dev).device_trust_score for a in members
-        ]
+        member_device = [device_results.get(a, _empty_dev).device_trust_score for a in members]
         max_device = max(member_device) if member_device else 0
         device_boost = min(max_device * self.DEVICE_MULTIPLIER, self.DEVICE_BOOST_CAP)
 
         # Markov transition boost: up to +0.08 from temporal state transitions
         _empty_mk = MarkovStateResult("", "DORMANT", (), 0.0, 0.0, ())
-        member_markov = [
-            markov_results.get(a, _empty_mk).transition_score for a in members
-        ]
+        member_markov = [markov_results.get(a, _empty_mk).transition_score for a in members]
         max_markov = max(member_markov) if member_markov else 0
         markov_boost = min(max_markov * self.MARKOV_MULTIPLIER, self.MARKOV_BOOST_CAP)
 
@@ -1083,15 +1006,9 @@ class DetectionPipeline:
 
         # Structural risk amplifiers
         # Large clusters with many reason codes are more suspicious
-        if (
-            len(members) >= self.LARGE_CLUSTER_SIZE
-            and len(unique_codes) >= self.LARGE_CLUSTER_CODES
-        ):
+        if len(members) >= self.LARGE_CLUSTER_SIZE and len(unique_codes) >= self.LARGE_CLUSTER_CODES:
             risk_score += self.LARGE_CLUSTER_BOOST
-        elif (
-            len(members) >= self.MEDIUM_CLUSTER_SIZE
-            and len(unique_codes) >= self.MEDIUM_CLUSTER_CODES
-        ):
+        elif len(members) >= self.MEDIUM_CLUSTER_SIZE and len(unique_codes) >= self.MEDIUM_CLUSTER_CODES:
             risk_score += self.MEDIUM_CLUSTER_BOOST
 
         # Multiple shared fingerprints amplify risk

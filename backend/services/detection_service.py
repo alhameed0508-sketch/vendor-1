@@ -4,12 +4,13 @@ Detection service — orchestrates dataset generation and pipeline execution.
 
 from typing import Dict, List
 
-from detection.pipeline import DetectionPipeline, Alert
-from models.active_learning.feedback_loop import FeedbackStore
+from core.config import get_settings
+from detection.pipeline import Alert, DetectionPipeline
 from repositories.alert_repository import AlertRepository
 from repositories.dataset_repository import DatasetRepository
 from repositories.kpi_repository import KPIRepository
-from core.config import get_settings
+
+from models.active_learning.feedback_loop import FeedbackStore
 
 # -- Detection KPI constants --------------------------------------------------
 # Estimated analyst hours saved per automated alert
@@ -100,9 +101,7 @@ class DetectionService:
         settings = get_settings()
         threshold_delta = self._feedback_store.get_threshold_adjustment()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = (
-                settings.smurf_flag_threshold + threshold_delta
-            )
+            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
 
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]
@@ -128,17 +127,11 @@ class DetectionService:
                     updates["status"] = demo_statuses[i]
                 status = updates.get("status", ad["status"])
                 if status == "UNDER_REVIEW":
-                    updates["investigator_notes"] = (
-                        "Reviewing cluster topology and transaction velocity patterns."
-                    )
+                    updates["investigator_notes"] = "Reviewing cluster topology and transaction velocity patterns."
                 elif status == "RESOLVED":
-                    updates["investigator_notes"] = (
-                        "Confirmed mule network. STR filed with FIU."
-                    )
+                    updates["investigator_notes"] = "Confirmed mule network. STR filed with FIU."
                 elif status == "FALSE_POSITIVE":
-                    updates["investigator_notes"] = (
-                        "Legitimate payroll batch. Accounts verified by branch manager."
-                    )
+                    updates["investigator_notes"] = "Legitimate payroll batch. Accounts verified by branch manager."
                 enriched.append({**ad, **updates})
         else:
             # Production or skip_demo: all alerts start as OPEN
@@ -151,9 +144,7 @@ class DetectionService:
             total_alerts=len(alerts),
             fraud_prevented_inr=sum(a.total_amount for a in alerts),
             hours_saved=len(alerts) * HOURS_SAVED_PER_ALERT,
-            strs_filed=len(
-                [a for a in alerts if a.risk_score > SAR_PROBABILITY_THRESHOLD]
-            ),
+            strs_filed=len([a for a in alerts if a.risk_score > SAR_PROBABILITY_THRESHOLD]),
         )
 
         # Update detection breakdown counters in PG if available
@@ -170,12 +161,14 @@ class DetectionService:
             if engine is None:
                 return
 
+            from datetime import datetime, timezone
+
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
             from backend.infra.database.postgres import (
                 detection_breakdown,
                 monthly_trends,
             )
-            from datetime import datetime, timezone
-            from sqlalchemy.dialects.postgresql import insert as pg_insert
 
             # Count patterns across all alerts
             pattern_counts: Dict[str, int] = {}
@@ -199,9 +192,7 @@ class DetectionService:
                 # Upsert monthly trends
                 now = datetime.now(timezone.utc)
                 month_key = now.strftime("%b")
-                total_prevented = (
-                    sum(a.get("total_amount", 0) for a in alerts) / 100_000
-                )  # Convert to lakh
+                total_prevented = sum(a.get("total_amount", 0) for a in alerts) / 100_000  # Convert to lakh
                 stmt = (
                     pg_insert(monthly_trends)
                     .values(
@@ -224,9 +215,7 @@ class DetectionService:
         except Exception as exc:
             import logging
 
-            logging.getLogger(__name__).warning(
-                "Failed to update detection breakdown: %s", exc
-            )
+            logging.getLogger(__name__).warning("Failed to update detection breakdown: %s", exc)
 
     def run_fresh_detection(self) -> None:
         """Clear state and re-run detection. Used as a background task."""
@@ -238,9 +227,7 @@ class DetectionService:
         settings = get_settings()
         self._dataset_repo.clear()
         if threshold_delta != 0.0:
-            self._pipeline._smurf_threshold = (
-                settings.smurf_flag_threshold + threshold_delta
-            )
+            self._pipeline._smurf_threshold = settings.smurf_flag_threshold + threshold_delta
         dataset = self.get_or_generate_dataset()
         alerts = self._pipeline.run(dataset["transactions"], dataset["accounts"])
         alert_dicts = [alert_to_dict(a) for a in alerts]

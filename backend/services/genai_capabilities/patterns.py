@@ -11,7 +11,8 @@ from typing import Dict, List, Optional
 
 from genai.base import LLMMessage, LLMProvider
 
-from .models import PatternDiscovery, mask_account_id as _mask
+from .models import PatternDiscovery
+from .models import mask_account_id as _mask
 from .prompts import SYSTEM_PROMPT_PATTERN_DISCOVERY
 
 logger = logging.getLogger(__name__)

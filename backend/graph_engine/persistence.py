@@ -6,9 +6,9 @@ The API uses this abstraction — if Neo4j is available, data persists
 across restarts; otherwise, an in-memory dict keeps the demo working.
 """
 
-import logging
 import json
-from typing import Dict, List, Optional, Any
+import logging
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,7 @@ class PersistenceLayer:
     def _try_connect_neo4j(self):
         import os
         import socket
+
         from core.config import get_settings
 
         settings = get_settings()
@@ -44,11 +45,7 @@ class PersistenceLayer:
         # This avoids the slow driver timeout when Neo4j isn't running
         neo4j_uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
         host = neo4j_uri.split("://")[-1].split(":")[0]
-        port = (
-            int(neo4j_uri.split(":")[-1].split("/")[0])
-            if ":" in neo4j_uri.split("://")[-1]
-            else 7687
-        )
+        port = int(neo4j_uri.split(":")[-1].split("/")[0]) if ":" in neo4j_uri.split("://")[-1] else 7687
         try:
             sock = socket.create_connection((host, port), timeout=1)
             sock.close()
@@ -59,9 +56,7 @@ class PersistenceLayer:
                     "Production requires a running Neo4j instance. "
                     "In-memory fallback is not available in production."
                 )
-            logger.info(
-                "Neo4j not reachable at %s:%s — using in-memory fallback", host, port
-            )
+            logger.info("Neo4j not reachable at %s:%s — using in-memory fallback", host, port)
             return
         try:
             from graph_engine.neo4j_client import Neo4jClient
@@ -73,22 +68,14 @@ class PersistenceLayer:
                 logger.info("Neo4j connected — using persistent storage")
             else:
                 if not settings.demo_mode:
-                    raise RuntimeError(
-                        "Neo4j connectivity check failed. "
-                        "Production requires a running Neo4j instance."
-                    )
+                    raise RuntimeError("Neo4j connectivity check failed. Production requires a running Neo4j instance.")
                 logger.info("Neo4j unavailable — using in-memory fallback")
         except RuntimeError:
             raise
         except Exception as exc:
             if not settings.demo_mode:
-                raise RuntimeError(
-                    f"Neo4j connection failed: {exc}. "
-                    "Production requires a running Neo4j instance."
-                )
-            logger.info(
-                "Neo4j import/connect failed (%s) — using in-memory fallback", exc
-            )
+                raise RuntimeError(f"Neo4j connection failed: {exc}. Production requires a running Neo4j instance.")
+            logger.info("Neo4j import/connect failed (%s) — using in-memory fallback", exc)
 
     @property
     def is_persistent(self) -> bool:
@@ -147,13 +134,9 @@ class PersistenceLayer:
                 return a
         return None
 
-    def update_alert(
-        self, alert_id: str, status: Optional[str] = None, notes: Optional[str] = None
-    ) -> Optional[Dict]:
+    def update_alert(self, alert_id: str, status: Optional[str] = None, notes: Optional[str] = None) -> Optional[Dict]:
         if self._use_neo4j:
-            result = self._neo4j.update_alert_status(
-                alert_id, status=status, notes=notes
-            )
+            result = self._neo4j.update_alert_status(alert_id, status=status, notes=notes)
             if result:
                 # Immutable update of in-memory copy
                 self._memory["alerts"] = [

@@ -5,8 +5,8 @@ from assembled case files.
 Uses LLM when available, falls back to structured template generation.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -151,9 +151,7 @@ class NarrativeAgent:
         masked_ids = [_mask_account(aid) for aid in case_file.account_ids]
         evidence_lines = []
         for ev in case_file.evidence_items:
-            evidence_lines.append(
-                f"  - [{ev.severity}] {ev.evidence_type}: {ev.description}"
-            )
+            evidence_lines.append(f"  - [{ev.severity}] {ev.evidence_type}: {ev.description}")
 
         return f"""Generate an FIU-IND compliant STR narrative for this case:
 
@@ -223,9 +221,7 @@ Transaction Details, Supporting Evidence, Conclusion."""
             sections["activity_description"] = text
 
         full_narrative = "\n\n".join(
-            f"## {name.replace('_', ' ').title()}\n{body}"
-            for name, body in sections.items()
-            if body
+            f"## {name.replace('_', ' ').title()}\n{body}" for name, body in sections.items() if body
         )
 
         return STRNarrative(
@@ -265,19 +261,13 @@ Transaction Details, Supporting Evidence, Conclusion."""
             if case_file.case_strength == "STRONG"
             else ("HIGH" if case_file.case_strength == "MODERATE" else "MEDIUM")
         )
-        rule_summary = (
-            "; ".join(rules[:3]) if rules else "Multiple detection rules triggered"
-        )
+        rule_summary = "; ".join(rules[:3]) if rules else "Multiple detection rules triggered"
         activity_description = (
-            f"Severity: {severity}. Case strength: {case_file.case_strength}. "
-            f"Key indicators: {rule_summary}."
+            f"Severity: {severity}. Case strength: {case_file.case_strength}. Key indicators: {rule_summary}."
         )
 
         # Transaction Details
-        cp_lines = ", ".join(
-            f"{_mask_account(cp['account'])} (INR {cp['amount']:,.0f})"
-            for cp in top_cp[:3]
-        )
+        cp_lines = ", ".join(f"{_mask_account(cp['account'])} (INR {cp['amount']:,.0f})" for cp in top_cp[:3])
         date_range = case_file.transaction_summary.get("date_range", {})
         transaction_details = (
             f"Total amount: INR {total_amount:,.0f} across {txn_count} transaction(s). "
@@ -315,10 +305,7 @@ Transaction Details, Supporting Evidence, Conclusion."""
                 "Reference RBI Master Directions on Fraud Risk Management."
             )
         else:
-            action = (
-                "Recommend routine investigation review. "
-                "Monitor for additional suspicious activity."
-            )
+            action = "Recommend routine investigation review. Monitor for additional suspicious activity."
         conclusion = action
 
         full_narrative = (

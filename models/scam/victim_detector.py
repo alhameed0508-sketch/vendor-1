@@ -138,9 +138,7 @@ class ScamVictimDetector:
             reason_codes.append("SV06_SCAM_KEYWORDS")
 
         # --- Composite score ---
-        composite = sum(
-            self.WEIGHTS[signal] * score for signal, score in breakdown.items()
-        )
+        composite = sum(self.WEIGHTS[signal] * score for signal, score in breakdown.items())
         composite = round(min(max(composite, 0.0), 1.0), 4)
 
         intervention = self._map_intervention(composite)

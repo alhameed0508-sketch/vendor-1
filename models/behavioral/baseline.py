@@ -18,9 +18,10 @@ Eight signals:
 """
 
 from __future__ import annotations
+
+import math
 from dataclasses import dataclass, field
 from typing import Dict, List
-import math
 
 
 @dataclass
@@ -91,9 +92,7 @@ def _score_account(
         return dev
 
     # Historical baseline from account metadata
-    avg_monthly = (
-        acc.get("avg_monthly_txn", DEFAULT_AVG_MONTHLY_TXN) or DEFAULT_AVG_MONTHLY_TXN
-    )
+    avg_monthly = acc.get("avg_monthly_txn", DEFAULT_AVG_MONTHLY_TXN) or DEFAULT_AVG_MONTHLY_TXN
     account_age = acc.get("account_age_days", 30)
 
     # ── 1. Volume deviation ──────────────────────────────────────────────
@@ -110,9 +109,7 @@ def _score_account(
     avg_amount = sum(amounts) / len(amounts) if amounts else 0
     expected_avg = DEFAULT_AVG_AMOUNT
     if avg_amount > expected_avg * 2:
-        dev.amount_deviation = min(
-            1.0, (avg_amount - expected_avg) / (expected_avg * 3)
-        )
+        dev.amount_deviation = min(1.0, (avg_amount - expected_avg) / (expected_avg * 3))
     elif avg_amount < expected_avg * 0.2 and current_count > 10:
         dev.amount_deviation = min(1.0, 0.5 + (10 - avg_amount / 1000) * 0.05)
 
@@ -120,9 +117,7 @@ def _score_account(
     unique_recipients = len(set(t["to_account"] for t in txns)) if txns else 0
     expected_recipients = min(DEFAULT_UNIQUE_RECIPIENTS, avg_monthly)
     if unique_recipients > expected_recipients:
-        dev.recipient_burst = min(
-            1.0, (unique_recipients - expected_recipients) / max(expected_recipients, 1)
-        )
+        dev.recipient_burst = min(1.0, (unique_recipients - expected_recipients) / max(expected_recipients, 1))
 
     # ── 4. Balance retention (BL04) ──────────────────────────────────────
     total_in = sum(float(t["amount"]) for t in in_txns)
@@ -138,16 +133,10 @@ def _score_account(
     if txns:
         recipient_counts: Dict[str, int] = {}
         for t in txns:
-            recipient_counts[t["to_account"]] = (
-                recipient_counts.get(t["to_account"], 0) + 1
-            )
+            recipient_counts[t["to_account"]] = recipient_counts.get(t["to_account"], 0) + 1
         total = sum(recipient_counts.values())
         if total > 0 and len(recipient_counts) > 1:
-            entropy = -sum(
-                (c / total) * math.log2(c / total)
-                for c in recipient_counts.values()
-                if c > 0
-            )
+            entropy = -sum((c / total) * math.log2(c / total) for c in recipient_counts.values() if c > 0)
             max_entropy = math.log2(len(recipient_counts))
             normalized = entropy / max_entropy if max_entropy > 0 else 0
             # High entropy = distributing evenly to many recipients = suspicious
@@ -168,14 +157,10 @@ def _score_account(
                     pass
         if len(timestamps) >= 3:
             timestamps.sort()
-            intervals = [
-                timestamps[i + 1] - timestamps[i] for i in range(len(timestamps) - 1)
-            ]
+            intervals = [timestamps[i + 1] - timestamps[i] for i in range(len(timestamps) - 1)]
             mean_interval = sum(intervals) / len(intervals)
             if mean_interval > 0:
-                std_interval = (
-                    sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)
-                ) ** 0.5
+                std_interval = (sum((x - mean_interval) ** 2 for x in intervals) / len(intervals)) ** 0.5
                 cov = std_interval / mean_interval
                 # Low CoV = very regular timing = bot-like
                 if cov < 0.15:
@@ -217,40 +202,25 @@ def _score_account(
 
     # ── Reason codes ─────────────────────────────────────────────────────
     if dev.volume_deviation > 0.5:
-        dev.reason_codes.append(
-            f"BL01: Transaction volume {current_count}x exceeds baseline "
-            f"(avg {avg_monthly}/month)"
-        )
+        dev.reason_codes.append(f"BL01: Transaction volume {current_count}x exceeds baseline (avg {avg_monthly}/month)")
     if dev.amount_deviation > 0.4:
-        dev.reason_codes.append(
-            f"BL02: Average amount ₹{avg_amount:,.0f} deviates from norm"
-        )
+        dev.reason_codes.append(f"BL02: Average amount ₹{avg_amount:,.0f} deviates from norm")
     if dev.recipient_burst > 0.4:
-        dev.reason_codes.append(
-            f"BL03: {unique_recipients} unique recipients vs expected "
-            f"{int(expected_recipients)}"
-        )
+        dev.reason_codes.append(f"BL03: {unique_recipients} unique recipients vs expected {int(expected_recipients)}")
     if dev.balance_retention > 0.6:
-        dev.reason_codes.append(
-            f"BL04: Low balance retention — {dev.balance_retention:.0%} of inbound funds forwarded"
-        )
+        dev.reason_codes.append(f"BL04: Low balance retention — {dev.balance_retention:.0%} of inbound funds forwarded")
     if dev.beneficiary_entropy > 0.6:
         dev.reason_codes.append(
             f"BL05: High beneficiary entropy ({dev.beneficiary_entropy:.2f}) — "
             f"evenly distributing to {unique_recipients} recipients"
         )
     if dev.temporal_regularity > 0.5:
-        dev.reason_codes.append(
-            f"BL06: Bot-like temporal regularity (score={dev.temporal_regularity:.2f})"
-        )
+        dev.reason_codes.append(f"BL06: Bot-like temporal regularity (score={dev.temporal_regularity:.2f})")
     if dev.inbound_outbound_asymmetry > 0.5:
-        dev.reason_codes.append(
-            f"BL07: Inbound/outbound asymmetry — in=₹{total_in:,.0f} vs out=₹{total_out:,.0f}"
-        )
+        dev.reason_codes.append(f"BL07: Inbound/outbound asymmetry — in=₹{total_in:,.0f} vs out=₹{total_out:,.0f}")
     if dev.dormancy_burst > 0.4:
         dev.reason_codes.append(
-            f"BL08: Dormant account burst — {current_count} txns after "
-            f"{account_age}d with avg {avg_monthly}/month"
+            f"BL08: Dormant account burst — {current_count} txns after {account_age}d with avg {avg_monthly}/month"
         )
 
     return dev

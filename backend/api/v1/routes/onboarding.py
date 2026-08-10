@@ -2,9 +2,6 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
 from api.deps import get_onboarding_service
 from api.v1.schemas.onboarding import (
     EntityResolveRequest,
@@ -13,8 +10,10 @@ from api.v1.schemas.onboarding import (
 )
 from core.exceptions import NotFoundError
 from core.response import success_response
+from fastapi import APIRouter, Depends, Request
 from middleware.auth import require_permission
 from services.onboarding_service import OnboardingService
+from slowapi import Limiter
 
 
 def register_onboarding_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -64,9 +63,7 @@ def register_onboarding_routes(r: APIRouter, limiter: Limiter) -> None:
         safe_limit = min(max(limit, 1), 200)
         safe_offset = max(offset, 0)
         normalized_level = risk_level.upper() if risk_level else None
-        return success_response(
-            service.get_assessments(safe_limit, safe_offset, normalized_level)
-        )
+        return success_response(service.get_assessments(safe_limit, safe_offset, normalized_level))
 
     @r.get("/assessments/{assessment_id}")
     @limiter.limit("100/minute")

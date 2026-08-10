@@ -49,10 +49,7 @@ def _deceiver_actions(result: TypologyResult) -> List[ResponseAction]:
             urgency="IMMEDIATE",
             notification_targets=("law_enforcement", "fiu_ind"),
             investigation_priority=1,
-            description=(
-                "File STR with FIU-IND and notify law enforcement — "
-                "suspected synthetic identity fraud"
-            ),
+            description=("File STR with FIU-IND and notify law enforcement — suspected synthetic identity fraud"),
         ),
         ResponseAction(
             action_type="FLAG_IDENTITY",
@@ -154,10 +151,7 @@ def _chump_actions(result: TypologyResult) -> List[ResponseAction]:
             urgency="HIGH",
             notification_targets=("customer", "branch_manager"),
             investigation_priority=2,
-            description=(
-                "Freeze account pending customer contact — "
-                "protect customer from further exploitation"
-            ),
+            description=("Freeze account pending customer contact — protect customer from further exploitation"),
         ),
         ResponseAction(
             action_type="CONTACT",
@@ -181,8 +175,7 @@ def _victim_actions(result: TypologyResult) -> List[ResponseAction]:
             notification_targets=("customer", "fraud_operations"),
             investigation_priority=1,
             description=(
-                f"Lock account {result.account_id} — account takeover detected "
-                f"(confidence {result.confidence:.2f})"
+                f"Lock account {result.account_id} — account takeover detected (confidence {result.confidence:.2f})"
             ),
         ),
         ResponseAction(
@@ -200,10 +193,7 @@ def _victim_actions(result: TypologyResult) -> List[ResponseAction]:
             urgency="IMMEDIATE",
             notification_targets=("law_enforcement", "cyber_cell"),
             investigation_priority=1,
-            description=(
-                "Alert law enforcement cyber cell — "
-                "suspected account takeover with fund diversion"
-            ),
+            description=("Alert law enforcement cyber cell — suspected account takeover with fund diversion"),
         ),
     ]
 
@@ -220,9 +210,7 @@ _ACTION_MAP = {
 class ResponseOrchestrator:
     """Maps typology classification results to ordered response actions."""
 
-    def orchestrate_response(
-        self, typology_result: TypologyResult
-    ) -> List[ResponseAction]:
+    def orchestrate_response(self, typology_result: TypologyResult) -> List[ResponseAction]:
         """Produce a list of response actions for the given classification.
 
         Args:
@@ -239,10 +227,7 @@ class ResponseOrchestrator:
                     urgency="LOW",
                     notification_targets=("surveillance_team",),
                     investigation_priority=5,
-                    description=(
-                        f"Unknown typology for {typology_result.account_id} — "
-                        "default to enhanced monitoring"
-                    ),
+                    description=(f"Unknown typology for {typology_result.account_id} — default to enhanced monitoring"),
                 ),
             ]
         return handler(typology_result)

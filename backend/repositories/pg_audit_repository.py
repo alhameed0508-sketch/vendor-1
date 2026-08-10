@@ -4,14 +4,15 @@ Same interface as the in-memory AuditRepository.
 Append-only — no update or delete operations.
 """
 
-import logging
 import hashlib
 import json
+import logging
 from typing import Dict, List, Optional
 
-from sqlalchemy.engine import Engine
-from backend.infra.database.postgres import audit_logs
 from sqlalchemy import text
+from sqlalchemy.engine import Engine
+
+from backend.infra.database.postgres import audit_logs
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +61,7 @@ class PgAuditRepository:
                 "details": stored.get("details"),
                 "previous_hash": stored["previous_hash"],
                 "entry_hash": stored["entry_hash"],
-                "timestamp": stored.get(
-                    "timestamp", datetime.now(timezone.utc).isoformat()
-                ),
+                "timestamp": stored.get("timestamp", datetime.now(timezone.utc).isoformat()),
             }
             ts = values["timestamp"]
             if isinstance(ts, str):

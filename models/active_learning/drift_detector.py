@@ -15,7 +15,6 @@ from collections import deque
 from dataclasses import dataclass
 from typing import List
 
-
 logger = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_SIZE = 200
@@ -91,8 +90,7 @@ class DriftDetector:
 
         if is_drifting:
             logger.warning(
-                "Distribution drift detected: historical_mean=%.3f, "
-                "recent_mean=%.3f, divergence=%.3f (threshold=%.3f)",
+                "Distribution drift detected: historical_mean=%.3f, recent_mean=%.3f, divergence=%.3f (threshold=%.3f)",
                 hist_mean,
                 recent_mean,
                 divergence,

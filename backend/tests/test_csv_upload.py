@@ -7,8 +7,8 @@ Integration tests: POST /csv-upload/upload, GET /csv-upload/preview
 Run: python -m pytest backend/tests/test_csv_upload.py -v
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 import pytest
 import pytest_asyncio
 from data_adapters.mule_csv_adapter import MuleCSVAdapter
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -239,26 +238,20 @@ class TestMuleCSVAdapterAnomalyFlags:
 
     def test_negative_balance_flagged(self, adapter):
         result = adapter.parse(SAMPLE_CSV)
-        neg_flags = [
-            f for f in result["anomaly_flags"] if f["flag"] == "NEGATIVE_BALANCE"
-        ]
+        neg_flags = [f for f in result["anomaly_flags"] if f["flag"] == "NEGATIVE_BALANCE"]
         # ACCT_A has negative balances
         flagged_accounts = {f["account_id"] for f in neg_flags}
         assert "ACCT_A" in flagged_accounts
 
     def test_rapid_small_debits_flagged(self, adapter):
         result = adapter.parse(SMURFING_CSV)
-        smurf_flags = [
-            f for f in result["anomaly_flags"] if f["flag"] == "RAPID_SMALL_DEBITS"
-        ]
+        smurf_flags = [f for f in result["anomaly_flags"] if f["flag"] == "RAPID_SMALL_DEBITS"]
         assert len(smurf_flags) >= 1
         assert smurf_flags[0]["account_id"] == "ACCT_S"
 
     def test_layering_pattern_flagged(self, adapter):
         result = adapter.parse(SMURFING_CSV)
-        layer_flags = [
-            f for f in result["anomaly_flags"] if f["flag"] == "LAYERING_PATTERN"
-        ]
+        layer_flags = [f for f in result["anomaly_flags"] if f["flag"] == "LAYERING_PATTERN"]
         assert len(layer_flags) >= 1
         assert layer_flags[0]["account_id"] == "ACCT_S"
 
@@ -273,11 +266,7 @@ class TestMuleCSVAdapterAnomalyFlags:
             )
         csv_content = "\n".join(lines)
         result = adapter.parse(csv_content)
-        young_flags = [
-            f
-            for f in result["anomaly_flags"]
-            if f["flag"] == "YOUNG_ACCOUNT_HIGH_VOLUME"
-        ]
+        young_flags = [f for f in result["anomaly_flags"] if f["flag"] == "YOUNG_ACCOUNT_HIGH_VOLUME"]
         assert len(young_flags) >= 1
 
     def test_no_false_positive_flags_on_clean_data(self, adapter):
@@ -304,11 +293,7 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
     def test_tran_id_pairing_creates_internal_links(self, adapter):
         result = adapter.parse(self.PAIRED_CSV)
         acc_ids = {a["account_id"] for a in result["accounts"]}
-        internal = [
-            t
-            for t in result["transactions"]
-            if t["from_account"] in acc_ids and t["to_account"] in acc_ids
-        ]
+        internal = [t for t in result["transactions"] if t["from_account"] in acc_ids and t["to_account"] in acc_ids]
         # pair_001: ACCT_X -> ACCT_Y, pair_002: ACCT_Y -> ACCT_Z
         assert len(internal) == 2
         assert internal[0]["from_account"] == "ACCT_X"
@@ -321,9 +306,7 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
     def test_unpaired_row_gets_ext_counterparty(self, adapter):
         result = adapter.parse(self.PAIRED_CSV)
         # ext_003 is unpaired D from ACCT_X
-        ext_txns = [
-            t for t in result["transactions"] if t["to_account"].startswith("EXT_")
-        ]
+        ext_txns = [t for t in result["transactions"] if t["to_account"].startswith("EXT_")]
         assert len(ext_txns) == 1
         assert ext_txns[0]["from_account"] == "ACCT_X"
         assert ext_txns[0]["amount"] == 1000.0
@@ -344,11 +327,7 @@ TRAN_DATE|TRAN_ID|TRAN_TYPE|TRAN_SUB_TYPE|PART_TRAN_TYPE|ACID|TRAN_AMT|balance|c
     def test_flow_inference_matches_amounts(self, adapter):
         result = adapter.parse(self.FLOW_CSV)
         acc_ids = {a["account_id"] for a in result["accounts"]}
-        internal = [
-            t
-            for t in result["transactions"]
-            if t["from_account"] in acc_ids and t["to_account"] in acc_ids
-        ]
+        internal = [t for t in result["transactions"] if t["from_account"] in acc_ids and t["to_account"] in acc_ids]
         # D(ACCT_P, 1000) matches C(ACCT_Q, 1000)
         # D(ACCT_Q, 500) matches C(ACCT_R, 500)
         assert len(internal) == 2
@@ -446,11 +425,7 @@ class TestMuleCSVAdapterRealData:
     def test_real_csv_has_internal_links(self, adapter, real_csv_content):
         result = adapter.parse(real_csv_content)
         acc_ids = {a["account_id"] for a in result["accounts"]}
-        internal = [
-            t
-            for t in result["transactions"]
-            if t["from_account"] in acc_ids and t["to_account"] in acc_ids
-        ]
+        internal = [t for t in result["transactions"] if t["from_account"] in acc_ids and t["to_account"] in acc_ids]
         # Flow inference should create internal links between accounts
         assert len(internal) > 0
 
@@ -475,8 +450,8 @@ class TestCSVUploadEndpoints:
 
     @pytest_asyncio.fixture
     async def client(self):
-        from httpx import AsyncClient, ASGITransport
         from api.app import app
+        from httpx import ASGITransport, AsyncClient
 
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as c:

@@ -13,10 +13,9 @@ References:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Callable
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
-
 
 FEATURE_NAMES = [
     "account_age",
@@ -100,9 +99,7 @@ def _build_node_features(alert: Dict) -> tuple:
     feature_rows = []
 
     for node in nodes:
-        acc_id = (
-            node.get("account_id", "") if isinstance(node, dict) else node.account_id
-        )
+        acc_id = node.get("account_id", "") if isinstance(node, dict) else node.account_id
         account_ids.append(acc_id)
 
         if isinstance(node, dict):

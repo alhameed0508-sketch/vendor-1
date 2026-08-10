@@ -3,14 +3,14 @@ Case Assembly Agent — gathers all relevant evidence for an alert into
 a structured, immutable case file for investigation and STR filing.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple
 
 # -- Behavioral profile thresholds ---------------------------------------------
 # Account younger than this (days) is flagged as new
@@ -157,9 +157,7 @@ class CaseAssemblyAgent:
             "total_amount": total_amount,
             "txn_count": txn_count,
             "date_range": {"from": min_date, "to": max_date},
-            "top_counterparties": [
-                {"account": cp[0], "amount": cp[1]} for cp in top_counterparties
-            ],
+            "top_counterparties": [{"account": cp[0], "amount": cp[1]} for cp in top_counterparties],
         }
 
     @staticmethod
@@ -319,9 +317,7 @@ class CaseAssemblyAgent:
         # Transaction evidence
         total = transaction_summary.get("total_amount", 0)
         if total > 0:
-            severity = (
-                "HIGH" if total > 500_000 else ("MEDIUM" if total > 100_000 else "LOW")
-            )
+            severity = "HIGH" if total > 500_000 else ("MEDIUM" if total > 100_000 else "LOW")
             items.append(
                 EvidenceItem(
                     evidence_type="transaction",

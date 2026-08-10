@@ -5,19 +5,18 @@ Maps domain exceptions to consistent error envelope responses.
 
 import logging
 
-from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
-
 from core.exceptions import (
-    MuleCatchError,
-    NotFoundError,
     AuthenticationError,
     AuthorizationError,
-    ValidationError,
     ConflictError,
+    MuleCatchError,
+    NotFoundError,
     ServiceUnavailableError,
+    ValidationError,
 )
 from core.response import error_response
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +48,7 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(_request: Request, exc: RequestValidationError):
         errors = exc.errors()
-        detail = "; ".join(
-            f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}" for e in errors
-        )
+        detail = "; ".join(f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}" for e in errors)
         return error_response(
             code="VALIDATION_ERROR",
             message="Request validation failed",

@@ -8,9 +8,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from sqlalchemy.engine import Engine
 from sqlalchemy import delete
-from backend.infra.database.postgres import screening_watchlist, screening_results
+from sqlalchemy.engine import Engine
+
+from backend.infra.database.postgres import screening_results, screening_watchlist
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +61,7 @@ class PgScreeningRepository:
         """Delete old entries for source, insert new ones."""
         now = datetime.now(timezone.utc)
         with self._engine.connect() as conn:
-            conn.execute(
-                delete(screening_watchlist).where(
-                    screening_watchlist.c.source == source
-                )
-            )
+            conn.execute(delete(screening_watchlist).where(screening_watchlist.c.source == source))
             for entry in entries:
                 values = {
                     "entry_id": entry.get("entry_id", ""),
@@ -124,9 +121,7 @@ class PgScreeningRepository:
                     )
                     break
 
-            if fuzzy and not any(
-                m.get("entry_id") == entry.get("entry_id") for m in matches
-            ):
+            if fuzzy and not any(m.get("entry_id") == entry.get("entry_id") for m in matches):
                 distance = _levenshtein(name_lower, entry_name)
                 if distance <= 2 and len(name_lower) > 4:
                     confidence = max(0.5, 1.0 - (distance / len(name_lower)))
@@ -172,9 +167,7 @@ class PgScreeningRepository:
     def get_results_for_account(self, account_id: str) -> List[Dict]:
         with self._engine.connect() as conn:
             rows = conn.execute(
-                screening_results.select().where(
-                    screening_results.c.account_id == account_id
-                )
+                screening_results.select().where(screening_results.c.account_id == account_id)
             ).fetchall()
         return [_result_row_to_dict(r) for r in rows]
 
@@ -191,23 +184,11 @@ class PgScreeningRepository:
         from sqlalchemy import func, select
 
         with self._engine.connect() as conn:
-            total_entries = (
-                conn.execute(
-                    select(func.count()).select_from(screening_watchlist)
-                ).scalar()
-                or 0
-            )
-            total_results = (
-                conn.execute(
-                    select(func.count()).select_from(screening_results)
-                ).scalar()
-                or 0
-            )
+            total_entries = conn.execute(select(func.count()).select_from(screening_watchlist)).scalar() or 0
+            total_results = conn.execute(select(func.count()).select_from(screening_results)).scalar() or 0
 
             source_rows = conn.execute(
-                select(
-                    screening_watchlist.c.source, func.count().label("cnt")
-                ).group_by(screening_watchlist.c.source)
+                select(screening_watchlist.c.source, func.count().label("cnt")).group_by(screening_watchlist.c.source)
             ).fetchall()
         sources = {r._mapping["source"]: r._mapping["cnt"] for r in source_rows}
         return {

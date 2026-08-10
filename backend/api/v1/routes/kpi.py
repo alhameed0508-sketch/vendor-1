@@ -2,14 +2,13 @@
 KPI routes — /api/v1/kpi
 """
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission
 from api.deps import get_detection_service, get_kpi_service
+from core.response import success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission
 from services.detection_service import DetectionService
 from services.kpi_service import KPIService
+from slowapi import Limiter
 
 router = APIRouter(tags=["kpi"])
 

@@ -36,9 +36,7 @@ class PropensityStore:
                 self._use_redis = True
                 logger.info("PropensityStore: using Redis backend")
             except Exception:
-                logger.info(
-                    "PropensityStore: Redis unavailable, using in-memory fallback"
-                )
+                logger.info("PropensityStore: Redis unavailable, using in-memory fallback")
 
     def get(self, account_id: str) -> Optional[PropensityRecord]:
         """Retrieve propensity record for an account."""
@@ -52,12 +50,8 @@ class PropensityStore:
                     return PropensityRecord(
                         account_id=parsed["account_id"],
                         score=parsed["score"],
-                        window_scores=tuple(
-                            tuple(ws) for ws in parsed["window_scores"]
-                        ),
-                        signal_breakdown=tuple(
-                            tuple(sb) for sb in parsed["signal_breakdown"]
-                        ),
+                        window_scores=tuple(tuple(ws) for ws in parsed["window_scores"]),
+                        signal_breakdown=tuple(tuple(sb) for sb in parsed["signal_breakdown"]),
                         updated_at=parsed["updated_at"],
                     )
             except Exception as exc:

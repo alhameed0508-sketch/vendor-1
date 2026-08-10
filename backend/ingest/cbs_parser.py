@@ -4,10 +4,10 @@ Reads structured bank logs and normalises to MuleCatch transaction format.
 Supports JSON and CSV formats from IOB Core Banking System.
 """
 
-import json
 import csv
-from typing import List, Dict
+import json
 from datetime import datetime, timezone
+from typing import Dict, List
 
 
 def parse_cbs_log_line(line: str) -> Dict:

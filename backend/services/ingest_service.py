@@ -31,9 +31,7 @@ class IngestService:
         stream = []
         for i, t in enumerate(sample):
             entry = dict(t)
-            entry["timestamp"] = (
-                now - timedelta(seconds=random.randint(0, 30))
-            ).isoformat()
+            entry["timestamp"] = (now - timedelta(seconds=random.randint(0, 30))).isoformat()
             entry["stream_offset"] = i
             stream.append(entry)
 

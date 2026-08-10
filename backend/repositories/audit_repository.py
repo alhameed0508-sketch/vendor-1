@@ -2,8 +2,8 @@
 Audit repository — append-only in-memory audit log.
 """
 
-from typing import Dict, List, Optional
 from threading import Lock
+from typing import Dict, List, Optional
 
 
 class AuditRepository:

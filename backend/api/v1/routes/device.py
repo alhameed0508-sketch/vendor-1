@@ -4,12 +4,11 @@ Device profiling API routes.
 
 from datetime import datetime, timezone
 
+from core.response import success_response
 from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission
 from pydantic import BaseModel, Field
 from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission
 
 
 class DeviceEventRequest(BaseModel):

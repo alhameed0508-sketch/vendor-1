@@ -5,28 +5,18 @@ Dependency injection — singleton service getters for FastAPI Depends.
 import logging
 from functools import lru_cache
 
-from core.config import get_settings
-from graph_engine.persistence import PersistenceLayer
-from detection.pipeline import DetectionPipeline
-from models.active_learning.feedback_loop import (
-    ActiveLearningEngine,
-    FeedbackStore,
-    ThresholdConfig,
-)
-from ingest.kafka_consumer import TransactionConsumer, KAFKA_ENABLED
-
-from cache.redis_client import RedisClient
 from cache.cache_manager import CacheManager
-
+from cache.redis_client import RedisClient
+from core.config import get_settings
+from detection.pipeline import DetectionPipeline
+from graph_engine.persistence import PersistenceLayer
+from ingest.kafka_consumer import KAFKA_ENABLED, TransactionConsumer
 from repositories.alert_repository import AlertRepository
-from repositories.escalation_repository import EscalationRepository
 from repositories.audit_repository import AuditRepository
-from repositories.kpi_repository import KPIRepository
 from repositories.dataset_repository import DatasetRepository
+from repositories.escalation_repository import EscalationRepository
+from repositories.kpi_repository import KPIRepository
 from repositories.user_repository import UserRepository
-
-from infra.database.user_db import UserDB
-
 from services.alert_service import AlertService
 from services.audit_service import AuditService
 from services.compliance_service import ComplianceService
@@ -36,6 +26,13 @@ from services.feedback_service import FeedbackService
 from services.graph_service import GraphService
 from services.ingest_service import IngestService
 from services.kpi_service import KPIService
+
+from infra.database.user_db import UserDB
+from models.active_learning.feedback_loop import (
+    ActiveLearningEngine,
+    FeedbackStore,
+    ThresholdConfig,
+)
 
 _deps_logger = logging.getLogger(__name__)
 
@@ -49,7 +46,7 @@ def _get_pg_engine():
     settings = get_settings()
     if not settings.postgres_url:
         return None
-    from backend.infra.database.postgres import get_engine, ensure_tables
+    from backend.infra.database.postgres import ensure_tables, get_engine
 
     engine = get_engine(settings.postgres_url)
     ensure_tables(engine)

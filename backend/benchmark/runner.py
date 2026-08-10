@@ -122,12 +122,8 @@ class BenchmarkRunner:
 
         # Extract ground truth labels (per account)
         ground_truth = self._extract_ground_truth(accounts, transactions)
-        suspicious_accounts = {
-            acc_id for acc_id, label in ground_truth.items() if label
-        }
-        legitimate_accounts = {
-            acc_id for acc_id, label in ground_truth.items() if not label
-        }
+        suspicious_accounts = {acc_id for acc_id, label in ground_truth.items() if label}
+        legitimate_accounts = {acc_id for acc_id, label in ground_truth.items() if not label}
 
         # Run detection pipeline
         alerts = self._new_pipeline().run(transactions, accounts)
@@ -207,10 +203,7 @@ class BenchmarkRunner:
         test_accounts = [a for a in accounts if a["account_id"] in test_ids]
         test_account_set = {a["account_id"] for a in test_accounts}
         test_transactions = [
-            t
-            for t in transactions
-            if t["from_account"] in test_account_set
-            and t["to_account"] in test_account_set
+            t for t in transactions if t["from_account"] in test_account_set and t["to_account"] in test_account_set
         ]
 
         # Run pipeline on test data (GNN will train internally if needed)
@@ -319,10 +312,7 @@ class BenchmarkRunner:
             test_accounts = [a for a in accounts if a["account_id"] in test_ids]
             test_account_set = {a["account_id"] for a in test_accounts}
             test_transactions = [
-                t
-                for t in transactions
-                if t["from_account"] in test_account_set
-                and t["to_account"] in test_account_set
+                t for t in transactions if t["from_account"] in test_account_set and t["to_account"] in test_account_set
             ]
 
             # Fresh pipeline per fold (no leaked GNN weights)
@@ -393,9 +383,7 @@ class BenchmarkRunner:
         )
 
     @staticmethod
-    def _extract_ground_truth(
-        accounts: List[Dict], transactions: List[Dict]
-    ) -> Dict[str, bool]:
+    def _extract_ground_truth(accounts: List[Dict], transactions: List[Dict]) -> Dict[str, bool]:
         """Extract per-account ground truth labels."""
         labels: Dict[str, bool] = {}
 

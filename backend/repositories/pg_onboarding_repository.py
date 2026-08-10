@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from sqlalchemy import func, select
 from sqlalchemy.engine import Engine
+
 from backend.infra.database.postgres import onboarding_assessments
 
 logger = logging.getLogger(__name__)
@@ -49,9 +50,7 @@ class PgOnboardingRepository:
         """Retrieve a single assessment by ID."""
         with self._engine.connect() as conn:
             row = conn.execute(
-                onboarding_assessments.select().where(
-                    onboarding_assessments.c.assessment_id == assessment_id
-                )
+                onboarding_assessments.select().where(onboarding_assessments.c.assessment_id == assessment_id)
             ).first()
         return _row_to_dict(row) if row else None
 
@@ -62,9 +61,7 @@ class PgOnboardingRepository:
         risk_level: Optional[str] = None,
     ) -> List[Dict]:
         """List assessments with optional filtering by risk level."""
-        query = onboarding_assessments.select().order_by(
-            onboarding_assessments.c.assessed_at.desc()
-        )
+        query = onboarding_assessments.select().order_by(onboarding_assessments.c.assessed_at.desc())
         if risk_level:
             query = query.where(onboarding_assessments.c.risk_level == risk_level)
         query = query.limit(limit).offset(offset)
@@ -79,18 +76,11 @@ class PgOnboardingRepository:
             total = conn.execute(select(func.count()).select_from(t)).scalar() or 0
 
             level_rows = conn.execute(
-                select(t.c.risk_level, func.count().label("cnt")).group_by(
-                    t.c.risk_level
-                )
+                select(t.c.risk_level, func.count().label("cnt")).group_by(t.c.risk_level)
             ).fetchall()
 
             blocked = (
-                conn.execute(
-                    select(func.count())
-                    .select_from(t)
-                    .where(t.c.recommendation.like("BLOCK%"))
-                ).scalar()
-                or 0
+                conn.execute(select(func.count()).select_from(t).where(t.c.recommendation.like("BLOCK%"))).scalar() or 0
             )
 
         levels = {r._mapping["risk_level"]: r._mapping["cnt"] for r in level_rows}

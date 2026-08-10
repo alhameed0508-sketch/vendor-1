@@ -114,10 +114,6 @@ def get_suggested_questions(alert_data: Optional[Dict] = None) -> List[str]:
             base_questions[0] = "Why is this alert classified as CRITICAL?"
         reason_codes = alert_data.get("reason_codes", [])
         if reason_codes:
-            first_code = (
-                reason_codes[0].split(":")[0]
-                if ":" in reason_codes[0]
-                else reason_codes[0]
-            )
+            first_code = reason_codes[0].split(":")[0] if ":" in reason_codes[0] else reason_codes[0]
             base_questions[1] = f"Explain rule {first_code} — why did it trigger?"
     return base_questions

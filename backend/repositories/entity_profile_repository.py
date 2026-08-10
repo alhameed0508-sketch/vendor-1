@@ -21,10 +21,7 @@ class EntityProfileRepository:
             candidate
             for candidate in self._profiles.values()
             if candidate["entity_id"] != profile["entity_id"]
-            and any(
-                profile.get(field) and profile.get(field) == candidate.get(field)
-                for field in exact_fields
-            )
+            and any(profile.get(field) and profile.get(field) == candidate.get(field) for field in exact_fields)
         ]
         remaining = [
             candidate

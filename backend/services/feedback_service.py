@@ -6,14 +6,15 @@ from datetime import datetime, timezone
 from typing import Dict, Optional
 
 from core.exceptions import NotFoundError
+from repositories.alert_repository import AlertRepository
+from repositories.kpi_repository import KPIRepository
+from services.audit_service import AuditService
+
 from models.active_learning.feedback_loop import (
     ActiveLearningEngine,
     FeedbackStore,
     ThresholdConfig,
 )
-from repositories.alert_repository import AlertRepository
-from repositories.kpi_repository import KPIRepository
-from services.audit_service import AuditService
 
 
 class FeedbackService:
@@ -86,8 +87,7 @@ class FeedbackService:
             "false_positive_rate": summary["false_positive_rate"],
             "recommended_threshold_delta": summary["recommended_threshold_delta"],
             "retraining_recommended": summary["retraining_recommended"],
-            "current_smurf_threshold": self._config.base_smurf_threshold
-            + self._store.get_threshold_adjustment(),
+            "current_smurf_threshold": self._config.base_smurf_threshold + self._store.get_threshold_adjustment(),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 

@@ -61,8 +61,7 @@ class STRRepository:
         current = record.get("status", "DRAFT")
         if new_status not in VALID_TRANSITIONS.get(current, ()):
             raise ValueError(
-                f"Invalid status transition: {current} -> {new_status}. "
-                f"Allowed: {VALID_TRANSITIONS.get(current, ())}"
+                f"Invalid status transition: {current} -> {new_status}. Allowed: {VALID_TRANSITIONS.get(current, ())}"
             )
 
         updated = {

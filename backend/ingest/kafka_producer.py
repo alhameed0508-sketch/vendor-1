@@ -71,20 +71,14 @@ class TransactionProducer:
         """
         from data.synthetic.generator import build_full_dataset
 
-        print(
-            f"Generating synthetic dataset ({num_clusters} clusters, {num_legit} legit accounts)..."
-        )
-        dataset = build_full_dataset(
-            num_clusters=num_clusters, num_legit_accounts=num_legit
-        )
+        print(f"Generating synthetic dataset ({num_clusters} clusters, {num_legit} legit accounts)...")
+        dataset = build_full_dataset(num_clusters=num_clusters, num_legit_accounts=num_legit)
 
         # Cache dataset so consumer can look up accounts during detection
         if dataset_repo is not None:
             dataset_repo.set(dataset)
 
-        print(
-            f"Sending {len(dataset['transactions'])} transactions to Kafka topic '{self.topic}'..."
-        )
+        print(f"Sending {len(dataset['transactions'])} transactions to Kafka topic '{self.topic}'...")
         for i, txn in enumerate(dataset["transactions"]):
             self.send(txn)
             if delay_ms > 0:
@@ -93,9 +87,7 @@ class TransactionProducer:
                 print(f"  Sent {i + 1}/{len(dataset['transactions'])} transactions")
 
         self.flush()
-        print(
-            f"Done. Sent {len(dataset['transactions'])} transactions to '{self.topic}'."
-        )
+        print(f"Done. Sent {len(dataset['transactions'])} transactions to '{self.topic}'.")
         return len(dataset["transactions"])
 
 

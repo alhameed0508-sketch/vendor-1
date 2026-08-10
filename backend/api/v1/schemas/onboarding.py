@@ -3,6 +3,7 @@ Onboarding risk assessment request schemas.
 """
 
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -55,6 +56,4 @@ class EntityResolveRequest(BaseModel):
 class OnboardingBatchRequest(BaseModel):
     """Batch of onboarding assessment requests."""
 
-    applications: List[OnboardingAssessRequest] = Field(
-        ..., min_length=1, max_length=100
-    )
+    applications: List[OnboardingAssessRequest] = Field(..., min_length=1, max_length=100)

@@ -9,20 +9,23 @@ import logging
 import os
 import sys
 from typing import Optional
+
 from fastapi import Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # Ensure infra is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from infra.security.auth import (
-    audit_middleware as audit_middleware,
-    decode_token,
-    ROLE_PERMISSIONS,
-)
-
 from core.config import get_settings
 from core.exceptions import AuthenticationError, AuthorizationError
+
+from infra.security.auth import (
+    ROLE_PERMISSIONS,
+    decode_token,
+)
+from infra.security.auth import (
+    audit_middleware as audit_middleware,
+)
 
 logger = logging.getLogger(__name__)
 _bearer = HTTPBearer(auto_error=False)
@@ -52,9 +55,7 @@ async def get_current_user(
         if not _demo_warning_shown:
             logger.warning("=" * 60)
             logger.warning("AUTHENTICATION DISABLED — DEMO MODE ACTIVE")
-            logger.warning(
-                "All requests granted ADMIN access. DO NOT USE IN PRODUCTION."
-            )
+            logger.warning("All requests granted ADMIN access. DO NOT USE IN PRODUCTION.")
             logger.warning("=" * 60)
             _demo_warning_shown = True
         return {"sub": "demo_user", "role": "ADMIN"}
@@ -88,9 +89,7 @@ def require_role(*roles: str):
             return user
         user_role = user.get("role", "")
         if user_role not in roles:
-            raise AuthorizationError(
-                f"Role '{user_role}' not authorized. Required: {roles}"
-            )
+            raise AuthorizationError(f"Role '{user_role}' not authorized. Required: {roles}")
         return user
 
     return _guard
@@ -105,9 +104,7 @@ def require_permission(permission: str):
         user_role = user.get("role", "READONLY")
         allowed = ROLE_PERMISSIONS.get(user_role, [])
         if permission not in allowed:
-            raise AuthorizationError(
-                f"Permission '{permission}' not granted for role '{user_role}'"
-            )
+            raise AuthorizationError(f"Permission '{permission}' not granted for role '{user_role}'")
         return user
 
     return _guard

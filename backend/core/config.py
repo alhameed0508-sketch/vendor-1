@@ -6,8 +6,8 @@ Replaces scattered os.getenv() calls throughout the codebase.
 from functools import lru_cache
 from typing import List
 
-from pydantic_settings import BaseSettings
 from pydantic import Field, computed_field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):

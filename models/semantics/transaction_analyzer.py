@@ -126,21 +126,14 @@ class TransactionSemanticsAnalyzer:
         round_score = self._score_round_amounts(outgoing)
         if round_score > 0.3:
             near_threshold = sum(
-                1
-                for t in outgoing
-                if STRUCTURING_BAND[0] <= float(t["amount"]) <= STRUCTURING_BAND[1]
+                1 for t in outgoing if STRUCTURING_BAND[0] <= float(t["amount"]) <= STRUCTURING_BAND[1]
             )
-            reason_codes.append(
-                f"TS01: Round-amount structuring detected "
-                f"({near_threshold} txns near ₹50K threshold)"
-            )
+            reason_codes.append(f"TS01: Round-amount structuring detected ({near_threshold} txns near ₹50K threshold)")
 
         # TS02: Suspicious UPI handle patterns
         upi_score = self._score_upi_patterns(outgoing)
         if upi_score > 0.3:
-            reason_codes.append(
-                "TS02: Suspicious UPI handle patterns (numeric-heavy handles)"
-            )
+            reason_codes.append("TS02: Suspicious UPI handle patterns (numeric-heavy handles)")
 
         # TS03: Narration keyword analysis
         narration_score = self._score_narrations(outgoing)
@@ -225,9 +218,7 @@ class TransactionSemanticsAnalyzer:
             total_with_upi += 1
 
             # Numeric-heavy UPI handles (>60% digits, length >10)
-            digit_ratio = sum(1 for c in upi_handle if c.isdigit()) / max(
-                len(upi_handle), 1
-            )
+            digit_ratio = sum(1 for c in upi_handle if c.isdigit()) / max(len(upi_handle), 1)
             if digit_ratio > 0.6 and len(upi_handle) > 10:
                 suspicious_count += 1
 

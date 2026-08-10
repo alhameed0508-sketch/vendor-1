@@ -2,20 +2,19 @@
 Feedback routes — /api/v1/feedback/*
 """
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission, require_role
 from api.deps import (
+    get_audit_service,
     get_detection_service,
     get_feedback_service,
-    get_audit_service,
 )
 from api.v1.schemas.feedback import FeedbackRequest
+from core.response import success_response
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from middleware.auth import require_permission, require_role
+from services.audit_service import AuditService
 from services.detection_service import DetectionService
 from services.feedback_service import FeedbackService
-from services.audit_service import AuditService
+from slowapi import Limiter
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 

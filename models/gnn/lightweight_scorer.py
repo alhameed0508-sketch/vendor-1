@@ -145,21 +145,13 @@ def extract_features(
         smurf = ss.smurf_score if ss and hasattr(ss, "smurf_score") else 0.0
 
         velocity = min(outgoing_count.get(acc_id, 0) / NORM_VELOCITY_TXNS, 1.0)
-        fan_out = min(
-            len(unique_recipients.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0
-        )
-        fan_in = min(
-            len(unique_senders.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0
-        )
+        fan_out = min(len(unique_recipients.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
+        fan_in = min(len(unique_senders.get(acc_id, set())) / NORM_FAN_COUNTERPARTIES, 1.0)
 
         out_amt = outgoing_total.get(acc_id, 0.0)
         in_amt = incoming_total.get(acc_id, 0.0)
         total_flow = out_amt + in_amt
-        rhythm = (
-            min(out_amt / max(in_amt, 1.0), NORM_RHYTHM_CAP) / NORM_RHYTHM_CAP
-            if in_amt > 0
-            else 0.5
-        )
+        rhythm = min(out_amt / max(in_amt, 1.0), NORM_RHYTHM_CAP) / NORM_RHYTHM_CAP if in_amt > 0 else 0.5
         consolidation = in_amt / max(total_flow, 1.0)
 
         in_deg = min(incoming_count.get(acc_id, 0) / NORM_DEGREE, 1.0)
@@ -170,9 +162,7 @@ def extract_features(
         pagerank = cs.get("pagerank", 0.0)
 
         bl = baselines.get(acc_id)
-        baseline_dev = (
-            bl.composite_score if bl and hasattr(bl, "composite_score") else 0.0
-        )
+        baseline_dev = bl.composite_score if bl and hasattr(bl, "composite_score") else 0.0
 
         feature_matrix.append(
             [
@@ -273,9 +263,7 @@ class LightweightScorer:
                 pass
 
         if model is None:
-            logger.info(
-                "Neither LightGBM nor XGBoost available; using heuristic fallback"
-            )
+            logger.info("Neither LightGBM nor XGBoost available; using heuristic fallback")
             return {"trained": False, "reason": "no_ml_library"}
 
         self._model = model
@@ -323,9 +311,7 @@ class LightweightScorer:
 
         results = []
         for acc_id, prob, feat in zip(account_ids, probabilities, features):
-            importances = tuple(
-                (name, round(abs(val), 4)) for name, val in zip(FEATURE_NAMES, feat)
-            )
+            importances = tuple((name, round(abs(val), 4)) for name, val in zip(FEATURE_NAMES, feat))
             results.append(
                 LightweightPrediction(
                     account_id=acc_id,

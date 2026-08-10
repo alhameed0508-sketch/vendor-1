@@ -2,12 +2,12 @@
 
 from unittest.mock import Mock
 
+import pytest
+from core.config import Settings
+from core.production_validator import validate_or_die
 from ingest.kafka_consumer import TransactionConsumer
 from repositories.audit_repository import AuditRepository
 from services.audit_service import AuditService
-from core.config import Settings
-from core.production_validator import validate_or_die
-import pytest
 
 
 def test_audit_hash_chain_verifies_and_detects_tampering():

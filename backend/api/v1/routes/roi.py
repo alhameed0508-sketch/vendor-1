@@ -4,10 +4,10 @@ Reads from PostgreSQL tables when available, returns empty lists otherwise.
 """
 
 import logging
-from fastapi import APIRouter
-from slowapi import Limiter
 
 from core.response import success_response
+from fastapi import APIRouter
+from slowapi import Limiter
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,7 @@ def _get_monthly_trends():
             from backend.infra.database.postgres import monthly_trends
 
             with engine.connect() as conn:
-                rows = conn.execute(
-                    monthly_trends.select().order_by(monthly_trends.c.month)
-                ).fetchall()
+                rows = conn.execute(monthly_trends.select().order_by(monthly_trends.c.month)).fetchall()
             if rows:
                 return [dict(r._mapping) for r in rows]
     except Exception as exc:
@@ -68,9 +66,7 @@ def _get_detection_breakdown():
 
             with engine.connect() as conn:
                 rows = conn.execute(
-                    detection_breakdown.select().order_by(
-                        detection_breakdown.c.count.desc()
-                    )
+                    detection_breakdown.select().order_by(detection_breakdown.c.count.desc())
                 ).fetchall()
             if rows:
                 return [dict(r._mapping) for r in rows]

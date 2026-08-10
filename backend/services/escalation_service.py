@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
-from core.exceptions import NotFoundError, ConflictError
+from core.exceptions import ConflictError, NotFoundError
 from repositories.alert_repository import AlertRepository
 from repositories.escalation_repository import EscalationRepository
 from services.audit_service import AuditService
@@ -78,9 +78,7 @@ class EscalationService:
             supervisor_notes=notes,
         )
 
-        self._audit.log(
-            "ESCALATION_RESOLVED", user_id, esc["alert_id"], f"action={action}"
-        )
+        self._audit.log("ESCALATION_RESOLVED", user_id, esc["alert_id"], f"action={action}")
 
         if action == "APPROVE":
             self._alert_repo.update(

@@ -4,13 +4,14 @@ Provides full CRUD for accounts, transactions, alerts, devices, and IPs.
 Connection pooling via the neo4j driver. All queries use parameterized Cypher.
 """
 
+import json
+import logging
 import os
 import time
-import logging
-import json
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from neo4j import GraphDatabase
-from neo4j.exceptions import ServiceUnavailable, SessionExpired, AuthError
+from neo4j.exceptions import AuthError, ServiceUnavailable, SessionExpired
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,8 @@ class Neo4jClient:
     ):
         self._uri = uri or os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self._user = user or os.getenv("NEO4J_USER", "neo4j")
-        self._password = password or os.getenv(
-            "NEO4J_PASSWORD", "CHANGE_ME_NOT_FOR_PRODUCTION"
-        )
-        self._tls_enabled = (
-            tls_enabled or os.getenv("NEO4J_TLS_ENABLED", "false").lower() == "true"
-        )
+        self._password = password or os.getenv("NEO4J_PASSWORD", "CHANGE_ME_NOT_FOR_PRODUCTION")
+        self._tls_enabled = tls_enabled or os.getenv("NEO4J_TLS_ENABLED", "false").lower() == "true"
 
         driver_kwargs = {
             "auth": (self._user, self._password),
@@ -66,9 +63,7 @@ class Neo4jClient:
                     return [dict(r) for r in session.run(query, **params)]
             except (ServiceUnavailable, SessionExpired) as exc:
                 if attempt == max_retries - 1:
-                    logger.error(
-                        "Neo4j query failed after %d retries: %s", max_retries, exc
-                    )
+                    logger.error("Neo4j query failed after %d retries: %s", max_retries, exc)
                     raise
                 wait_time = 2**attempt  # 1s, 2s, 4s
                 logger.warning(

@@ -11,8 +11,8 @@ Validates:
 Run: python -m pytest backend/tests/test_focal_loss.py -v
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
@@ -21,7 +21,6 @@ import torch
 import torch.nn as nn
 
 from models.gnn.gnn_model import FocalLoss
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -187,9 +186,7 @@ class TestFocalLossDownWeighting:
         loss_low_gamma = focal_low_gamma(easy_logits, target).item()
         loss_high_gamma = focal_high_gamma(easy_logits, target).item()
 
-        assert loss_high_gamma < loss_low_gamma, (
-            "Higher gamma should down-weight easy examples more aggressively"
-        )
+        assert loss_high_gamma < loss_low_gamma, "Higher gamma should down-weight easy examples more aggressively"
 
     def test_misclassified_gets_higher_loss(self):
         """A misclassified sample should receive substantially higher loss."""
@@ -217,10 +214,7 @@ class TestFocalLossDownWeighting:
         fl = focal(easy_logits, target).item()
         ce_val = ce(easy_logits, target).item() * 0.5  # scale by alpha for comparison
 
-        assert fl < ce_val, (
-            f"Focal loss ({fl:.8f}) should be less than scaled CE ({ce_val:.8f}) "
-            f"for easy examples"
-        )
+        assert fl < ce_val, f"Focal loss ({fl:.8f}) should be less than scaled CE ({ce_val:.8f}) for easy examples"
 
 
 # ---------------------------------------------------------------------------
@@ -239,8 +233,8 @@ class TestGNNScorerWithFocalLoss:
 
     def test_train_returns_decreasing_losses(self, _skip_without_torch_geometric):
         """GNNScorer.train with FocalLoss should produce a converging loss curve."""
-        from models.gnn.gnn_model import GNNScorer
         from data.synthetic.generator import build_full_dataset
+        from models.gnn.gnn_model import GNNScorer
         from models.temporal_weighting.smurf_weighting import score_transaction_batch
 
         dataset = build_full_dataset(num_clusters=2, num_legit_accounts=15)
@@ -261,14 +255,12 @@ class TestGNNScorerWithFocalLoss:
         # The loss curve should generally decrease (compare first 5 avg vs last 5 avg)
         avg_first = sum(losses[:5]) / 5
         avg_last = sum(losses[-5:]) / 5
-        assert avg_last <= avg_first, (
-            f"Loss should decrease: first-5 avg={avg_first:.4f}, last-5 avg={avg_last:.4f}"
-        )
+        assert avg_last <= avg_first, f"Loss should decrease: first-5 avg={avg_first:.4f}, last-5 avg={avg_last:.4f}"
 
     def test_train_marks_model_as_trained(self, _skip_without_torch_geometric):
         """After training, GNNScorer.is_trained should be True."""
-        from models.gnn.gnn_model import GNNScorer
         from data.synthetic.generator import build_full_dataset
+        from models.gnn.gnn_model import GNNScorer
         from models.temporal_weighting.smurf_weighting import score_transaction_batch
 
         dataset = build_full_dataset(num_clusters=2, num_legit_accounts=10)
@@ -338,9 +330,7 @@ class TestFocalLossEdgeCases:
         targets = torch.tensor([0, 1], dtype=torch.long)
 
         loss = focal(logits, targets)
-        assert torch.isfinite(loss), (
-            f"Loss is not finite for large logits: {loss.item()}"
-        )
+        assert torch.isfinite(loss), f"Loss is not finite for large logits: {loss.item()}"
 
     def test_equal_logits(self):
         """Equal logits (maximum uncertainty) should produce valid loss."""

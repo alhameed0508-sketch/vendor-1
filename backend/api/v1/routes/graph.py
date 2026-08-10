@@ -2,14 +2,13 @@
 Graph routes — /api/v1/graph/*
 """
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission
 from api.deps import get_detection_service, get_graph_service
+from core.response import success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission
 from services.detection_service import DetectionService
 from services.graph_service import GraphService
+from slowapi import Limiter
 
 router = APIRouter(prefix="/graph", tags=["graph"])
 

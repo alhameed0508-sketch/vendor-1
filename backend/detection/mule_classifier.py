@@ -150,10 +150,7 @@ def classify_mule_type(
         shared_count = sum(1 for d in acct_devices if d in shared_devices)
         if shared_count > 0:
             complicit_score += WEIGHT_DEVICE_SHARED
-            signals.append(
-                f"Device shared with {shared_count} other flagged account(s) "
-                f"- coordinated operation"
-            )
+            signals.append(f"Device shared with {shared_count} other flagged account(s) - coordinated operation")
 
     # Signal 4: Transaction patterns
     outgoing = [t for t in transactions if t.get("from_account") == account_id]
@@ -166,10 +163,7 @@ def classify_mule_type(
             passthrough_ratio = total_out / total_in
             if passthrough_ratio > THRESHOLD_PASSTHROUGH_HIGH:
                 complicit_score += WEIGHT_PASSTHROUGH_HIGH
-                signals.append(
-                    f"Pass-through ratio {passthrough_ratio:.0%} - "
-                    f"account used purely as conduit"
-                )
+                signals.append(f"Pass-through ratio {passthrough_ratio:.0%} - account used purely as conduit")
             elif passthrough_ratio > THRESHOLD_PASSTHROUGH_MED:
                 complicit_score += WEIGHT_PASSTHROUGH_MED
                 signals.append(f"High forwarding ratio ({passthrough_ratio:.0%})")
@@ -184,29 +178,16 @@ def classify_mule_type(
                 night_txn_count += 1
     if night_txn_count >= THRESHOLD_NIGHT_TXN_COUNT:
         complicit_score += WEIGHT_NIGHT_ACTIVITY
-        signals.append(
-            f"{night_txn_count} transactions between 11PM-5AM - "
-            f"deliberate timing to avoid detection"
-        )
+        signals.append(f"{night_txn_count} transactions between 11PM-5AM - deliberate timing to avoid detection")
 
     # Signal 6: Velocity burst (BioCatch 72-hour indicator)
-    if (
-        age_days <= THRESHOLD_VELOCITY_BURST_DAYS
-        and len(outgoing) >= THRESHOLD_VELOCITY_BURST_TXN
-    ):
+    if age_days <= THRESHOLD_VELOCITY_BURST_DAYS and len(outgoing) >= THRESHOLD_VELOCITY_BURST_TXN:
         complicit_score += WEIGHT_VELOCITY_BURST
-        signals.append(
-            "High activity within 72 hours of account opening - "
-            "BioCatch indicator for complicit mules"
-        )
-    elif (
-        age_days > THRESHOLD_DORMANT_DAYS
-        and len(outgoing) >= THRESHOLD_DORMANT_REACTIVATION_TXN
-    ):
+        signals.append("High activity within 72 hours of account opening - BioCatch indicator for complicit mules")
+    elif age_days > THRESHOLD_DORMANT_DAYS and len(outgoing) >= THRESHOLD_DORMANT_REACTIVATION_TXN:
         exploited_score += WEIGHT_DORMANT_REACTIVATION
         signals.append(
-            "Dormant account suddenly reactivated with high volume - "
-            "likely account takeover or social engineering"
+            "Dormant account suddenly reactivated with high volume - likely account takeover or social engineering"
         )
 
     # Signal 7: Role in network
@@ -226,9 +207,7 @@ def classify_mule_type(
     neg_bal = account.get("negative_balance_count", 0)
     if neg_bal >= THRESHOLD_NEG_BALANCE_HIGH:
         exploited_score += WEIGHT_NEG_BALANCE_HIGH
-        signals.append(
-            f"{neg_bal} negative balance events - overdraft abuse (account exploitation)"
-        )
+        signals.append(f"{neg_bal} negative balance events - overdraft abuse (account exploitation)")
     elif neg_bal >= THRESHOLD_NEG_BALANCE_MED:
         exploited_score += WEIGHT_NEG_BALANCE_MED
         signals.append(f"{neg_bal} negative balance events")
@@ -236,9 +215,7 @@ def classify_mule_type(
     dc_ratio = account.get("debit_credit_ratio", 0.0)
     if THRESHOLD_DC_RATIO_LOW <= dc_ratio <= THRESHOLD_DC_RATIO_HIGH and dc_ratio > 0:
         complicit_score += WEIGHT_DC_RATIO_MATCH
-        signals.append(
-            f"Debit/credit ratio {dc_ratio:.2f} - money in equals money out (pass-through)"
-        )
+        signals.append(f"Debit/credit ratio {dc_ratio:.2f} - money in equals money out (pass-through)")
 
     credit_count = account.get("credit_count", 0)
     if credit_count >= THRESHOLD_CREDIT_HUB:
@@ -263,9 +240,7 @@ def classify_mule_type(
         confidence = min(complicit_score / max(total, 0.01), CONFIDENCE_CAP)
         reasoning = (
             f"Account shows {len([s for s in signals if 'complicit' in s.lower() or 'coordinated' in s.lower() or 'conduit' in s.lower() or 'deliberate' in s.lower()])} "
-            f"strong indicators of knowing participation: "
-            + "; ".join(signals[:3])
-            + "."
+            f"strong indicators of knowing participation: " + "; ".join(signals[:3]) + "."
         )
         return MuleClassification(
             account_id=account_id,
@@ -276,11 +251,7 @@ def classify_mule_type(
         )
     elif exploited_score > complicit_score * THRESHOLD_CLASSIFICATION_RATIO:
         confidence = min(exploited_score / max(total, 0.01), CONFIDENCE_CAP)
-        reasoning = (
-            "Account profile suggests the holder may be a victim: "
-            + "; ".join(signals[:3])
-            + "."
-        )
+        reasoning = "Account profile suggests the holder may be a victim: " + "; ".join(signals[:3]) + "."
         return MuleClassification(
             account_id=account_id,
             classification="EXPLOITED",

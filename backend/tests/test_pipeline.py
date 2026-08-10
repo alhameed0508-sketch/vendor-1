@@ -4,17 +4,17 @@ Tests the full detection pipeline end-to-end using synthetic data.
 Run: python -m pytest backend/tests/ -v
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 import pytest
-from data.synthetic.generator import build_full_dataset, MuleClusterGenerator
-from models.temporal_weighting.smurf_weighting import score_transaction_batch
-from models.community_detection.louvain_detector import LouvainClusterDetector
-from backend.detection.pipeline import DetectionPipeline, RuleEngine
 
+from backend.detection.pipeline import DetectionPipeline, RuleEngine
+from data.synthetic.generator import MuleClusterGenerator, build_full_dataset
+from models.community_detection.louvain_detector import LouvainClusterDetector
+from models.temporal_weighting.smurf_weighting import score_transaction_batch
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -51,9 +51,7 @@ def test_cluster_transactions_below_ceiling(single_cluster):
     smurfing = [t for t in single_cluster["transactions"] if t["pattern"] == "SMURFING"]
     assert len(smurfing) > 0
     for t in smurfing:
-        assert float(t["amount"]) < 50_000, (
-            f"Smurfing txn {t['txn_id']} exceeds ₹50k ceiling"
-        )
+        assert float(t["amount"]) < 50_000, f"Smurfing txn {t['txn_id']} exceeds ₹50k ceiling"
 
 
 # ── Smurf-weighting tests ─────────────────────────────────────────────────────
@@ -73,14 +71,8 @@ def test_mule_accounts_flagged(small_dataset):
 
 def test_legitimate_accounts_not_all_flagged(small_dataset):
     scores = score_transaction_batch(small_dataset["transactions"])
-    legit_accounts = [
-        a["account_id"] for a in small_dataset["accounts"] if a["role"] == "LEGITIMATE"
-    ]
-    legit_flagged = [
-        acc_id
-        for acc_id in legit_accounts
-        if scores.get(acc_id, None) and scores[acc_id].is_flagged
-    ]
+    legit_accounts = [a["account_id"] for a in small_dataset["accounts"] if a["role"] == "LEGITIMATE"]
+    legit_flagged = [acc_id for acc_id in legit_accounts if scores.get(acc_id, None) and scores[acc_id].is_flagged]
     # False positive rate should be < 50% even without tuning
     fp_rate = len(legit_flagged) / max(len(legit_accounts), 1)
     assert fp_rate < 0.5, f"False positive rate too high: {fp_rate:.2%}"
@@ -90,9 +82,7 @@ def test_reason_codes_generated(small_dataset):
     scores = score_transaction_batch(small_dataset["transactions"])
     flagged = [s for s in scores.values() if s.is_flagged]
     for s in flagged:
-        assert len(s.reason_codes) > 0, (
-            f"No reason codes for flagged account {s.account_id}"
-        )
+        assert len(s.reason_codes) > 0, f"No reason codes for flagged account {s.account_id}"
 
 
 # ── Community detection tests ─────────────────────────────────────────────────
@@ -100,9 +90,7 @@ def test_reason_codes_generated(small_dataset):
 
 def test_louvain_detects_clusters(small_dataset):
     detector = LouvainClusterDetector()
-    communities = detector.detect_clusters(
-        small_dataset["transactions"], small_dataset["accounts"]
-    )
+    communities = detector.detect_clusters(small_dataset["transactions"], small_dataset["accounts"])
     flagged = [c for c in communities if c.is_mule_cluster]
     assert len(flagged) > 0, "Louvain failed to detect any mule clusters"
 
@@ -124,9 +112,7 @@ def test_louvain_community_detection_is_deterministic(small_dataset):
 
 def test_cluster_size_minimum(small_dataset):
     detector = LouvainClusterDetector()
-    communities = detector.detect_clusters(
-        small_dataset["transactions"], small_dataset["accounts"]
-    )
+    communities = detector.detect_clusters(small_dataset["transactions"], small_dataset["accounts"])
     for c in communities:
         assert c.size >= detector.MIN_CLUSTER_SIZE
 
@@ -136,23 +122,16 @@ def test_cluster_size_minimum(small_dataset):
 
 def test_rule_engine_young_accounts(small_dataset):
     engine = RuleEngine()
-    young_accounts = [
-        a for a in small_dataset["accounts"] if a.get("account_age_days", 999) < 7
-    ]
+    young_accounts = [a for a in small_dataset["accounts"] if a.get("account_age_days", 999) < 7]
     if young_accounts:
         hits = engine.evaluate(young_accounts, small_dataset["transactions"])
         young_with_txns = [
             a
             for a in young_accounts
-            if any(
-                t["from_account"] == a["account_id"]
-                for t in small_dataset["transactions"]
-            )
+            if any(t["from_account"] == a["account_id"] for t in small_dataset["transactions"])
         ]
         if young_with_txns:
-            assert any("R01" in " ".join(v) for v in hits.values()), (
-                "R01 rule not firing"
-            )
+            assert any("R01" in " ".join(v) for v in hits.values()), "R01 rule not firing"
 
 
 # ── End-to-end pipeline test ──────────────────────────────────────────────────
@@ -197,9 +176,7 @@ def test_gnn_score_populated(small_dataset):
     gnn_alerts = [a for a in alerts if a.gnn_score is not None]
     # If GNN is available, all alerts should have a score
     if pipeline._gnn_available:
-        assert len(gnn_alerts) == len(alerts), (
-            f"Only {len(gnn_alerts)}/{len(alerts)} alerts have GNN scores"
-        )
+        assert len(gnn_alerts) == len(alerts), f"Only {len(gnn_alerts)}/{len(alerts)} alerts have GNN scores"
         for a in gnn_alerts:
             assert 0.0 <= a.gnn_score <= 1.0
 

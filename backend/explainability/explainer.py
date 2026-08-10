@@ -18,11 +18,12 @@ References:
 """
 
 from __future__ import annotations
-from collections import defaultdict, deque
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Set, Tuple
-import networkx as nx
 
+from collections import defaultdict, deque
+from dataclasses import asdict, dataclass
+from typing import Dict, List, Set, Tuple
+
+import networkx as nx
 
 # ── Data models ───────────────────────────────────────────────────────────
 
@@ -107,9 +108,7 @@ class AlertExplanation:
 # ── Score Decomposition (SHAP-like) ──────────────────────────────────────
 
 
-def decompose_score(
-    alert: Dict, smurf_scores: Dict = None
-) -> List[FeatureContribution]:
+def decompose_score(alert: Dict, smurf_scores: Dict = None) -> List[FeatureContribution]:
     """
     Decomposes the alert risk score into feature-level contributions,
     similar to SHAP waterfall charts. Shows investigators exactly WHY
@@ -172,9 +171,7 @@ def decompose_score(
         max_consolidation = 0.0
 
         for n in nodes:
-            ss = smurf_scores.get(
-                n.get("account_id") if isinstance(n, dict) else n.account_id
-            )
+            ss = smurf_scores.get(n.get("account_id") if isinstance(n, dict) else n.account_id)
             if ss:
                 max_velocity = max(
                     max_velocity,
@@ -182,16 +179,10 @@ def decompose_score(
                 )
                 max_ceiling = max(
                     max_ceiling,
-                    ss.amount_ceiling_score
-                    if hasattr(ss, "amount_ceiling_score")
-                    else 0,
+                    ss.amount_ceiling_score if hasattr(ss, "amount_ceiling_score") else 0,
                 )
-                max_fanout = max(
-                    max_fanout, ss.fan_out_score if hasattr(ss, "fan_out_score") else 0
-                )
-                max_rhythm = max(
-                    max_rhythm, ss.rhythm_score if hasattr(ss, "rhythm_score") else 0
-                )
+                max_fanout = max(max_fanout, ss.fan_out_score if hasattr(ss, "fan_out_score") else 0)
+                max_rhythm = max(max_rhythm, ss.rhythm_score if hasattr(ss, "rhythm_score") else 0)
                 max_consolidation = max(
                     max_consolidation,
                     ss.consolidation_score if hasattr(ss, "consolidation_score") else 0,
@@ -323,9 +314,7 @@ def decompose_score(
     return contributions
 
 
-def build_score_narrative(
-    contributions: List[FeatureContribution], risk_score: float
-) -> str:
+def build_score_narrative(contributions: List[FeatureContribution], risk_score: float) -> str:
     """Generates a plain-English paragraph explaining the risk score."""
     if not contributions:
         return "Insufficient data to explain this score."
@@ -335,10 +324,7 @@ def build_score_narrative(
     for c in top_3:
         parts.append(c.description)
 
-    narrative = (
-        f"This alert has a risk score of {round(risk_score * 100)}%. "
-        f"The primary drivers are: {parts[0]}."
-    )
+    narrative = f"This alert has a risk score of {round(risk_score * 100)}%. The primary drivers are: {parts[0]}."
     if len(parts) > 1:
         narrative += f" Additionally, {parts[1].lower()}."
     if len(parts) > 2:
@@ -379,9 +365,7 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
         amount = float(e.get("total_amount") if isinstance(e, dict) else e.total_amount)
         txn_count = int(e.get("txn_count") if isinstance(e, dict) else e.txn_count)
         pattern = e.get("pattern", "NORMAL") if isinstance(e, dict) else e.pattern
-        adj[src].append(
-            {"to": dst, "amount": amount, "txn_count": txn_count, "pattern": pattern}
-        )
+        adj[src].append({"to": dst, "amount": amount, "txn_count": txn_count, "pattern": pattern})
 
     # Find SOURCE nodes (entry points)
     sources = [acc for acc, role in role_map.items() if role == "SOURCE"]
@@ -390,9 +374,7 @@ def trace_fraud_chain(alert: Dict) -> List[FraudChainStep]:
         out_volume = defaultdict(float)
         for e in edges:
             src = e.get("from_account") if isinstance(e, dict) else e.from_account
-            amount = float(
-                e.get("total_amount") if isinstance(e, dict) else e.total_amount
-            )
+            amount = float(e.get("total_amount") if isinstance(e, dict) else e.total_amount)
             out_volume[src] += amount
         if out_volume:
             sources = [max(out_volume, key=out_volume.get)]
@@ -620,10 +602,7 @@ def build_cycle_narrative(cycles: List[CycleInfo]) -> str:
         return "No circular money flows (round-tripping) detected in this cluster."
 
     total = sum(c.total_amount for c in cycles)
-    narrative = (
-        f"Detected {len(cycles)} circular money flow{'s' if len(cycles) > 1 else ''} "
-        f"totaling ₹{total:,.0f}. "
-    )
+    narrative = f"Detected {len(cycles)} circular money flow{'s' if len(cycles) > 1 else ''} totaling ₹{total:,.0f}. "
     if len(cycles) == 1:
         c = cycles[0]
         narrative += (
@@ -632,8 +611,7 @@ def build_cycle_narrative(cycles: List[CycleInfo]) -> str:
         )
     else:
         narrative += (
-            f"The largest ring involves {cycles[0].cycle_length} accounts "
-            f"circulating ₹{cycles[0].total_amount:,.0f}."
+            f"The largest ring involves {cycles[0].cycle_length} accounts circulating ₹{cycles[0].total_amount:,.0f}."
         )
     return narrative
 
@@ -641,62 +619,40 @@ def build_cycle_narrative(cycles: List[CycleInfo]) -> str:
 # ── Confidence Factors ───────────────────────────────────────────────────
 
 
-def build_confidence_factors(
-    alert: Dict, contributions: List[FeatureContribution]
-) -> List[str]:
+def build_confidence_factors(alert: Dict, contributions: List[FeatureContribution]) -> List[str]:
     """Lists factors that increase or decrease confidence in the alert."""
     factors = []
 
     high_count = sum(1 for c in contributions if c.severity == "HIGH")
     if high_count >= 3:
-        factors.append(
-            f"Strong confidence: {high_count} high-severity signals converge"
-        )
+        factors.append(f"Strong confidence: {high_count} high-severity signals converge")
     elif high_count >= 1:
-        factors.append(
-            f"Moderate confidence: {high_count} high-severity signal(s) detected"
-        )
+        factors.append(f"Moderate confidence: {high_count} high-severity signal(s) detected")
 
     if alert.get("shared_devices"):
         factors.append("Device fingerprint sharing provides strong physical evidence")
 
     if alert.get("gnn_score") and alert["gnn_score"] > 0.7:
-        factors.append(
-            "GNN graph learning independently confirms high mule probability"
-        )
+        factors.append("GNN graph learning independently confirms high mule probability")
 
     nodes = alert.get("nodes", [])
     young_accounts = sum(
         1
         for n in nodes
-        if (
-            n.get("account_age_days")
-            if isinstance(n, dict)
-            else getattr(n, "account_age_days", 999)
-        )
-        < 30
+        if (n.get("account_age_days") if isinstance(n, dict) else getattr(n, "account_age_days", 999)) < 30
     )
     if young_accounts >= 2:
-        factors.append(
-            f"{young_accounts} accounts are less than 30 days old — elevated risk"
-        )
+        factors.append(f"{young_accounts} accounts are less than 30 days old — elevated risk")
 
     pending_kyc = sum(
-        1
-        for n in nodes
-        if (
-            n.get("kyc_status") if isinstance(n, dict) else getattr(n, "kyc_status", "")
-        )
-        == "PENDING"
+        1 for n in nodes if (n.get("kyc_status") if isinstance(n, dict) else getattr(n, "kyc_status", "")) == "PENDING"
     )
     if pending_kyc:
         factors.append(f"{pending_kyc} account(s) have incomplete KYC verification")
 
     reason_codes = alert.get("reason_codes", [])
     if len(reason_codes) >= 5:
-        factors.append(
-            f"{len(reason_codes)} distinct reason codes — multi-signal convergence"
-        )
+        factors.append(f"{len(reason_codes)} distinct reason codes — multi-signal convergence")
 
     return factors
 

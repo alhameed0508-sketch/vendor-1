@@ -1,7 +1,7 @@
 """Tests for STR submission workflow lifecycle."""
 
 import pytest
-from repositories.str_repository import STRRepository, VALID_TRANSITIONS
+from repositories.str_repository import VALID_TRANSITIONS, STRRepository
 from services.str_service import STRService
 
 
@@ -23,12 +23,8 @@ class TestSTRCreation:
         assert result["alert_ids"] == ["ALT_001"]
 
     def test_list_strs(self, str_service):
-        str_service.create_str(
-            alert_ids=["A1"], account_ids=[], narrative="Test narrative 1."
-        )
-        str_service.create_str(
-            alert_ids=["A2"], account_ids=[], narrative="Test narrative 2."
-        )
+        str_service.create_str(alert_ids=["A1"], account_ids=[], narrative="Test narrative 1.")
+        str_service.create_str(alert_ids=["A2"], account_ids=[], narrative="Test narrative 2.")
         listing = str_service.list_strs()
         assert listing["total"] == 2
         assert len(listing["records"]) == 2
@@ -46,9 +42,7 @@ class TestSTRLifecycle:
         assert created["status"] == "DRAFT"
 
         # Approve
-        approved = str_service.approve_for_submission(
-            str_id, approved_by="supervisor_1"
-        )
+        approved = str_service.approve_for_submission(str_id, approved_by="supervisor_1")
         assert approved["status"] == "READY_FOR_SUBMISSION"
         assert approved["approved_by"] == "supervisor_1"
 
@@ -97,12 +91,8 @@ class TestSTRLifecycle:
         assert str_service.get_str("STR-NONEXISTENT") is None
 
     def test_list_by_status(self, str_service):
-        str_service.create_str(
-            alert_ids=["A1"], account_ids=[], narrative="Draft STR narrative."
-        )
-        created = str_service.create_str(
-            alert_ids=["A2"], account_ids=[], narrative="Approved STR test."
-        )
+        str_service.create_str(alert_ids=["A1"], account_ids=[], narrative="Draft STR narrative.")
+        created = str_service.create_str(alert_ids=["A2"], account_ids=[], narrative="Approved STR test.")
         str_service.approve_for_submission(created["str_id"], "admin")
 
         drafts = str_service.list_strs(status="DRAFT")

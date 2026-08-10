@@ -14,12 +14,13 @@ Key signals:
 """
 
 from __future__ import annotations
+
+import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Dict
-import math
-import numpy as np
+from typing import Dict, List
 
+import numpy as np
 
 SMURF_CEILING = 50_000.0  # RBI flag threshold (INR)
 SMURF_FLOOR = 400.0  # minimum meaningful amount
@@ -184,9 +185,7 @@ class SmurfWeightingEngine:
         timestamps = sorted(t.timestamp for t in txns)
         total_span_hours = (timestamps[-1] - timestamps[0]).total_seconds() / 3600
         # Txns arriving within 1 hour = burst pattern
-        burst_factor = (
-            max(0.0, 1.0 - total_span_hours / 4.0) if total_span_hours < 4 else 0.0
-        )
+        burst_factor = max(0.0, 1.0 - total_span_hours / 4.0) if total_span_hours < 4 else 0.0
 
         # Combine: high concentration + temporal burst = mule receiving smurfed funds
         score = min(concentration / 4.0, 1.0) * 0.5 + burst_factor * 0.5
@@ -196,10 +195,7 @@ class SmurfWeightingEngine:
         if len(txns) < 4:
             return 0.0
         timestamps = sorted(t.timestamp for t in txns)
-        gaps = [
-            (timestamps[i + 1] - timestamps[i]).total_seconds()
-            for i in range(len(timestamps) - 1)
-        ]
+        gaps = [(timestamps[i + 1] - timestamps[i]).total_seconds() for i in range(len(timestamps) - 1)]
         if not gaps:
             return 0.0
         mean_gap = np.mean(gaps)
@@ -275,15 +271,11 @@ class SmurfWeightingEngine:
         if s.fan_out_score > 0.5:
             codes.append("RC03: High fan-out — funds dispersed to many accounts")
         if s.fan_in_score > 0.5:
-            codes.append(
-                "RC06: High fan-in — receives from many unique senders (mule pattern)"
-            )
+            codes.append("RC06: High fan-in — receives from many unique senders (mule pattern)")
         if s.rhythm_score > 0.5:
             codes.append("RC04: Regular transaction spacing — potential automation")
         if s.consolidation_score > 0.5:
-            codes.append(
-                "RC05: Rapid consolidation — received and re-sent within 6 hours"
-            )
+            codes.append("RC05: Rapid consolidation — received and re-sent within 6 hours")
         return codes
 
     def _confidence(self, s: AccountScore, n_txns: int) -> float:
@@ -308,11 +300,7 @@ def score_transaction_batch(
     in_map: Dict[str, List[Transaction]] = defaultdict(list)
 
     for t in transactions:
-        ts = (
-            datetime.fromisoformat(t["timestamp"])
-            if isinstance(t["timestamp"], str)
-            else t["timestamp"]
-        )
+        ts = datetime.fromisoformat(t["timestamp"]) if isinstance(t["timestamp"], str) else t["timestamp"]
         txn = Transaction(
             txn_id=t["txn_id"],
             from_account=t["from_account"],
@@ -330,9 +318,7 @@ def score_transaction_batch(
     all_accounts = set(out_map.keys()) | set(in_map.keys())
     results = {}
     for acc_id in all_accounts:
-        results[acc_id] = engine.score_account(
-            acc_id, out_map.get(acc_id, []), in_map.get(acc_id, [])
-        )
+        results[acc_id] = engine.score_account(acc_id, out_map.get(acc_id, []), in_map.get(acc_id, []))
     return results
 
 

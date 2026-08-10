@@ -23,9 +23,7 @@ class AnthropicProvider(LLMProvider):
         try:
             import anthropic
         except ImportError as exc:
-            raise ImportError(
-                "anthropic package required: pip install anthropic"
-            ) from exc
+            raise ImportError("anthropic package required: pip install anthropic") from exc
 
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
@@ -46,11 +44,7 @@ class AnthropicProvider(LLMProvider):
 
         # Anthropic separates system from conversation messages
         system_text = "\n\n".join(m.content for m in messages if m.role == "system")
-        conversation = [
-            {"role": m.role, "content": m.content}
-            for m in messages
-            if m.role != "system"
-        ]
+        conversation = [{"role": m.role, "content": m.content} for m in messages if m.role != "system"]
 
         kwargs = {
             "model": self._model,

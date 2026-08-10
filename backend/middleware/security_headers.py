@@ -2,11 +2,10 @@
 Security headers middleware — adds HSTS, CSP, X-Content-Type-Options, etc.
 """
 
+from core.config import get_settings
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
-
-from core.config import get_settings
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -21,9 +20,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "camera=(), microphone=(), geolocation=(), payment=()"
-        )
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()"
 
         # CSP - allow self and common CDNs for fonts
         response.headers["Content-Security-Policy"] = (
@@ -38,8 +35,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # HSTS only in production
         if not settings.demo_mode:
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
         return response

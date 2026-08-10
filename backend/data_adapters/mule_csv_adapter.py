@@ -135,18 +135,12 @@ class MuleCSVAdapter:
            internal accounts so Louvain community detection can find clusters.
         3. Remaining unmatched rows get an EXT_* counterparty.
         """
-        all_acids = set(
-            r.get("ACID", "").strip() for r in rows if r.get("ACID", "").strip()
-        )
+        all_acids = set(r.get("ACID", "").strip() for r in rows if r.get("ACID", "").strip())
 
         transactions = self._try_tran_id_pairing(rows, all_acids)
 
         # Check if TRAN_ID pairing produced any internal links
-        internal_links = sum(
-            1
-            for t in transactions
-            if t["from_account"] in all_acids and t["to_account"] in all_acids
-        )
+        internal_links = sum(1 for t in transactions if t["from_account"] in all_acids and t["to_account"] in all_acids)
 
         linkage_strategy = "TRAN_ID_PAIRING" if internal_links else "EXTERNAL_ONLY"
         if internal_links == 0 and len(all_acids) >= 2:
@@ -160,8 +154,7 @@ class MuleCSVAdapter:
             inferred_links = sum(
                 1
                 for transaction in transactions
-                if transaction["from_account"] in all_acids
-                and transaction["to_account"] in all_acids
+                if transaction["from_account"] in all_acids and transaction["to_account"] in all_acids
             )
             if inferred_links:
                 linkage_strategy = "AMOUNT_DATE_INFERENCE"
@@ -175,33 +168,18 @@ class MuleCSVAdapter:
         linkage_strategy: str,
     ) -> Dict:
         """Describe linkage confidence and limitations of an uploaded dataset."""
-        account_ids = {
-            row.get("ACID", "").strip() for row in rows if row.get("ACID", "").strip()
-        }
+        account_ids = {row.get("ACID", "").strip() for row in rows if row.get("ACID", "").strip()}
         internal_links = sum(
             1
             for transaction in transactions
-            if transaction["from_account"] in account_ids
-            and transaction["to_account"] in account_ids
+            if transaction["from_account"] in account_ids and transaction["to_account"] in account_ids
         )
         debit_rows = sum(row.get("PART_TRAN_TYPE", "").strip() == "D" for row in rows)
         credit_rows = sum(row.get("PART_TRAN_TYPE", "").strip() == "C" for row in rows)
-        transaction_ids = [
-            row.get("TRAN_ID", "").strip()
-            for row in rows
-            if row.get("TRAN_ID", "").strip()
-        ]
-        distinct_timestamps = {
-            row.get("TRAN_DATE", "").strip()
-            for row in rows
-            if row.get("TRAN_DATE", "").strip()
-        }
+        transaction_ids = [row.get("TRAN_ID", "").strip() for row in rows if row.get("TRAN_ID", "").strip()]
+        distinct_timestamps = {row.get("TRAN_DATE", "").strip() for row in rows if row.get("TRAN_DATE", "").strip()}
         unknown_channels = sorted(
-            {
-                row.get("channel", "").strip()
-                for row in rows
-                if row.get("channel", "").strip() not in CHANNEL_TYPE_MAP
-            }
+            {row.get("channel", "").strip() for row in rows if row.get("channel", "").strip() not in CHANNEL_TYPE_MAP}
         )
 
         warnings = ["GROUND_TRUTH_LABELS_ABSENT"]
@@ -228,8 +206,7 @@ class MuleCSVAdapter:
             "mapped_transactions": len(transactions),
             "unique_accounts": len(account_ids),
             "unique_transaction_ids": len(set(transaction_ids)),
-            "duplicate_transaction_id_rows": len(transaction_ids)
-            - len(set(transaction_ids)),
+            "duplicate_transaction_id_rows": len(transaction_ids) - len(set(transaction_ids)),
             "debit_rows": debit_rows,
             "credit_rows": credit_rows,
             "distinct_timestamps": len(distinct_timestamps),
@@ -253,12 +230,8 @@ class MuleCSVAdapter:
         seen_tran_ids: set = set()
 
         for tran_id, group in tran_groups.items():
-            debit_legs = [
-                r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "D"
-            ]
-            credit_legs = [
-                r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "C"
-            ]
+            debit_legs = [r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "D"]
+            credit_legs = [r for r in group if r.get("PART_TRAN_TYPE", "").strip() == "C"]
 
             if debit_legs and credit_legs:
                 # Paired internal transfer: link D account → C account
@@ -333,11 +306,7 @@ class MuleCSVAdapter:
             else:
                 transactions.append(self._make_single_leg_txn(row, tran_id))
 
-        internal_count = sum(
-            1
-            for t in transactions
-            if t["from_account"] in all_acids and t["to_account"] in all_acids
-        )
+        internal_count = sum(1 for t in transactions if t["from_account"] in all_acids and t["to_account"] in all_acids)
         logger.info(
             "Flow inference: %d internal links inferred across %d accounts",
             internal_count,
@@ -380,9 +349,7 @@ class MuleCSVAdapter:
         amount = float(row.get("TRAN_AMT", 0))
         timestamp = self._parse_date(row["TRAN_DATE"]).isoformat()
 
-        counterparty = hashlib.sha256(
-            f"counterparty_{tran_id}_{acid}".encode()
-        ).hexdigest()[:16]
+        counterparty = hashlib.sha256(f"counterparty_{tran_id}_{acid}".encode()).hexdigest()[:16]
         counterparty_id = f"EXT_{counterparty.upper()}"
 
         if part_type == "D":
@@ -497,11 +464,7 @@ class MuleCSVAdapter:
             # Pass-through ratio: days with both credit AND debit / total active days
             all_active_days = info["debit_days"] | info["credit_days"]
             pass_through_days = info["debit_days"] & info["credit_days"]
-            pass_through_ratio = (
-                len(pass_through_days) / len(all_active_days)
-                if all_active_days
-                else 0.0
-            )
+            pass_through_ratio = len(pass_through_days) / len(all_active_days) if all_active_days else 0.0
 
             # Balance volatility: std dev of balances
             balances = info["balances"]
@@ -517,16 +480,12 @@ class MuleCSVAdapter:
 
             # Debit/credit ratio (near 1.0 = pass-through behavior)
             debit_credit_ratio = (
-                round(info["debit_volume"] / info["credit_volume"], 4)
-                if info["credit_volume"] > 0
-                else 0.0
+                round(info["debit_volume"] / info["credit_volume"], 4) if info["credit_volume"] > 0 else 0.0
             )
 
             # Max single txn ratio (layering: one big inflow then many small outflows)
             max_single_txn_ratio = (
-                round(info["max_txn_amount"] / info["total_amount"], 4)
-                if info["total_amount"] > 0
-                else 0.0
+                round(info["max_txn_amount"] / info["total_amount"], 4) if info["total_amount"] > 0 else 0.0
             )
 
             # Generate a deterministic bank/city from ACID hash
@@ -592,10 +551,7 @@ class MuleCSVAdapter:
 
             # 2. Rapid small debits (smurfing): 3+ debits under 500 in the dataset
             small_debits = [
-                t
-                for t in txns
-                if t.get("PART_TRAN_TYPE", "").strip() == "D"
-                and float(t.get("TRAN_AMT", 0)) < 500
+                t for t in txns if t.get("PART_TRAN_TYPE", "").strip() == "D" and float(t.get("TRAN_AMT", 0)) < 500
             ]
             if len(small_debits) >= 3:
                 flags.append(
@@ -611,9 +567,7 @@ class MuleCSVAdapter:
             debits = [t for t in txns if t.get("PART_TRAN_TYPE", "").strip() == "D"]
             if credits and debits:
                 max_credit = max(float(c.get("TRAN_AMT", 0)) for c in credits)
-                small_debit_count = sum(
-                    1 for d in debits if float(d.get("TRAN_AMT", 0)) < max_credit * 0.1
-                )
+                small_debit_count = sum(1 for d in debits if float(d.get("TRAN_AMT", 0)) < max_credit * 0.1)
                 if max_credit > 10000 and small_debit_count >= 3:
                     flags.append(
                         {

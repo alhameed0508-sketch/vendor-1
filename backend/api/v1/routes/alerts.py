@@ -4,15 +4,14 @@ Alert routes — /api/v1/alerts/*
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
-from core.response import success_response
-from middleware.auth import require_permission
 from api.deps import get_alert_service, get_detection_service
 from api.v1.schemas.alerts import AlertUpdateRequest
+from core.response import success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import require_permission
 from services.alert_service import AlertService
 from services.detection_service import DetectionService
+from slowapi import Limiter
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 

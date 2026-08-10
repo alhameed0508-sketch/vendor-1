@@ -1,6 +1,6 @@
 """Tests for enhanced behavioral baseline signals (BL01-BL08)."""
 
-from models.behavioral.baseline import compute_baselines, WEIGHTS
+from models.behavioral.baseline import WEIGHTS, compute_baselines
 
 
 def _acc(acc_id, age=30, avg_monthly=8, kyc="VERIFIED"):

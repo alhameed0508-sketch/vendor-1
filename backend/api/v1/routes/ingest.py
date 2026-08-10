@@ -3,25 +3,24 @@ Ingest routes — /api/v1/ingest/*
 """
 
 import json
-import queue
 import logging
+import queue
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import StreamingResponse
-from slowapi import Limiter
-
+from api.deps import (
+    get_dataset_repo,
+    get_detection_service,
+    get_ingest_service,
+)
 from core.config import get_settings
 from core.response import success_response
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import StreamingResponse
+from ingest.kafka_consumer import KAFKA_ENABLED, TransactionConsumer
 from middleware.auth import get_current_user, require_permission
-from api.deps import (
-    get_ingest_service,
-    get_detection_service,
-    get_dataset_repo,
-)
-from services.ingest_service import IngestService
-from services.detection_service import DetectionService
 from repositories.dataset_repository import DatasetRepository
-from ingest.kafka_consumer import TransactionConsumer, KAFKA_ENABLED
+from services.detection_service import DetectionService
+from services.ingest_service import IngestService
+from slowapi import Limiter
 
 logger = logging.getLogger(__name__)
 

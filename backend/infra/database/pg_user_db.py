@@ -4,13 +4,14 @@ Same interface as the SQLite UserDB.
 """
 
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional
 
 import bcrypt
-from sqlalchemy import func, select, delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.engine import Engine
-from backend.infra.database.postgres import users_table, failed_logins_table
+
+from backend.infra.database.postgres import failed_logins_table, users_table
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +80,7 @@ class PgUserDB:
         display_name: str = "",
         branch: str = "",
     ) -> Dict:
-        password_hash = bcrypt.hashpw(
-            password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+        password_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         now = datetime.now(timezone.utc)
         with self._engine.connect() as conn:
             conn.execute(
@@ -100,9 +99,7 @@ class PgUserDB:
 
     def find_by_username(self, username: str) -> Optional[Dict]:
         with self._engine.connect() as conn:
-            row = conn.execute(
-                users_table.select().where(users_table.c.username == username)
-            ).first()
+            row = conn.execute(users_table.select().where(users_table.c.username == username)).first()
         return _row_to_dict(row) if row else None
 
     def update_user(self, username: str, **kwargs) -> Optional[Dict]:
@@ -112,11 +109,7 @@ class PgUserDB:
             return self.find_by_username(username)
         updates["updated_at"] = datetime.now(timezone.utc)
         with self._engine.connect() as conn:
-            conn.execute(
-                users_table.update()
-                .where(users_table.c.username == username)
-                .values(**updates)
-            )
+            conn.execute(users_table.update().where(users_table.c.username == username).values(**updates))
             conn.commit()
         return self.find_by_username(username)
 
@@ -136,9 +129,7 @@ class PgUserDB:
         return [_row_to_dict(r) for r in rows]
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-        )
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
     def hash_password(self, password: str) -> str:
         return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
@@ -170,11 +161,7 @@ class PgUserDB:
 
     def clear_failed_logins(self, username: str) -> None:
         with self._engine.connect() as conn:
-            conn.execute(
-                delete(failed_logins_table).where(
-                    failed_logins_table.c.username == username
-                )
-            )
+            conn.execute(delete(failed_logins_table).where(failed_logins_table.c.username == username))
             conn.commit()
 
     def close(self):

@@ -7,16 +7,15 @@ Handles upload and processing of pipe-delimited CBS mule account data.
 import logging
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, Request, UploadFile, File
-from slowapi import Limiter
-
-from core.response import success_response, error_response
-from middleware.auth import require_permission
-from api.deps import get_detection_service, get_dataset_repo, get_alert_repo
+from api.deps import get_alert_repo, get_dataset_repo, get_detection_service
+from core.response import error_response, success_response
 from data_adapters.mule_csv_adapter import MuleCSVAdapter
-from services.detection_service import DetectionService
-from repositories.dataset_repository import DatasetRepository
+from fastapi import APIRouter, Depends, File, Request, UploadFile
+from middleware.auth import require_permission
 from repositories.alert_repository import AlertRepository
+from repositories.dataset_repository import DatasetRepository
+from services.detection_service import DetectionService
+from slowapi import Limiter
 
 logger = logging.getLogger(__name__)
 
@@ -119,14 +118,11 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
         # Count internal vs external links
         account_ids = {a["account_id"] for a in accounts}
         internal_txns = sum(
-            1
-            for t in transactions
-            if t["from_account"] in account_ids and t["to_account"] in account_ids
+            1 for t in transactions if t["from_account"] in account_ids and t["to_account"] in account_ids
         )
 
         logger.info(
-            "CSV upload processed: %d transactions (%d internal links), "
-            "%d accounts, %d alerts",
+            "CSV upload processed: %d transactions (%d internal links), %d accounts, %d alerts",
             len(transactions),
             internal_txns,
             len(accounts),
@@ -272,10 +268,7 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
                             role = member.get("classification", "UNKNOWN")
                             if role in ("COMPLICIT_MULE", "COMPLICIT"):
                                 mule_classification = "COMPLICIT"
-                            elif (
-                                role in ("EXPLOITED_MULE", "EXPLOITED")
-                                and mule_classification != "COMPLICIT"
-                            ):
+                            elif role in ("EXPLOITED_MULE", "EXPLOITED") and mule_classification != "COMPLICIT":
                                 mule_classification = "EXPLOITED"
                             elif role == "UNKNOWN" and mule_classification == "CLEAN":
                                 mule_classification = "EXPLOITED"
@@ -339,9 +332,7 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
         clusters = []
         for alert in alerts:
             cluster_members = [
-                n.get("account_id", "")
-                for n in alert.get("nodes", [])
-                if n.get("account_id", "") in account_ids
+                n.get("account_id", "") for n in alert.get("nodes", []) if n.get("account_id", "") in account_ids
             ]
             if cluster_members:
                 clusters.append(
@@ -357,9 +348,7 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
 
         # Internal link stats
         internal_txns = sum(
-            1
-            for t in transactions
-            if t["from_account"] in account_ids and t["to_account"] in account_ids
+            1 for t in transactions if t["from_account"] in account_ids and t["to_account"] in account_ids
         )
 
         return success_response(
@@ -370,8 +359,7 @@ def register_csv_upload_routes(r: APIRouter, limiter: Limiter) -> None:
                     "total_transactions": len(transactions),
                     "internal_links": internal_txns,
                     "total_alerts": len(alerts),
-                    "mule_candidates": classification_counts["COMPLICIT"]
-                    + classification_counts["EXPLOITED"],
+                    "mule_candidates": classification_counts["COMPLICIT"] + classification_counts["EXPLOITED"],
                     "severity_counts": severity_counts,
                     "classification_counts": classification_counts,
                     "feature_importance": feature_importance[:15],

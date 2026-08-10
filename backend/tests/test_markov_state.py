@@ -27,7 +27,6 @@ from models.temporal.markov_state import (
     _zero_result,
 )
 
-
 # ---------------------------------------------------------------------------
 # Test helpers
 # ---------------------------------------------------------------------------
@@ -397,37 +396,21 @@ class TestScoreAccount:
         # Weeks 4-7: receiving phase
         for w in range(4, 8):
             for d in range(3):
-                in_txns.append(
-                    _txn("S1", "MULE_001", 80_000, _week_ts(BASE_DATE, w, day=d))
-                )
+                in_txns.append(_txn("S1", "MULE_001", 80_000, _week_ts(BASE_DATE, w, day=d)))
 
         # Weeks 8-11: forwarding phase
         for w in range(8, 12):
-            in_txns.append(
-                _txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0))
-            )
-            out_txns.append(
-                _txn("MULE_001", "D1", 40_000, _week_ts(BASE_DATE, w, day=1))
-            )
-            out_txns.append(
-                _txn("MULE_001", "D2", 40_000, _week_ts(BASE_DATE, w, day=2))
-            )
+            in_txns.append(_txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0)))
+            out_txns.append(_txn("MULE_001", "D1", 40_000, _week_ts(BASE_DATE, w, day=1)))
+            out_txns.append(_txn("MULE_001", "D2", 40_000, _week_ts(BASE_DATE, w, day=2)))
 
         # Weeks 12-14: sweep phase
         for w in range(12, 15):
-            in_txns.append(
-                _txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0))
-            )
-            out_txns.append(
-                _txn("MULE_001", "D1", 50_000, _week_ts(BASE_DATE, w, day=1))
-            )
-            out_txns.append(
-                _txn("MULE_001", "D2", 48_000, _week_ts(BASE_DATE, w, day=2))
-            )
+            in_txns.append(_txn("S1", "MULE_001", 100_000, _week_ts(BASE_DATE, w, day=0)))
+            out_txns.append(_txn("MULE_001", "D1", 50_000, _week_ts(BASE_DATE, w, day=1)))
+            out_txns.append(_txn("MULE_001", "D2", 48_000, _week_ts(BASE_DATE, w, day=2)))
 
-        result = scorer.score_account(
-            "MULE_001", acc, out_txns, in_txns, window_weeks=24
-        )
+        result = scorer.score_account("MULE_001", acc, out_txns, in_txns, window_weeks=24)
 
         assert isinstance(result, MarkovStateResult)
         assert result.account_id == "MULE_001"
@@ -445,16 +428,10 @@ class TestScoreAccount:
 
         # Steady low activity for 20 weeks
         for w in range(20):
-            out_txns.append(
-                _txn("NORMAL_001", "SHOP", 2_000, _week_ts(BASE_DATE, w, day=3))
-            )
-            in_txns.append(
-                _txn("SALARY", "NORMAL_001", 2_500, _week_ts(BASE_DATE, w, day=0))
-            )
+            out_txns.append(_txn("NORMAL_001", "SHOP", 2_000, _week_ts(BASE_DATE, w, day=3)))
+            in_txns.append(_txn("SALARY", "NORMAL_001", 2_500, _week_ts(BASE_DATE, w, day=0)))
 
-        result = scorer.score_account(
-            "NORMAL_001", acc, out_txns, in_txns, window_weeks=24
-        )
+        result = scorer.score_account("NORMAL_001", acc, out_txns, in_txns, window_weeks=24)
 
         assert result.transition_score < 0.3
         # Should have no mule-specific reason codes
@@ -483,9 +460,7 @@ class TestScoreAccount:
         acc = _acc("A")
         # Create an extreme scenario
         in_txns = [_txn("S", "A", 1_000_000, _week_ts(BASE_DATE, w)) for w in range(20)]
-        out_txns = [
-            _txn("A", "D", 999_000, _week_ts(BASE_DATE, w, day=3)) for w in range(20)
-        ]
+        out_txns = [_txn("A", "D", 999_000, _week_ts(BASE_DATE, w, day=3)) for w in range(20)]
         result = scorer.score_account("A", acc, out_txns, in_txns, window_weeks=24)
         assert 0.0 <= result.transition_score <= 1.0
 

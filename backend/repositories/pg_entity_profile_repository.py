@@ -27,9 +27,7 @@ class PgEntityProfileRepository:
             )
             if profile.get(field)
         ]
-        query = select(identity_profiles).where(
-            identity_profiles.c.entity_id != profile["entity_id"]
-        )
+        query = select(identity_profiles).where(identity_profiles.c.entity_id != profile["entity_id"])
         if exact:
             query = query.order_by(or_(*exact).desc())
         query = query.limit(limit)
@@ -46,10 +44,6 @@ class PgEntityProfileRepository:
                 .values(**values)
                 .on_conflict_do_update(
                     index_elements=[identity_profiles.c.entity_id],
-                    set_={
-                        key: value
-                        for key, value in values.items()
-                        if key != "entity_id"
-                    },
+                    set_={key: value for key, value in values.items() if key != "entity_id"},
                 )
             )
