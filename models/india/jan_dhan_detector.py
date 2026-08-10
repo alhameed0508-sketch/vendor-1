@@ -146,10 +146,7 @@ class JanDhanDetector:
 
         if max_in_window > 10:
             score = min(1.0, max_in_window / 20.0)
-            return score, (
-                f"JD01: BSBDA account with {max_in_window} transactions "
-                f"in 24h window (threshold: 10)"
-            )
+            return score, (f"JD01: BSBDA account with {max_in_window} transactions in 24h window (threshold: 10)")
         return 0.0, ""
 
     @staticmethod
@@ -163,10 +160,7 @@ class JanDhanDetector:
             return 0.0, ""
 
         score = min(1.0, len(transactions) / 15.0)
-        return score, (
-            f"JD02: Account dormant {dormant_days} days then "
-            f"{len(transactions)} transactions detected"
-        )
+        return score, (f"JD02: Account dormant {dormant_days} days then {len(transactions)} transactions detected")
 
     @staticmethod
     def _jd03_tier1_inflows(
@@ -189,9 +183,7 @@ class JanDhanDetector:
 
         if len(tier1_senders) >= 3:
             score = min(1.0, len(tier1_senders) / 6.0)
-            return score, (
-                f"JD03: BSBDA receiving from {len(tier1_senders)} tier-1 city accounts"
-            )
+            return score, (f"JD03: BSBDA receiving from {len(tier1_senders)} tier-1 city accounts")
         return 0.0, ""
 
     @staticmethod
@@ -206,9 +198,7 @@ class JanDhanDetector:
 
         urban_counterparties: set = set()
         for txn in transactions:
-            cp_city = (
-                txn.get("counterparty_city") or txn.get("sender_city") or ""
-            ).lower()
+            cp_city = (txn.get("counterparty_city") or txn.get("sender_city") or "").lower()
             if cp_city in _TIER1_CITIES:
                 cp_id = txn.get("from_account") or txn.get("to_account") or ""
                 urban_counterparties.add(cp_id)

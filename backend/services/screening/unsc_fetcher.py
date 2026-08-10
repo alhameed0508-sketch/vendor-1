@@ -8,7 +8,7 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 from xml.etree import ElementTree
 
 import httpx

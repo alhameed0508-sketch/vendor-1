@@ -5,17 +5,16 @@ Tests all API endpoints sequentially to verify end-to-end flow.
 Run: python -m pytest backend/tests/test_integration.py -v
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
 from api.app import app
-
+from httpx import ASGITransport, AsyncClient
 
 _detection_seeded = False
 
@@ -68,9 +67,7 @@ async def test_health(client):
 
 
 @pytest.mark.asyncio
-async def test_readiness_does_not_mask_dependency_failure_in_demo_mode(
-    client, monkeypatch
-):
+async def test_readiness_does_not_mask_dependency_failure_in_demo_mode(client, monkeypatch):
     from api.v1.routes import health as health_module
 
     monkeypatch.setattr(
@@ -104,9 +101,7 @@ async def test_auth_me_demo_mode(client):
 
 @pytest.mark.asyncio
 async def test_auth_login(client):
-    r = await client.post(
-        "/api/v1/auth/login", json={"username": "investigator", "password": "iob@2024"}
-    )
+    r = await client.post("/api/v1/auth/login", json={"username": "investigator", "password": "iob@2024"})
     # Accept 429 (rate limited by earlier test_auth_api.py rate limit tests)
     assert r.status_code in (200, 429)
     if r.status_code == 200:
@@ -116,9 +111,7 @@ async def test_auth_login(client):
 
 @pytest.mark.asyncio
 async def test_auth_login_bad_credentials(client):
-    r = await client.post(
-        "/api/v1/auth/login", json={"username": "bad", "password": "bad"}
-    )
+    r = await client.post("/api/v1/auth/login", json={"username": "bad", "password": "bad"})
     # Accept 429 (rate limited by earlier tests)
     assert r.status_code in (401, 429)
 
@@ -247,9 +240,7 @@ async def test_str_export(client):
     r = await client.get("/api/v1/alerts?limit=1")
     alert_id = _data(r)["alerts"][0]["alert_id"]
 
-    r = await client.post(
-        "/api/v1/compliance/str-export", json={"alert_ids": [alert_id]}
-    )
+    r = await client.post("/api/v1/compliance/str-export", json={"alert_ids": [alert_id]})
     assert r.status_code == 200
     data = _data(r)
     assert data["generated"] == 1
@@ -328,9 +319,7 @@ async def test_full_detection_to_str_flow(client):
     assert r.status_code == 200
 
     # 5. Export STR
-    r = await client.post(
-        "/api/v1/compliance/str-export", json={"alert_ids": [alert_id]}
-    )
+    r = await client.post("/api/v1/compliance/str-export", json={"alert_ids": [alert_id]})
     assert r.status_code == 200
     assert _data(r)["generated"] == 1
 

@@ -13,9 +13,9 @@ Returns an immutable OnboardingRiskResult dataclass.
 
 from __future__ import annotations
 
+import logging
 import math
 import uuid
-import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, List, Tuple
@@ -318,45 +318,25 @@ def assess_onboarding_risk(
 
     signal_scores = {
         "account_age": _score_account_age(application.get("account_age_days", 30)),
-        "kyc_completeness": _score_kyc_completeness(
-            application.get("kyc_completeness", 1.0)
-        ),
+        "kyc_completeness": _score_kyc_completeness(application.get("kyc_completeness", 1.0)),
         "document_verification_speed": _score_document_verification_speed(
             application.get("doc_verification_seconds", 120)
         ),
-        "device_fingerprint_overlap": _score_device_fingerprint_overlap(
-            application.get("device_overlap_count", 0)
-        ),
-        "ip_geolocation_mismatch": _score_ip_geolocation_mismatch(
-            application.get("ip_geolocation_mismatch", False)
-        ),
-        "phone_number_age": _score_phone_number_age(
-            application.get("phone_age_days", 365)
-        ),
+        "device_fingerprint_overlap": _score_device_fingerprint_overlap(application.get("device_overlap_count", 0)),
+        "ip_geolocation_mismatch": _score_ip_geolocation_mismatch(application.get("ip_geolocation_mismatch", False)),
+        "phone_number_age": _score_phone_number_age(application.get("phone_age_days", 365)),
         "email_age": _score_email_age(application.get("email_age_days", 365)),
-        "address_verification": _score_address_verification(
-            application.get("address_verified", True)
-        ),
+        "address_verification": _score_address_verification(application.get("address_verified", True)),
         "selfie_match": _score_selfie_match(application.get("selfie_confidence", 0.95)),
-        "application_velocity": _score_application_velocity(
-            application.get("application_velocity_count", 1)
-        ),
-        "similar_name_accounts": _score_similar_name_accounts(
-            application.get("similar_name_count", 0)
-        ),
-        "high_risk_geography": _score_high_risk_geography(
-            application.get("high_risk_geography", False)
-        ),
-        "nocturnal_application": _score_nocturnal_application(
-            application.get("application_hour", 12)
-        ),
+        "application_velocity": _score_application_velocity(application.get("application_velocity_count", 1)),
+        "similar_name_accounts": _score_similar_name_accounts(application.get("similar_name_count", 0)),
+        "high_risk_geography": _score_high_risk_geography(application.get("high_risk_geography", False)),
+        "nocturnal_application": _score_nocturnal_application(application.get("application_hour", 12)),
         "dormancy_after_onboarding": _score_dormancy_after_onboarding(
             application.get("days_inactive", 0),
             application.get("total_account_days", 0),
         ),
-        "graph_cross_check": _score_graph_cross_check(
-            *_get_graph_check_result(application, graph_checker)
-        ),
+        "graph_cross_check": _score_graph_cross_check(*_get_graph_check_result(application, graph_checker)),
     }
 
     # Build signal details list
@@ -371,9 +351,7 @@ def assess_onboarding_risk(
         )
 
     # Weighted composite score
-    composite = sum(
-        signal_scores[name] * SIGNAL_WEIGHTS[name] for name in SIGNAL_WEIGHTS
-    )
+    composite = sum(signal_scores[name] * SIGNAL_WEIGHTS[name] for name in SIGNAL_WEIGHTS)
     # Normalize to 0-1 (weights already sum to ~1.0 but cap for safety)
     weight_total = sum(SIGNAL_WEIGHTS.values())
     risk_score = min(composite / weight_total, 0.99)

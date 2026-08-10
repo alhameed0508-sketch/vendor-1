@@ -5,11 +5,10 @@ Health and root endpoints — no version prefix.
 import time
 from datetime import datetime, timezone
 
+from core.response import success_response
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
-
-from core.response import success_response
 
 
 def register_health_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -134,8 +133,8 @@ def _check_postgres() -> dict:
     """Check PostgreSQL with a minimal query."""
     start = time.time()
     try:
-        from sqlalchemy import text
         from api.deps import _get_pg_engine
+        from sqlalchemy import text
 
         engine = _get_pg_engine()
         if engine is None:

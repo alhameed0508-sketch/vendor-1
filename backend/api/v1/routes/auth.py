@@ -5,24 +5,25 @@ Authentication routes — /api/v1/auth/*
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
+from api.deps import get_redis_client, get_user_repository
+from api.v1.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest
+from cache.redis_client import RedisClient
 from core.config import get_settings
 from core.exceptions import AuthenticationError
 from core.response import success_response
+from fastapi import APIRouter, Depends, Request
 from middleware.auth import get_current_user
-from api.deps import get_user_repository, get_redis_client
-from api.v1.schemas.auth import LoginRequest, RefreshRequest, LogoutRequest
 from repositories.user_repository import UserRepository
-from cache.redis_client import RedisClient
+from slowapi import Limiter
 
 from infra.security.auth import (
-    authenticate as legacy_authenticate,
+    DEMO_USERS,
     create_access_token,
     create_refresh_token,
     decode_token,
-    DEMO_USERS,
+)
+from infra.security.auth import (
+    authenticate as legacy_authenticate,
 )
 
 logger = logging.getLogger(__name__)
@@ -66,8 +67,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         # Check account lockout
         if user_repo.check_account_lockout(req.username):
             raise AuthenticationError(
-                "Account temporarily locked due to too many failed attempts. "
-                "Please try again later."
+                "Account temporarily locked due to too many failed attempts. Please try again later."
             )
 
         # Try LDAP first if enabled
@@ -151,9 +151,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
         except AuthenticationError:
             raise
         except Exception as exc:
-            logger.warning(
-                "Redis blacklist check failed (graceful degradation): %s", exc
-            )
+            logger.warning("Redis blacklist check failed (graceful degradation): %s", exc)
 
         user_id = payload.get("sub")
         role = payload.get("role", "READONLY")
@@ -180,9 +178,7 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
                 if ttl > 0:
                     redis.setex(f"{_BLACKLIST_PREFIX}{req.token}", ttl, "1")
             except Exception as exc:
-                logger.warning(
-                    "Redis blacklist write failed (graceful degradation): %s", exc
-                )
+                logger.warning("Redis blacklist write failed (graceful degradation): %s", exc)
 
         return success_response({"message": "Logged out successfully"})
 

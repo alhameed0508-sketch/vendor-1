@@ -14,9 +14,7 @@ class GraphService:
             "total_accounts": len(dataset["accounts"]),
             "total_transactions": len(dataset["transactions"]),
             "suspicious_transactions": dataset.get("stats", {}).get("suspicious_transactions", 0),
-            "mule_clusters_detected": len(
-                [a for a in alerts if a["severity"] in ("CRITICAL", "HIGH")]
-            ),
+            "mule_clusters_detected": len([a for a in alerts if a["severity"] in ("CRITICAL", "HIGH")]),
             "total_alerts": len(alerts),
             "critical": len([a for a in alerts if a["severity"] == "CRITICAL"]),
             "high": len([a for a in alerts if a["severity"] == "HIGH"]),

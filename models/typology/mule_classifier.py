@@ -100,9 +100,7 @@ def _score_deceiver(
 
     # Fast onboarding
     onboarding_time = _safe_get(account, "onboarding_time_seconds", 600)
-    signals["fast_onboarding"] = (
-        _clamp(1.0 - (onboarding_time / 600)) if onboarding_time < 600 else 0.0
-    )
+    signals["fast_onboarding"] = _clamp(1.0 - (onboarding_time / 600)) if onboarding_time < 600 else 0.0
     if onboarding_time < _ONBOARDING_FAST_SECONDS:
         reasons.append("MT01: Onboarding completed in under 2 minutes")
 
@@ -114,18 +112,12 @@ def _score_deceiver(
 
     # Young account
     age = _safe_get_int(account, "account_age_days", 365)
-    signals["young_account"] = (
-        _clamp(1.0 - (age / _ACCOUNT_YOUNG_DAYS)) if age < _ACCOUNT_YOUNG_DAYS else 0.0
-    )
+    signals["young_account"] = _clamp(1.0 - (age / _ACCOUNT_YOUNG_DAYS)) if age < _ACCOUNT_YOUNG_DAYS else 0.0
     if age < _ACCOUNT_YOUNG_DAYS:
         reasons.append(f"MT01: Account age {age} days (< {_ACCOUNT_YOUNG_DAYS})")
 
     # High outgoing volume
-    total_out = sum(
-        _safe_get(tx, "amount", 0)
-        for tx in transactions
-        if not tx.get("is_incoming", False)
-    )
+    total_out = sum(_safe_get(tx, "amount", 0) for tx in transactions if not tx.get("is_incoming", False))
     signals["high_outgoing"] = _clamp(total_out / _HIGH_OUTGOING_VOLUME)
     if total_out > _HIGH_OUTGOING_VOLUME:
         reasons.append("MT01: High outgoing transaction volume")
@@ -171,9 +163,7 @@ def _score_peddler(
         sorted_txns = sorted(transactions, key=lambda t: _safe_get(t, "timestamp", 0))
         gaps = []
         for i in range(1, len(sorted_txns)):
-            gap = _safe_get(sorted_txns[i], "timestamp", 0) - _safe_get(
-                sorted_txns[i - 1], "timestamp", 0
-            )
+            gap = _safe_get(sorted_txns[i], "timestamp", 0) - _safe_get(sorted_txns[i - 1], "timestamp", 0)
             gaps.append(gap)
         max_gap_days = max(gaps) / 86400 if gaps else 0
         signals["dormancy_gap"] = _clamp(max_gap_days / _DORMANCY_DAYS)
@@ -183,12 +173,8 @@ def _score_peddler(
         # Velocity spike after dormancy
         if len(sorted_txns) >= 4:
             mid = len(sorted_txns) // 2
-            early_avg = sum(_safe_get(t, "amount", 0) for t in sorted_txns[:mid]) / max(
-                mid, 1
-            )
-            late_avg = sum(_safe_get(t, "amount", 0) for t in sorted_txns[mid:]) / max(
-                len(sorted_txns) - mid, 1
-            )
+            early_avg = sum(_safe_get(t, "amount", 0) for t in sorted_txns[:mid]) / max(mid, 1)
+            late_avg = sum(_safe_get(t, "amount", 0) for t in sorted_txns[mid:]) / max(len(sorted_txns) - mid, 1)
             spike = late_avg / max(early_avg, 1)
             signals["velocity_spike"] = _clamp(spike / _VELOCITY_SPIKE_FACTOR)
             if spike > _VELOCITY_SPIKE_FACTOR:
@@ -226,9 +212,7 @@ def _score_accomplice(
         sorted_txns = sorted(transactions, key=lambda t: _safe_get(t, "timestamp", 0))
         amounts = [_safe_get(t, "amount", 0) for t in sorted_txns]
         # Count consecutive increases
-        increases = sum(
-            1 for i in range(1, len(amounts)) if amounts[i] > amounts[i - 1]
-        )
+        increases = sum(1 for i in range(1, len(amounts)) if amounts[i] > amounts[i - 1])
         increase_ratio = increases / max(len(amounts) - 1, 1)
         signals["progressive_amounts"] = _clamp(increase_ratio)
         if increase_ratio > 0.6:
@@ -249,9 +233,7 @@ def _score_accomplice(
         reasons.append(f"MT03: Fan-out to {fan_out} unique beneficiaries")
 
     # Structuring — amounts just below threshold
-    structured_count = sum(
-        1 for tx in transactions if 45_000 <= _safe_get(tx, "amount", 0) <= 49_999
-    )
+    structured_count = sum(1 for tx in transactions if 45_000 <= _safe_get(tx, "amount", 0) <= 49_999)
     signals["structuring"] = _clamp(structured_count / 5)
     if structured_count >= 3:
         reasons.append("MT03: Amounts structured below 50k reporting threshold")
@@ -280,9 +262,7 @@ def _score_chump(
 
     # Support contacts (hesitation signal)
     support_contacts = _safe_get_int(session_data or {}, "support_contacts", 0)
-    signals["support_contacts"] = _clamp(
-        support_contacts / (_SUPPORT_CONTACT_THRESHOLD * 2)
-    )
+    signals["support_contacts"] = _clamp(support_contacts / (_SUPPORT_CONTACT_THRESHOLD * 2))
     if support_contacts >= _SUPPORT_CONTACT_THRESHOLD:
         reasons.append(f"MT04: {support_contacts} support contacts (hesitation signal)")
 
@@ -369,9 +349,7 @@ def _score_victim(
                 unknown_large += 1
     signals["rapid_unknown_transfers"] = _clamp(unknown_large / 3)
     if unknown_large >= 1:
-        reasons.append(
-            f"MT05: {unknown_large} large transfer(s) to unknown beneficiaries"
-        )
+        reasons.append(f"MT05: {unknown_large} large transfer(s) to unknown beneficiaries")
 
     # Password/credential change before transfers
     cred_changed = bool(sess.get("credential_change", False))

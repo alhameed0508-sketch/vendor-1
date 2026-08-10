@@ -4,8 +4,8 @@ Uses Neo4j for persistence with in-memory fallback.
 """
 
 import logging
-from typing import List, Dict, Optional
 from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +71,7 @@ class ScreeningRepository:
                     break
 
             # Fuzzy (Levenshtein) if enabled
-            if fuzzy and not any(
-                m.get("entry_id") == entry.get("entry_id") for m in matches
-            ):
+            if fuzzy and not any(m.get("entry_id") == entry.get("entry_id") for m in matches):
                 distance = _levenshtein(name_lower, entry_name)
                 if distance <= 2 and len(name_lower) > 4:
                     confidence = max(0.5, 1.0 - (distance / len(name_lower)))

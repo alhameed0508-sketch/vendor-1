@@ -9,7 +9,8 @@ from typing import Dict, Optional
 
 from genai.base import LLMMessage, LLMProvider
 
-from .models import ChatResponse, mask_account_id as _mask
+from .models import ChatResponse
+from .models import mask_account_id as _mask
 from .prompts import SYSTEM_PROMPT_ONBOARDING
 
 logger = logging.getLogger(__name__)
@@ -109,9 +110,7 @@ def _template_onboarding_explanation(assessment: Dict) -> ChatResponse:
             lines.append(f"  - {name}: {score:.2f}")
         lines.append("")
 
-    lines.append(
-        f"Recommendation: {assessment.get('recommendation', 'Review manually')}"
-    )
+    lines.append(f"Recommendation: {assessment.get('recommendation', 'Review manually')}")
 
     return ChatResponse(
         message="\n".join(lines),

@@ -4,7 +4,6 @@ from typing import Annotated, List
 
 from pydantic import BaseModel, Field
 
-
 ClusterCount = Annotated[int, Field(ge=1, le=8)]
 
 

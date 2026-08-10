@@ -3,14 +3,15 @@ Tests for SHAP explainer, narrative generator, and mule classifier.
 Run: python -m pytest backend/tests/test_explainability.py -v
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 import pytest
-from data.synthetic.generator import build_full_dataset
+
 from backend.detection.pipeline import DetectionPipeline, RuleEngine
+from data.synthetic.generator import build_full_dataset
 
 
 @pytest.fixture(scope="module")
@@ -72,8 +73,9 @@ class TestSHAPExplainer:
                 assert sv.description
 
     def test_shap_to_dict_serializable(self, first_alert_dict):
-        from backend.explainability.shap_explainer import compute_shap_values
         import json
+
+        from backend.explainability.shap_explainer import compute_shap_values
 
         results = compute_shap_values(first_alert_dict)
         for r in results:
@@ -144,8 +146,9 @@ class TestNarrativeGenerator:
         assert len(narrative.recommended_actions) >= 2
 
     def test_narrative_to_dict_serializable(self, first_alert_dict):
-        from backend.explainability.narrative_generator import generate_narrative
         import json
+
+        from backend.explainability.narrative_generator import generate_narrative
 
         narrative = generate_narrative(first_alert_dict)
         d = narrative.to_dict()
@@ -287,9 +290,7 @@ class TestPipelineIntegration:
 
     def test_alerts_have_mule_classification(self, pipeline_results):
         for a in pipeline_results["alerts"]:
-            assert a.mule_classification is not None, (
-                f"Alert {a.alert_id} missing classification"
-            )
+            assert a.mule_classification is not None, f"Alert {a.alert_id} missing classification"
             assert "cluster_classification" in a.mule_classification
 
     def test_r20_rule_exists(self):
@@ -316,8 +317,9 @@ class TestExplainer:
         assert len(exp.recommendation) > 0
 
     def test_explanation_to_dict(self, first_alert_dict):
-        from backend.explainability.explainer import explain_alert
         import json
+
+        from backend.explainability.explainer import explain_alert
 
         exp = explain_alert(first_alert_dict)
         d = exp.to_dict()

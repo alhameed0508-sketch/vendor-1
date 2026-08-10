@@ -130,22 +130,18 @@ def generate_narrative(
 
     if shared_ips:
         key_findings.append(
-            f"{len(shared_ips)} IP address(es) shared across accounts "
-            f"- accounts accessed from same physical location"
+            f"{len(shared_ips)} IP address(es) shared across accounts - accounts accessed from same physical location"
         )
 
     young_accounts = [n for n in nodes if n.get("account_age_days", 999) < 30]
     if young_accounts:
         key_findings.append(
-            f"{len(young_accounts)} account(s) less than 30 days old - "
-            f"newly opened accounts used as mule conduits"
+            f"{len(young_accounts)} account(s) less than 30 days old - newly opened accounts used as mule conduits"
         )
 
     pending_kyc = [n for n in nodes if n.get("kyc_status") == "PENDING"]
     if pending_kyc:
-        key_findings.append(
-            f"{len(pending_kyc)} account(s) with incomplete KYC verification"
-        )
+        key_findings.append(f"{len(pending_kyc)} account(s) with incomplete KYC verification")
 
     if gnn_score is not None:
         key_findings.append(
@@ -159,15 +155,9 @@ def generate_narrative(
             f"{round(anomaly_score * 100)}% anomaly risk"
         )
 
-    structuring_codes = [
-        rc
-        for rc in reason_codes
-        if "threshold" in rc.lower() or "structur" in rc.lower()
-    ]
+    structuring_codes = [rc for rc in reason_codes if "threshold" in rc.lower() or "structur" in rc.lower()]
     if structuring_codes:
-        key_findings.append(
-            "Transaction amounts deliberately structured below \u20b950,000 reporting threshold"
-        )
+        key_findings.append("Transaction amounts deliberately structured below \u20b950,000 reporting threshold")
 
     # ── Risk Factors ──
     risk_factors = []

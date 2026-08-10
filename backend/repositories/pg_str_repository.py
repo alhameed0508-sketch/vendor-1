@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy.engine import Engine
+
 from backend.infra.database.postgres import str_reports
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,7 @@ class PgSTRRepository:
 
     def get(self, str_id: str) -> Optional[Dict]:
         with self._engine.connect() as conn:
-            row = conn.execute(
-                str_reports.select().where(str_reports.c.str_id == str_id)
-            ).first()
+            row = conn.execute(str_reports.select().where(str_reports.c.str_id == str_id)).first()
         return _row_to_dict(row) if row else None
 
     def list_all(
@@ -83,9 +82,7 @@ class PgSTRRepository:
 
     def update_status(self, str_id: str, new_status: str, **kwargs) -> Optional[Dict]:
         with self._engine.connect() as conn:
-            row = conn.execute(
-                str_reports.select().where(str_reports.c.str_id == str_id)
-            ).first()
+            row = conn.execute(str_reports.select().where(str_reports.c.str_id == str_id)).first()
             if row is None:
                 return None
 
@@ -101,11 +98,7 @@ class PgSTRRepository:
                 "updated_at": datetime.now(timezone.utc),
                 **kwargs,
             }
-            conn.execute(
-                str_reports.update()
-                .where(str_reports.c.str_id == str_id)
-                .values(**update_values)
-            )
+            conn.execute(str_reports.update().where(str_reports.c.str_id == str_id).values(**update_values))
             conn.commit()
 
         return self.get(str_id)

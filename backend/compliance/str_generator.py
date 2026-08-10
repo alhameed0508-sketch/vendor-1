@@ -7,8 +7,7 @@ Output format aligns with RBI PMLA reporting requirements.
 
 import uuid
 from datetime import datetime, timezone
-from typing import List, Dict
-
+from typing import Dict, List
 
 REPORTING_ENTITY = "Indian Overseas Bank"
 REPORTING_IFSC = "IOBA0000001"
@@ -18,13 +17,7 @@ FIU_FORMAT = "2.1"
 def generate_str(alert: Dict) -> Dict:
     """Generate a single STR from a MuleCatch alert"""
     accounts = [n["account_id"] for n in alert.get("nodes", [])]
-    patterns = list(
-        {
-            e.get("pattern", "")
-            for e in alert.get("edges", [])
-            if e.get("pattern") not in (None, "NORMAL")
-        }
-    )
+    patterns = list({e.get("pattern", "") for e in alert.get("edges", []) if e.get("pattern") not in (None, "NORMAL")})
 
     return {
         "str_id": f"STR_{uuid.uuid4().hex[:8].upper()}",

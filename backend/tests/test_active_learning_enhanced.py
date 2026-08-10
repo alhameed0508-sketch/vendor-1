@@ -1,10 +1,11 @@
 """Tests for enhanced active learning (uncertainty sampling)."""
 
 import pytest
+
 from models.active_learning.feedback_loop import (
     ActiveLearningEngine,
-    FeedbackStore,
     FeedbackRecord,
+    FeedbackStore,
 )
 
 

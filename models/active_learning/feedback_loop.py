@@ -11,16 +11,14 @@ Feedback types:
 """
 
 from __future__ import annotations
+
 import json
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
-
-DEFAULT_FEEDBACK_STORE_PATH = (
-    Path(__file__).parent.parent.parent / "data" / "feedback_log.jsonl"
-)
+DEFAULT_FEEDBACK_STORE_PATH = Path(__file__).parent.parent.parent / "data" / "feedback_log.jsonl"
 
 
 @dataclass(frozen=True)
@@ -105,11 +103,7 @@ class FeedbackStore:
         total_weight = sum(getattr(r, "confidence_weight", 1.0) for r in recent)
         if total_weight == 0:
             return 0.0
-        fp_weight = sum(
-            getattr(r, "confidence_weight", 1.0)
-            for r in recent
-            if not r.is_true_positive
-        )
+        fp_weight = sum(getattr(r, "confidence_weight", 1.0) for r in recent if not r.is_true_positive)
         fp_rate = fp_weight / total_weight
 
         if fp_rate > cfg.fp_raise_bound:

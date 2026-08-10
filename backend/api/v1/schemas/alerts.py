@@ -8,7 +8,5 @@ from pydantic import BaseModel, Field
 
 
 class AlertUpdateRequest(BaseModel):
-    status: Optional[str] = Field(
-        None, pattern="^(OPEN|UNDER_REVIEW|RESOLVED|FALSE_POSITIVE)$"
-    )
+    status: Optional[str] = Field(None, pattern="^(OPEN|UNDER_REVIEW|RESOLVED|FALSE_POSITIVE)$")
     investigator_notes: Optional[str] = Field(None, max_length=5000)

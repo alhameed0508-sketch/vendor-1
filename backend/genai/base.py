@@ -65,9 +65,7 @@ class LLMProvider(ABC):
             )
             return len(resp.content) > 0
         except Exception as exc:
-            logger.warning(
-                "LLM health check failed for %s: %s", self.provider_name, exc
-            )
+            logger.warning("LLM health check failed for %s: %s", self.provider_name, exc)
             return False
 
 

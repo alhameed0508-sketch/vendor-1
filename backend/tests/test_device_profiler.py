@@ -1,7 +1,9 @@
 """Tests for device profiling service."""
 
 import time
+
 import pytest
+
 from models.device.device_profiler import (
     DeviceProfiler,
     DeviceTrustResult,
@@ -106,9 +108,7 @@ class TestCompositeScore:
     def test_score_bounded(self, profiler):
         now = time.time()
         for i in range(10):
-            profiler.record_device_event(
-                "BAD", f"emulator_dev_{i}", now - i * 100, is_flagged=True
-            )
+            profiler.record_device_event("BAD", f"emulator_dev_{i}", now - i * 100, is_flagged=True)
         profiler.record_device_event("SUSPECT", "emulator_dev_0", now)
         result = profiler.compute_trust("SUSPECT")
         assert 0.0 <= result.device_trust_score <= 1.0

@@ -49,11 +49,7 @@ class OnboardingRepository:
             levels[lvl] = levels.get(lvl, 0) + 1
 
         high_risk = levels.get("HIGH", 0) + levels.get("CRITICAL", 0)
-        blocked = sum(
-            1
-            for a in self._assessments
-            if a.get("recommendation", "").startswith("BLOCK")
-        )
+        blocked = sum(1 for a in self._assessments if a.get("recommendation", "").startswith("BLOCK"))
         pass_rate = round((total - high_risk) / total, 4) if total > 0 else 1.0
 
         return {

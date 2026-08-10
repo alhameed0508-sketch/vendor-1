@@ -1,10 +1,11 @@
 """Tests for transaction semantics analyzer."""
 
 import pytest
+
 from models.semantics.transaction_analyzer import (
-    TransactionSemanticsAnalyzer,
-    SemanticsResult,
     SIGNAL_WEIGHTS,
+    SemanticsResult,
+    TransactionSemanticsAnalyzer,
 )
 
 
@@ -13,9 +14,7 @@ def analyzer():
     return TransactionSemanticsAnalyzer()
 
 
-def _txn(
-    from_acc="A", to_acc="B", amount=10000, narration="", to_upi="", merchant_id=""
-):
+def _txn(from_acc="A", to_acc="B", amount=10000, narration="", to_upi="", merchant_id=""):
     return {
         "from_account": from_acc,
         "to_account": to_acc,

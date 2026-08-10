@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from benchmark.runner import BenchmarkRunner
 from benchmark.service import BenchmarkService
 from core.config import Settings

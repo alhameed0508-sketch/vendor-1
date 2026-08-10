@@ -29,16 +29,14 @@ _MESSAGES = {
         "at our official number."
     ),
     "active_call": (
-        "Is someone on the phone telling you to transfer money urgently? "
-        "Scammers do this. Please hang up and call us."
+        "Is someone on the phone telling you to transfer money urgently? Scammers do this. Please hang up and call us."
     ),
     "elderly": (
         "We've noticed this is an unusual transaction for your account. "
         "Would you like to speak with a bank representative before proceeding?"
     ),
     "default_high": (
-        "This transaction has been flagged for your protection. "
-        "Please verify the recipient before proceeding."
+        "This transaction has been flagged for your protection. Please verify the recipient before proceeding."
     ),
 }
 
@@ -50,9 +48,7 @@ class DualRiskResult:
     sender_risk: ScamVictimResult
     receiver_risk: Dict  # mule probability, reason codes from existing pipeline
     combined_risk: float  # 0.0-1.0
-    transaction_recommendation: (
-        str  # ALLOW, DELAY_30S, DELAY_1HR, BLOCK_WITH_EDUCATION, BLOCK_HARD
-    )
+    transaction_recommendation: str  # ALLOW, DELAY_30S, DELAY_1HR, BLOCK_WITH_EDUCATION, BLOCK_HARD
     intervention_message: str  # Contextual warning for the sender
     reason_codes: Tuple[str, ...]
 
@@ -115,12 +111,8 @@ class DualRiskEngine:
 
         # 3. Combined risk with interaction boost
         sender_score = sender_result.composite_score
-        interaction_boost = (
-            1.0 if (sender_score > 0.5 and receiver_mule_score > 0.5) else 0.0
-        )
-        combined = (
-            sender_score * 0.4 + receiver_mule_score * 0.4 + interaction_boost * 0.2
-        )
+        interaction_boost = 1.0 if (sender_score > 0.5 and receiver_mule_score > 0.5) else 0.0
+        combined = sender_score * 0.4 + receiver_mule_score * 0.4 + interaction_boost * 0.2
         combined = round(min(max(combined, 0.0), 1.0), 4)
 
         # 4. Map recommendation

@@ -106,9 +106,7 @@ class RedisClient:
                     break
             return count
         except Exception as exc:
-            logger.warning(
-                "Redis DELETE_PATTERN failed for pattern=%s: %s", pattern, exc
-            )
+            logger.warning("Redis DELETE_PATTERN failed for pattern=%s: %s", pattern, exc)
             return 0
 
     def close(self) -> None:

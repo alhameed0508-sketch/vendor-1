@@ -6,8 +6,8 @@ Composite scoring from risk, amount, network centrality, evidence
 diversity, and time sensitivity.
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -51,9 +51,7 @@ class AlertPriorityResult:
             "sar_filing_probability": round(self.sar_filing_probability, 4),
             "investigation_complexity": self.investigation_complexity,
             "estimated_priority_rank": self.estimated_priority_rank,
-            "score_breakdown": {
-                k: round(v, 4) for k, v in self.score_breakdown.items()
-            },
+            "score_breakdown": {k: round(v, 4) for k, v in self.score_breakdown.items()},
         }
 
 
@@ -186,9 +184,7 @@ class AlertPriorityScorer:
         prefixes = set()
         for rc in reason_codes:
             # Extract prefix: "R01: ..." -> "R01", "Device shared..." -> "Device"
-            prefix = (
-                rc.split(":")[0].strip() if ":" in rc else rc.split()[0] if rc else ""
-            )
+            prefix = rc.split(":")[0].strip() if ":" in rc else rc.split()[0] if rc else ""
             if prefix:
                 prefixes.add(prefix)
         return min(1.0, len(prefixes) / 10.0)
@@ -201,9 +197,7 @@ class AlertPriorityScorer:
             return 0.5  # Default mid-range
 
         # Check for new accounts (< 7 days)
-        new_account_count = sum(
-            1 for n in nodes if (n.get("account_age_days") or 999) < 7
-        )
+        new_account_count = sum(1 for n in nodes if (n.get("account_age_days") or 999) < 7)
         total = len(nodes)
 
         # Proportion of new accounts (0 to 1)

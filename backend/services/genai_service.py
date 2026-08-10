@@ -21,6 +21,26 @@ from typing import Dict, List, Optional
 
 from genai.base import LLMProvider
 
+# ── Capability modules ───────────────────────────────────────────────────
+from services.genai_capabilities import (
+    chat as _chat_mod,
+)
+from services.genai_capabilities import (
+    copilot as _copilot_mod,
+)
+from services.genai_capabilities import (
+    forensic as _forensic_mod,
+)
+from services.genai_capabilities import (
+    onboarding as _onboarding_mod,
+)
+from services.genai_capabilities import (
+    patterns as _patterns_mod,
+)
+from services.genai_capabilities import (
+    triage as _triage_mod,
+)
+
 # ── Re-export data models for backward compatibility ─────────────────────
 from services.genai_capabilities.models import (  # noqa: F401
     ChatResponse,
@@ -29,25 +49,13 @@ from services.genai_capabilities.models import (  # noqa: F401
     TriageResult,
 )
 
-# ── Capability modules ───────────────────────────────────────────────────
-from services.genai_capabilities import (
-    chat as _chat_mod,
-    copilot as _copilot_mod,
-    forensic as _forensic_mod,
-    onboarding as _onboarding_mod,
-    patterns as _patterns_mod,
-    triage as _triage_mod,
-)
-
 
 class GenAIService:
     """Orchestrates GenAI capabilities with template fallback."""
 
     def __init__(self, provider: Optional[LLMProvider] = None):
         self._provider = provider
-        self._is_real_llm = (
-            provider is not None and provider.provider_name != "template_fallback"
-        )
+        self._is_real_llm = provider is not None and provider.provider_name != "template_fallback"
 
     @property
     def is_enabled(self) -> bool:

@@ -5,9 +5,9 @@ When real infrastructure (Neo4j, Redis) is unavailable the service falls
 back to in-process stubs so the demo works without any external deps.
 """
 
+import fnmatch
 import logging
 import time
-import fnmatch
 from typing import Dict, List, Optional
 
 from core.exceptions import NotFoundError
@@ -428,9 +428,7 @@ class _StubAudit:
     """Fallback audit logger that prints to stdout."""
 
     def log(self, action, user_id, resource_id, details):
-        logger.info(
-            "[AUDIT] %s user=%s resource=%s %s", action, user_id, resource_id, details
-        )
+        logger.info("[AUDIT] %s user=%s resource=%s %s", action, user_id, resource_id, details)
 
 
 class AlertService:
@@ -530,8 +528,8 @@ class AlertService:
             return narrative
 
         try:
-            from explainability.narrative_generator import generate_narrative
             from detection.mule_classifier import classify_cluster
+            from explainability.narrative_generator import generate_narrative
 
             classification = classify_cluster(alert, [])
             narr = generate_narrative(alert, classification)
@@ -559,9 +557,7 @@ class AlertService:
             result = {
                 "alert_id": alert_id,
                 "shap_results": [r.to_dict() for r in results],
-                "waterfall_charts": [
-                    format_for_waterfall_chart(r) for r in results[:5]
-                ],
+                "waterfall_charts": [format_for_waterfall_chart(r) for r in results[:5]],
             }
         except Exception:
             result = self._stub_shap(alert)

@@ -212,10 +212,7 @@ class CryptoGamingDetector:
         score = min(1.0, len(flagged) / 3.0)
         return (
             score,
-            (
-                f"CH03: Gaming platform transactions detected — "
-                f"{', '.join(sorted(flagged))}"
-            ),
+            (f"CH03: Gaming platform transactions detected — {', '.join(sorted(flagged))}"),
             flagged,
         )
 
@@ -225,9 +222,7 @@ class CryptoGamingDetector:
     ) -> Tuple[float, str]:
         """CH04: Cash deposits followed by immediate UPI fan-out."""
         cash_deposits = [
-            t
-            for t in transactions
-            if (t.get("channel") or "").upper() in ("CASH", "CDM", "BRANCH_DEPOSIT")
+            t for t in transactions if (t.get("channel") or "").upper() in ("CASH", "CDM", "BRANCH_DEPOSIT")
         ]
         upi_transfers = [
             t
@@ -239,9 +234,7 @@ class CryptoGamingDetector:
         if not cash_deposits or len(upi_transfers) < 3:
             return 0.0, ""
 
-        unique_upi_recipients = {
-            t.get("to_account") or t.get("beneficiary") or "" for t in upi_transfers
-        }
+        unique_upi_recipients = {t.get("to_account") or t.get("beneficiary") or "" for t in upi_transfers}
         unique_upi_recipients.discard("")
 
         if len(unique_upi_recipients) < 3:

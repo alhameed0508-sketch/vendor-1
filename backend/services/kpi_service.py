@@ -5,8 +5,8 @@ KPI service — business logic for KPI computation.
 from datetime import datetime, timezone
 from typing import Dict
 
-from repositories.kpi_repository import KPIRepository
 from core.config import get_settings
+from repositories.kpi_repository import KPIRepository
 
 
 class KPIService:

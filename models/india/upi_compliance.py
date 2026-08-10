@@ -68,9 +68,7 @@ class UPIComplianceMonitor:
         """Run all UC signals and return a composite compliance result."""
         acc_id = account.get("account_id", "UNKNOWN")
 
-        upi_txns = [
-            t for t in transactions if (t.get("channel") or "").upper() == "UPI"
-        ]
+        upi_txns = [t for t in transactions if (t.get("channel") or "").upper() == "UPI"]
 
         signals: Dict[str, float] = {}
         flags: List[str] = []
@@ -112,9 +110,7 @@ class UPIComplianceMonitor:
         proximity_pct = (annual_credit / self.ANNUAL_UPI_LIMIT) * 100.0
         proximity_pct = min(proximity_pct, 100.0)
 
-        cooling_applicable = (
-            signals.get("UC02", 0.0) > 0 or signals.get("UC03", 0.0) > 0
-        )
+        cooling_applicable = signals.get("UC02", 0.0) > 0 or signals.get("UC03", 0.0) > 0
 
         return UPIComplianceResult(
             account_id=acc_id,
@@ -143,9 +139,7 @@ class UPIComplianceMonitor:
 
         # Rule 1: Amount exceeds cooling threshold
         if amount >= self.COOLING_THRESHOLD:
-            beneficiary = (
-                transaction.get("to_account") or transaction.get("beneficiary") or ""
-            )
+            beneficiary = transaction.get("to_account") or transaction.get("beneficiary") or ""
             known = account.get("known_beneficiaries") or []
             is_new = beneficiary not in known
 
@@ -160,8 +154,7 @@ class UPIComplianceMonitor:
         recent_upi = [
             t
             for t in recent_transactions
-            if (t.get("channel") or "").upper() == "UPI"
-            and float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
+            if (t.get("channel") or "").upper() == "UPI" and float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
         ]
         if len(recent_upi) >= 3:
             return True, (
@@ -179,9 +172,7 @@ class UPIComplianceMonitor:
     ) -> Tuple[float, str, float]:
         """UC01: Annual UPI credit approaching Rs 25 lakh ceiling."""
         annual_credit = sum(
-            float(t.get("amount", 0))
-            for t in upi_txns
-            if (t.get("direction") or "").upper() in ("INBOUND", "CREDIT")
+            float(t.get("amount", 0)) for t in upi_txns if (t.get("direction") or "").upper() in ("INBOUND", "CREDIT")
         )
 
         if annual_credit < self.ANNUAL_UPI_LIMIT * 0.7:
@@ -203,9 +194,7 @@ class UPIComplianceMonitor:
         upi_txns: List[Dict],
     ) -> Tuple[float, str]:
         """UC02: Transactions > Rs 10,000 flagged for cooling period."""
-        large_txns = [
-            t for t in upi_txns if float(t.get("amount", 0)) >= self.COOLING_THRESHOLD
-        ]
+        large_txns = [t for t in upi_txns if float(t.get("amount", 0)) >= self.COOLING_THRESHOLD]
 
         if not large_txns:
             return 0.0, ""
@@ -213,8 +202,7 @@ class UPIComplianceMonitor:
         score = min(1.0, len(large_txns) / 5.0)
         total = sum(float(t.get("amount", 0)) for t in large_txns)
         return score, (
-            f"UC02: {len(large_txns)} transactions exceed Rs "
-            f"{self.COOLING_THRESHOLD:,.0f} (total Rs {total:,.0f})"
+            f"UC02: {len(large_txns)} transactions exceed Rs {self.COOLING_THRESHOLD:,.0f} (total Rs {total:,.0f})"
         )
 
     @staticmethod
@@ -238,8 +226,7 @@ class UPIComplianceMonitor:
         score = min(1.0, len(new_large) / 3.0)
         total = sum(float(t.get("amount", 0)) for t in new_large)
         return score, (
-            f"UC03: {len(new_large)} large transfers to new beneficiaries "
-            f"(total Rs {total:,.0f}) within cooling window"
+            f"UC03: {len(new_large)} large transfers to new beneficiaries (total Rs {total:,.0f}) within cooling window"
         )
 
     @staticmethod
@@ -247,9 +234,7 @@ class UPIComplianceMonitor:
         upi_txns: List[Dict],
     ) -> Tuple[float, str]:
         """UC04: Multiple UPI collect requests from same handle."""
-        collect_txns = [
-            t for t in upi_txns if (t.get("upi_type") or "").upper() == "COLLECT"
-        ]
+        collect_txns = [t for t in upi_txns if (t.get("upi_type") or "").upper() == "COLLECT"]
         if not collect_txns:
             return 0.0, ""
 

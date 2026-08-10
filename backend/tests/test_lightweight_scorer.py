@@ -1,12 +1,13 @@
 """Tests for the lightweight GNN alternative scorer."""
 
 import pytest
+
 from models.gnn.lightweight_scorer import (
-    LightweightScorer,
-    LightweightPrediction,
-    extract_features,
-    _kyc_to_numeric,
     FEATURE_NAMES,
+    LightweightPrediction,
+    LightweightScorer,
+    _kyc_to_numeric,
+    extract_features,
 )
 
 
@@ -71,12 +72,8 @@ class TestHeuristicPredict:
             assert isinstance(p, LightweightPrediction)
 
     def test_heuristic_higher_risk_for_new_accounts(self):
-        young_acc = [
-            {"account_id": "YOUNG", "account_age_days": 2, "kyc_status": "PENDING"}
-        ]
-        old_acc = [
-            {"account_id": "OLD", "account_age_days": 300, "kyc_status": "VERIFIED"}
-        ]
+        young_acc = [{"account_id": "YOUNG", "account_age_days": 2, "kyc_status": "PENDING"}]
+        old_acc = [{"account_id": "OLD", "account_age_days": 300, "kyc_status": "VERIFIED"}]
         txns_y = [
             {
                 "txn_id": "T1",
@@ -104,8 +101,6 @@ class TestHeuristicPredict:
 
 class TestLightweightPrediction:
     def test_frozen(self):
-        pred = LightweightPrediction(
-            account_id="A", mule_probability=0.5, feature_importances=()
-        )
+        pred = LightweightPrediction(account_id="A", mule_probability=0.5, feature_importances=())
         with pytest.raises(AttributeError):
             pred.mule_probability = 0.9

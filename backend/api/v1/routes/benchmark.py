@@ -1,8 +1,5 @@
 """Executable benchmark API for development and controlled evaluation."""
 
-from fastapi import APIRouter, Depends, Request
-from slowapi import Limiter
-
 from api.deps import get_benchmark_service
 from api.v1.schemas.benchmark import (
     AdversarialBenchmarkRequest,
@@ -14,7 +11,9 @@ from benchmark.service import BenchmarkBusyError, BenchmarkService
 from core.config import get_settings
 from core.exceptions import ConflictError, ValidationError
 from core.response import success_response
+from fastapi import APIRouter, Depends, Request
 from middleware.auth import require_role
+from slowapi import Limiter
 
 BENCHMARK_ROLES = ("ADMIN", "SUPERVISOR")
 READ_ROLES = ("ADMIN", "SUPERVISOR", "INVESTIGATOR", "AUDITOR")
@@ -67,11 +66,7 @@ def register_benchmark_routes(router: APIRouter, limiter: Limiter) -> None:
                     "comparison",
                     "full_evaluation",
                 ],
-                "restriction": (
-                    None
-                    if enabled
-                    else "Synthetic execution is disabled in production."
-                ),
+                "restriction": (None if enabled else "Synthetic execution is disabled in production."),
             }
         )
 
@@ -110,9 +105,7 @@ def register_benchmark_routes(router: APIRouter, limiter: Limiter) -> None:
         user: dict = Depends(require_role(*BENCHMARK_ROLES)),
         service: BenchmarkService = Depends(get_benchmark_service),
     ):
-        return success_response(
-            _execute(service, "cross_validation", body.model_dump())
-        )
+        return success_response(_execute(service, "cross_validation", body.model_dump()))
 
     @router.post("/comparison")
     @limiter.limit("1/minute")

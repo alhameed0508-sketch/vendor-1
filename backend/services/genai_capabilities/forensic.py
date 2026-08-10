@@ -9,7 +9,8 @@ from typing import Dict, List, Optional
 
 from genai.base import LLMMessage, LLMProvider
 
-from .models import ForensicAnalysis, mask_account_id as _mask
+from .models import ForensicAnalysis
+from .models import mask_account_id as _mask
 from .prompts import SYSTEM_PROMPT_FORENSIC
 
 logger = logging.getLogger(__name__)
@@ -178,9 +179,7 @@ def _parse_forensic_response(alert_id: str, response) -> ForensicAnalysis:
 
     # Store final section
     if current_section:
-        _store_section(
-            current_section, current_lines, sections, key_findings, recommended_actions
-        )
+        _store_section(current_section, current_lines, sections, key_findings, recommended_actions)
 
     # Fallback: if parsing got nothing, use full text as narrative
     if not any(sections.values()):

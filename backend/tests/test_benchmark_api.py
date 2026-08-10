@@ -3,11 +3,10 @@
 from dataclasses import dataclass
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-
 from api.deps import get_benchmark_service
 from core.config import get_settings
 from core.exceptions import ConflictError
+from httpx import ASGITransport, AsyncClient
 
 
 @dataclass

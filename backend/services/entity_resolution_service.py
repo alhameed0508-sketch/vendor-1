@@ -90,8 +90,7 @@ class EntityResolutionService:
         matches = [
             result
             for candidate in self._repository.find_candidates(profile)
-            if (result := self._compare(profile, candidate))["match_score"]
-            >= self.MATCH_THRESHOLD
+            if (result := self._compare(profile, candidate))["match_score"] >= self.MATCH_THRESHOLD
         ]
         matches.sort(key=lambda item: item["match_score"], reverse=True)
         self._repository.upsert_profile(profile)

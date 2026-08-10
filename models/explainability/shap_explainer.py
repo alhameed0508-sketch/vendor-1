@@ -117,8 +117,7 @@ class GlobalImportance:
     def to_dict(self) -> Dict:
         return {
             "feature_rankings": [
-                {"feature": name, "importance": round(score, 6)}
-                for name, score in self.feature_rankings
+                {"feature": name, "importance": round(score, 6)} for name, score in self.feature_rankings
             ],
             "top_features": list(self.top_features),
             "method": self.method,
@@ -141,16 +140,12 @@ class AlertExplanation:
         return {
             "alert_id": self.alert_id,
             "base_score": round(self.base_score, 6),
-            "feature_contributions": {
-                k: round(v, 6) for k, v in self.feature_contributions.items()
-            },
+            "feature_contributions": {k: round(v, 6) for k, v in self.feature_contributions.items()},
             "top_positive_features": [
-                {"feature": n, "contribution": round(v, 6)}
-                for n, v in self.top_positive_features
+                {"feature": n, "contribution": round(v, 6)} for n, v in self.top_positive_features
             ],
             "top_negative_features": [
-                {"feature": n, "contribution": round(v, 6)}
-                for n, v in self.top_negative_features
+                {"feature": n, "contribution": round(v, 6)} for n, v in self.top_negative_features
             ],
             "explanation_text": self.explanation_text,
             "method": self.method,
@@ -183,21 +178,11 @@ def _extract_features(alert_data: Dict) -> np.ndarray:
         else:
             get = lambda k, d=0.0: getattr(node, k, d)  # noqa: E731
 
-        max_vals["smurf_score"] = max(
-            max_vals["smurf_score"], float(get("smurf_score", 0.0))
-        )
-        max_vals["baseline_deviation"] = max(
-            max_vals["baseline_deviation"], float(get("baseline_deviation", 0.0))
-        )
-        max_vals["device_trust_score"] = max(
-            max_vals["device_trust_score"], float(get("device_trust_score", 0.0))
-        )
-        max_vals["semantics_score"] = max(
-            max_vals["semantics_score"], float(get("semantics_score", 0.0))
-        )
-        max_vals["betweenness"] = max(
-            max_vals["betweenness"], float(get("betweenness", 0.0))
-        )
+        max_vals["smurf_score"] = max(max_vals["smurf_score"], float(get("smurf_score", 0.0)))
+        max_vals["baseline_deviation"] = max(max_vals["baseline_deviation"], float(get("baseline_deviation", 0.0)))
+        max_vals["device_trust_score"] = max(max_vals["device_trust_score"], float(get("device_trust_score", 0.0)))
+        max_vals["semantics_score"] = max(max_vals["semantics_score"], float(get("semantics_score", 0.0)))
+        max_vals["betweenness"] = max(max_vals["betweenness"], float(get("betweenness", 0.0)))
         max_vals["pagerank"] = max(max_vals["pagerank"], float(get("pagerank", 0.0)))
 
         age = float(get("account_age_days", 365))
@@ -206,16 +191,10 @@ def _extract_features(alert_data: Dict) -> np.ndarray:
         if max_vals["account_age_days"] == 0.0:
             max_vals["account_age_days"] = normalized_age
         else:
-            max_vals["account_age_days"] = min(
-                max_vals["account_age_days"], normalized_age
-            )
+            max_vals["account_age_days"] = min(max_vals["account_age_days"], normalized_age)
 
     # rule_hit_count: count unique rule hits, normalize to 0-1
-    rule_codes = [
-        rc
-        for rc in reason_codes
-        if rc.startswith("R0") or rc.startswith("R1") or rc.startswith("R2")
-    ]
+    rule_codes = [rc for rc in reason_codes if rc.startswith("R0") or rc.startswith("R1") or rc.startswith("R2")]
     max_vals["rule_hit_count"] = min(len(rule_codes) / 10.0, 1.0)
 
     return np.array([max_vals[f] for f in FEATURE_NAMES], dtype=np.float64)
@@ -227,7 +206,6 @@ def _extract_batch_features(alerts_data: List[Dict]) -> np.ndarray:
     if not rows:
         return np.empty((0, len(FEATURE_NAMES)), dtype=np.float64)
     return np.stack(rows)
-
 
 
 # ---------------------------------------------------------------------------
@@ -386,9 +364,7 @@ class SHAPAlertExplainer:
                 contributions, base_score = self._kernel_shap_explain(features)
                 method = "kernel_shap"
             except Exception as exc:
-                logger.warning(
-                    "Kernel SHAP failed (%s), falling back to permutation", exc
-                )
+                logger.warning("Kernel SHAP failed (%s), falling back to permutation", exc)
                 contributions, base_score = self._permutation_explain(features)
                 method = "permutation"
         else:
@@ -468,9 +444,7 @@ class SHAPAlertExplainer:
                 }
             )
 
-        confidence = sum(
-            abs(v) for v in alert_explanation.feature_contributions.values()
-        )
+        confidence = sum(abs(v) for v in alert_explanation.feature_contributions.values())
         # Normalize confidence to 0-1 range
         confidence_score = min(confidence / 0.5, 1.0)
 
@@ -485,9 +459,7 @@ class SHAPAlertExplainer:
             "audit_trail": {
                 "method_used": alert_explanation.method,
                 "feature_count": len(FEATURE_NAMES),
-                "features_analyzed": list(
-                    alert_explanation.feature_contributions.keys()
-                ),
+                "features_analyzed": list(alert_explanation.feature_contributions.keys()),
                 "positive_contributors": len(alert_explanation.top_positive_features),
                 "negative_contributors": len(alert_explanation.top_negative_features),
                 "framework_compliance": "RBI FREE-AI (August 2025)",
@@ -586,9 +558,7 @@ class SHAPAlertExplainer:
                     # score with coalition minus j
                     x_without_j = x_with.copy()
                     x_without_j[j] = baseline[j]
-                    score_without_j = float(
-                        self._score_fn(x_without_j.reshape(1, -1)).flat[0]
-                    )
+                    score_without_j = float(self._score_fn(x_without_j.reshape(1, -1)).flat[0])
                     contributions[j] += weight * (score_with - score_without_j)
                     counts[j] += weight
 
@@ -646,25 +616,16 @@ class SHAPAlertExplainer:
         score_pct = round(prediction * 100, 1)
         base_pct = round(base_score * 100, 1)
 
-        parts = [
-            f"Alert {alert_id} has a composite risk score of {score_pct}% "
-            f"(baseline expectation: {base_pct}%)."
-        ]
+        parts = [f"Alert {alert_id} has a composite risk score of {score_pct}% (baseline expectation: {base_pct}%)."]
 
         if positives:
             top_pos = positives[:3]
-            drivers = ", ".join(
-                f"{FEATURE_DESCRIPTIONS.get(n, n)} (+{round(v * 100, 1)}pp)"
-                for n, v in top_pos
-            )
+            drivers = ", ".join(f"{FEATURE_DESCRIPTIONS.get(n, n)} (+{round(v * 100, 1)}pp)" for n, v in top_pos)
             parts.append(f"The primary risk drivers are: {drivers}.")
 
         if negatives:
             top_neg = negatives[:2]
-            mitigants = ", ".join(
-                f"{FEATURE_DESCRIPTIONS.get(n, n)} ({round(v * 100, 1)}pp)"
-                for n, v in top_neg
-            )
+            mitigants = ", ".join(f"{FEATURE_DESCRIPTIONS.get(n, n)} ({round(v * 100, 1)}pp)" for n, v in top_neg)
             parts.append(f"Risk-reducing factors: {mitigants}.")
 
         if prediction >= 0.8:

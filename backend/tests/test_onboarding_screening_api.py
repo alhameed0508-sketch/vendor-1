@@ -16,9 +16,7 @@ from api.deps import get_screening_repository
 
 @pytest_asyncio.fixture
 async def client():
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as api_client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as api_client:
         yield api_client
 
 
@@ -52,9 +50,7 @@ async def test_onboarding_assessment_lifecycle(client):
     assert 0 <= assessment["risk_score"] <= 1
     assert assessment["reason_codes"]
 
-    response = await client.get(
-        f"/api/v1/onboarding/assessments/{assessment['assessment_id']}"
-    )
+    response = await client.get(f"/api/v1/onboarding/assessments/{assessment['assessment_id']}")
     assert response.status_code == 200
     assert _data(response)["assessment_id"] == assessment["assessment_id"]
 
@@ -163,12 +159,8 @@ async def test_screening_exact_name_and_identifier_match(client):
 
 @pytest.mark.asyncio
 async def test_batch_limits_are_validated(client):
-    response = await client.post(
-        "/api/v1/onboarding/assess-batch", json={"applications": []}
-    )
+    response = await client.post("/api/v1/onboarding/assess-batch", json={"applications": []})
     assert response.status_code == 422
 
-    response = await client.post(
-        "/api/v1/screening/screen-batch", json={"accounts": []}
-    )
+    response = await client.post("/api/v1/screening/screen-batch", json={"accounts": []})
     assert response.status_code == 422

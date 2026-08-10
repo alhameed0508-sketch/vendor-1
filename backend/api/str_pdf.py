@@ -6,6 +6,7 @@ Uses fpdf2 for lightweight server-side PDF creation.
 """
 
 from __future__ import annotations
+
 from datetime import datetime, timezone
 from typing import Dict
 
@@ -177,12 +178,8 @@ def generate_str_pdf(alert: Dict, str_record: Dict) -> bytes:
     if classification:
         _section_header(pdf, "7. Mule Classification")
         _kv_row(pdf, "Type", classification.get("mule_type", "N/A"))
-        _kv_row(
-            pdf, "Confidence", f"{classification.get('type_confidence', 0) * 100:.0f}%"
-        )
-        _kv_row(
-            pdf, "Sophistication", classification.get("sophistication_level", "N/A")
-        )
+        _kv_row(pdf, "Confidence", f"{classification.get('type_confidence', 0) * 100:.0f}%")
+        _kv_row(pdf, "Sophistication", classification.get("sophistication_level", "N/A"))
         pdf.ln(4)
 
     # ── Compliance footer ────────────────────────────────────────────────
@@ -212,11 +209,7 @@ def _section_header(pdf: FPDF, title: str):
 
 def _safe(text: str) -> str:
     """Replace non-Latin1 characters for fpdf Helvetica compatibility."""
-    return (
-        text.replace("\u20b9", "INR ")
-        .encode("latin-1", errors="replace")
-        .decode("latin-1")
-    )
+    return text.replace("\u20b9", "INR ").encode("latin-1", errors="replace").decode("latin-1")
 
 
 def _kv_row(pdf: FPDF, key: str, value: str):

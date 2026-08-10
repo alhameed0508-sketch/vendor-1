@@ -19,12 +19,14 @@ Directed edges & edge features (v2):
 """
 
 from __future__ import annotations
+
 import importlib.util
 import os
-from datetime import datetime
-import numpy as np
-from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 
 # Fast check: skip torch import entirely if the package isn't installed
 # (avoids hangs from broken/partial installs on some systems)
@@ -37,8 +39,8 @@ import torch.nn.functional as F
 
 # Optional torch_geometric import (graceful fallback for environments without it)
 try:
-    from torch_geometric.nn import SAGEConv
     from torch_geometric.data import Data
+    from torch_geometric.nn import SAGEConv
 
     HAS_TORCH_GEOMETRIC = True
 except ImportError:
@@ -89,9 +91,7 @@ class FocalLoss(nn.Module):
         if not 0.0 < alpha < 1.0:
             raise ValueError(f"alpha must be in (0, 1), got {alpha}")
         if reduction not in ("mean", "sum", "none"):
-            raise ValueError(
-                f"reduction must be 'mean', 'sum', or 'none', got '{reduction}'"
-            )
+            raise ValueError(f"reduction must be 'mean', 'sum', or 'none', got '{reduction}'")
         self.gamma = gamma
         self.alpha = alpha
         self.reduction = reduction
@@ -179,9 +179,7 @@ class MuleCatchGNN(nn.Module):
     def __init__(self, in_channels: int = 8, hidden: int = 64, out_channels: int = 2):
         super().__init__()
         if not HAS_TORCH_GEOMETRIC:
-            raise RuntimeError(
-                "torch_geometric required for GNN. Using fallback scorer."
-            )
+            raise RuntimeError("torch_geometric required for GNN. Using fallback scorer.")
 
         self.conv1 = SAGEConv(in_channels, hidden)
         self.conv2 = SAGEConv(hidden, hidden)
@@ -385,10 +383,7 @@ def build_graph_data(
         else:
             norm_timestamps = [0.0] * len(raw_timestamps)
 
-        edge_features = [
-            [na, nt, pt]
-            for na, nt, pt in zip(norm_amounts, norm_timestamps, raw_payment_types)
-        ]
+        edge_features = [[na, nt, pt] for na, nt, pt in zip(norm_amounts, norm_timestamps, raw_payment_types)]
         edge_attr = torch.tensor(edge_features, dtype=torch.float)
 
     # ── Labels (for supervised training) ─────────────────────────────────────
@@ -624,9 +619,7 @@ class GNNScorer:
             )
         return results
 
-    def _heuristic_predict(
-        self, accounts: List[Dict], smurf_scores: Dict
-    ) -> List[GNNPrediction]:
+    def _heuristic_predict(self, accounts: List[Dict], smurf_scores: Dict) -> List[GNNPrediction]:
         """Simple heuristic fallback when GNN is unavailable"""
         results = []
         for acc in accounts:
@@ -665,9 +658,7 @@ if __name__ == "__main__":
     smurf_scores = score_transaction_batch(dataset["transactions"])
 
     scorer = GNNScorer()
-    losses = scorer.train(
-        dataset["accounts"], dataset["transactions"], smurf_scores, epochs=30
-    )
+    losses = scorer.train(dataset["accounts"], dataset["transactions"], smurf_scores, epochs=30)
     preds = scorer.predict(dataset["accounts"], dataset["transactions"], smurf_scores)
     flagged = [p for p in preds if p.is_flagged]
     print(f"GNN flagged {len(flagged)}/{len(preds)} accounts")

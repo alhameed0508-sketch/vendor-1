@@ -93,14 +93,10 @@ class DeviceProfiler:
         device_count = len(unique_devices)
         if device_count >= 4:
             scores.append(0.9)
-            reason_codes.append(
-                f"DP01: {device_count} different devices used on this account"
-            )
+            reason_codes.append(f"DP01: {device_count} different devices used on this account")
         elif device_count >= 2:
             scores.append(0.4)
-            reason_codes.append(
-                f"DP01: {device_count} different devices used on this account"
-            )
+            reason_codes.append(f"DP01: {device_count} different devices used on this account")
 
         # DP02: Rapid device switching (multiple in 24h)
         recent_switches = self._count_recent_switches(events, window_hours=24)
@@ -115,26 +111,18 @@ class DeviceProfiler:
         shared_flagged = self._find_shared_flagged(account_id)
         if shared_flagged:
             scores.append(min(1.0, 0.3 * len(shared_flagged)))
-            reason_codes.append(
-                f"DP03: Device shared with {len(shared_flagged)} flagged account(s)"
-            )
+            reason_codes.append(f"DP03: Device shared with {len(shared_flagged)} flagged account(s)")
 
         # DP04: Emulator or rooted device indicators
         emulator_detected = any(
-            self._is_emulator(dev_id)
-            or bool(
-                self._device_risk_indicators.get(dev_id, set()) & {"emulator", "rooted"}
-            )
+            self._is_emulator(dev_id) or bool(self._device_risk_indicators.get(dev_id, set()) & {"emulator", "rooted"})
             for dev_id in unique_devices
         )
         if emulator_detected:
             scores.append(0.7)
             reason_codes.append("DP04: Emulator or rooted device detected")
 
-        bot_detected = any(
-            "bot" in self._device_risk_indicators.get(dev_id, set())
-            for dev_id in unique_devices
-        )
+        bot_detected = any("bot" in self._device_risk_indicators.get(dev_id, set()) for dev_id in unique_devices)
         if bot_detected:
             scores.append(0.75)
             reason_codes.append("DP05: Automated browser or bot signal detected")
@@ -168,16 +156,12 @@ class DeviceProfiler:
         if len(recent) < 2:
             return 0
         recent.sort(key=lambda x: x[1])
-        switches = sum(
-            1 for i in range(1, len(recent)) if recent[i][0] != recent[i - 1][0]
-        )
+        switches = sum(1 for i in range(1, len(recent)) if recent[i][0] != recent[i - 1][0])
         return switches
 
     def _find_shared_flagged(self, account_id: str) -> List[str]:
         """Find flagged accounts sharing any device with this account."""
-        my_devices = set(
-            dev_id for dev_id, _ in self._account_devices.get(account_id, [])
-        )
+        my_devices = set(dev_id for dev_id, _ in self._account_devices.get(account_id, []))
         shared = set()
         for dev_id in my_devices:
             for other_acc in self._device_accounts.get(dev_id, set()):

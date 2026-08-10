@@ -4,8 +4,8 @@ Screening service — orchestrates watchlist screening against accounts.
 
 import logging
 import uuid
-from typing import List, Dict, Optional
 from datetime import datetime, timezone
+from typing import Dict, List, Optional
 
 from repositories.screening_repository import ScreeningRepository
 
@@ -18,9 +18,7 @@ class ScreeningService:
     def __init__(self, screening_repo: ScreeningRepository):
         self._repo = screening_repo
 
-    def screen_account(
-        self, account_id: str, name: str, identifiers: Optional[List[str]] = None
-    ) -> Dict:
+    def screen_account(self, account_id: str, name: str, identifiers: Optional[List[str]] = None) -> Dict:
         """Screen a single account against watchlist."""
         matches = self._repo.search_by_name(name, fuzzy=True)
 
@@ -28,10 +26,7 @@ class ScreeningService:
             for identifier in identifiers:
                 id_matches = self._repo.search_by_identifier(identifier)
                 for m in id_matches:
-                    if not any(
-                        existing.get("entry_id") == m.get("entry_id")
-                        for existing in matches
-                    ):
+                    if not any(existing.get("entry_id") == m.get("entry_id") for existing in matches):
                         matches.append(m)
 
         result = {
@@ -75,18 +70,10 @@ class ScreeningService:
             entry = {
                 "entry_id": row.get("entry_id", f"CSV-{uuid.uuid4().hex[:8].upper()}"),
                 "name": row.get("name", ""),
-                "aliases": [
-                    a.strip() for a in row.get("aliases", "").split(";") if a.strip()
-                ],
-                "identifiers": [
-                    i.strip()
-                    for i in row.get("identifiers", "").split(";")
-                    if i.strip()
-                ],
+                "aliases": [a.strip() for a in row.get("aliases", "").split(";") if a.strip()],
+                "identifiers": [i.strip() for i in row.get("identifiers", "").split(";") if i.strip()],
                 "entity_type": row.get("entity_type", "INDIVIDUAL"),
-                "countries": [
-                    c.strip() for c in row.get("countries", "").split(";") if c.strip()
-                ],
+                "countries": [c.strip() for c in row.get("countries", "").split(";") if c.strip()],
                 "risk_category": row.get("risk_category", "SANCTIONS"),
             }
             entries.append(entry)

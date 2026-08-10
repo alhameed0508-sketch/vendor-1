@@ -5,22 +5,21 @@ LLM-powered forensic analysis, investigation chat, and onboarding explanation.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, Field
-from slowapi import Limiter
-
-from core.response import success_response, error_response
-from middleware.auth import get_current_user, require_permission
 from api.deps import (
-    get_genai_service,
     get_alert_service,
     get_detection_service,
+    get_genai_service,
     get_onboarding_service,
 )
-from services.genai_service import GenAIService
+from core.response import error_response, success_response
+from fastapi import APIRouter, Depends, Request
+from middleware.auth import get_current_user, require_permission
+from pydantic import BaseModel, Field
 from services.alert_service import AlertService
 from services.detection_service import DetectionService
+from services.genai_service import GenAIService
 from services.onboarding_service import OnboardingService
+from slowapi import Limiter
 
 
 class ChatRequest(BaseModel):

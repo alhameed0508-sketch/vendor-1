@@ -3,21 +3,21 @@ PostgreSQL connection manager using SQLAlchemy Core.
 Provides engine creation, table metadata, and schema bootstrap.
 """
 
-import logging
 import hashlib
 import json
+import logging
 from functools import lru_cache
 
 from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    Index,
+    Integer,
     MetaData,
     Table,
-    Column,
-    Integer,
-    Float,
     Text,
-    Boolean,
-    DateTime,
-    Index,
     create_engine,
     text,
 )
@@ -150,9 +150,7 @@ kpi_snapshots = Table(
     Column("false_positives_avoided", Integer, nullable=False, server_default="0"),
     Column("hours_saved", Float, nullable=False, server_default="0"),
     Column("fraud_prevented_inr", Float, nullable=False, server_default="0"),
-    Column(
-        "investigation_time_reduction_pct", Integer, nullable=False, server_default="75"
-    ),
+    Column("investigation_time_reduction_pct", Integer, nullable=False, server_default="75"),
     Column("strs_filed", Integer, nullable=False, server_default="0"),
     Column("snapshot_at", DateTime(timezone=True)),
 )
@@ -224,18 +222,8 @@ def ensure_tables(engine: Engine) -> None:
         conn.execute(text("SELECT pg_advisory_xact_lock(129743750)"))
         metadata.create_all(conn)
         # create_all does not add columns to an existing installation.
-        conn.execute(
-            text(
-                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS "
-                "previous_hash TEXT NOT NULL DEFAULT ''"
-            )
-        )
-        conn.execute(
-            text(
-                "ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS "
-                "entry_hash TEXT NOT NULL DEFAULT ''"
-            )
-        )
+        conn.execute(text("ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS previous_hash TEXT NOT NULL DEFAULT ''"))
+        conn.execute(text("ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS entry_hash TEXT NOT NULL DEFAULT ''"))
         conn.execute(
             text(
                 "ALTER TABLE onboarding_assessments ADD COLUMN IF NOT EXISTS "
@@ -266,9 +254,7 @@ def _backfill_legacy_audit_chain(conn) -> None:
     """
     conn.execute(text("SELECT pg_advisory_xact_lock(129743751)"))
     rows = conn.execute(
-        audit_logs.select().order_by(
-            audit_logs.c.timestamp.asc(), audit_logs.c.log_id.asc()
-        )
+        audit_logs.select().order_by(audit_logs.c.timestamp.asc(), audit_logs.c.log_id.asc())
     ).fetchall()
     if not rows:
         return
@@ -277,10 +263,7 @@ def _backfill_legacy_audit_chain(conn) -> None:
     if all(hashed):
         return
     if any(hashed):
-        raise RuntimeError(
-            "Audit chain contains mixed hashed and legacy rows; "
-            "manual integrity review is required."
-        )
+        raise RuntimeError("Audit chain contains mixed hashed and legacy rows; manual integrity review is required.")
 
     previous_hash = ""
     for row in rows:

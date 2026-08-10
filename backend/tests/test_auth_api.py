@@ -15,29 +15,28 @@ Test Coverage:
 - Rate limiting enforcement
 """
 
-import sys
 import os
+import sys
 import time
 from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import jwt
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-import jwt
-
 from core.config import Settings, get_settings
+from httpx import ASGITransport, AsyncClient
+
 from infra.security.auth import (
+    DEMO_USERS,
+    JWT_ALGO,
+    JWT_SECRET,
     create_access_token,
     create_refresh_token,
     decode_token,
-    JWT_SECRET,
-    JWT_ALGO,
-    DEMO_USERS,
     hash_password,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -289,9 +288,7 @@ async def test_refresh_expired_token(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_refresh_using_access_token(
-    demo_client: AsyncClient, valid_access_token: str
-):
+async def test_refresh_using_access_token(demo_client: AsyncClient, valid_access_token: str):
     """Access token should not work for refresh endpoint."""
     response = await demo_client.post(
         "/api/v1/auth/refresh",
@@ -377,9 +374,7 @@ async def test_logout_then_refresh_fails(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_valid_token(
-    demo_client: AsyncClient, valid_access_token: str
-):
+async def test_get_me_with_valid_token(demo_client: AsyncClient, valid_access_token: str):
     """Valid token should return user info."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -423,9 +418,7 @@ async def test_get_me_with_invalid_token(demo_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_expired_token(
-    demo_client: AsyncClient, expired_access_token: str
-):
+async def test_get_me_with_expired_token(demo_client: AsyncClient, expired_access_token: str):
     """Expired token should return 401."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -437,9 +430,7 @@ async def test_get_me_with_expired_token(
 
 
 @pytest.mark.asyncio
-async def test_get_me_with_refresh_token(
-    demo_client: AsyncClient, valid_refresh_token: str
-):
+async def test_get_me_with_refresh_token(demo_client: AsyncClient, valid_refresh_token: str):
     """Refresh token should not work for API access."""
     response = await demo_client.get(
         "/api/v1/auth/me",
@@ -455,9 +446,7 @@ async def test_get_me_with_refresh_token(
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_with_valid_permission(
-    demo_client: AsyncClient, valid_access_token: str
-):
+async def test_protected_endpoint_with_valid_permission(demo_client: AsyncClient, valid_access_token: str):
     """User with correct permission should access protected endpoint."""
     # INVESTIGATOR has "alerts:read" permission
     response = await demo_client.get(
@@ -471,9 +460,7 @@ async def test_protected_endpoint_with_valid_permission(
 
 
 @pytest.mark.asyncio
-async def test_protected_endpoint_without_permission(
-    demo_client: AsyncClient, readonly_token: str
-):
+async def test_protected_endpoint_without_permission(demo_client: AsyncClient, readonly_token: str):
     """User without required permission should get 403."""
     # READONLY doesn't have "config:write" permission
     # Try to access an admin-only endpoint (if available)
@@ -502,9 +489,7 @@ async def test_protected_endpoint_without_token_demo_mode(demo_client: AsyncClie
 
 
 @pytest.mark.asyncio
-async def test_admin_only_endpoint_with_admin_token(
-    demo_client: AsyncClient, admin_token: str
-):
+async def test_admin_only_endpoint_with_admin_token(demo_client: AsyncClient, admin_token: str):
     """Admin token should access admin-only endpoints."""
     # Test metrics endpoint which requires ADMIN role
     response = await demo_client.get(
@@ -517,9 +502,7 @@ async def test_admin_only_endpoint_with_admin_token(
 
 
 @pytest.mark.asyncio
-async def test_admin_only_endpoint_with_non_admin_token(
-    demo_client: AsyncClient, valid_access_token: str
-):
+async def test_admin_only_endpoint_with_non_admin_token(demo_client: AsyncClient, valid_access_token: str):
     """Non-admin token should be denied from admin endpoints."""
     # Test metrics endpoint which requires ADMIN role
     response = await demo_client.get(
@@ -562,9 +545,7 @@ async def test_token_expiry_structure():
 
 
 @pytest.mark.asyncio
-async def test_expired_token_rejected(
-    demo_client: AsyncClient, expired_access_token: str
-):
+async def test_expired_token_rejected(demo_client: AsyncClient, expired_access_token: str):
     """Expired access token should be rejected."""
     response = await demo_client.get(
         "/api/v1/auth/me",

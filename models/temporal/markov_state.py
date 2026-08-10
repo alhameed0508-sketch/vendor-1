@@ -28,7 +28,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Dict, List, Optional, Sequence, Tuple
 
-
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -102,9 +101,7 @@ class MarkovStateResult:
     current_state: str
     state_history: Tuple[str, ...]
     transition_score: float  # 0-1 composite risk score
-    mule_lifecycle_probability: (
-        float  # 0-1 how closely transitions match canonical lifecycle
-    )
+    mule_lifecycle_probability: float  # 0-1 how closely transitions match canonical lifecycle
     reason_codes: Tuple[str, ...]
 
 
@@ -301,22 +298,13 @@ class MarkovStateScorer:
         p_sweep_given_fwd = matrix.get_probability("FORWARDING", "SWEEP")
 
         if p_recv_given_dormant >= _ACTIVATION_THRESHOLD:
-            codes.append(
-                f"MK01: Dormant-to-receiving transition detected "
-                f"(P={p_recv_given_dormant:.2f})"
-            )
+            codes.append(f"MK01: Dormant-to-receiving transition detected (P={p_recv_given_dormant:.2f})")
 
         if p_fwd_given_recv >= _MULE_BEHAVIOR_THRESHOLD:
-            codes.append(
-                f"MK02: Receiving-to-forwarding pattern — mule activation "
-                f"(P={p_fwd_given_recv:.2f})"
-            )
+            codes.append(f"MK02: Receiving-to-forwarding pattern — mule activation (P={p_fwd_given_recv:.2f})")
 
         if p_sweep_given_fwd >= _FUND_CLEARANCE_THRESHOLD:
-            codes.append(
-                f"MK03: Sweep behavior after forwarding phase "
-                f"(P={p_sweep_given_fwd:.2f})"
-            )
+            codes.append(f"MK03: Sweep behavior after forwarding phase (P={p_sweep_given_fwd:.2f})")
 
         # MK04: Rapid lifecycle progression -- DORMANT->SWEEP in < _RAPID_LIFECYCLE_WEEKS
         if len(state_history) >= 2:
@@ -331,18 +319,12 @@ class MarkovStateScorer:
             if first_dormant_idx is not None and first_sweep_idx is not None:
                 weeks_elapsed = first_sweep_idx - first_dormant_idx
                 if weeks_elapsed < _RAPID_LIFECYCLE_WEEKS:
-                    codes.append(
-                        f"MK04: Rapid lifecycle progression — DORMANT to SWEEP "
-                        f"in {weeks_elapsed} week(s)"
-                    )
+                    codes.append(f"MK04: Rapid lifecycle progression — DORMANT to SWEEP in {weeks_elapsed} week(s)")
 
         # MK05: Cyclic mule pattern -- repeated DORMANT->SWEEP cycles
         cycle_count = _count_dormant_sweep_cycles(state_history)
         if cycle_count >= _MIN_CYCLE_COUNT:
-            codes.append(
-                f"MK05: Cyclic mule pattern — {cycle_count} completed "
-                f"DORMANT-to-SWEEP cycles detected"
-            )
+            codes.append(f"MK05: Cyclic mule pattern — {cycle_count} completed DORMANT-to-SWEEP cycles detected")
 
         return tuple(codes)
 
@@ -381,9 +363,7 @@ class MarkovStateScorer:
         """
         all_txns = transactions + in_transactions
         if not all_txns:
-            logger.debug(
-                "No transactions for account %s — returning zero score", account_id
-            )
+            logger.debug("No transactions for account %s — returning zero score", account_id)
             return _zero_result(account_id)
 
         # Determine time range from transaction timestamps

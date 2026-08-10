@@ -4,7 +4,7 @@ Wraps UserDB with business-level operations.
 """
 
 from datetime import datetime, timezone
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from infra.database.user_db import UserDB
 
@@ -52,18 +52,14 @@ class UserRepository:
 
     def record_login_success(self, username: str) -> None:
         self._db.clear_failed_logins(username)
-        self._db.update_user(
-            username, last_login=datetime.now(timezone.utc).isoformat()
-        )
+        self._db.update_user(username, last_login=datetime.now(timezone.utc).isoformat())
 
     def record_failed_login(self, username: str, ip_address: str = "unknown") -> None:
         self._db.record_failed_login(username, ip_address)
 
     def check_account_lockout(self, username: str) -> bool:
         """Returns True if the account is currently locked out."""
-        count = self._db.get_failed_login_count(
-            username, self._lockout_duration_minutes
-        )
+        count = self._db.get_failed_login_count(username, self._lockout_duration_minutes)
         return count >= self._lockout_max_attempts
 
     def clear_failed_logins(self, username: str) -> None:

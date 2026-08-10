@@ -4,13 +4,14 @@ Follows the ScreeningService pattern.
 """
 
 import logging
-import sys
 import os
+import sys
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from repositories.onboarding_repository import OnboardingRepository
+
 from models.onboarding.risk_scorer import assess_onboarding_risk
 
 logger = logging.getLogger(__name__)
@@ -31,9 +32,7 @@ class OnboardingService:
 
     def _make_graph_checker(self):
         """Create a graph checker callable if persistence layer is available."""
-        if self._persistence is not None and hasattr(
-            self._persistence, "find_flagged_neighbors"
-        ):
+        if self._persistence is not None and hasattr(self._persistence, "find_flagged_neighbors"):
             return self._persistence.find_flagged_neighbors
         return None
 
@@ -80,9 +79,7 @@ class OnboardingService:
         for app in applications:
             result = self.assess_account(app)
             results.append(result)
-        logger.info(
-            "Batch onboarding assessment: %d applications processed", len(results)
-        )
+        logger.info("Batch onboarding assessment: %d applications processed", len(results))
         return results
 
     def get_assessment(self, assessment_id: str) -> Optional[Dict]:
@@ -96,9 +93,7 @@ class OnboardingService:
         risk_level: Optional[str] = None,
     ) -> List[Dict]:
         """List assessments with optional filtering."""
-        return self._repo.get_assessments(
-            limit=limit, offset=offset, risk_level=risk_level
-        )
+        return self._repo.get_assessments(limit=limit, offset=offset, risk_level=risk_level)
 
     def get_stats(self) -> Dict:
         """Return aggregate onboarding statistics."""

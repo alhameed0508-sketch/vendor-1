@@ -11,7 +11,8 @@ from typing import Dict, Optional
 
 from genai.base import LLMMessage, LLMProvider
 
-from .models import TriageResult, mask_account_id as _mask
+from .models import TriageResult
+from .models import mask_account_id as _mask
 from .prompts import SYSTEM_PROMPT_TRIAGE
 
 logger = logging.getLogger(__name__)

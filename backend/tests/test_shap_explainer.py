@@ -20,20 +20,19 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-import pytest
 import numpy as np
+import pytest
 
 from models.explainability.shap_explainer import (
-    SHAPAlertExplainer,
+    FEATURE_DESCRIPTIONS,
+    FEATURE_NAMES,
     AlertExplanation,
     GlobalImportance,
-    FEATURE_NAMES,
-    FEATURE_DESCRIPTIONS,
-    _extract_features,
+    SHAPAlertExplainer,
     _extract_batch_features,
+    _extract_features,
     _surrogate_score,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -450,8 +449,7 @@ class TestExplanationText:
         result = explainer.explain_alert(sample_alert)
         # Should mention at least one feature description
         has_feature_desc = any(
-            desc.lower() in result.explanation_text.lower()
-            for desc in FEATURE_DESCRIPTIONS.values()
+            desc.lower() in result.explanation_text.lower() for desc in FEATURE_DESCRIPTIONS.values()
         )
         assert has_feature_desc, "Explanation should mention feature descriptions"
 
@@ -459,9 +457,7 @@ class TestExplanationText:
         result = explainer.explain_alert(sample_alert)
         text = result.explanation_text.lower()
         # High-risk alert should have urgent language
-        assert any(
-            word in text for word in ["immediate", "priority", "high-confidence"]
-        )
+        assert any(word in text for word in ["immediate", "priority", "high-confidence"])
 
 
 # ---------------------------------------------------------------------------
@@ -614,14 +610,8 @@ class TestEdgeCases:
         assert result.alert_id == "ALT_SINGLE"
         # smurf_score should be the dominant contributor
         smurf_contrib = result.feature_contributions["smurf_score"]
-        other_max = max(
-            abs(v)
-            for k, v in result.feature_contributions.items()
-            if k != "smurf_score"
-        )
-        assert abs(smurf_contrib) >= other_max, (
-            "With only smurf_score non-zero, it should be the dominant contributor"
-        )
+        other_max = max(abs(v) for k, v in result.feature_contributions.items() if k != "smurf_score")
+        assert abs(smurf_contrib) >= other_max, "With only smurf_score non-zero, it should be the dominant contributor"
 
     def test_missing_nodes(self, explainer):
         result = explainer.explain_alert({"alert_id": "EMPTY", "reason_codes": []})
@@ -645,9 +635,7 @@ class TestEdgeCases:
             ],
         }
         result = explainer.explain_alert(alert)
-        assert result.feature_contributions["rule_hit_count"] == pytest.approx(
-            0.0, abs=0.01
-        )
+        assert result.feature_contributions["rule_hit_count"] == pytest.approx(0.0, abs=0.01)
 
     def test_large_batch_global_importance(self, explainer):
         """Test with a larger batch to ensure no performance/correctness issues."""

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from sqlalchemy.engine import Engine
+
 from backend.infra.database.postgres import escalations
 
 logger = logging.getLogger(__name__)
@@ -47,9 +48,7 @@ class PgEscalationRepository:
     def find_by_id(self, escalation_id: str) -> Optional[Dict]:
         """Find an escalation by ID. Returns a copy."""
         with self._engine.connect() as conn:
-            row = conn.execute(
-                escalations.select().where(escalations.c.escalation_id == escalation_id)
-            ).first()
+            row = conn.execute(escalations.select().where(escalations.c.escalation_id == escalation_id)).first()
         return _row_to_dict(row) if row else None
 
     def find_all(self, status: Optional[str] = None) -> List[Dict]:
@@ -64,16 +63,10 @@ class PgEscalationRepository:
     def update(self, escalation_id: str, **updates) -> Optional[Dict]:
         """Update escalation fields."""
         with self._engine.connect() as conn:
-            row = conn.execute(
-                escalations.select().where(escalations.c.escalation_id == escalation_id)
-            ).first()
+            row = conn.execute(escalations.select().where(escalations.c.escalation_id == escalation_id)).first()
             if row is None:
                 return None
 
-            conn.execute(
-                escalations.update()
-                .where(escalations.c.escalation_id == escalation_id)
-                .values(**updates)
-            )
+            conn.execute(escalations.update().where(escalations.c.escalation_id == escalation_id).values(**updates))
             conn.commit()
         return self.find_by_id(escalation_id)

@@ -157,10 +157,7 @@ def _template_next_steps(case_data: Dict) -> ChatResponse:
 
     # Device-based suggestions
     if shared_devices:
-        steps.append(
-            f"Investigate {len(shared_devices)} shared device(s) for "
-            "coordinated access patterns"
-        )
+        steps.append(f"Investigate {len(shared_devices)} shared device(s) for coordinated access patterns")
 
     # Transaction review
     steps.append("Review transaction timeline for structuring patterns")
@@ -179,8 +176,7 @@ def _template_next_steps(case_data: Dict) -> ChatResponse:
             break
 
     return ChatResponse(
-        message="Suggested next steps:\n"
-        + "\n".join(f"  {i + 1}. {s}" for i, s in enumerate(steps)),
+        message="Suggested next steps:\n" + "\n".join(f"  {i + 1}. {s}" for i, s in enumerate(steps)),
         provider="template_fallback",
         model="template",
         latency_ms=0.0,
@@ -246,9 +242,7 @@ def _template_summary(case_data: Dict) -> ChatResponse:
         f"INR {total_amount:,.0f} in suspicious transactions. "
     )
     if device_count > 0:
-        summary += (
-            f"{device_count} shared device(s) indicate potential coordinated activity. "
-        )
+        summary += f"{device_count} shared device(s) indicate potential coordinated activity. "
     if reason_codes:
         summary += f"Key indicators: {'; '.join(reason_codes[:3])}. "
 

@@ -14,13 +14,13 @@ import pytest
 import torch
 
 from models.gnn.gnn_model import (
-    MuleCatchGNN,
-    build_graph_data,
-    GNNScorer,
-    GNNPrediction,
-    _parse_timestamp,
     _PAYMENT_TYPE_ENCODING,
     HAS_TORCH_GEOMETRIC,
+    GNNPrediction,
+    GNNScorer,
+    MuleCatchGNN,
+    _parse_timestamp,
+    build_graph_data,
 )
 
 pytestmark = pytest.mark.skipif(
@@ -344,9 +344,7 @@ class TestModelTrainingWithEdgeFeatures:
     """Verify the model trains and converges with edge features."""
 
     def test_train_with_edge_features(self):
-        accounts = _make_accounts(
-            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
-        )
+        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
         txns = _make_transactions(accounts, payment_type="UPI")
         data, ids = build_graph_data(accounts, txns, directed=True)
 
@@ -511,12 +509,8 @@ class TestEdgeFeaturesAffectPredictions:
         model.eval()
 
         with torch.no_grad():
-            logits_small, _ = model(
-                data_small.x, data_small.edge_index, data_small.edge_attr
-            )
-            logits_large, _ = model(
-                data_large.x, data_large.edge_index, data_large.edge_attr
-            )
+            logits_small, _ = model(data_small.x, data_small.edge_index, data_small.edge_attr)
+            logits_large, _ = model(data_large.x, data_large.edge_index, data_large.edge_attr)
 
         assert not torch.allclose(logits_small, logits_large, atol=1e-6)
 
@@ -686,9 +680,7 @@ class TestGNNScorerIntegration:
     """End-to-end tests through the GNNScorer wrapper."""
 
     def test_scorer_train_with_edge_features(self):
-        accounts = _make_accounts(
-            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
-        )
+        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
         txns = _make_transactions(accounts, payment_type="NEFT")
         scorer = GNNScorer(model_path="/tmp/test_gnn_directed.pt")
         losses = scorer.train(accounts, txns, {}, epochs=5)
@@ -706,9 +698,7 @@ class TestGNNScorerIntegration:
             assert p.embedding is not None
 
     def test_scorer_train_and_predict(self):
-        accounts = _make_accounts(
-            6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"]
-        )
+        accounts = _make_accounts(6, roles=["MULE", "MULE", "MULE", "LEGIT", "LEGIT", "LEGIT"])
         txns = _make_transactions(accounts, payment_type="IMPS")
         scorer = GNNScorer(model_path="/tmp/test_gnn_directed_tap.pt")
         preds, metrics = scorer.train_and_predict(

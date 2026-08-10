@@ -75,9 +75,7 @@ class RollingPropensityScorer:
     ) -> None:
         """Record a transaction for rolling score computation."""
         ts = timestamp or time.time()
-        self._txn_history.setdefault(account_id, []).append(
-            (ts, amount, recipient, is_incoming)
-        )
+        self._txn_history.setdefault(account_id, []).append((ts, amount, recipient, is_incoming))
 
     def update_score(
         self,
@@ -98,9 +96,7 @@ class RollingPropensityScorer:
         window_scores: List[Tuple[str, float]] = []
         for window_name, window_seconds in WINDOWS:
             cutoff = now - window_seconds
-            window_txns = [
-                (ts, amt, recip, inc) for ts, amt, recip, inc in history if ts >= cutoff
-            ]
+            window_txns = [(ts, amt, recip, inc) for ts, amt, recip, inc in history if ts >= cutoff]
             score = self._score_window(window_txns)
             window_scores.append((window_name, round(score, 4)))
 

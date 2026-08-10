@@ -2,8 +2,8 @@
 Shared test fixtures for MuleCatch test suite.
 """
 
-import sys
 import os
+import sys
 import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -18,10 +18,10 @@ os.environ["NEO4J_URI"] = "bolt://127.0.0.1:7699"
 os.environ["JWT_SECRET"] = "test-only-jwt-secret-with-at-least-32-bytes"
 
 import pytest
-from data.synthetic.generator import build_full_dataset
 from detection.pipeline import DetectionPipeline
 from genai.base import LLMProvider, LLMResponse, TemplateProvider
 
+from data.synthetic.generator import build_full_dataset
 
 # ── Test isolation for feedback store ────────────────────────────────────────
 # Redirect feedback writes to a temp file so tests never pollute the
