@@ -41,29 +41,29 @@ def compute_behavioral_signals(account_features: Dict) -> List[str]:
     signals = []
 
     # Signal 1: High pass-through ratio
-    passthrough_ratio = account_features.get('in_out_ratio', 0)
+    passthrough_ratio = account_features.get("in_out_ratio", 0)
     if passthrough_ratio > settings.passthrough_threshold_high:
-        signals.append('high_passthrough')
+        signals.append("high_passthrough")
 
     # Signal 2: Round amounts
-    round_amt_share = account_features.get('round_amt_share', 0)
+    round_amt_share = account_features.get("round_amt_share", 0)
     if round_amt_share > settings.round_amount_threshold:
-        signals.append('round_amounts')
+        signals.append("round_amounts")
 
     # Signal 3: Velocity spike
-    txn_velocity = account_features.get('txn_velocity', 0)
+    txn_velocity = account_features.get("txn_velocity", 0)
     if txn_velocity > settings.velocity_spike_threshold:
-        signals.append('velocity_spike')
+        signals.append("velocity_spike")
 
     # Signal 4: Negative balance pattern
-    neg_balance_share = account_features.get('neg_balance_share', 0)
+    neg_balance_share = account_features.get("neg_balance_share", 0)
     if neg_balance_share > settings.negative_balance_threshold:
-        signals.append('negative_balance')
+        signals.append("negative_balance")
 
     # Signal 5: High volume (NEW - addresses validation finding)
-    txn_count = account_features.get('txn_count', 0)
+    txn_count = account_features.get("txn_count", 0)
     if txn_count > settings.high_volume_txn_threshold:
-        signals.append('high_volume')
+        signals.append("high_volume")
 
     return signals
 
@@ -81,12 +81,12 @@ def compute_anomaly_signals(account_features: Dict) -> List[str]:
     signals = []
 
     # DBSCAN outlier detection (primary)
-    if account_features.get('dbscan_outlier', False):
-        signals.append('dbscan_outlier')
+    if account_features.get("dbscan_outlier", False):
+        signals.append("dbscan_outlier")
 
     # Isolation Forest anomaly (primary)
-    if account_features.get('iso_anomaly', False):
-        signals.append('iso_forest')
+    if account_features.get("iso_anomaly", False):
+        signals.append("iso_forest")
 
     # K-Means cluster - tracked but not counted toward classification
     # (too many false positives in validation)
@@ -97,10 +97,7 @@ def compute_anomaly_signals(account_features: Dict) -> List[str]:
     return signals
 
 
-def classify_risk_level(
-    behavioral_signals: List[str],
-    anomaly_signals: List[str]
-) -> Tuple[str, str, str]:
+def classify_risk_level(behavioral_signals: List[str], anomaly_signals: List[str]) -> Tuple[str, str, str]:
     """
     Classify risk level using improved decision boundary.
 
@@ -120,12 +117,10 @@ def classify_risk_level(
 
     # HIGH RISK classification (stricter than v1.0)
     high_risk_path_a = (
-        anomaly_count >= settings.risk_high_anomaly_min and
-        behavioral_count >= settings.risk_high_behavioral_min
+        anomaly_count >= settings.risk_high_anomaly_min and behavioral_count >= settings.risk_high_behavioral_min
     )
     high_risk_path_b = (
-        anomaly_count >= settings.risk_high_anomaly_alt and
-        behavioral_count >= settings.risk_high_behavioral_alt
+        anomaly_count >= settings.risk_high_anomaly_alt and behavioral_count >= settings.risk_high_behavioral_alt
     )
 
     if high_risk_path_a or high_risk_path_b:
@@ -148,14 +143,10 @@ def classify_risk_level(
                 f"{anomaly_count} anomaly. Warrants investigation."
             )
         elif medium_risk_behavioral:
-            reason = (
-                f"{behavioral_count} behavioral signals detected but weak anomaly evidence. "
-                "Review recommended."
-            )
+            reason = f"{behavioral_count} behavioral signals detected but weak anomaly evidence. Review recommended."
         else:
             reason = (
-                f"Anomaly detected by {anomaly_count} engine(s) but limited behavioral signals. "
-                "May be false positive."
+                f"Anomaly detected by {anomaly_count} engine(s) but limited behavioral signals. May be false positive."
             )
         return ("MEDIUM RISK", confidence, reason)
 
@@ -190,10 +181,7 @@ def assess_account_risk(account_features: Dict) -> RiskAssessment:
     anomaly_signals = compute_anomaly_signals(account_features)
 
     # Classify risk level
-    risk_level, confidence, reason = classify_risk_level(
-        behavioral_signals,
-        anomaly_signals
-    )
+    risk_level, confidence, reason = classify_risk_level(behavioral_signals, anomaly_signals)
 
     return RiskAssessment(
         risk_level=risk_level,
@@ -202,7 +190,7 @@ def assess_account_risk(account_features: Dict) -> RiskAssessment:
         anomaly_signals=anomaly_signals,
         behavioral_count=len(behavioral_signals),
         anomaly_count=len(anomaly_signals),
-        reason=reason
+        reason=reason,
     )
 
 
@@ -214,14 +202,13 @@ def get_signal_descriptions() -> Dict[str, str]:
     """
     return {
         # Behavioral signals
-        'high_passthrough': 'High pass-through ratio (>90%) - funds received and immediately sent out',
-        'round_amounts': 'High share of round amounts (>70%) - indicates structured transactions',
-        'velocity_spike': 'Transaction velocity spike - unusual burst of activity',
-        'negative_balance': 'Frequent negative balance - overdraft abuse pattern',
-        'high_volume': 'High transaction volume (>500 txns) - possible mule hub account',
-
+        "high_passthrough": "High pass-through ratio (>90%) - funds received and immediately sent out",
+        "round_amounts": "High share of round amounts (>70%) - indicates structured transactions",
+        "velocity_spike": "Transaction velocity spike - unusual burst of activity",
+        "negative_balance": "Frequent negative balance - overdraft abuse pattern",
+        "high_volume": "High transaction volume (>500 txns) - possible mule hub account",
         # Anomaly signals
-        'dbscan_outlier': 'DBSCAN density-based outlier detection',
-        'iso_forest': 'Isolation Forest anomaly detection',
-        'kmeans_high_risk_cluster': 'K-Means clustering assigned to high-risk cluster',
+        "dbscan_outlier": "DBSCAN density-based outlier detection",
+        "iso_forest": "Isolation Forest anomaly detection",
+        "kmeans_high_risk_cluster": "K-Means clustering assigned to high-risk cluster",
     }
