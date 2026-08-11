@@ -16,6 +16,13 @@ build/
 .tmp*/
 .tmp-*
 
+# Test coverage
+*.coverage
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+
 # Node
 node_modules/
 frontend/build/
