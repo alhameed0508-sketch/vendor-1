@@ -11,15 +11,12 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any
-from sklearn.metrics import classification_report, confusion_matrix
-import json
+import pandas as pd  # noqa: E402
+from typing import Any, Dict  # noqa: E402
 
 # Import MuleCatch components
-from core.config import get_settings
-from detection.risk_scorer import assess_account_risk, get_signal_descriptions
+from core.config import get_settings  # noqa: E402
+from detection.risk_scorer import assess_account_risk  # noqa: E402
 
 
 def load_sample_data():
@@ -165,7 +162,7 @@ def print_validation_report(results):
         print(f"   Predicted:     {r['predicted']} ({r['confidence']} confidence)")
         print(f"   Status:        {status}")
         print(f"   Signals:       {r['behavioral_signals']} behavioral, {r['anomaly_signals']} anomaly")
-        print(f"   Details:       ", end='')
+        print("   Details:       ", end='')
         flags = [k for k, v in r['details'].items() if v]
         print(', '.join(flags) if flags else 'none')
 
@@ -283,7 +280,7 @@ def main():
             print_validation_report(results)
 
         # Check for hardcoded values
-        issues = check_hardcoded_values()
+        check_hardcoded_values()
 
         # Generate summary
         generate_summary()

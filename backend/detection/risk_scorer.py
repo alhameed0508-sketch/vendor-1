@@ -12,8 +12,8 @@ Version 2.0 improvements (based on validation findings):
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 from core.config import get_settings
 
