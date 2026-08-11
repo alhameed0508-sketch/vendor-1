@@ -84,6 +84,24 @@ class Settings(BaseSettings):
     smurf_flag_threshold: float = Field(0.55, alias="SMURF_FLAG_THRESHOLD")
     onboarding_risk_threshold: float = Field(0.50, alias="ONBOARDING_RISK_THRESHOLD")
 
+    # Behavioral signal thresholds (v2.0 - externalized from detection logic)
+    passthrough_threshold_high: float = Field(0.90, alias="PASSTHROUGH_THRESHOLD_HIGH")
+    passthrough_threshold_medium: float = Field(0.70, alias="PASSTHROUGH_THRESHOLD_MEDIUM")
+    round_amount_threshold: float = Field(0.70, alias="ROUND_AMOUNT_THRESHOLD")
+    velocity_spike_threshold: float = Field(0.05, alias="VELOCITY_SPIKE_THRESHOLD")
+    negative_balance_threshold: float = Field(0.50, alias="NEGATIVE_BALANCE_THRESHOLD")
+    high_volume_txn_threshold: int = Field(500, alias="HIGH_VOLUME_TXN_THRESHOLD")
+
+    # Risk classification thresholds (v2.0 - tuned for better precision)
+    # HIGH RISK requires stronger evidence than before
+    risk_high_anomaly_min: int = Field(2, alias="RISK_HIGH_ANOMALY_MIN")
+    risk_high_behavioral_min: int = Field(2, alias="RISK_HIGH_BEHAVIORAL_MIN")
+    risk_high_anomaly_alt: int = Field(1, alias="RISK_HIGH_ANOMALY_ALT")
+    risk_high_behavioral_alt: int = Field(3, alias="RISK_HIGH_BEHAVIORAL_ALT")
+    # MEDIUM RISK thresholds
+    risk_medium_behavioral_min: int = Field(3, alias="RISK_MEDIUM_BEHAVIORAL_MIN")
+    risk_medium_anomaly_min: int = Field(1, alias="RISK_MEDIUM_ANOMALY_MIN")
+
     # Active learning / feedback
     feedback_store_path: str = Field("", alias="FEEDBACK_STORE_PATH")
     feedback_fp_raise_bound: float = Field(0.30, alias="FEEDBACK_FP_RAISE_BOUND")
