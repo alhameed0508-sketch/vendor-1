@@ -3,16 +3,17 @@ Validation script for MuleCatch model on sample mule account data.
 Tests prediction accuracy and production-readiness.
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-import pandas as pd  # noqa: E402
 from typing import Any, Dict  # noqa: E402
+
+import pandas as pd  # noqa: E402
 
 # Import MuleCatch components
 from core.config import get_settings  # noqa: E402
