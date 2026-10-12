@@ -1,0 +1,337 @@
+{
+  "fpr_budget": 0.02,
+  "scenarios": {
+    "standard": {
+      "dataset": {
+        "test_seeds": "100-119",
+        "calibration_seeds": "0-4",
+        "generator_params": {
+          "num_clusters": 5,
+          "num_legit_accounts": 150,
+          "num_adversarial": 50
+        },
+        "mean_accounts_per_dataset": 254,
+        "mean_mule_accounts_per_dataset": 61,
+        "mule_prevalence": 0.2402,
+        "mean_transactions_per_dataset": 2095.85
+      },
+      "detectors": {
+        "A0_account_age_heuristic": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.9917808219178083,
+            "fpr_budget": 0.9997260273972602
+          },
+          "test_average_precision": 0.8796,
+          "test_at_max_f1_threshold": {
+            "tp": 1220,
+            "fp": 200,
+            "tn": 3660,
+            "fn": 0,
+            "precision": 0.8592,
+            "recall": 1.0,
+            "fpr": 0.0518,
+            "f1": 0.9242
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 361,
+            "fp": 43,
+            "tn": 3817,
+            "fn": 859,
+            "precision": 0.8936,
+            "recall": 0.2959,
+            "fpr": 0.0111,
+            "f1": 0.4446
+          },
+          "median_latency_seconds": 0.0001,
+          "throughput_txns_per_second": 25716424.2
+        },
+        "A_rules_baseline": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.0,
+            "fpr_budget": 7.0
+          },
+          "test_average_precision": 0.2326,
+          "test_at_max_f1_threshold": {
+            "tp": 1220,
+            "fp": 3860,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.2402,
+            "recall": 1.0,
+            "fpr": 1.0,
+            "f1": 0.3873
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 75,
+            "fp": 35,
+            "tn": 3825,
+            "fn": 1145,
+            "precision": 0.6818,
+            "recall": 0.0615,
+            "fpr": 0.0091,
+            "f1": 0.1128
+          },
+          "median_latency_seconds": 0.6331,
+          "throughput_txns_per_second": 3310.2
+        },
+        "B_graph_temporal": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.6075,
+            "fpr_budget": 0.6075
+          },
+          "test_average_precision": 0.9999,
+          "test_at_max_f1_threshold": {
+            "tp": 1212,
+            "fp": 1,
+            "tn": 3859,
+            "fn": 8,
+            "precision": 0.9992,
+            "recall": 0.9934,
+            "fpr": 0.0003,
+            "f1": 0.9963
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 1212,
+            "fp": 1,
+            "tn": 3859,
+            "fn": 8,
+            "precision": 0.9992,
+            "recall": 0.9934,
+            "fpr": 0.0003,
+            "f1": 0.9963
+          },
+          "median_latency_seconds": 0.0693,
+          "throughput_txns_per_second": 30229.4
+        },
+        "C_mulecatch_pipeline": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.747,
+            "fpr_budget": 0.747
+          },
+          "test_average_precision": 0.9625,
+          "test_at_max_f1_threshold": {
+            "tp": 1148,
+            "fp": 271,
+            "tn": 3589,
+            "fn": 72,
+            "precision": 0.809,
+            "recall": 0.941,
+            "fpr": 0.0702,
+            "f1": 0.87
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 1148,
+            "fp": 271,
+            "tn": 3589,
+            "fn": 72,
+            "precision": 0.809,
+            "recall": 0.941,
+            "fpr": 0.0702,
+            "f1": 0.87
+          },
+          "median_latency_seconds": 1.0238,
+          "throughput_txns_per_second": 2047.2,
+          "test_as_shipped_alerting": {
+            "tp": 1220,
+            "fp": 2650,
+            "tn": 1210,
+            "fn": 0,
+            "precision": 0.3152,
+            "recall": 1.0,
+            "fpr": 0.6865,
+            "f1": 0.4794
+          }
+        }
+      },
+      "investigator_workload": {
+        "recall_target": 0.9,
+        "A_rules_baseline_account_queue": {
+          "datasets_reaching_target": "17/20",
+          "median_units_opened": 230.5,
+          "median_legit_accounts_exposed": 175.5
+        },
+        "B_graph_temporal_account_queue": {
+          "datasets_reaching_target": "20/20",
+          "median_units_opened": 55.0,
+          "median_legit_accounts_exposed": 0.0
+        },
+        "C_mulecatch_case_queue_as_shipped": {
+          "datasets_reaching_target": "20/20",
+          "median_units_opened": 5.0,
+          "median_legit_accounts_exposed": 0.0
+        },
+        "C_mulecatch_case_queue_purity_weighted": {
+          "datasets_reaching_target": "20/20",
+          "median_units_opened": 5.0,
+          "median_legit_accounts_exposed": 0.0
+        }
+      }
+    },
+    "hardened": {
+      "dataset": {
+        "test_seeds": "100-119",
+        "calibration_seeds": "0-4",
+        "generator_params": {
+          "num_clusters": 5,
+          "num_legit_accounts": 150,
+          "num_adversarial": 50
+        },
+        "mean_accounts_per_dataset": 254,
+        "mean_mule_accounts_per_dataset": 61,
+        "mule_prevalence": 0.2402,
+        "mean_transactions_per_dataset": 2095.85
+      },
+      "detectors": {
+        "A0_account_age_heuristic": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.006849315068493178,
+            "fpr_budget": 0.9852054794520548
+          },
+          "test_average_precision": 0.2304,
+          "test_at_max_f1_threshold": {
+            "tp": 1205,
+            "fp": 3841,
+            "tn": 19,
+            "fn": 15,
+            "precision": 0.2388,
+            "recall": 0.9877,
+            "fpr": 0.9951,
+            "f1": 0.3846
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 16,
+            "fp": 66,
+            "tn": 3794,
+            "fn": 1204,
+            "precision": 0.1951,
+            "recall": 0.0131,
+            "fpr": 0.0171,
+            "f1": 0.0246
+          },
+          "median_latency_seconds": 0.0001,
+          "throughput_txns_per_second": 26225990.1
+        },
+        "A_rules_baseline": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.0,
+            "fpr_budget": 8.0
+          },
+          "test_average_precision": 0.182,
+          "test_at_max_f1_threshold": {
+            "tp": 1220,
+            "fp": 3860,
+            "tn": 0,
+            "fn": 0,
+            "precision": 0.2402,
+            "recall": 1.0,
+            "fpr": 1.0,
+            "f1": 0.3873
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 0,
+            "fp": 10,
+            "tn": 3850,
+            "fn": 1220,
+            "precision": 0.0,
+            "recall": 0.0,
+            "fpr": 0.0026,
+            "f1": 0.0
+          },
+          "median_latency_seconds": 0.6183,
+          "throughput_txns_per_second": 3389.8
+        },
+        "B_graph_temporal": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.5925,
+            "fpr_budget": 0.5925
+          },
+          "test_average_precision": 0.929,
+          "test_at_max_f1_threshold": {
+            "tp": 1066,
+            "fp": 161,
+            "tn": 3699,
+            "fn": 154,
+            "precision": 0.8688,
+            "recall": 0.8738,
+            "fpr": 0.0417,
+            "f1": 0.8713
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 1066,
+            "fp": 161,
+            "tn": 3699,
+            "fn": 154,
+            "precision": 0.8688,
+            "recall": 0.8738,
+            "fpr": 0.0417,
+            "f1": 0.8713
+          },
+          "median_latency_seconds": 0.0694,
+          "throughput_txns_per_second": 30189.0
+        },
+        "C_mulecatch_pipeline": {
+          "thresholds_from_calibration": {
+            "max_f1": 0.762,
+            "fpr_budget": 0.762
+          },
+          "test_average_precision": 0.8665,
+          "test_at_max_f1_threshold": {
+            "tp": 990,
+            "fp": 323,
+            "tn": 3537,
+            "fn": 230,
+            "precision": 0.754,
+            "recall": 0.8115,
+            "fpr": 0.0837,
+            "f1": 0.7817
+          },
+          "test_at_fpr_budget_threshold": {
+            "tp": 990,
+            "fp": 323,
+            "tn": 3537,
+            "fn": 230,
+            "precision": 0.754,
+            "recall": 0.8115,
+            "fpr": 0.0837,
+            "f1": 0.7817
+          },
+          "median_latency_seconds": 1.0173,
+          "throughput_txns_per_second": 2060.2,
+          "test_as_shipped_alerting": {
+            "tp": 1212,
+            "fp": 2726,
+            "tn": 1134,
+            "fn": 8,
+            "precision": 0.3078,
+            "recall": 0.9934,
+            "fpr": 0.7062,
+            "f1": 0.4699
+          }
+        }
+      },
+      "investigator_workload": {
+        "recall_target": 0.9,
+        "A_rules_baseline_account_queue": {
+          "datasets_reaching_target": "0/20",
+          "median_units_opened": 225.0,
+          "median_legit_accounts_exposed": 190.0
+        },
+        "B_graph_temporal_account_queue": {
+          "datasets_reaching_target": "20/20",
+          "median_units_opened": 117.5,
+          "median_legit_accounts_exposed": 62.5
+        },
+        "C_mulecatch_case_queue_as_shipped": {
+          "datasets_reaching_target": "19/20",
+          "median_units_opened": 7.0,
+          "median_legit_accounts_exposed": 150.0
+        },
+        "C_mulecatch_case_queue_purity_weighted": {
+          "datasets_reaching_target": "19/20",
+          "median_units_opened": 5.0,
+          "median_legit_accounts_exposed": 0.0
+        }
+      }
+    }
+  }
+}
