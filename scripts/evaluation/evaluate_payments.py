@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import statistics
 import sys
 from typing import Dict, List, Sequence
@@ -35,6 +36,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import services.realtime_scorer as scorer_module  # noqa: E402
 from evaluate_detectors import build_case  # noqa: E402
+from evasion_playbooks import PLAYBOOKS  # noqa: E402
 from services.realtime_scorer import RealtimeScorer  # noqa: E402
 
 CALIBRATION_SEEDS = range(0, 3)
@@ -51,8 +53,10 @@ def _labels_with_roles(seed: int, scenario: str):
     return accounts, txns, {acc: bool(v) for acc, v in labels.items()}
 
 
-def replay(seed: int, scenario: str, gate: float, stride: int = LIVE_STRIDE) -> Dict:
+def replay(seed: int, scenario: str, gate: float, stride: int = LIVE_STRIDE, playbook: str = None) -> Dict:
     accounts, txns, is_mule = _labels_with_roles(seed, scenario)
+    if playbook:
+        txns = PLAYBOOKS[playbook](txns, is_mule, random.Random(seed))
     txns = sorted(txns, key=lambda t: t["timestamp"])
     live = txns[::stride]
     history = [t for i, t in enumerate(txns) if i % stride]
