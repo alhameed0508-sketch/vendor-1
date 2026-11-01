@@ -154,12 +154,12 @@ export default function TimelineSlider({
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
-            {activeEdges}/{edges.length} edges
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent)' }}>
+            {activeEdges} of {edges.length} transfers
           </span>
           <button
             className="btn btn-ghost"
-            style={{ padding: '2px 8px', fontSize: 10 }}
+            style={{ padding: '2px 8px', fontSize: 12 }}
             onClick={handleReset}
           >
             Reset
@@ -178,7 +178,7 @@ export default function TimelineSlider({
         <div style={{
           position: 'absolute', top: 10, height: 4,
           left: `${startPct}%`, width: `${endPct - startPct}%`,
-          background: 'var(--accent-cyan)', borderRadius: 2, opacity: 0.6,
+          background: 'var(--accent)', borderRadius: 2, opacity: 0.6,
         }} />
         {/* Start slider */}
         <input

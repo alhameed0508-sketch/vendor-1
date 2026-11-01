@@ -115,6 +115,11 @@
   /* ── Chart ── */
   --chart-grid: rgba(231, 239, 235, 0.05);
   --chart-axis: #2A3833;
+  /* Graph roles: validated for colour-blind separation on this surface */
+  --role-source: #3987E5;
+  --role-aggregator: #C98500;
+  --role-mule: #D55181;
+  --role-neutral: #7A8D85;
 
   /* ── Layout ── */
   --sidebar-width:           236px;
@@ -205,6 +210,10 @@ html[data-theme="light"] {
   /* ── Chart ── */
   --chart-grid: rgba(0, 0, 0, 0.06);
   --chart-axis: #C3CFC9;
+  --role-source: #2A78D6;
+  --role-aggregator: #C98500;
+  --role-mule: #D55181;
+  --role-neutral: #8A9A93;
 }
 
 /* ── Light-mode component overrides ── */
@@ -1661,7 +1670,7 @@ input::placeholder, textarea::placeholder {
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ── Graph node panel ── */
-.node-panel { position: absolute; top: 10px; right: 12px; z-index: 6; width: 220px; padding: 14px; }
+.node-panel { position: absolute; top: 10px; right: 12px; z-index: 6; width: 260px; padding: 14px; }
 .node-panel-head { display: flex; align-items: center; justify-content: space-between; }
 .node-panel-id { margin: 4px 0 10px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 14px; color: var(--text-primary); word-break: break-all; }
 .node-panel-fields { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: 12px; }
@@ -1899,6 +1908,142 @@ html[data-theme="light"] {
 
 @media (max-width: 1024px) {
   .page { padding: 20px 24px; }
+}
+
+/* ══════════════════════════════════════
+   MONEY-FLOW GRAPH — verdict, stage, legend, list view
+   ══════════════════════════════════════ */
+.graph-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px 24px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.graph-verdict-title {
+  margin: 0 0 12px;
+  font: 600 28px/1.1 var(--font-display);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.graph-figures { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 0; }
+.graph-figures dt { font: 12px var(--font-sans); color: var(--text-muted); }
+.graph-figures dd {
+  margin: 2px 0 0;
+  font: 600 16px var(--font-sans);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.graph-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.graph-body, .graph-stage { position: relative; }
+.graph-stage svg { display: block; width: 100%; height: auto; }
+.graph-node { cursor: pointer; outline: none; }
+.graph-node:focus-visible path { stroke: var(--focus-ring); stroke-width: 3; }
+.graph-hop {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  margin: 0;
+  font: 600 13px var(--font-sans);
+  color: var(--accent);
+}
+/* Left side: the node panel opens on the right */
+.graph-zoom { position: absolute; top: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 4px; }
+.graph-zoom .btn { min-width: 36px; min-height: 36px; justify-content: center; }
+.graph-tooltip {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  gap: 2px;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font: 12px/1.4 var(--font-sans);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+.graph-tooltip.is-visible { opacity: 1; }
+.graph-tooltip span { color: var(--text-secondary); }
+.graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  font: 12px var(--font-sans);
+  color: var(--text-secondary);
+}
+.graph-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Timeline: two stacked range inputs; only the thumbs take pointer input */
+.timeline-range { margin: 0; padding: 0; border: 0; background: transparent !important; box-shadow: none; }
+.timeline-range::-webkit-slider-runnable-track { background: transparent; border: 0; }
+.timeline-range::-moz-range-track { background: transparent; border: 0; }
+.timeline-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--bg-surface);
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: auto;
+  cursor: grab;
+}
+.timeline-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--bg-surface);
+  border-radius: 50%;
+  background: var(--accent);
+  pointer-events: auto;
+  cursor: grab;
+}
+.timeline-range:focus-visible { outline: none; }
+.timeline-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--focus-ring); }
+.timeline-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--focus-ring); }
+.account-list { overflow: auto; max-height: 520px; }
+.account-list .num { text-align: right; font-variant-numeric: tabular-nums; }
+.account-list-id {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: 500 13px var(--font-mono);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.account-list-role { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.node-panel-role { margin: 0; font: 600 13px var(--font-sans); color: var(--text-primary); }
+.node-panel-why { margin: 0 0 6px; font: 600 12px var(--font-sans); color: var(--text-muted); }
+.node-panel-reasons {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding-left: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 640px) {
+  .graph-head { padding: 14px 16px; }
+  .graph-verdict-title { font-size: 24px; }
+  .graph-figures { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .graph-tools { width: 100%; }
+  /* Phones: controls and panel sit in the flow so they never cover the graph */
+  .graph-zoom { position: static; padding: 0 12px 12px; }
+  .graph-hop { top: 8px; bottom: auto; }
+  .graph-legend { padding: 12px 16px; }
+  .node-panel { position: static; width: auto; margin: 0 12px 12px; }
 }
 
 /* ══════════════════════════════════════

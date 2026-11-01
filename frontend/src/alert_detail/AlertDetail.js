@@ -187,11 +187,8 @@ export default function AlertDetail() {
 
       {/* Main two-column layout */}
       <div className="grid-detail" style={{ marginBottom: 16 }}>
-        {/* Network Graph */}
+        {/* Network Graph: the verdict inside it is the heading */}
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
-            Network Graph
-          </div>
           <NetworkGraph nodes={alert.nodes} edges={alert.edges} timeRange={timeRange} />
           <TimelineSlider edges={alert.edges} onChange={setTimeRange} />
         </div>
