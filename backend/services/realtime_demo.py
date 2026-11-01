@@ -20,6 +20,7 @@ from typing import Iterator, Optional  # noqa: E402
 from services.realtime_scorer import RealtimeScorer  # noqa: E402
 
 MULE_ROLES = frozenset({"SOURCE", "MULE", "AGGREGATOR"})
+MAX_DELAY_S = 2.0  # clamp so a tiny `rate` cannot pin a worker thread
 LIVE_EVERY_NTH = 5  # every 5th payment is "live"; the rest is trusted history
 DEMO_CLUSTERS = 3
 DEMO_LEGIT_ACCOUNTS = 60
@@ -37,12 +38,18 @@ class DemoReplay:
     def __init__(self, seed: int = 7):
         from data.synthetic.generator import build_adversarial_dataset
 
-        random.seed(seed)
-        data = build_adversarial_dataset(
-            num_clusters=DEMO_CLUSTERS,
-            num_legit_accounts=DEMO_LEGIT_ACCOUNTS,
-            num_adversarial=DEMO_ADVERSARIAL,
-        )
+        # The generator reads the global PRNG: seed it, then restore so a replay
+        # never changes random state for the rest of the process.
+        saved_state = random.getstate()
+        try:
+            random.seed(seed)
+            data = build_adversarial_dataset(
+                num_clusters=DEMO_CLUSTERS,
+                num_legit_accounts=DEMO_LEGIT_ACCOUNTS,
+                num_adversarial=DEMO_ADVERSARIAL,
+            )
+        finally:
+            random.setstate(saved_state)
         txns = sorted(data["transactions"], key=lambda t: t["timestamp"])
         self._live = [t for i, t in enumerate(txns) if i % LIVE_EVERY_NTH == 0]
         history = [t for i, t in enumerate(txns) if i % LIVE_EVERY_NTH]
@@ -89,4 +96,4 @@ class DemoReplay:
                 },
             }
             if rate > 0:
-                time.sleep(1.0 / rate)
+                time.sleep(min(1.0 / rate, MAX_DELAY_S))

@@ -8,6 +8,7 @@ from functools import lru_cache
 from cache.cache_manager import CacheManager
 from cache.redis_client import RedisClient
 from core.config import get_settings
+from core.exceptions import ConflictError
 from detection.pipeline import DetectionPipeline
 from graph_engine.persistence import PersistenceLayer
 from ingest.kafka_consumer import KAFKA_ENABLED, TransactionConsumer
@@ -117,7 +118,15 @@ def get_realtime_scorer() -> RealtimeScorer:
 
 
 def get_demo_replay():
-    """A fresh seeded replay per stream, so every viewer sees the same story from the start."""
+    """A fresh seeded replay per stream, so every viewer sees the same story from the start.
+
+    Refuses outside demo mode before doing any work (the replay builds a dataset).
+    """
+    if not get_settings().demo_mode:
+        raise ConflictError(
+            "Synthetic payment replay is disabled in production",
+            "Production scoring is driven by validated ingest sources.",
+        )
     from services.realtime_demo import DemoReplay
 
     return DemoReplay()
