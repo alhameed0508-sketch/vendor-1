@@ -49,23 +49,23 @@ describe('Sidebar Component', () => {
     test('renders all navigation items', () => {
       renderSidebar();
 
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Triage Queue')).toBeInTheDocument();
-      expect(screen.getByText('Network Graph')).toBeInTheDocument();
-      expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Alerts')).toBeInTheDocument();
+      expect(screen.getByText('Triage')).toBeInTheDocument();
+      expect(screen.getByText('Network')).toBeInTheDocument();
+      expect(screen.getByText('ROI analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
-      expect(screen.getByText('Data Import')).toBeInTheDocument();
-      expect(screen.getByText('Model Benchmarks')).toBeInTheDocument();
+      expect(screen.getByText('Data import')).toBeInTheDocument();
+      expect(screen.getByText('Model benchmarks')).toBeInTheDocument();
     });
 
     test('renders navigation items with correct links', () => {
       renderSidebar();
 
-      const dashboardLink = screen.getByText('Dashboard').closest('a');
-      const analyticsLink = screen.getByText('ROI Analytics').closest('a');
+      const dashboardLink = screen.getByText('Alerts').closest('a');
+      const analyticsLink = screen.getByText('ROI analytics').closest('a');
       const complianceLink = screen.getByText('Compliance').closest('a');
-      const dataImportLink = screen.getByText('Data Import').closest('a');
-      const benchmarkLink = screen.getByText('Model Benchmarks').closest('a');
+      const dataImportLink = screen.getByText('Data import').closest('a');
+      const benchmarkLink = screen.getByText('Model benchmarks').closest('a');
 
       expect(dashboardLink).toHaveAttribute('href', '/');
       expect(analyticsLink).toHaveAttribute('href', '/analytics');
@@ -89,14 +89,14 @@ describe('Sidebar Component', () => {
     test('highlights Dashboard as active when on root path', () => {
       renderSidebar({}, '/');
 
-      const dashboardLink = screen.getByText('Dashboard').closest('a');
+      const dashboardLink = screen.getByText('Alerts').closest('a');
       expect(dashboardLink).toHaveClass('sidebar-link-active');
     });
 
     test('highlights ROI Analytics as active when on /analytics path', () => {
       renderSidebar({}, '/analytics');
 
-      const analyticsLink = screen.getByText('ROI Analytics').closest('a');
+      const analyticsLink = screen.getByText('ROI analytics').closest('a');
       expect(analyticsLink).toHaveClass('sidebar-link-active');
     });
 
@@ -110,7 +110,7 @@ describe('Sidebar Component', () => {
     test('does not highlight Dashboard when on other paths', () => {
       renderSidebar({}, '/analytics');
 
-      const dashboardLink = screen.getByText('Dashboard').closest('a');
+      const dashboardLink = screen.getByText('Alerts').closest('a');
       expect(dashboardLink).not.toHaveClass('sidebar-link-active');
     });
 
@@ -118,7 +118,7 @@ describe('Sidebar Component', () => {
       renderSidebar({}, '/analytics');
 
       // The active bar is rendered within the active link
-      const analyticsLink = screen.getByText('ROI Analytics').closest('a');
+      const analyticsLink = screen.getByText('ROI analytics').closest('a');
       const activeBar = analyticsLink.querySelector('.sidebar-active-bar');
       expect(activeBar).toBeInTheDocument();
     });
@@ -129,7 +129,7 @@ describe('Sidebar Component', () => {
       const user = userEvent.setup();
       renderSidebar({}, '/');
 
-      const analyticsLink = screen.getByText('ROI Analytics');
+      const analyticsLink = screen.getByText('ROI analytics');
       await user.click(analyticsLink);
 
       // After navigation, the link should be active
@@ -144,9 +144,9 @@ describe('Sidebar Component', () => {
 
       // Test each navigation item
       const routes = [
-        { text: 'ROI Analytics', expectedActive: 'sidebar-link-active' },
+        { text: 'ROI analytics', expectedActive: 'sidebar-link-active' },
         { text: 'Compliance', expectedActive: 'sidebar-link-active' },
-        { text: 'Data Import', expectedActive: 'sidebar-link-active' },
+        { text: 'Data import', expectedActive: 'sidebar-link-active' },
       ];
 
       for (const route of routes) {
@@ -272,19 +272,19 @@ describe('Sidebar Component', () => {
     test('hides nav item labels when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
-      expect(screen.queryByText('ROI Analytics')).not.toBeInTheDocument();
+      expect(screen.queryByText('Alerts')).not.toBeInTheDocument();
+      expect(screen.queryByText('ROI analytics')).not.toBeInTheDocument();
       expect(screen.queryByText('Compliance')).not.toBeInTheDocument();
-      expect(screen.queryByText('Data Import')).not.toBeInTheDocument();
+      expect(screen.queryByText('Data import')).not.toBeInTheDocument();
     });
 
     test('shows nav item labels when expanded', () => {
       renderSidebar({ collapsed: false });
 
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Alerts')).toBeInTheDocument();
+      expect(screen.getByText('ROI analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
-      expect(screen.getByText('Data Import')).toBeInTheDocument();
+      expect(screen.getByText('Data import')).toBeInTheDocument();
     });
 
     test('hides logo text when collapsed', () => {
@@ -329,8 +329,8 @@ describe('Sidebar Component', () => {
       renderSidebar({ collapsed: true });
 
       const links = screen.getAllByRole('link');
-      const dashboardLink = links.find(link => link.getAttribute('title') === 'Dashboard');
-      const analyticsLink = links.find(link => link.getAttribute('title') === 'ROI Analytics');
+      const dashboardLink = links.find(link => link.getAttribute('title') === 'Alerts');
+      const analyticsLink = links.find(link => link.getAttribute('title') === 'ROI analytics');
 
       expect(dashboardLink).toBeInTheDocument();
       expect(analyticsLink).toBeInTheDocument();
@@ -446,9 +446,9 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Dashboard', 'Triage Queue', 'Network Graph',
-        'ROI Analytics', 'Compliance', 'Customer Risk', 'Data Import',
-        'Model Benchmarks',
+        'Alerts', 'Triage', 'Network',
+        'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
+        'Model benchmarks',
       ];
       links.forEach(link => {
         const title = link.getAttribute('title');

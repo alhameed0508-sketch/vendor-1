@@ -265,7 +265,7 @@ export default function NetworkOverview() {
   }
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
+    <div className="page">
 
       {/* Page Header */}
       <motion.div
@@ -282,7 +282,7 @@ export default function NetworkOverview() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <h1 className="text-page-title" style={{ fontSize: 26, margin: 0 }}>
-              Network Intelligence
+              Network
             </h1>
 
             {/* LIVE / OFFLINE badge */}
@@ -450,7 +450,7 @@ export default function NetworkOverview() {
               </div>
               <div>
                 <p style={{
-                  fontFamily: 'var(--font-display)',
+                  fontFamily: 'var(--font-sans)',
                   fontSize: 15,
                   fontWeight: 600,
                   color: 'var(--text-secondary)',

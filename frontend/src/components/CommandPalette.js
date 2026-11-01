@@ -3,14 +3,10 @@ import { Command } from 'cmdk';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { alertPath, isSafeInternalPath } from '../utils/safeNavigation';
+import { NAV_SECTIONS } from './navItems';
 
-const PAGES = [
-  { name: 'Alert Queue', path: '/', icon: '\u26A0', category: 'Pages' },
-  { name: 'ROI Analytics', path: '/analytics', icon: '\u25C8', category: 'Pages' },
-  { name: 'Compliance Portal', path: '/compliance', icon: '\u25C9', category: 'Pages' },
-  { name: 'Onboarding Risk', path: '/onboarding', icon: '\u25CB', category: 'Pages' },
-  { name: 'Judge View', path: '/judge', icon: '\u25B6', category: 'Pages' },
-];
+const PAGES = NAV_SECTIONS.flatMap(section => section.items)
+  .map(({ path, label, icon }) => ({ name: label, path, Icon: icon }));
 
 export default function CommandPalette({ alerts: alertsProp }) {
   const alerts = alertsProp || [];
@@ -130,12 +126,12 @@ export default function CommandPalette({ alerts: alertsProp }) {
                         gap: 10,
                         fontSize: 13,
                         color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-display)',
-                        fontWeight: 600,
+                        fontFamily: 'var(--font-sans)',
+                        fontWeight: 500,
                       }}
                       data-cmdk-item=""
                     >
-                      <span style={{ fontSize: 16 }}>{page.icon}</span>
+                      <page.Icon size={16} aria-hidden="true" />
                       {page.name}
                     </Command.Item>
                   ))}
@@ -143,7 +139,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
 
                 {alerts.length > 0 && (
                   <Command.Group
-                    heading={<span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 1, padding: '4px 8px' }}>Alerts</span>}
+                    heading={<span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', padding: '4px 8px' }}>Matching alerts</span>}
                   >
                     {alerts.slice(0, 20).map(alert => (
                       <Command.Item

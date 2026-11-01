@@ -161,7 +161,7 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
                   <span style={{
-                    fontFamily: 'var(--font-display)',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: 13,
                     fontWeight: 600,
                     color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',

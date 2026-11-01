@@ -173,11 +173,10 @@ describe('CommandPalette Component', () => {
       await user.keyboard('{Control>}k{/Control}');
 
       await waitFor(() => {
-        expect(screen.getByText('Alert Queue')).toBeInTheDocument();
-        expect(screen.getByText('ROI Analytics')).toBeInTheDocument();
-        expect(screen.getByText('Compliance Portal')).toBeInTheDocument();
-        expect(screen.getByText('Onboarding Risk')).toBeInTheDocument();
-        expect(screen.getByText('Judge View')).toBeInTheDocument();
+        ['Alerts', 'Triage', 'Network', 'ROI analytics', 'Compliance', 'Customer risk', 'Data import', 'Model benchmarks']
+          .forEach(name => expect(screen.getByText(name)).toBeInTheDocument());
+        expect(screen.queryByText('Judge View')).not.toBeInTheDocument();
+        expect(screen.queryByText('Onboarding Risk')).not.toBeInTheDocument();
       });
     });
 
@@ -198,7 +197,7 @@ describe('CommandPalette Component', () => {
 
       await user.keyboard('{Control>}k{/Control}');
 
-      const analyticsItem = await screen.findByText('ROI Analytics');
+      const analyticsItem = await screen.findByText('ROI analytics');
       await user.click(analyticsItem);
 
       await waitFor(() => {
@@ -230,7 +229,7 @@ describe('CommandPalette Component', () => {
       await user.keyboard('{Control>}k{/Control}');
 
       await waitFor(() => {
-        expect(screen.queryByText('Alerts')).not.toBeInTheDocument();
+        expect(screen.queryByText('Matching alerts')).not.toBeInTheDocument();
       });
     });
 
@@ -241,7 +240,7 @@ describe('CommandPalette Component', () => {
       await user.keyboard('{Control>}k{/Control}');
 
       await waitFor(() => {
-        expect(screen.getByText('Alerts')).toBeInTheDocument();
+        expect(screen.getByText('Matching alerts')).toBeInTheDocument();
       });
     });
 
@@ -357,7 +356,7 @@ describe('CommandPalette Component', () => {
         expect(screen.getByPlaceholderText('Search alerts, accounts, pages...')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Alert Queue')).toBeInTheDocument();
+      expect(screen.getByText('Alerts')).toBeInTheDocument();
     });
 
     test('handles null alerts prop', async () => {
@@ -370,7 +369,7 @@ describe('CommandPalette Component', () => {
         expect(screen.getByPlaceholderText('Search alerts, accounts, pages...')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Alert Queue')).toBeInTheDocument();
+      expect(screen.getByText('Alerts')).toBeInTheDocument();
     });
   });
 

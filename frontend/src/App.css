@@ -1874,3 +1874,186 @@ html[data-theme="light"] {
   letter-spacing: -0.01em;
   font-variant-numeric: lining-nums tabular-nums;
 }
+
+/* ══════════════════════════════════════
+   PAGE SHELL — shared page padding, stat strip and filter row
+   ══════════════════════════════════════ */
+.page { padding: 24px 32px; max-width: 1440px; margin: 0 auto; }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.filter-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 20px; }
+.filter-bar.filter-bar-attached { margin-bottom: 0; }
+.mobile-tabs, .mobile-sheet-layer { display: none; }
+.page-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Triage table rows */
+.queue-row {
+  display: grid;
+  grid-template-columns: 56px 1fr 150px 90px 80px 80px 24px;
+  gap: 12px;
+  align-items: center;
+}
+.queue-head { padding: 0 18px 8px; }
+.q-break { display: flex; flex-direction: column; gap: 4px; }
+.q-sar { text-align: center; }
+.queue-detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+@media (max-width: 1024px) {
+  .page { padding: 20px 24px; }
+}
+
+/* ══════════════════════════════════════
+   MOBILE SHELL — bottom tabs, More sheet, phone-sized content (≤768px)
+   ══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .sidebar { display: none !important; }
+  .app-layout, .app-content { height: 100dvh; }
+  .app-main { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+
+  .page {
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .page-header { flex-wrap: wrap; gap: 12px; }
+  .page-header h1, .text-page-title { font-size: 26px; }
+  .page-actions .view-toggle { flex: 1 0 100%; margin-right: 0; }
+  .page-actions .view-toggle > .filter-tab { flex: 1; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 0; margin-bottom: 16px; }
+  .stat-grid > .stat-card { padding: 12px 16px; }
+  .stat-grid > .stat-card:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .stat-grid > .stat-card:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .text-metric-value, .stat-card .text-metric-value { font-size: 28px; }
+
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .filter-bar.filter-bar-attached { margin-inline: 0; padding-inline: 4px; }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-bar .filter-tab, .filter-bar .filter-label { flex: 0 0 auto; }
+  .filter-tab { min-height: 40px; }
+
+  .board { grid-auto-columns: 86%; scroll-snap-type: x mandatory; }
+  .board-column { scroll-snap-align: start; }
+
+  .mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+    background: var(--surface-1);
+    border-top: 1px solid var(--border);
+  }
+  .mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 52px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--text-muted);
+    font: 500 12px/1 var(--font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 150ms ease, background 150ms ease;
+  }
+  .mobile-tab-active { color: var(--accent); background: var(--accent-tint); }
+
+  .mobile-sheet-layer { display: block; position: fixed; inset: 0; z-index: 50; }
+  .mobile-sheet-backdrop { position: absolute; inset: 0; border: 0; background: rgba(4, 10, 8, 0.55); cursor: pointer; }
+  .mobile-sheet {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: grid;
+    gap: 2px;
+    padding: 6px max(12px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    background: var(--surface-2);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.3);
+    animation: mobile-sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .mobile-sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0 4px 12px;
+    color: var(--text-primary);
+    font: 600 15px var(--font-sans);
+  }
+  .mobile-sheet-close {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    border: 0; border-radius: 12px;
+    background: none; color: var(--text-muted);
+    cursor: pointer;
+  }
+  .mobile-sheet-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 50px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--text-primary);
+    font: 500 15px var(--font-sans);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .mobile-sheet-link svg { color: var(--text-muted); flex-shrink: 0; }
+  .mobile-sheet-link-active { background: var(--accent-tint); color: var(--accent); }
+  .mobile-sheet-link-active svg { color: var(--accent); }
+  .mobile-sheet-theme { margin-top: 6px; border-top: 1px solid var(--border); border-radius: 0; }
+}
+
+@keyframes mobile-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+
+/* Alert table → stacked alert cards on phones */
+@media (max-width: 640px) {
+  .data-table-stack { min-width: 0 !important; }
+  .data-table-stack thead { display: none; }
+  .data-table-stack, .data-table-stack tbody { display: block; width: 100%; }
+  .data-table-stack tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "id sev" "amt status" "risk acc";
+    align-items: center;
+    gap: 10px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table-stack td { display: block; padding: 0 !important; border: 0 !important; background: none !important; }
+  .data-table-stack .col-idx, .data-table-stack .col-txn, .data-table-stack .col-sig,
+  .data-table-stack .col-created, .data-table-stack .col-go { display: none; }
+  .data-table-stack .col-id { grid-area: id; }
+  .data-table-stack .col-sev { grid-area: sev; justify-self: end; }
+  .data-table-stack .col-amt { grid-area: amt; }
+  .data-table-stack .col-status { grid-area: status; justify-self: end; }
+  .data-table-stack .col-risk { grid-area: risk; }
+  .data-table-stack .col-acc { grid-area: acc; justify-self: end; color: var(--text-muted); }
+  .data-table-stack .col-acc span::after { content: " accounts"; }
+
+  .queue-head { display: none; }
+  .queue-row {
+    grid-template-columns: 50px 1fr auto;
+    grid-template-areas: "ring main amt" "ring main sar";
+    gap: 2px 12px;
+  }
+  .queue-row .q-break, .queue-row .q-time, .queue-row .q-chev { display: none; }
+  .q-ring { grid-area: ring; }
+  .q-main { grid-area: main; }
+  .q-amt { grid-area: amt; }
+  .q-sar { grid-area: sar; text-align: right; }
+  .q-sar::before { content: "SAR "; font: 12px var(--font-sans); color: var(--text-faint); }
+  .queue-detail-grid { grid-template-columns: 1fr; }
+}

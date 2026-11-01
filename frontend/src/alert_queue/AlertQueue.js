@@ -148,7 +148,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
         borderTop: 'none',
         margin: '0 0 4px',
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20 }}>
+        <div className="queue-detail-grid">
 
           {/* Score breakdown */}
           <div>
@@ -399,12 +399,12 @@ export default function AlertQueue({ onSelectAlert }) {
   const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'];
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1200, position: 'relative', zIndex: 1 }}>
+    <div className="page">
 
       {/* ── Header ── */}
       <div className="page-header">
         <div>
-          <h1>Triage Queue</h1>
+          <h1>Triage</h1>
           <p className="page-meta">
             ML-ranked by priority score
             <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
@@ -441,7 +441,7 @@ export default function AlertQueue({ onSelectAlert }) {
             )}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="page-actions">
           <div className="view-toggle" role="group" aria-label="Queue view">
             {['board', 'table'].map(v => (
               <button key={v} type="button" aria-pressed={view === v}
@@ -457,7 +457,7 @@ export default function AlertQueue({ onSelectAlert }) {
             onClick={handleSeed}
             title="Send synthetic transactions to Kafka"
           >
-            {seeding ? 'Seeding...' : 'Seed Transactions'}
+            {seeding ? 'Seeding...' : 'Seed transactions'}
           </button>
           <button
             className="btn btn-ghost btn-sm"
@@ -469,7 +469,7 @@ export default function AlertQueue({ onSelectAlert }) {
       </div>
 
       {/* ── Summary stat cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div className="stat-grid">
         <StatCard label="Open alerts"       value={stats.open}                    color="var(--emerald-light)" />
         <StatCard label="Critical severity" value={stats.critical}                color="var(--critical)" />
         <StatCard label="High SAR risk"     value={stats.highSAR}                color="var(--high)" />
@@ -477,7 +477,7 @@ export default function AlertQueue({ onSelectAlert }) {
       </div>
 
       {/* ── Filters ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="filter-bar">
         <span className="filter-label">Severity</span>
         {severities.map(s => {
           const isActive = filterSeverity === s;
@@ -526,13 +526,7 @@ export default function AlertQueue({ onSelectAlert }) {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {/* Table header */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '56px 1fr 100px 90px 80px 80px 24px',
-            gap: 12,
-            padding: '0 18px 8px',
-            alignItems: 'center',
-          }}>
+          <div className="queue-row queue-head">
             <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Score</span>
             <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Alert</span>
             <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Breakdown</span>
@@ -556,25 +550,21 @@ export default function AlertQueue({ onSelectAlert }) {
                       setExpandedId(expanded ? null : alert.alert_id);
                       if (onSelectAlert) onSelectAlert(alert);
                     }}
-                    className="glass-card"
+                    className="glass-card queue-row"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: '56px 1fr 100px 90px 80px 80px 24px',
-                      gap: 12,
                       padding: '14px 18px',
                       cursor: 'pointer',
-                      alignItems: 'center',
                       borderColor: expanded ? sevCfg.color : undefined,
                       borderRadius: expanded ? 'var(--radius-lg) var(--radius-lg) 0 0' : 'var(--radius-lg)',
                       transition: 'border-color 0.2s, box-shadow 0.2s',
                     }}
                   >
                     {/* Priority ring */}
-                    <PriorityRing score={alert.priority_score} rank={idx + 1} />
+                    <div className="q-ring"><PriorityRing score={alert.priority_score} rank={idx + 1} /></div>
 
                     {/* Main info */}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div className="q-main" style={{ minWidth: 0 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', }}>
                           {alert.alert_id}
                         </span>
@@ -593,11 +583,11 @@ export default function AlertQueue({ onSelectAlert }) {
                     </div>
 
                     {/* Score breakdown mini-bars */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div className="q-break">
                       {Object.entries(alert.score_breakdown || {}).slice(0, 3).map(([key, val]) => (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', width: 28, flexShrink: 0 }}>
-                            {(BREAKDOWN_LABELS[key] || key).slice(0, 4)}
+                          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', width: 58, flexShrink: 0 }}>
+                            {BREAKDOWN_LABELS[key] || key}
                           </span>
                           <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
                         </div>
@@ -605,12 +595,12 @@ export default function AlertQueue({ onSelectAlert }) {
                     </div>
 
                     {/* Amount */}
-                    <span className="amount" style={{ textAlign: 'right', fontSize: 13 }}>
+                    <span className="amount q-amt" style={{ textAlign: 'right', fontSize: 13 }}>
                       {formatAmount(alert.total_amount)}
                     </span>
 
                     {/* SAR probability */}
-                    <div style={{ textAlign: 'center' }}>
+                    <div className="q-sar">
                       <span style={{
                         fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-sans)',
                         color: sarPct >= SCORE_BAR_CRITICAL * 100 ? 'var(--critical)' : sarPct >= SCORE_BAR_HIGH * 100 ? 'var(--high)' : 'var(--text-muted)',
@@ -620,12 +610,13 @@ export default function AlertQueue({ onSelectAlert }) {
                     </div>
 
                     {/* Time ago */}
-                    <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'right' }}>
+                    <span className="q-time" style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'right' }}>
                       {timeAgo(alert.created_at)}
                     </span>
 
                     {/* Chevron */}
                     <motion.span
+                      className="q-chev"
                       animate={{ rotate: expanded ? 180 : 0 }}
                       transition={{ duration: 0.15 }}
                       style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center' }}

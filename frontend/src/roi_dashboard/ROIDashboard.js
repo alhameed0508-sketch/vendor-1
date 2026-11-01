@@ -122,7 +122,7 @@ export default function ROIDashboard() {
   );
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
+    <div className="page">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
