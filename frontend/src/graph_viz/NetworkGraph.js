@@ -692,6 +692,7 @@ export default function NetworkGraph({
 
     /* ── Hover interactions ── */
     const tooltip = d3.select(container).append('div')
+      .attr('class', 'graph-tooltip')
       .style('position', 'absolute')
       .style('background', 'var(--bg-card)')
       .style('border', '1px solid var(--border)')
@@ -810,7 +811,8 @@ export default function NetworkGraph({
       activeTimers.forEach(clearTimeout);
       clearTimeout(fitTimer);
       simulation.stop();
-      d3.select(container).selectAll('div').remove();
+      // only our tooltip: other divs in the container are React-managed
+      d3.select(container).selectAll('div.graph-tooltip').remove();
     };
   }, [nodes, edges]);
 
