@@ -31,6 +31,9 @@ from models.temporal_weighting.smurf_weighting import score_transaction_batch
 REQUIRED_FIELDS = ("txn_id", "from_account", "to_account", "amount", "timestamp")
 DEFAULT_MAX_WINDOW = 5000
 DEFAULT_FLAG_THRESHOLD = 0.50
+# Louvain dominates scoring time, so the partition is rebuilt every N committed payments.
+# A ring formed within the last N payments can therefore be recognised up to N payments late.
+DEFAULT_COMMUNITY_REFRESH_EVERY = 10
 MIN_RING_SIZE = 3
 # Calibrated on seeded synthetic data: 78% of mule accounts vs 1.9% of genuine accounts reach it.
 ENDPOINT_EVIDENCE_MIN = 0.30
@@ -79,11 +82,17 @@ class RealtimeScorer:
         history: Sequence[Mapping],
         max_window: int = DEFAULT_MAX_WINDOW,
         flag_threshold: float = DEFAULT_FLAG_THRESHOLD,
+        community_refresh_every: int = DEFAULT_COMMUNITY_REFRESH_EVERY,
     ):
+        if community_refresh_every < 1:
+            raise ValueError("community_refresh_every must be at least 1")
         self._accounts: Tuple[Dict, ...] = tuple(dict(a) for a in accounts)
         self._history: Tuple[Dict, ...] = tuple(dict(t) for t in history)[-max_window:]
         self._max_window = max_window
         self._flag_threshold = flag_threshold
+        self._refresh_every = community_refresh_every
+        self._commits = 0
+        self._cached: Optional[Tuple[int, Tuple[Community, ...]]] = None  # (commit count at build, partition)
         self._lock = threading.Lock()
 
     @property
@@ -104,8 +113,15 @@ class RealtimeScorer:
             window = self._history if stored is not None else (*self._history, txn)[-self._max_window :]
             if commit and stored is None:
                 self._history = window
+                self._commits += 1
+            cached = self._cached
+            fresh = cached is not None and self._commits - cached[0] < self._refresh_every
+            commits = self._commits
 
-        return self._score(txn, list(window), self._with_known_accounts(accounts, window), started)
+        communities = cached[1] if fresh else None
+        return self._score(
+            txn, list(window), self._with_known_accounts(accounts, window), started, communities, commits
+        )
 
     @staticmethod
     def _with_known_accounts(accounts: Tuple[Dict, ...], window: Sequence[Mapping]) -> List[Dict]:
@@ -115,10 +131,21 @@ class RealtimeScorer:
         stubs = [{"account_id": acc} for acc in sorted(seen - known)]
         return [*accounts, *stubs]
 
-    def _score(self, txn: Dict, window: List[Dict], accounts: List[Dict], started: float) -> PaymentScore:
+    def _score(
+        self,
+        txn: Dict,
+        window: List[Dict],
+        accounts: List[Dict],
+        started: float,
+        communities: Optional[Sequence[Community]],
+        commits: int,
+    ) -> PaymentScore:
         sender, receiver = txn["from_account"], txn["to_account"]
         smurf = score_transaction_batch(window)
-        communities = LouvainClusterDetector().detect_clusters(window, accounts)
+        if communities is None:
+            communities = tuple(LouvainClusterDetector().detect_clusters(window, accounts))
+            with self._lock:
+                self._cached = (commits, communities)
         ring = self._ring_for(communities, (sender, receiver))
 
         merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
