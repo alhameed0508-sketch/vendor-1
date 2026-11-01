@@ -4,8 +4,7 @@ import json
 
 from api.deps import get_demo_replay, get_realtime_scorer
 from api.v1.schemas.score import ScorePaymentRequest
-from core.config import get_settings
-from core.exceptions import ConflictError, ValidationError
+from core.exceptions import ValidationError
 from core.response import success_response
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
@@ -61,11 +60,6 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
         replay=Depends(get_demo_replay),
     ):
         """Server-sent events replaying synthetic payments through the scorer (demo only)."""
-        if not get_settings().demo_mode:
-            raise ConflictError(
-                "Synthetic payment replay is disabled in production",
-                "Production scoring is driven by validated ingest sources.",
-            )
 
         def _sse():
             for event in replay.events(limit=limit, rate=rate):

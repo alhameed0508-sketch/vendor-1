@@ -84,7 +84,25 @@ async def test_stream_disabled_in_production(stream_app, monkeypatch):
     class _Prod:
         demo_mode = False
 
-    monkeypatch.setattr("api.v1.routes.score.get_settings", lambda: _Prod())
+    app = stream_app
+    app.dependency_overrides.pop(get_demo_replay, None)  # exercise the real gate
+    monkeypatch.setattr("api.deps.get_settings", lambda: _Prod())
     async with AsyncClient(transport=ASGITransport(app=stream_app), base_url="http://test") as client:
         resp = await client.get("/api/v1/score/stream", params={"limit": 1, "rate": 0})
     assert resp.status_code == 409
+
+
+def test_replay_does_not_change_global_random_state():
+    import random
+
+    random.seed(123)
+    before = random.getstate()
+    DemoReplay(seed=7)
+    assert random.getstate() == before
+
+
+def test_replay_delay_is_clamped(monkeypatch):
+    delays = []
+    monkeypatch.setattr("services.realtime_demo.time.sleep", delays.append)
+    list(DemoReplay(seed=7).events(limit=2, rate=0.001))
+    assert delays and max(delays) <= 2.0
