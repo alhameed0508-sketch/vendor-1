@@ -161,6 +161,21 @@ Script: `scripts/evaluation/evaluate_payments.py`. Raw output: `payment_eval_res
 - A genuine flag rate of 0.0% means none in this sample, not a guarantee. With a small number of genuine payments per dataset the upper bound is wider than the point estimate suggests.
 - Latency is per payment on a development machine with a window of about 5k payments, scoring the whole window each time. The hardened p95 of 370 ms exceeds a typical 100 ms payment budget. Incremental community updates are the planned fix.
 
+## 7.6c Evasion playbooks (mules adapt)
+
+Script: `scripts/evaluation/evaluate_evasion.py` (playbooks in `evasion_playbooks.py`). Raw output: `evasion_results.json`. Gate fixed at 0.30, nothing re-tuned. Test seeds 100-104, scorer before the community-refresh change.
+
+| Playbook | What the mules do | Mule payments flagged | Genuine payments flagged | Mule accounts in flagged rings |
+|---|---|---|---|---|
+| Baseline | Nothing | 98.9% | 0.0% | 89.5% |
+| Split | Each payment becomes 3 smaller ones, 7 min apart | 100% | 0.0% | 100% |
+| Noise | Each mule exchanges 4 small decoy payments with random genuine accounts | **5.8%** | 0.5% | 13.8% |
+| Slow drip | Gaps between mule payments stretched 6x | **35.4%** | 0.0% | 45.6% |
+
+Standard and hardened scenarios give identical numbers. That is expected: the hardened scenario only equalises static account attributes, which the real-time scorer does not use.
+
+**Finding.** The scorer is robust to splitting but **fails against decoy noise** and is badly weakened by slowing down. Decoys connect mules to genuine accounts, so Louvain merges rings into larger mixed communities that fail the ring-purity gate. Slowing down pushes payments outside the 60-minute velocity and 6-hour consolidation windows. Both are cheap for a real mule operator. Fixing them (for example decoy-robust ring extraction such as dense-subgraph peeling, and multi-scale time windows) is the top detection priority, ahead of new features.
+
 ## 7.7 Still to measure (not yet run)
 
 | Measurement | Plan | Why |
