@@ -229,3 +229,68 @@ def test_one_merchant_in_a_ring_does_not_clear_it(split):
     marked = [{**a, "account_type": "MERCHANT"} if a["account_id"] == one else a for a in _strip_labels(accounts)]
     scorer = RealtimeScorer(marked, _strip_labels(history))
     assert scorer.score_payment(txn, commit=False).decision == "FLAG"
+
+
+# ── Community refresh (latency) ───────────────────────────────────────────────
+
+
+@pytest.fixture
+def louvain_calls(monkeypatch):
+    from models.community_detection.louvain_detector import LouvainClusterDetector
+
+    calls = []
+    original = LouvainClusterDetector.detect_clusters
+
+    def counting(self, *args, **kwargs):
+        calls.append(1)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(LouvainClusterDetector, "detect_clusters", counting)
+    return calls
+
+
+def _chain(n):
+    base = datetime(2026, 1, 1)
+    return [
+        {
+            "txn_id": f"R{i}",
+            "from_account": f"A{i}",
+            "to_account": f"B{i}",
+            "amount": 100,
+            "timestamp": (base + timedelta(minutes=i)).isoformat(),
+        }
+        for i in range(n)
+    ]
+
+
+def test_communities_are_reused_between_refreshes(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=5)
+    for txn in _chain(5):
+        scorer.score_payment(txn)
+    assert len(louvain_calls) == 1
+
+
+def test_communities_refresh_after_n_commits(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=5)
+    for txn in _chain(11):
+        scorer.score_payment(txn)
+    assert len(louvain_calls) == 3  # payments 1, 6 and 11
+
+
+def test_refresh_every_one_recomputes_each_time(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=1)
+    for txn in _chain(4):
+        scorer.score_payment(txn)
+    assert len(louvain_calls) == 4
+
+
+def test_uncommitted_scoring_does_not_age_the_cache(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=3)
+    for txn in _chain(6):
+        scorer.score_payment(txn, commit=False)
+    assert len(louvain_calls) == 1
+
+
+def test_rejects_non_positive_refresh_interval():
+    with pytest.raises(ValueError):
+        RealtimeScorer([], [], community_refresh_every=0)
