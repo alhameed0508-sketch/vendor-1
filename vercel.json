@@ -7,7 +7,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 300,
-      "excludeFiles": "{frontend/**,docs/**,design-system/**,infra/**,backend/tests/**,**/__pycache__/**,**/*.md}"
+      "excludeFiles": "{frontend/**,docs/**,design-system/**,infra/k8s/**,infra/backup/**,infra/certs/**,backend/tests/**,**/__pycache__/**,**/*.md}"
     }
   },
   "rewrites": [
