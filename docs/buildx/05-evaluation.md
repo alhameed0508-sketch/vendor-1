@@ -176,6 +176,38 @@ Standard and hardened scenarios give identical numbers. That is expected: the ha
 
 **Finding.** The scorer is robust to splitting but **fails against decoy noise** and is badly weakened by slowing down. Decoys connect mules to genuine accounts, so Louvain merges rings into larger mixed communities that fail the ring-purity gate. Slowing down pushes payments outside the 60-minute velocity and 6-hour consolidation windows. Both are cheap for a real mule operator. Fixing them (for example decoy-robust ring extraction such as dense-subgraph peeling, and multi-scale time windows) is the top detection priority, ahead of new features.
 
+## 7.6d After the robustness fixes
+
+Same scripts, gate still 0.30, nothing re-tuned. Scorer at commit `2d7a923`, which adds:
+
+- **Materiality filter.** A payment enters the graph and the evidence only if its sender-receiver pair totals at least ₹400 in the window. One-off small decoys drop out, but structuring (many payments just under ₹400 between the same pair) still counts.
+- **Multi-scale evidence.** Smurf evidence is also computed with 6-hour velocity and 36-hour consolidation windows, keeping the higher score per account.
+- **Merchant exemption and a refreshed community cache** (section 7.6b method otherwise unchanged).
+
+Raw output: `evasion_results_v2.json`, `payment_eval_results_v2.json`.
+
+**Evasion (test seeds 100-104).** Standard and hardened give the same recall; latency differs slightly.
+
+| Playbook | Mule payments flagged, before → after | Genuine payments flagged, after | Mule accounts in flagged rings, after |
+|---|---|---|---|
+| Baseline | 98.9% → 100% | 0.0% | 92.1% |
+| Split | 100% → 100% | 0.0% | 100% |
+| Noise | **5.8% → 100%** | 0.0% | 100% |
+| Slow drip | **35.4% → 92.9%** | 0.0% | 94.1% |
+
+**Per-payment test (seeds 100-119).**
+
+| Scenario | Mule payments flagged | Genuine payments flagged | Mule accounts in flagged rings | Latency p50 / p95 |
+|---|---|---|---|---|
+| Standard | 98.8% (was 96.7%) | 0.0% | 90.0% | 154 ms / 265 ms |
+| Hardened | 97.5% (was 95.9%) | 0.0% | 88.7% | 148 ms / 219 ms |
+
+**Caveats.**
+- All of section 7.6b's caveats still apply: synthetic data from the same code family, high prevalence, and "0.0%" means none in this sample.
+- The playbooks were written by the same team that wrote the fixes. A fix that passes its own attack is weak evidence; an independent red team or dataset is needed.
+- **Known limit: bystander dilution.** A probe on one dataset (seed 7, not part of the harness) sent material decoys (≥ ₹400 per pair) from every mule to genuine accounts. With 2 bystanders per mule, recall stayed at 100%. With 4 per mule, it fell to 76-79%, whether the money went as one payment or several small ones. Bystanders join the ring and push it under the 30% purity gate. The operator pays real money for each bystander, but this is the current weak point.
+- p95 latency is still above a typical 100 ms payment budget.
+
 ## 7.7 Still to measure (not yet run)
 
 | Measurement | Plan | Why |

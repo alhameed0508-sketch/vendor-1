@@ -1,0 +1,96 @@
+{
+  "live_stride": 25,
+  "genuine_flag_budget": 0.01,
+  "scenarios": {
+    "standard": {
+      "chosen_gate": 0.3,
+      "calibration": {
+        "0.25": {
+          "datasets": 3,
+          "mule_payment_recall": 1.0,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.9454,
+          "cases_opened_median": 5,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 162.5,
+          "latency_ms_p95": 388.3
+        },
+        "0.3": {
+          "datasets": 3,
+          "mule_payment_recall": 1.0,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.9454,
+          "cases_opened_median": 5,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 151.3,
+          "latency_ms_p95": 249.9
+        },
+        "0.35": {
+          "datasets": 3,
+          "mule_payment_recall": 0.8919,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.8033,
+          "cases_opened_median": 4,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 158.2,
+          "latency_ms_p95": 474.0
+        }
+      },
+      "test": {
+        "datasets": 20,
+        "mule_payment_recall": 0.9877,
+        "genuine_payment_flag_rate": 0.0,
+        "mule_accounts_covered": 0.9,
+        "cases_opened_median": 4.0,
+        "genuine_accounts_exposed_median": 0.0,
+        "latency_ms_p50": 153.7,
+        "latency_ms_p95": 264.7
+      }
+    },
+    "hardened": {
+      "chosen_gate": 0.3,
+      "calibration": {
+        "0.25": {
+          "datasets": 3,
+          "mule_payment_recall": 1.0,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.9454,
+          "cases_opened_median": 5,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 151.9,
+          "latency_ms_p95": 235.5
+        },
+        "0.3": {
+          "datasets": 3,
+          "mule_payment_recall": 1.0,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.9454,
+          "cases_opened_median": 5,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 149.5,
+          "latency_ms_p95": 225.5
+        },
+        "0.35": {
+          "datasets": 3,
+          "mule_payment_recall": 0.8919,
+          "genuine_payment_flag_rate": 0.0,
+          "mule_accounts_covered": 0.8033,
+          "cases_opened_median": 4,
+          "genuine_accounts_exposed_median": 0,
+          "latency_ms_p50": 146.8,
+          "latency_ms_p95": 226.9
+        }
+      },
+      "test": {
+        "datasets": 20,
+        "mule_payment_recall": 0.9754,
+        "genuine_payment_flag_rate": 0.0,
+        "mule_accounts_covered": 0.8869,
+        "cases_opened_median": 4.0,
+        "genuine_accounts_exposed_median": 0.0,
+        "latency_ms_p50": 147.7,
+        "latency_ms_p95": 218.7
+      }
+    }
+  }
+}
