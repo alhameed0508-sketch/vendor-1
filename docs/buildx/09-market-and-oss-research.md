@@ -126,3 +126,40 @@ Current state is a hackathon-grade scorer with real security hardening. Honest g
 - Case-management OSS (NeoDash, Jube, Linkurious) was not examined.
 - No Devpost winner was verified.
 - Graph-latency benchmarks for streaming mule detection were not found.
+
+## 10. Real problems and the features that answer them (second research round)
+
+Sources are vendor blogs, news and a few arXiv items. Figures are directional. The Incognia survey, the RBC/Vector federated pilot and the Neo4j whitepaper are the most citable.
+
+| # | Real problem | Evidence | Feature that answers it | Already in repo? |
+|---|---|---|---|---|
+| P1 | Mule passes KYC; onboarding checks never catch post-onboarding abuse | Outseer, Bureau, Sphinx (vendor) | Score the first payments of a new account, not only history. Show a cold-start flag when history is thin. | Scorer is per payment. Cold-start line missing. |
+| P2 | Accounts live only a day or two, then cash out in bulk (UPI, ATM, cheque) | Government alerts via news | Fast-pass-through signal: share of inflow leaving within minutes, plus "account age vs volume" | Smurf scorer covers part. Age-vs-volume is not explicit. |
+| P3 | Each bank sees one slice of a cross-bank ring | Vyntra, Mule-Net, RBC/Vector | Privacy-preserving shared signal: hashed beneficiary flag that raises payment risk at another institution. Roadmap slide, not a build. | No |
+| P4 | Device and location signals cause the most false positives (28% and 24% in an Incognia survey) | Incognia | Never flag on one signal. Keep the endpoint-evidence plus ring-purity gates and show which signals fired. | Yes (gates) |
+| P5 | Tight rules let sophisticated mules through; loose rules flood analysts | arXiv 2512.24487 | Gate tuning on a precision budget with a visible threshold control for the reviewer | Gate chosen offline. UI control missing. |
+| P6 | Analysts distrust opaque scores; alert fatigue | arXiv 2605.08316 | Deterministic score plus reason codes, and generated prose only as a summary grounded in those reasons | Reasons yes. Narrative agent exists (`NarrativeAgent`). |
+| P7 | AI-written STR narratives can invent facts | Datawalk | Narrative cites evidence items by id; reviewer signs off; full audit log | `CaseAssemblyAgent`, `EvidenceItem`, STR PDF exist. Citations per sentence unchecked. |
+| P8 | Attackers adapt: rotate devices, split payments, add noise accounts | geosurge, arXiv survey | Sentinel scenarios: replay known evasion playbooks against each release. Ring-level recall, temporal split. | Hardened scenario exists. Evasion playbooks not yet. |
+| P9 | Mules shift from recurring high-value links to sporadic low-value transfers | Neo4j, geosurge | Per-account centrality trend (PageRank fall, betweenness rise) as an extra signal | No |
+| P10 | Topology drift hides adversarial change | geosurge | Drift panel: degree distribution, subgraph density, score PSI | No |
+| P11 | Mule-as-a-service: recruits are mostly unaware or controlled remotely | The Hacker News, medianama | Remote-access and behaviour-break signals (needs device telemetry). Roadmap only. | `device` routes exist, no telemetry |
+| P12 | Merchant and aggregator accounts used to harvest scam payments | reports via news | Separate merchant profile so a legitimate hub is not scored as a mule aggregator | `_infer_role` has an aggregator rule. No merchant exemption. |
+| P13 | Regulators need notice and reasoned order before fraud classification | RBI Master Directions | Case status model: flagged, notice sent, response window, reasoned decision | `STR_FILED` status exists. Notice window missing. |
+
+### Recommended build order
+
+1. **Risk bands plus reason chips on every flag** (P4, P5, P6). Small, and judges see it in the first 30 seconds.
+2. **Case card** with ring, money-flow timeline, evidence ids and a grounded narrative with citations (P6, P7).
+3. **Fast pass-through and account-age signals** (P1, P2). Check first that the smurf scorer does not already cover them.
+4. **Merchant exemption** (P12). It cuts false positives, which is the main buyer pain.
+5. **Sentinel evasion playbooks in the evaluation** (P8). This is the strongest honest answer to "what if the mules adapt?".
+6. **Reviewer threshold slider and feedback** (P5).
+7. Roadmap slides only: cross-bank hashed signal (P3), centrality trend (P9), drift panel (P10), device telemetry (P11), notice-window workflow (P13).
+
+### Evidence not found
+
+- No published feature importances for new-account mule models.
+- Nothing on Swift, Mastercard or Featurespace consortium mechanics.
+- No independent evaluation of LLM-written STR narratives.
+- Fund-movement timing ("within minutes") is a vendor claim without data.
