@@ -4,16 +4,20 @@ Alert routes — /api/v1/alerts/*
 
 from typing import Optional
 
-from api.deps import get_alert_service, get_detection_service
+from api.deps import get_alert_service, get_detection_service, get_str_service
 from api.v1.schemas.alerts import AlertUpdateRequest
+from core.exceptions import AuthorizationError, ConflictError
 from core.response import success_response
 from fastapi import APIRouter, Depends, Request
 from middleware.auth import require_permission
 from services.alert_service import AlertService
 from services.detection_service import DetectionService
+from services.str_service import STRService
 from slowapi import Limiter
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
+
+STR_APPROVER_ROLES = ("ADMIN", "SUPERVISOR")
 
 
 def register_alert_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -54,8 +58,14 @@ def register_alert_routes(r: APIRouter, limiter: Limiter) -> None:
         user: dict = Depends(require_permission("alerts:write")),
         detection_svc: DetectionService = Depends(get_detection_service),
         alert_svc: AlertService = Depends(get_alert_service),
+        str_svc: STRService = Depends(get_str_service),
     ):
         detection_svc.ensure_alerts()
+        if req.status == "STR_FILED":
+            if user.get("role") not in STR_APPROVER_ROLES:
+                raise AuthorizationError("Only ADMIN or SUPERVISOR can mark an alert STR_FILED")
+            if not str_svc.has_str_for_alert(alert_id):
+                raise ConflictError("No STR exists for this alert; export one before filing")
         return success_response(
             alert_svc.update_alert(
                 alert_id,

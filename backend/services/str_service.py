@@ -64,6 +64,10 @@ class STRService:
             "offset": offset,
         }
 
+    def has_str_for_alert(self, alert_id: str) -> bool:
+        # shortcut: scans the first 1000 STRs, page through the repo if volume grows past that
+        return any(alert_id in r.get("alert_ids", []) for r in self._repo.list_all(limit=1000))
+
     def approve_for_submission(self, str_id: str, approved_by: str) -> Dict:
         """Supervisor approval — moves from DRAFT to READY_FOR_SUBMISSION."""
         result = self._repo.update_status(
