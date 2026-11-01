@@ -3,6 +3,7 @@
 export const MAX_EDGES = 120;
 export const MAX_LATENCIES = 200;
 export const MAX_RING_PAYMENTS = 30;
+export const REVIEW_DECISIONS = ['confirmed', 'dismissed'];
 
 export const initialState = {
   status: 'idle', // idle | live | ended | error
@@ -13,6 +14,7 @@ export const initialState = {
   flaggedAccounts: [],
   latestCaseId: null,
   latencies: [],
+  reviews: {},
   error: null,
 };
 
@@ -62,6 +64,10 @@ export function streamReducer(state, action) {
       return { ...initialState, status: 'live' };
     case 'event':
       return applyEvent(state, action.event);
+    case 'review':
+      return REVIEW_DECISIONS.includes(action.decision) && state.rings[action.caseId]
+        ? { ...state, reviews: { ...state.reviews, [action.caseId]: action.decision } }
+        : state;
     case 'stopped':
       return state.status === 'live' ? { ...state, status: 'ended' } : state;
     case 'closed':

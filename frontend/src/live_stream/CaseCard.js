@@ -3,7 +3,7 @@ import { riskBand } from './riskBand';
 
 const money = (amount) => `₹${Number(amount).toLocaleString('en-IN')}`;
 
-export default function CaseCard({ ring }) {
+export default function CaseCard({ ring, decision, onReview }) {
   if (!ring) {
     return (
       <aside className="live-stream__case live-stream__case--empty" aria-live="polite">
@@ -32,6 +32,16 @@ export default function CaseCard({ ring }) {
           </li>
         ))}
       </ul>
+      {onReview && (
+        <div className="live-stream__review">
+          {decision ? (
+            <p>{decision === 'confirmed' ? 'Confirmed by reviewer' : 'Dismissed by reviewer'}</p>
+          ) : null}
+          <button type="button" onClick={() => onReview(ring.caseId, 'confirmed')}>Confirm mule ring</button>
+          <button type="button" onClick={() => onReview(ring.caseId, 'dismissed')}>Dismiss</button>
+          <p className="live-stream__note">Decision shown on this page only (demo only, not saved).</p>
+        </div>
+      )}
       <p className="live-stream__note">Routed to a human reviewer. The payment is not blocked.</p>
     </aside>
   );

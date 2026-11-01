@@ -91,3 +91,23 @@ describe('ring payment history', () => {
     expect(ring.payments[ring.payments.length - 1]).toMatchObject({ id: `T${MAX_RING_PAYMENTS + 5}`, amount: 1000 });
   });
 });
+
+describe('review decisions', () => {
+  it('records a decision per case without mutating state and resets on open', () => {
+    const live = streamReducer(initialState, { type: 'open' });
+    const withCase = streamReducer(live, { type: 'event', event: flagEvent(1) });
+    const frozen = JSON.stringify(withCase);
+    const reviewed = streamReducer(withCase, { type: 'review', caseId: 'CASE-1', decision: 'confirmed' });
+    expect(JSON.stringify(withCase)).toBe(frozen);
+    expect(reviewed.reviews).toEqual({ 'CASE-1': 'confirmed' });
+    expect(streamReducer(reviewed, { type: 'review', caseId: 'CASE-1', decision: 'dismissed' }).reviews['CASE-1']).toBe('dismissed');
+    expect(streamReducer(reviewed, { type: 'open' }).reviews).toEqual({});
+  });
+
+  it('ignores unknown decisions and unknown cases', () => {
+    const live = streamReducer(initialState, { type: 'open' });
+    const withCase = streamReducer(live, { type: 'event', event: flagEvent(1) });
+    expect(streamReducer(withCase, { type: 'review', caseId: 'CASE-1', decision: 'maybe' })).toBe(withCase);
+    expect(streamReducer(withCase, { type: 'review', caseId: 'NOPE', decision: 'confirmed' })).toBe(withCase);
+  });
+});

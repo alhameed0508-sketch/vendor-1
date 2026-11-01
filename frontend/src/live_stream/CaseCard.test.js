@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import CaseCard from './CaseCard';
 
 const ring = {
@@ -28,5 +28,22 @@ describe('CaseCard', () => {
     const rows = screen.getAllByRole('listitem').filter((li) => li.textContent.includes('→'));
     expect(rows).toHaveLength(2);
     expect(screen.getByText(/not blocked/)).toBeInTheDocument();
+  });
+});
+
+describe('CaseCard review actions', () => {
+  it('calls onReview with the case id and decision', () => {
+    const onReview = jest.fn();
+    render(<CaseCard ring={ring} onReview={onReview} />);
+    fireEvent.click(screen.getByRole('button', { name: /confirm mule ring/i }));
+    expect(onReview).toHaveBeenCalledWith('CASE-AB12', 'confirmed');
+    fireEvent.click(screen.getByRole('button', { name: /dismiss/i }));
+    expect(onReview).toHaveBeenCalledWith('CASE-AB12', 'dismissed');
+  });
+
+  it('shows the recorded decision and says it is not saved', () => {
+    render(<CaseCard ring={ring} decision="confirmed" onReview={() => {}} />);
+    expect(screen.getByText(/Confirmed by reviewer/)).toBeInTheDocument();
+    expect(screen.getByText(/demo only/i)).toBeInTheDocument();
   });
 });
