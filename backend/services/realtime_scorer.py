@@ -85,8 +85,12 @@ def _multi_scale_evidence(window: Sequence[Mapping]) -> Dict:
     return {acc: max(fast[acc], slow[acc], key=lambda s: s.smurf_score) for acc in fast}
 
 
-def _is_material(txn: Mapping) -> bool:
-    return float(txn["amount"]) >= MATERIAL_MIN_AMOUNT
+def _pair_is_material(window: Sequence[Mapping], txn: Mapping) -> bool:
+    """Same rule as ``_material_window``: the pair's total in the window, not this payment alone."""
+    pair = (txn["from_account"], txn["to_account"])
+    return (
+        sum(float(t["amount"]) for t in window if (t["from_account"], t["to_account"]) == pair) >= MATERIAL_MIN_AMOUNT
+    )
 
 
 def _material_window(window: Sequence[Mapping]) -> List[Mapping]:
@@ -144,13 +148,16 @@ class RealtimeScorer:
                 self._history = window
                 self._commits += 1
             cached = self._cached
-            fresh = (
-                cached is not None
-                and self._commits - cached[0] < self._refresh_every
-                and (not _is_material(txn) or (txn["from_account"] in cached[2] and txn["to_account"] in cached[2]))
-            )
             commits = self._commits
 
+        fresh = (
+            cached is not None
+            and commits - cached[0] < self._refresh_every
+            and (
+                not _pair_is_material(window, txn)
+                or (txn["from_account"] in cached[2] and txn["to_account"] in cached[2])
+            )
+        )
         communities = cached[1] if fresh else None
         material = _material_window(window)
         return self._score(

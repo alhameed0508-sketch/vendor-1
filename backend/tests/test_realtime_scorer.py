@@ -313,6 +313,18 @@ def test_payment_with_unseen_account_forces_a_fresh_partition(louvain_calls):
     assert len(louvain_calls) == 2
 
 
+def test_small_payment_that_makes_its_pair_material_forces_a_fresh_partition(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=50)
+    for txn in _chain(3):
+        scorer.score_payment(txn)
+    assert len(louvain_calls) == 1
+    small = {**_chain(4)[3], "to_account": "NEW1", "amount": 300}
+    scorer.score_payment({**small, "txn_id": "P1"})  # pair total 300: not material yet
+    assert len(louvain_calls) == 1
+    scorer.score_payment({**small, "txn_id": "P2"})  # pair total 600: NEW1 now joins the graph
+    assert len(louvain_calls) == 2
+
+
 def test_rejects_non_positive_refresh_interval():
     with pytest.raises(ValueError):
         RealtimeScorer([], [], community_refresh_every=0)
@@ -343,6 +355,31 @@ def test_small_decoy_payments_do_not_hide_a_ring(dataset):
     role = {a["account_id"]: a.get("role") for a in dataset["accounts"]}
     is_mule = {acc: r in {"SOURCE", "MULE", "AGGREGATOR"} for acc, r in role.items()}
     txns = sorted(noise(dataset["transactions"], is_mule, random.Random(7)), key=lambda t: t["timestamp"])
+    live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
+    assert _mule_recall(dataset["accounts"], history, live) >= 0.5
+
+
+def test_repeated_small_decoys_to_the_same_bystanders_do_not_hide_a_ring(dataset):
+    role = {a["account_id"]: a.get("role") for a in dataset["accounts"]}
+    mules = sorted(a for a, r in role.items() if r in {"SOURCE", "MULE", "AGGREGATOR"})
+    genuine = sorted(a for a in role if a not in mules)
+    times = sorted(str(t["timestamp"]) for t in dataset["transactions"])
+    rng = random.Random(7)
+    decoys = []
+    for mule in mules:
+        for b in range(2):  # two bystanders per mule, each sent 3 x 150 (pair total 450)
+            bystander, ts = rng.choice(genuine), rng.choice(times)
+            decoys += [
+                {
+                    "txn_id": f"D-{mule}-{b}-{p}",
+                    "from_account": mule,
+                    "to_account": bystander,
+                    "amount": 150.0,
+                    "timestamp": ts,
+                }
+                for p in range(3)
+            ]
+    txns = sorted([*dataset["transactions"], *decoys], key=lambda t: str(t["timestamp"]))
     live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
     assert _mule_recall(dataset["accounts"], history, live) >= 0.5
 
