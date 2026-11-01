@@ -60,3 +60,4 @@ infra/certs/*.crt
 models/gnn/checkpoints/
 *.pt
 *.pth
+.worktrees/
