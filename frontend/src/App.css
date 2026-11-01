@@ -1795,3 +1795,60 @@ html[data-theme="light"] .glass-card:not(.board-card):not(.node-panel):not(.appr
 input, textarea, select { border-radius: var(--radius-control); }
 .page-header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
 .page-meta { font-size: 13px; color: var(--text-muted); }
+
+/* ══════════════════════════════════════
+   REFINED SURFACES — depth from fill, not outlines
+   (board, cards, dialogs, floating panels)
+   ══════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --surface-1: #0F1012;
+  --surface-2: #17181B;
+  --surface-line: rgba(255, 255, 255, 0.07);
+  --surface-shadow: 0 1px 2px rgba(0,0,0,0.35), 0 8px 24px -12px rgba(0,0,0,0.5);
+}
+html[data-theme="light"] {
+  --surface-1: #F1F3F5;
+  --surface-2: #FFFFFF;
+  --surface-line: rgba(15, 23, 42, 0.08);
+  --surface-shadow: 0 1px 2px rgba(15,23,42,0.06), 0 8px 24px -14px rgba(15,23,42,0.18);
+}
+
+.board { gap: 16px; }
+.board-column {
+  background: var(--surface-1);
+  border: 0;
+  border-radius: 14px;
+  padding: 12px;
+  gap: 10px;
+}
+.board-column-head { padding: 2px 4px 8px; }
+.board-count { font-family: var(--font-sans); font-size: 12px; font-weight: 500; }
+
+.board-card.glass-card {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-line);
+  border-radius: 10px;
+  box-shadow: var(--surface-shadow);
+  padding: 12px 14px;
+  gap: 10px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.board-card.glass-card:hover { border-color: var(--accent); }
+.board-card-id { font-family: var(--font-sans); font-size: 13px; font-weight: 600; }
+.board-card-move select {
+  background: var(--surface-1);
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 8px;
+}
+
+.node-panel.glass-card, .approval-dialog.glass-card {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-line);
+  border-radius: 14px;
+  box-shadow: var(--surface-shadow);
+}
+.approval-backdrop { backdrop-filter: blur(2px); }
+
+/* Tables keep a hairline frame; rows get a soft hover */
+.data-table tbody tr:hover td { background: var(--accent-tint); }
