@@ -61,3 +61,6 @@ models/gnn/checkpoints/
 *.pt
 *.pth
 .worktrees/
+
+# Vercel
+.vercel/
