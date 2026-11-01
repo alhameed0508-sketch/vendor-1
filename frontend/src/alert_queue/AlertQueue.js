@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { alertPath } from '../utils/safeNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
 import useAlertStream from '../hooks/useAlertStream';
 import StatCard from '../components/StatCard';
+import BoardView from './BoardView';
+import ApprovalDialog from './ApprovalDialog';
+import useQueueView from './useQueueView';
+import { canMove, requiresApproval } from './boardModel';
+import { updateAlertStatus, fileStr } from './alertActions';
 import {
   API_ALERTS_QUEUE_LIMIT,
   ALERT_POLL_INTERVAL_MS,
@@ -62,6 +67,7 @@ const STATUS_CONFIG = {
   UNDER_REVIEW: { cls: 'badge-UNDER_REVIEW' },
   RESOLVED:     { cls: 'badge-RESOLVED' },
   ESCALATED:    { cls: 'badge-CRITICAL' },
+  STR_FILED:    { cls: 'badge-STR_FILED' },
   FALSE_POSITIVE: { cls: 'badge-FALSE_POSITIVE' },
 };
 
@@ -217,7 +223,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
 
             <p className="section-title" style={{ marginBottom: 8 }}>Update status</p>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {['UNDER_REVIEW', 'ESCALATED', 'RESOLVED'].map(s => {
+              {['UNDER_REVIEW', 'STR_FILED', 'RESOLVED'].map(s => {
                 const isActive = alert.status === s;
                 const cfg = STATUS_CONFIG[s] || {};
                 return (
@@ -258,6 +264,10 @@ export default function AlertQueue({ onSelectAlert }) {
   const [loadError, setLoadError]     = useState(false);
   const [newAlertCount, setNewAlertCount] = useState(0);
   const [seeding, setSeeding]         = useState(false);
+  const [view, setView]              = useQueueView();
+  const navigate                     = useNavigate();
+  const [approvalAlert, setApprovalAlert] = useState(null);
+  const [moveError, setMoveError]     = useState(null);
   const flashTimer = useRef(null);
 
   /* ── Reusable fetch ── */
@@ -344,21 +354,36 @@ export default function AlertQueue({ onSelectAlert }) {
   };
 
   /* ── Status update ── */
-  const handleStatusChange = async (alertId, newStatus) => {
-    setStatusLoading(newStatus);
+  const applyStatus = (alertId, status) =>
+    setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status } : a));
+
+  const handleMove = async (alert, toStatus) => {
+    if (!canMove(alert.status, toStatus)) return;
+    setMoveError(null);
+    if (requiresApproval(toStatus)) {
+      setApprovalAlert(alert);
+      return;
+    }
+    setStatusLoading(toStatus);
     try {
-      const r = await apiFetch(`/api/v1/alerts/${alertId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!r.ok) throw new Error();
-      setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status: newStatus } : a));
-    } catch {
-      setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status: newStatus } : a));
+      await updateAlertStatus(alert.alert_id, toStatus);
+      applyStatus(alert.alert_id, toStatus);
+    } catch (e) {
+      setMoveError(e.message);
     } finally {
       setStatusLoading(null);
     }
+  };
+
+  const handleStatusChange = (alertId, newStatus) => {
+    const alert = alerts.find(a => a.alert_id === alertId);
+    if (alert) handleMove(alert, newStatus);
+  };
+
+  const confirmFiling = async reason => {
+    await fileStr(approvalAlert, reason);
+    applyStatus(approvalAlert.alert_id, 'STR_FILED');
+    setApprovalAlert(null);
   };
 
   /* ── Summary stats ── */
@@ -370,7 +395,7 @@ export default function AlertQueue({ onSelectAlert }) {
   }), [alerts]);
 
   const severities = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-  const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'ESCALATED', 'RESOLVED'];
+  const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'];
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1200, position: 'relative', zIndex: 1 }}>
@@ -417,6 +442,15 @@ export default function AlertQueue({ onSelectAlert }) {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="view-toggle" role="group" aria-label="Queue view">
+            {['board', 'table'].map(v => (
+              <button key={v} type="button" aria-pressed={view === v}
+                      className={`filter-tab ${view === v ? 'active' : ''}`}
+                      onClick={() => setView(v)}>
+                {v === 'board' ? 'Board' : 'Table'}
+              </button>
+            ))}
+          </div>
           <button
             className="btn btn-ghost btn-sm"
             disabled={seeding}
@@ -486,6 +520,9 @@ export default function AlertQueue({ onSelectAlert }) {
             Try adjusting severity or status filters above
           </p>
         </div>
+      ) : view === 'board' ? (
+        <BoardView alerts={alerts} onMove={handleMove}
+                   onOpen={id => navigate(alertPath(id))} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {/* Table header */}
@@ -626,6 +663,12 @@ export default function AlertQueue({ onSelectAlert }) {
             })}
           </AnimatePresence>
         </div>
+      )}
+
+      {moveError && <p role="alert" className="approval-error">{moveError}</p>}
+      {approvalAlert && (
+        <ApprovalDialog alert={approvalAlert} onConfirm={confirmFiling}
+                        onCancel={() => setApprovalAlert(null)} />
       )}
     </div>
   );

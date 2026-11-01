@@ -1626,3 +1626,16 @@ input::placeholder, textarea::placeholder {
 .approval-reason { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-primary); font: inherit; resize: vertical; }
 .approval-error { margin: 10px 0 0; color: var(--critical); font-size: 13px; }
 .approval-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* ── Alert board ── */
+.badge-STR_FILED { background: rgba(16,185,129,0.10); color: var(--accent-green); border-color: rgba(16,185,129,0.25); }
+.view-toggle { display: inline-flex; gap: 4px; margin-right: 4px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.board-column { display: flex; flex-direction: column; gap: 8px; min-height: 160px; padding: 10px; border-radius: 12px; border: 1px solid var(--border-subtle); background: var(--bg-card); }
+.board-column-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 2px 6px; }
+.board-count { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; color: var(--text-muted); }
+.board-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; cursor: grab; }
+.board-card:active { cursor: grabbing; }
+.board-card-id { background: none; border: 0; padding: 0; text-align: left; font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; color: var(--text-primary); cursor: pointer; }
+.board-card-move select { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); font: inherit; font-size: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
