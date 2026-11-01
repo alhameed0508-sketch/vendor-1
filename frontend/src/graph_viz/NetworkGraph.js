@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import NodeDetailPanel from './NodeDetailPanel';
 import * as d3 from 'd3';
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -212,16 +213,21 @@ export default function NetworkGraph({
   const rawNodes = (!propNodes || propNodes.length === 0 || useDemoData) ? DEMO_GRAPH.nodes : propNodes;
   const rawEdges = (!propEdges || propEdges.length === 0 || useDemoData) ? DEMO_GRAPH.edges : propEdges;
 
-  // Normalise field names (backend may send betweenness_centrality, demo uses betweenness)
-  const nodes = rawNodes.map(n => ({
-    ...n,
-    betweenness: n.betweenness ?? n.betweenness_centrality ?? 0,
-  }));
-  const edges = rawEdges.map(e => ({
-    ...e,
-    from_account: e.from_account ?? e.source,
-    to_account:   e.to_account   ?? e.target,
-  }));
+  // Normalise field names (backend may send betweenness_centrality, demo uses betweenness).
+  // Memoised so selecting a node (state change) does not rebuild the d3 graph.
+  const { nodes, edges } = useMemo(() => ({
+    nodes: rawNodes.map(n => ({
+      ...n,
+      betweenness: n.betweenness ?? n.betweenness_centrality ?? 0,
+    })),
+    edges: rawEdges.map(e => ({
+      ...e,
+      from_account: e.from_account ?? e.source,
+      to_account:   e.to_account   ?? e.target,
+    })),
+  }), [rawNodes, rawEdges]);
+
+  const [selectedNode, setSelectedNode] = useState(null);
 
   const svgRef = useRef(null);
   const containerRef = useRef(null);
@@ -748,7 +754,8 @@ export default function NetworkGraph({
           .attr('stroke-width', d => edgeWidthScale(d.amount));
         nodeGroup.attr('opacity', 1);
         tooltip.transition().duration(200).style('opacity', 0);
-      });
+      })
+      .on('click', (event, d) => setSelectedNode(d));
 
     /* ── Tick handler ── */
     simulation.on('tick', () => {
@@ -849,6 +856,7 @@ export default function NetworkGraph({
 
   return (
     <div ref={containerRef} style={{ position: 'relative', width: '100%' }}>
+      <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
       {/* ── Insights overlay ── */}
       {insights && (
         <div style={{

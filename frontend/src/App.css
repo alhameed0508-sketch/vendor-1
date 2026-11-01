@@ -1639,3 +1639,11 @@ input::placeholder, textarea::placeholder {
 .board-card-id { background: none; border: 0; padding: 0; text-align: left; font-family: var(--font-mono, ui-monospace, monospace); font-size: 13px; color: var(--text-primary); cursor: pointer; }
 .board-card-move select { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-secondary); font: inherit; font-size: 12px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── Graph node panel ── */
+.node-panel { position: absolute; top: 10px; right: 12px; z-index: 6; width: 220px; padding: 14px; }
+.node-panel-head { display: flex; align-items: center; justify-content: space-between; }
+.node-panel-id { margin: 4px 0 10px; font-family: var(--font-mono, ui-monospace, monospace); font-size: 14px; color: var(--text-primary); word-break: break-all; }
+.node-panel-fields { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 12px; font-size: 12px; }
+.node-panel-fields dt { color: var(--text-muted); }
+.node-panel-fields dd { margin: 0; color: var(--text-secondary); }
