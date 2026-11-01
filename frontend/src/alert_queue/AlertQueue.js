@@ -27,91 +27,9 @@ import {
 /* ═══════════════════════════════════════════════════════════════
    AlertQueue — Priority-ranked investigation triage queue
    Connects to GET /api/v1/alerts  +  PATCH /api/v1/alerts/:id
-   Falls back to inline demo data if API unavailable.
+   Shows an explicit error state if the API is unavailable; never substitutes fake alerts.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Demo data (mirrors _StubRepo in alert_service.py) ─────────── */
-
-const DEMO_ALERTS = [
-  {
-    alert_id: 'ALT-0001', severity: 'CRITICAL', status: 'OPEN',
-    risk_score: 0.91, total_amount: 1850000, account_count: 6,
-    txn_count: 24, priority_score: 0.88, sar_filing_probability: 0.92,
-    investigation_complexity: 'HIGH',
-    created_at: new Date(Date.now() - 1800000).toISOString(),
-    score_breakdown: { risk_score: 0.91, amount_factor: 1.0, network_centrality: 0.78, evidence_diversity: 0.40, time_sensitivity: 0.90 },
-    reason_codes: ['R01: Rapid fund aggregation', 'R02: Structured deposits below ₹2L', 'R03: Shared device fingerprint', 'R04: New account (<7 days)'],
-    nodes: [
-      { account_id: 'AC001', role: 'SOURCE',      smurf_score: 0.93, betweenness_centrality: 0.62, account_age_days: 3,   bank: 'IOB',  city: 'Chennai',     kyc_status: 'PARTIAL'  },
-      { account_id: 'AC002', role: 'AGGREGATOR',  smurf_score: 0.88, betweenness_centrality: 0.78, account_age_days: 5,   bank: 'IOB',  city: 'Chennai',     kyc_status: 'PARTIAL'  },
-      { account_id: 'AC003', role: 'MULE',        smurf_score: 0.76, betweenness_centrality: 0.31, account_age_days: 12,  bank: 'SBI',  city: 'Coimbatore',  kyc_status: 'PENDING'  },
-      { account_id: 'AC004', role: 'MULE',        smurf_score: 0.71, betweenness_centrality: 0.22, account_age_days: 8,   bank: 'SBI',  city: 'Madurai',     kyc_status: 'PENDING'  },
-      { account_id: 'AC005', role: 'MULE',        smurf_score: 0.68, betweenness_centrality: 0.18, account_age_days: 6,   bank: 'BOI',  city: 'Trichy',      kyc_status: 'PENDING'  },
-      { account_id: 'AC006', role: 'LEGITIMATE',  smurf_score: 0.12, betweenness_centrality: 0.05, account_age_days: 420, bank: 'IOB',  city: 'Chennai',     kyc_status: 'COMPLETE' },
-    ],
-    edges: [
-      { from_account: 'AC001', to_account: 'AC002', total_amount: 750000, txn_count: 8, pattern: 'SMURFING'      },
-      { from_account: 'AC001', to_account: 'AC003', total_amount: 450000, txn_count: 5, pattern: 'SMURFING'      },
-      { from_account: 'AC002', to_account: 'AC004', total_amount: 380000, txn_count: 6, pattern: 'CONSOLIDATION' },
-      { from_account: 'AC002', to_account: 'AC005', total_amount: 270000, txn_count: 5, pattern: 'SMURFING'      },
-    ],
-  },
-  {
-    alert_id: 'ALT-0002', severity: 'HIGH', status: 'OPEN',
-    risk_score: 0.74, total_amount: 620000, account_count: 4,
-    txn_count: 11, priority_score: 0.67, sar_filing_probability: 0.64,
-    investigation_complexity: 'MEDIUM',
-    created_at: new Date(Date.now() - 3600000).toISOString(),
-    score_breakdown: { risk_score: 0.74, amount_factor: 0.82, network_centrality: 0.55, evidence_diversity: 0.20, time_sensitivity: 0.60 },
-    reason_codes: ['R02: Structured deposits below ₹2L', 'R05: UPI velocity spike'],
-    nodes: [
-      { account_id: 'AC010', role: 'SOURCE', smurf_score: 0.77, betweenness_centrality: 0.55, account_age_days: 14, bank: 'IOB',  city: 'Bangalore', kyc_status: 'PARTIAL'  },
-      { account_id: 'AC011', role: 'MULE',   smurf_score: 0.65, betweenness_centrality: 0.33, account_age_days: 21, bank: 'HDFC', city: 'Bangalore', kyc_status: 'PENDING'  },
-      { account_id: 'AC012', role: 'MULE',   smurf_score: 0.59, betweenness_centrality: 0.28, account_age_days: 18, bank: 'HDFC', city: 'Mysore',    kyc_status: 'PENDING'  },
-      { account_id: 'AC013', role: 'LEGITIMATE', smurf_score: 0.08, betweenness_centrality: 0.04, account_age_days: 730, bank: 'IOB', city: 'Bangalore', kyc_status: 'COMPLETE' },
-    ],
-    edges: [
-      { from_account: 'AC010', to_account: 'AC011', total_amount: 320000, txn_count: 6, pattern: 'SMURFING' },
-      { from_account: 'AC010', to_account: 'AC012', total_amount: 300000, txn_count: 5, pattern: 'SMURFING' },
-    ],
-  },
-  {
-    alert_id: 'ALT-0003', severity: 'MEDIUM', status: 'UNDER_REVIEW',
-    risk_score: 0.52, total_amount: 210000, account_count: 3,
-    txn_count: 7, priority_score: 0.44, sar_filing_probability: 0.34,
-    investigation_complexity: 'LOW',
-    created_at: new Date(Date.now() - 7200000).toISOString(),
-    score_breakdown: { risk_score: 0.52, amount_factor: 0.61, network_centrality: 0.40, evidence_diversity: 0.10, time_sensitivity: 0.50 },
-    reason_codes: ['R03: Shared device fingerprint'],
-    nodes: [
-      { account_id: 'AC020', role: 'SOURCE', smurf_score: 0.54, betweenness_centrality: 0.40, account_age_days: 30, bank: 'IOB', city: 'Mumbai', kyc_status: 'COMPLETE' },
-      { account_id: 'AC021', role: 'MULE',   smurf_score: 0.48, betweenness_centrality: 0.22, account_age_days: 45, bank: 'PNB', city: 'Pune',   kyc_status: 'PARTIAL'  },
-      { account_id: 'AC022', role: 'MULE',   smurf_score: 0.44, betweenness_centrality: 0.18, account_age_days: 60, bank: 'PNB', city: 'Nagpur', kyc_status: 'PARTIAL'  },
-    ],
-    edges: [
-      { from_account: 'AC020', to_account: 'AC021', total_amount: 120000, txn_count: 4, pattern: 'CONSOLIDATION' },
-      { from_account: 'AC020', to_account: 'AC022', total_amount: 90000,  txn_count: 3, pattern: 'CONSOLIDATION' },
-    ],
-  },
-  {
-    alert_id: 'ALT-0004', severity: 'HIGH', status: 'RESOLVED',
-    risk_score: 0.69, total_amount: 430000, account_count: 3,
-    txn_count: 9, priority_score: 0.58, sar_filing_probability: 0.62,
-    investigation_complexity: 'MEDIUM',
-    created_at: new Date(Date.now() - 14400000).toISOString(),
-    score_breakdown: { risk_score: 0.69, amount_factor: 0.74, network_centrality: 0.48, evidence_diversity: 0.20, time_sensitivity: 0.55 },
-    reason_codes: ['R01: Rapid fund aggregation', 'R04: New account (<7 days)'],
-    nodes: [
-      { account_id: 'AC030', role: 'SOURCE', smurf_score: 0.71, betweenness_centrality: 0.50, account_age_days: 6,  bank: 'IOB', city: 'Hyderabad', kyc_status: 'PARTIAL' },
-      { account_id: 'AC031', role: 'MULE',   smurf_score: 0.60, betweenness_centrality: 0.30, account_age_days: 9,  bank: 'SBI', city: 'Hyderabad', kyc_status: 'PENDING' },
-      { account_id: 'AC032', role: 'MULE',   smurf_score: 0.55, betweenness_centrality: 0.25, account_age_days: 11, bank: 'SBI', city: 'Warangal',  kyc_status: 'PENDING' },
-    ],
-    edges: [
-      { from_account: 'AC030', to_account: 'AC031', total_amount: 230000, txn_count: 5, pattern: 'SMURFING' },
-      { from_account: 'AC030', to_account: 'AC032', total_amount: 200000, txn_count: 4, pattern: 'SMURFING' },
-    ],
-  },
-];
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 
@@ -337,7 +255,7 @@ export default function AlertQueue({ onSelectAlert }) {
   const [filterStatus,   setFilterStatus]   = useState('ALL');
   const [expandedId, setExpandedId]   = useState(null);
   const [statusLoading, setStatusLoading]   = useState(null);
-  const [usingDemo, setUsingDemo]     = useState(false);
+  const [loadError, setLoadError]     = useState(false);
   const [newAlertCount, setNewAlertCount] = useState(0);
   const [seeding, setSeeding]         = useState(false);
   const flashTimer = useRef(null);
@@ -365,19 +283,15 @@ export default function AlertQueue({ onSelectAlert }) {
         }));
         scored.sort((a, b) => b.priority_score - a.priority_score);
         setAlerts(scored);
-        setUsingDemo(false);
+        setLoadError(false);
         setLoading(false);
         return scored;
       })
       .catch(() => {
-        const demo = DEMO_ALERTS
-          .filter(a => filterSeverity === 'ALL' || a.severity === filterSeverity)
-          .filter(a => filterStatus   === 'ALL' || a.status   === filterStatus);
-        demo.sort((a, b) => b.priority_score - a.priority_score);
-        setAlerts(demo);
-        setUsingDemo(true);
+        setAlerts([]);
+        setLoadError(true);
         setLoading(false);
-        return demo;
+        return [];
       });
   }, [filterSeverity, filterStatus]);
   const fetchRef = useRef(fetchAlerts);
@@ -403,15 +317,15 @@ export default function AlertQueue({ onSelectAlert }) {
 
   const { connected: sseConnected } = useAlertStream({
     onNewAlerts: handleNewAlerts,
-    enabled: !usingDemo,
+    enabled: !loadError,
   });
 
   /* ── Polling fallback when SSE is not connected ── */
   useEffect(() => {
-    if (sseConnected || usingDemo) return;
+    if (sseConnected || loadError) return;
     const interval = setInterval(() => fetchRef.current(), ALERT_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [sseConnected, usingDemo]);
+  }, [sseConnected, loadError]);
 
   /* ── Seed transactions ── */
   const handleSeed = async () => {
@@ -470,10 +384,10 @@ export default function AlertQueue({ onSelectAlert }) {
             ML-ranked by priority score
             <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
             {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
-            {usingDemo && (
+            {loadError && (
               <span className="stat-pill" style={{ marginLeft: 10 }}>
                 <span className="dot" />
-                demo data
+                alert API unavailable, showing no data
               </span>
             )}
             {sseConnected && (

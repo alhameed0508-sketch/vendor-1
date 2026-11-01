@@ -97,3 +97,25 @@ torch. Node and Docker are not installed.
 
 Uncommitted at time of writing: `docs/buildx/`, `scripts/evaluation/`,
 `HARDCODED_VALUES_AUDIT.md`, modified `data/benchmark_results.json`.
+
+## 9. Progress log
+
+### 2026-11-02: per-payment scoring and demo-integrity fixes
+
+Organisers confirmed pre-built code is allowed.
+
+| Change | Where | Evidence |
+|---|---|---|
+| `POST /api/v1/score` scores one payment against the account network (method B). Never blocks; `FLAG` means route to a human. | `backend/services/realtime_scorer.py`, `backend/api/v1/routes/score.py` | About 35 ms per payment on the seeded demo graph (about 1,800 transactions) |
+| Ring flag needs endpoint evidence (smurf score >= 0.30), not just a suspicious community | `ENDPOINT_EVIDENCE_MIN` in `realtime_scorer.py` | Without it, 62 of 97 genuine payments were flagged because one 60-account genuine community scored 0.60 |
+| Alert node `role` is inferred from money flow, edge `pattern` no longer copies the generator label | `backend/detection/pipeline.py` (`_infer_role`) | `test_alert_nodes_ignore_ground_truth_role` |
+| UI no longer substitutes hard-coded fake alerts when the API fails; shows an error pill | `frontend/src/alert_queue/AlertQueue.js` | Syntax checked; the frontend build toolchain (`ajv`) is broken locally |
+
+Tests: 431 passed, 5 skipped (the two `torch` test files are excluded: `torch` is not installed in `.venv`).
+Calibration of the 0.30 gate used one seeded synthetic dataset; re-check it on the held-out seeds (100-119) before quoting a number.
+
+### Still open
+- Live "payment stream" demo screen (ring forming on the graph, counter "genuine customers flagged").
+- Re-run `scripts/evaluation` for the per-payment scorer on seeds 100-119.
+- GNN label leakage (`models/gnn/gnn_model.py:334`) still present but off the demo path.
+- Remove "83% accuracy" wording from `V2_IMPROVEMENT_SUMMARY.md`.

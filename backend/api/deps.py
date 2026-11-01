@@ -26,6 +26,7 @@ from services.feedback_service import FeedbackService
 from services.graph_service import GraphService
 from services.ingest_service import IngestService
 from services.kpi_service import KPIService
+from services.realtime_scorer import RealtimeScorer
 
 from infra.database.user_db import UserDB
 from models.active_learning.feedback_loop import (
@@ -100,6 +101,19 @@ def get_pipeline() -> DetectionPipeline:
         rule_version=settings.rule_version,
         device_profiler=get_device_profiler(),
     )
+
+
+@lru_cache(maxsize=1)
+def get_realtime_scorer() -> RealtimeScorer:
+    """Per-payment scorer. Seeded with unlabelled synthetic history in demo mode only."""
+    if not get_settings().demo_mode:
+        return RealtimeScorer([], [])
+    from services.realtime_demo import strip_labels
+
+    from data.synthetic.generator import build_adversarial_dataset
+
+    data = build_adversarial_dataset(num_clusters=3, num_legit_accounts=60, num_adversarial=10)
+    return RealtimeScorer(strip_labels(data["accounts"]), strip_labels(data["transactions"]))
 
 
 def _build_threshold_config() -> ThresholdConfig:

@@ -94,13 +94,16 @@ from models.temporal_weighting.smurf_weighting import (
     score_transaction_batch,
 )  # noqa: E402
 
+# A node that receives at least this many times what it sends is an AGGREGATOR
+AGGREGATOR_RECEIVE_RATIO = 3.0
+
 # ── Data models ───────────────────────────────────────────────────────────
 
 
 @dataclass
 class AlertNode:
     account_id: str
-    role: str  # SOURCE | MULE | AGGREGATOR | UNKNOWN
+    role: str  # inferred from flow: SOURCE | MULE | AGGREGATOR | UNKNOWN
     smurf_score: float
     bank: str
     city: str
@@ -465,6 +468,23 @@ def _try_load_gnn_scorer(model_path: str = None):
 
 
 # ── Detection pipeline ────────────────────────────────────────────────────
+
+
+def _infer_role(account_id: str, flows: List[Dict]) -> str:
+    """Structural role from observed money flow inside the ring.
+
+    Never reads generator or analyst labels: SOURCE only sends, AGGREGATOR
+    mostly receives, MULE both receives and forwards.
+    """
+    sent = sum(float(t["amount"]) for t in flows if t["from_account"] == account_id)
+    received = sum(float(t["amount"]) for t in flows if t["to_account"] == account_id)
+    if sent == 0 and received == 0:
+        return "UNKNOWN"
+    if received == 0:
+        return "SOURCE"
+    if received >= AGGREGATOR_RECEIVE_RATIO * sent:
+        return "AGGREGATOR"
+    return "MULE"
 
 
 class DetectionPipeline:
@@ -848,7 +868,7 @@ class DetectionPipeline:
             nodes.append(
                 AlertNode(
                     account_id=acc_id,
-                    role=acc.get("role", "UNKNOWN"),
+                    role=_infer_role(acc_id, community_txns),
                     smurf_score=ss.smurf_score if ss else 0.0,
                     bank=acc.get("bank", ""),
                     city=acc.get("city", ""),
@@ -880,7 +900,7 @@ class DetectionPipeline:
                     to_account=t["to_account"],
                     total_amount=0,
                     txn_count=0,
-                    pattern=t.get("pattern", "NORMAL"),
+                    pattern="OBSERVED",
                     timestamps=[],
                 )
             edge_map[key].total_amount += float(t["amount"])
