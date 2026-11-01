@@ -20,6 +20,7 @@ are never added twice, and a reused ``txn_id`` with different content is rejecte
 from __future__ import annotations
 
 import hashlib
+import math
 import threading
 import time
 from dataclasses import dataclass
@@ -40,8 +41,9 @@ ENDPOINT_EVIDENCE_MIN = 0.30
 # Share of ring members that must carry their own evidence ("no innocent bystanders").
 MIN_RING_PURITY = 0.30
 MERCHANT_TYPE = "MERCHANT"  # account_type whose own activity is not evidence (legitimate hubs)
-# Payments below this amount are kept in history but ignored as evidence and as graph links.
-# Small decoys sent to genuine accounts otherwise dilute a ring (see 05-evaluation.md 7.6c).
+# A payment is evidence when it, or the combined value of its account pair in the window,
+# reaches this amount. One-off small decoys to genuine accounts are ignored (they would
+# otherwise dilute a ring, see 05-evaluation.md 7.6c); repeated small payments still count.
 MATERIAL_MIN_AMOUNT = SMURF_FLOOR
 # Evidence is scored at the default windows and at a slow scale (6x), keeping the stronger
 # score per account, so stretching the timeline does not hide a ring.
@@ -67,9 +69,11 @@ def _validate(txn: Mapping) -> None:
     if missing:
         raise ValueError(f"payment missing required fields: {', '.join(missing)}")
     try:
-        float(txn["amount"])
+        amount = float(txn["amount"])
     except (TypeError, ValueError) as exc:
         raise ValueError("payment amount must be numeric") from exc
+    if not math.isfinite(amount) or amount <= 0:
+        raise ValueError("payment amount must be a positive finite number")
 
 
 def _content(txn: Mapping) -> tuple:
@@ -83,6 +87,14 @@ def _multi_scale_evidence(window: Sequence[Mapping]) -> Dict:
 
 def _is_material(txn: Mapping) -> bool:
     return float(txn["amount"]) >= MATERIAL_MIN_AMOUNT
+
+
+def _material_window(window: Sequence[Mapping]) -> List[Mapping]:
+    pair_total: Dict[Tuple[str, str], float] = {}
+    for t in window:
+        key = (t["from_account"], t["to_account"])
+        pair_total[key] = pair_total.get(key, 0.0) + float(t["amount"])
+    return [t for t in window if pair_total[(t["from_account"], t["to_account"])] >= MATERIAL_MIN_AMOUNT]
 
 
 def _case_id(members: Sequence[str]) -> str:
@@ -140,7 +152,7 @@ class RealtimeScorer:
             commits = self._commits
 
         communities = cached[1] if fresh else None
-        material = [t for t in window if _is_material(t)]
+        material = _material_window(window)
         return self._score(
             txn, material, self._with_known_accounts(accounts, material), started, communities, commits, commit
         )

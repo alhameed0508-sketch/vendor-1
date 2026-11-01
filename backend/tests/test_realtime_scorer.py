@@ -377,3 +377,23 @@ def test_long_window_engine_sees_slow_consolidation():
     long = SmurfWeightingEngine(consolidation_hours=36).score_account("M", outgoing, incoming)
     assert short.consolidation_score == 0.0
     assert long.consolidation_score > 0.5
+
+
+def test_structured_small_payments_count_when_their_pair_total_is_material():
+    from services.realtime_scorer import _material_window
+
+    base = datetime(2026, 1, 1)
+    small = [
+        {"txn_id": f"S{i}", "from_account": "A", "to_account": "B", "amount": 350, "timestamp": base.isoformat()}
+        for i in range(3)
+    ]
+    decoy = {"txn_id": "D1", "from_account": "A", "to_account": "G", "amount": 150, "timestamp": base.isoformat()}
+    kept = {t["txn_id"] for t in _material_window([*small, decoy])}
+    assert kept == {"S0", "S1", "S2"}
+
+
+@pytest.mark.parametrize("amount", [0, -5, float("nan"), float("inf")])
+def test_rejects_non_positive_or_non_finite_amounts(amount):
+    scorer = RealtimeScorer([], [])
+    with pytest.raises(ValueError):
+        scorer.score_payment({**_payment("BAD"), "amount": amount})
