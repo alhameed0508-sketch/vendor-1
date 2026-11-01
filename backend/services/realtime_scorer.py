@@ -36,6 +36,7 @@ MIN_RING_SIZE = 3
 ENDPOINT_EVIDENCE_MIN = 0.30
 # Share of ring members that must carry their own evidence ("no innocent bystanders").
 MIN_RING_PURITY = 0.30
+MERCHANT_TYPE = "MERCHANT"  # account_type whose own activity is not evidence (legitimate hubs)
 MAX_REASONS = 6
 CASE_ID_PREFIX = "CASE-"
 CASE_ID_HEX_LEN = 8
@@ -120,16 +121,17 @@ class RealtimeScorer:
         communities = LouvainClusterDetector().detect_clusters(window, accounts)
         ring = self._ring_for(communities, (sender, receiver))
 
+        merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
         endpoint_scores = []
         reasons: List[str] = []
         for acc in (sender, receiver):
-            score = smurf.get(acc)
+            score = None if acc in merchants else smurf.get(acc)
             if score is not None:
                 endpoint_scores.append(score.smurf_score)
                 reasons.extend(f"{acc}: {code}" for code in score.reason_codes)
 
         evidence = max(endpoint_scores, default=0.0)
-        has_evidence = evidence >= ENDPOINT_EVIDENCE_MIN and self._ring_is_pure(ring, smurf)
+        has_evidence = evidence >= ENDPOINT_EVIDENCE_MIN and self._ring_is_pure(ring, smurf, merchants)
         ring_support = ring.suspicion_score if ring is not None and has_evidence else 0.0
         if ring_support:
             reasons = [*ring.reason_codes, *reasons]
@@ -149,10 +151,14 @@ class RealtimeScorer:
         )
 
     @staticmethod
-    def _ring_is_pure(ring: Optional[Community], smurf: Mapping) -> bool:
+    def _ring_is_pure(ring: Optional[Community], smurf: Mapping, merchants: frozenset = frozenset()) -> bool:
         if ring is None or not ring.accounts:
             return False
-        with_evidence = sum(1 for a in ring.accounts if a in smurf and smurf[a].smurf_score >= ENDPOINT_EVIDENCE_MIN)
+        with_evidence = sum(
+            1
+            for a in ring.accounts
+            if a not in merchants and a in smurf and smurf[a].smurf_score >= ENDPOINT_EVIDENCE_MIN
+        )
         return with_evidence / len(ring.accounts) >= MIN_RING_PURITY
 
     @staticmethod

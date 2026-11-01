@@ -199,3 +199,33 @@ def test_identical_replay_is_scored_not_duplicated():
     again = scorer.score_payment(_payment("T8"))
     assert again.decision == first.decision
     assert scorer.history_size == 1
+
+
+# ── Merchant exemption ────────────────────────────────────────────────────────
+
+
+def _first_flagged(split):
+    scorer = _scorer(split)
+    for raw in _strip_labels(split[2]):
+        result = scorer.score_payment(raw, commit=False)
+        if result.decision == "FLAG":
+            return raw, result
+    pytest.fail("expected a flagged payment")
+
+
+def test_ring_made_only_of_merchants_is_not_flagged(split):
+    accounts, history, _ = split
+    txn, flagged = _first_flagged(split)
+    merchants = set(flagged.ring_members)
+    marked = [{**a, "account_type": "MERCHANT"} if a["account_id"] in merchants else a for a in _strip_labels(accounts)]
+    scorer = RealtimeScorer(marked, _strip_labels(history))
+    assert scorer.score_payment(txn, commit=False).decision == "PASS"
+
+
+def test_one_merchant_in_a_ring_does_not_clear_it(split):
+    accounts, history, _ = split
+    txn, flagged = _first_flagged(split)
+    one = flagged.ring_members[0]
+    marked = [{**a, "account_type": "MERCHANT"} if a["account_id"] == one else a for a in _strip_labels(accounts)]
+    scorer = RealtimeScorer(marked, _strip_labels(history))
+    assert scorer.score_payment(txn, commit=False).decision == "FLAG"
