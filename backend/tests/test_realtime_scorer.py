@@ -181,3 +181,21 @@ def test_duplicate_txn_id_not_added_twice():
     scorer.score_payment(_payment())
     scorer.score_payment(_payment())
     assert scorer.history_size == 1
+
+
+def test_reused_txn_id_with_different_content_is_rejected():
+    scorer = RealtimeScorer([], [])
+    scorer.score_payment(_payment("T9"))
+    other = {**_payment("T9"), "to_account": "C"}
+    with pytest.raises(ValueError):
+        scorer.score_payment(other)
+    with pytest.raises(ValueError):
+        scorer.score_payment(other, commit=False)
+
+
+def test_identical_replay_is_scored_not_duplicated():
+    scorer = RealtimeScorer([], [])
+    first = scorer.score_payment(_payment("T8"))
+    again = scorer.score_payment(_payment("T8"))
+    assert again.decision == first.decision
+    assert scorer.history_size == 1

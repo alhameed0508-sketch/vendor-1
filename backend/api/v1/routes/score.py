@@ -1,10 +1,14 @@
 """Per-payment real-time scoring: POST /api/v1/score."""
 
-from api.deps import get_realtime_scorer
+import json
+
+from api.deps import get_demo_replay, get_realtime_scorer
 from api.v1.schemas.score import ScorePaymentRequest
-from core.exceptions import ValidationError
+from core.config import get_settings
+from core.exceptions import ConflictError, ValidationError
 from core.response import success_response
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from middleware.auth import require_role
 from services.realtime_scorer import RealtimeScorer
 from slowapi import Limiter
@@ -46,3 +50,25 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
                 "latency_ms": result.latency_ms,
             }
         )
+
+    @r.get("/stream")
+    @limiter.limit("20/minute")
+    def score_stream(
+        request: Request,
+        limit: int = Query(300, ge=1, le=2000),
+        rate: float = Query(5.0, ge=0, le=100),
+        user: dict = Depends(require_role(*SCORE_ROLES)),
+        replay=Depends(get_demo_replay),
+    ):
+        """Server-sent events replaying synthetic payments through the scorer (demo only)."""
+        if not get_settings().demo_mode:
+            raise ConflictError(
+                "Synthetic payment replay is disabled in production",
+                "Production scoring is driven by validated ingest sources.",
+            )
+
+        def _sse():
+            for event in replay.events(limit=limit, rate=rate):
+                yield f"data: {json.dumps(event)}\n\n"
+
+        return StreamingResponse(_sse(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})

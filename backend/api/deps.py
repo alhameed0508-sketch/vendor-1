@@ -116,6 +116,13 @@ def get_realtime_scorer() -> RealtimeScorer:
     return RealtimeScorer(strip_labels(data["accounts"]), strip_labels(data["transactions"]))
 
 
+def get_demo_replay():
+    """A fresh seeded replay per stream, so every viewer sees the same story from the start."""
+    from services.realtime_demo import DemoReplay
+
+    return DemoReplay()
+
+
 def _build_threshold_config() -> ThresholdConfig:
     """Build ThresholdConfig from centralised settings."""
     settings = get_settings()
