@@ -64,3 +64,4 @@ models/gnn/checkpoints/
 
 # Vercel
 .vercel/
+.env*
