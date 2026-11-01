@@ -13,8 +13,8 @@ const token = (block, name) => {
   return m ? m[1].trim() : undefined;
 };
 const ruleBody = selector => {
-  const i = appCss.indexOf(`${selector} {`);
-  return i < 0 ? '' : appCss.slice(i, appCss.indexOf('}', i));
+  const m = appCss.match(new RegExp(`^${selector.replace(/[.:]/g, '\\$&')} \\{[^}]*\\}`, 'm'));
+  return m ? m[0] : '';
 };
 
 test('contrastRatio black on white is 21', () => {
@@ -67,4 +67,33 @@ test('fonts: Inter + JetBrains Mono, no Space Grotesk', () => {
 
 test('focus ring uses accent token', () => {
   expect(ruleBody(':focus-visible')).toMatch(/var\(--focus-ring\)|var\(--accent\)/);
+});
+
+test('btn-primary uses accent and on-accent tokens', () => {
+  const body = ruleBody('.btn-primary');
+  expect(body).toMatch(/var\(--accent\)/);
+  expect(body).toMatch(/var\(--on-accent\)/);
+});
+
+test('no brand-blue left in App.css outside the blue data tokens', () => {
+  const stripped = appCss.replace(/--(accent-blue|cyan|cyan-dim|accent-cyan):[^;]+;/g, '');
+  expect(stripped).not.toMatch(/#2563EB|rgba\(\s*37,\s*99,\s*235/i);
+});
+
+test('low and medium badges do not use the brand accent', () => {
+  [/\.badge-low[^{]*\{[^}]*\}/i, /\.badge-MEDIUM[^{]*\{[^}]*\}/].forEach(re => {
+    const m = appCss.match(re);
+    expect(m).not.toBeNull();
+    expect(m[0]).not.toMatch(/--accent-(primary|secondary|dim)|--emerald/);
+  });
+});
+
+test('interactive classes set cursor pointer', () => {
+  ['.btn', '.filter-tab', '.sidebar-link'].forEach(sel => {
+    expect(ruleBody(sel)).toMatch(/cursor:\s*pointer/);
+  });
+});
+
+test('reduced motion block exists', () => {
+  expect(appCss).toMatch(/prefers-reduced-motion:\s*reduce/);
 });
