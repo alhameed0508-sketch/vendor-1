@@ -5,7 +5,7 @@
 | Item | What the official page says | Action |
 |---|---|---|
 | Dates and duration | **Conflicting:** "4th and 5th Nov 2026, 36 Hours" and "13th and 14th Oct 2026, 48 Hours" | Email the T-Hub contact listed on the BuildX page |
-| Pre-existing code / prior work | **Not stated** | Ask in writing: may we bring an existing codebase, and must the hackathon work be a distinguishable delta? |
+| Pre-existing code / prior work | **Allowed** (organisers confirmed, 2026-11-02) | Keep a git log of what was built during the event (`git log --since`), in case judges ask what is new |
 | Datasets / external APIs | Not stated | Ask: are public datasets (IBM AMLworld) and synthetic data allowed? |
 | Judging criteria | Not published | Do not guess; build to the challenge text ("identify suspicious transactions while minimising false alerts for genuine customers") |
 | Team size | 2–4 in one place, 2–5 in another | Confirm |
@@ -77,8 +77,8 @@ Q&A preparation (one-line answers): "Why not a GNN?" (we measured: no gain,
 leakage found and removed) · "Is this better than MuleHunter?" (different unit:
 cases, not account scores; complementary) · "Real data?" (CSV path tested on a
 2,000-row sample, but it has no labels, so no accuracy claim) · "Real time?"
-(≈ 1 s per 2k-transaction batch measured; streaming path exists but is not
-part of the demo).
+(`POST /api/v1/score` scores one payment in about 35 ms on the demo graph, about 200 ms at a 2,000-payment window; measured on synthetic data, see
+`docs/buildx/payment_eval_results.json` once the held-out run is merged. Louvain reruns per payment today; incremental updates are the known next step).
 
 ## 15. Go / no-go recommendation
 
@@ -100,3 +100,35 @@ event window, or (b) the AMLworld run shows no advantage for the case queue
 over the account queue.
 
 **Next action:** send the rules/dates email today; then backlog items 1–4.
+
+
+## 13b. Opening: the first 30 seconds
+
+Judges form a view in about 30 seconds. Start with the demo, not slides, and introduce the team afterwards.
+
+| Time | Say | Do |
+|---|---|---|
+| 0:00 | (silence for a moment, stream already running on `/live`) | Press **Start stream** at 5 payments/s. Payments appear as dots |
+| 0:08 | "Every dot is a payment being scored as it arrives." | Point at the p95 latency tile |
+| 0:15 | "That cluster just turned red: a ring of mule accounts. One case, not forty alerts." | Case card opens on the right |
+| 0:22 | "And this counter is genuine customers flagged: zero. Synthetic data." | Point at **Genuine accounts flagged** |
+| 0:30 | "I'm *[name]*, this is *[team]*. We built MuleCatch." | Team intro, then slides |
+
+Wording rules (from `00-CONTEXT.md`): say "flags" and "routes to a human reviewer", never "blocks", "stops" or "recovers". Say "synthetic data" next to every result. Never claim a bank partnership, "83 % accuracy" or "production-ready".
+
+## 13c. Backup plan
+
+| Risk | Mitigation |
+|---|---|
+| Live stream fails | Switch to the recorded video at the same timestamp. Never show fabricated data |
+| Backend will not start on the venue laptop | Run the pre-built stack from a second laptop; keep the recording on a USB stick |
+| Venue network blocks the API | Everything runs on localhost; no internet needed except slides |
+| Stream finishes mid-pitch | Press **Replay**; the seeded replay is deterministic |
+| Wrong numbers on screen | Quote only what the screen shows; the held-out results table is on slide 5 |
+
+### Recording checklist
+
+- [ ] Record the 30-second opener and the full 3-minute demo at 1080p, with audible narration
+- [ ] Save on the laptop, on a USB stick, and on a phone
+- [ ] Re-record after any change that alters the screen
+- [ ] Run the stream 10 times in a row and note every defect before the recording

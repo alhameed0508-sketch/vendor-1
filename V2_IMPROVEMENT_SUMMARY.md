@@ -1,5 +1,12 @@
 # MuleCatch v2.0 Improvement Summary
 
+> **Superseded on 2026-11-02.** Figures in this document come from a 6-account
+> sample, with thresholds tuned on those same accounts. They are not performance
+> claims. The benchmark of record is `docs/buildx/05-evaluation.md` (held-out
+> synthetic seeds, ground-truth labels stripped). "Production-ready" here means
+> only that the code is configurable and versioned; the repository is not certified
+> for bank production. Hardcoded values remain: see `HARDCODED_VALUES_AUDIT.md`.
+
 **Date:** August 11, 2026
 **Changes:** Risk classification improvements based on validation findings
 
@@ -11,13 +18,13 @@
 
 | Metric | v1.0 (Baseline) | v2.0 (Improved) | Change |
 |--------|-----------------|-----------------|--------|
-| **Overall Accuracy** | 3/6 (50.0%) | 5/6 (83.3%) | **+33.3%** ⬆️ |
+| **Overall Accuracy** | 3/6 (50.0%) | 5/6 (in-sample) | **+33.3%** ⬆️ |
 | **HIGH RISK Precision** | 2/3 (66.7%) | 3/3 (100.0%) | **+33.3%** ⬆️ |
 | **MEDIUM RISK Precision** | 1/3 (33.3%) | 2/3 (66.7%) | **+33.3%** ⬆️ |
 
 ### Key Achievement
 
-✅ **100% precision on HIGH RISK accounts** - No false negatives on critical cases!
+3 of 3 HIGH RISK accounts were classified correctly on a 6-account sample. This is not a performance claim.
 
 ---
 
@@ -157,8 +164,8 @@ RISK_HIGH_BEHAVIORAL_ALT=3
 | **Code is data-driven** | ✅ PASS | All thresholds configurable |
 | **No hardcoded values** | ✅ PASS | Fully externalized to config |
 | **Version tracking** | ✅ PASS | MODEL_VERSION and RULE_VERSION set |
-| **HIGH RISK precision** | ✅ PASS | 100% on sample data |
-| **Overall accuracy** | ⚠️ GOOD | 83.3% (above 80% target) |
+| **HIGH RISK precision** | ⚠️ SAMPLE ONLY | 3/3 on a 6-account sample |
+| **Overall accuracy** | ⚠️ SAMPLE ONLY | 5/6 on a 6-account in-sample set |
 | **Validated on bank data** | ❌ PENDING | Still using synthetic data |
 
 ### Next Steps for Production
@@ -167,7 +174,7 @@ RISK_HIGH_BEHAVIORAL_ALT=3
 2. **✅ COMPLETE** - Add transaction volume signal
 3. **✅ COMPLETE** - Move thresholds to config
 4. **⏳ PENDING** - Validate on real bank-labeled data
-5. **⏳ PENDING** - Achieve 80%+ precision on real data (currently 83.3% on synthetic)
+5. **⏳ PENDING** - Achieve 80%+ precision on real data (not measured; the 5/6 figure is a 6-account in-sample count)
 6. **⏳ PENDING** - Complete all 83 external gates in `docs/PRODUCTION_READINESS.md`
 
 ---
@@ -240,11 +247,11 @@ RISK_HIGH_BEHAVIORAL_ALT=3
 
 ## ✅ Conclusion
 
-**v2.0 is production-ready from a code perspective** and shows significant improvements over v1.0:
+**v2.0 improves the sample result over v1.0**, but it is not certified for bank production:
 
-- ✅ **83.3% overall accuracy** (up from 50%)
-- ✅ **100% HIGH RISK precision** (up from 67%)
-- ✅ **Fully data-driven** (no hardcoded values)
+- 5 of 6 sample accounts correct (up from 3 of 6; in-sample, not a performance claim)
+- 3 of 3 HIGH RISK sample accounts correct (up from 2 of 3)
+- Risk scorer thresholds are configurable; other modules still contain constants
 - ✅ **Configurable without code changes**
 
 **Remaining blockers for deployment:**
