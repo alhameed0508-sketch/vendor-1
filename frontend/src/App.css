@@ -15,7 +15,7 @@
   --bg-primary:    #0A0A0A;
   --bg-surface:    rgba(17, 24, 39, 0.95);
   --bg-card:       rgba(255, 255, 255, 0.06);
-  --bg-elevated:   rgba(37, 99, 235, 0.08);
+  --bg-elevated:   rgba(16, 185, 129, 0.08);
   --bg-input:      rgba(255, 255, 255, 0.07);
   --bg-secondary:  rgba(17, 24, 39, 0.95);
 
@@ -23,33 +23,37 @@
   --border:        rgba(255, 255, 255, 0.10);
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --border-glow:   rgba(37, 99, 235, 0.40);
+  --border-glow:   rgba(16, 185, 129, 0.40);
 
   /* ── Text ── */
   --text-primary:   #FFFFFF;
   --text-secondary: #D1D5DB;
-  --text-muted:     #6B7280;
-  --text-faint:     #374151;
+  --text-muted:     #9CA3AF;
+  --text-faint:     #6B7280;
 
-  /* ── Primary Brand: Electric Blue ── */
-  --accent-primary:   #2563EB;
-  --accent-secondary: #3B82F6;
-  --accent-dim:       rgba(37, 99, 235, 0.14);
-  --accent-glow:      rgba(37, 99, 235, 0.35);
+  /* ── Primary Brand: Emerald ── */
+  --accent:           #10B981;
+  --accent-hover:     #34D399;
+  --accent-tint:      rgba(16, 185, 129, 0.14);
+  --on-accent:        #04261A;
+  --focus-ring:       #34D399;
+  --accent-primary:   var(--accent);
+  --accent-secondary: var(--accent-hover);
+  --accent-dim:       var(--accent-tint);
+  --accent-glow:      rgba(16, 185, 129, 0.22);
 
-  /* ── Legacy Emerald Aliases → Now Blue ── */
-  --emerald:       #2563EB;
-  --emerald-light: #3B82F6;
-  --emerald-dim:   rgba(37, 99, 235, 0.12);
-  --emerald-glow:  rgba(37, 99, 235, 0.28);
+  /* ── Legacy Emerald Aliases → real accent ── */
+  --emerald:       var(--accent);
+  --emerald-light: var(--accent-hover);
+  --emerald-dim:   var(--accent-tint);
+  --emerald-glow:  rgba(16, 185, 129, 0.22);
   --cyan:          #60A5FA;
   --cyan-dim:      rgba(96, 165, 250, 0.10);
 
-  /* ── Gradients ── */
-  --gradient-brand:      linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
-  --gradient-brand-glow: rgba(37, 99, 235, 0.35);
-  --gradient-bg:         radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.12) 0%, transparent 60%),
-                         radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.08) 0%, transparent 60%);
+  /* ── Gradients (flat: solid accent) ── */
+  --gradient-brand:      linear-gradient(135deg, #10B981 0%, #10B981 100%);
+  --gradient-brand-glow: rgba(16, 185, 129, 0.22);
+  --gradient-bg:         radial-gradient(ellipse at 20% 20%, rgba(16,185,129,0.06) 0%, transparent 60%);
 
   /* ── Severity (functional, kept vivid) ── */
   --critical:      #F43F5E;
@@ -66,24 +70,31 @@
   --accent-purple: #8B5CF6;
 
   /* ── Legacy Aliases ── */
-  --color-primary:   #2563EB;
-  --color-secondary: #3B82F6;
+  --color-primary:   var(--accent);
+  --color-secondary: var(--accent-hover);
 
   /* ── Typography ── */
-  --font-display: 'Space Grotesk', -apple-system, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, monospace;
 
   /* ── Type Scale ── */
-  --text-xs:   11px;
+  --text-xs:   12px;
   --text-sm:   13px;
   --text-base: 14px;
   --text-lg:   16px;
   --text-xl:   20px;
-  --text-2xl:  26px;
-  --text-3xl:  34px;
+  --text-2xl:  24px;
+  --text-3xl:  30px;
 
-  /* ── Shape — Fully Rounded Premium ── */
+  /* ── Spacing scale ── */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 24px; --space-6: 32px;
+
+  /* ── Shape ── */
+  --radius-card:    12px;
+  --radius-control: 8px;
+
   --radius-sm:  8px;
   --radius:     12px;
   --radius-md:  16px;
@@ -99,6 +110,7 @@
   --shadow-xl:   0 20px 60px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
   --shadow-glow: var(--shadow);
   --shadow-blue: var(--shadow);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.30);
 
   /* ── Chart ── */
   --chart-grid: rgba(255, 255, 255, 0.04);
@@ -124,39 +136,43 @@ html[data-theme="light"] {
   --bg-elevated:   #FFFFFF;
   --bg-input:      #FFFFFF;
   --bg-secondary:  #F1F5F9;
-  --bg-hover:      #EFF6FF;
+  --bg-hover:      #ECFDF5;
 
   /* ── Borders — visible gray for card definition ── */
   --border:        #E2E8F0;
   --border-subtle: #F1F5F9;
   --border-strong: #CBD5E1;
-  --border-glow:   rgba(37, 99, 235, 0.25);
+  --border-glow:   rgba(4, 120, 87, 0.25);
 
   /* ── Text — dark on white for readability ── */
   --text-primary:   #0F172A;
   --text-secondary: #334155;
-  --text-muted:     #64748B;
-  --text-faint:     #94A3B8;
+  --text-muted:     #475569;
+  --text-faint:     #64748B;
 
-  /* ── Primary Brand: Modern Blue ── */
-  --accent-primary:   #2563EB;
-  --accent-secondary: #3B82F6;
-  --accent-dim:       rgba(37, 99, 235, 0.06);
-  --accent-glow:      rgba(37, 99, 235, 0.10);
+  /* ── Primary Brand: Emerald ── */
+  --accent:           #047857;
+  --accent-hover:     #065F46;
+  --accent-tint:      rgba(4, 120, 87, 0.08);
+  --on-accent:        #FFFFFF;
+  --focus-ring:       #047857;
+  --accent-primary:   var(--accent);
+  --accent-secondary: var(--accent-hover);
+  --accent-dim:       var(--accent-tint);
+  --accent-glow:      rgba(4, 120, 87, 0.12);
 
   /* ── Legacy Aliases ── */
-  --emerald:       #2563EB;
-  --emerald-light: #3B82F6;
-  --emerald-dim:   rgba(37, 99, 235, 0.06);
-  --emerald-glow:  rgba(37, 99, 235, 0.10);
+  --emerald:       var(--accent);
+  --emerald-light: var(--accent-hover);
+  --emerald-dim:   var(--accent-tint);
+  --emerald-glow:  rgba(4, 120, 87, 0.12);
   --cyan:          #3B82F6;
   --cyan-dim:      rgba(59, 130, 246, 0.06);
 
-  /* ── Gradients — subtle on white ── */
-  --gradient-brand:      linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
-  --gradient-brand-glow: rgba(37, 99, 235, 0.10);
-  --gradient-bg:         radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.03) 0%, transparent 60%),
-                         radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.02) 0%, transparent 60%);
+  /* ── Gradients ── */
+  --gradient-brand:      linear-gradient(135deg, #047857 0%, #047857 100%);
+  --gradient-brand-glow: rgba(4, 120, 87, 0.12);
+  --gradient-bg:         radial-gradient(ellipse at 20% 20%, rgba(4,120,87,0.03) 0%, transparent 60%);
 
   /* ── Severity — AAA contrast on white ── */
   --critical:      #DC2626;
@@ -173,8 +189,8 @@ html[data-theme="light"] {
   --accent-purple: #7C3AED;
 
   /* ── Legacy Aliases ── */
-  --color-primary:   #2563EB;
-  --color-secondary: #3B82F6;
+  --color-primary:   var(--accent);
+  --color-secondary: var(--accent-hover);
 
   /* ── Shadows — subtle depth on white ── */
   --shadow-xs:   0 1px 2px rgba(0,0,0,0.05);
@@ -184,6 +200,7 @@ html[data-theme="light"] {
   --shadow-xl:   0 8px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.04);
   --shadow-glow: var(--shadow);
   --shadow-blue: var(--shadow);
+  --shadow-card: 0 1px 2px rgba(15,23,42,0.06);
 
   /* ── Chart ── */
   --chart-grid: rgba(0, 0, 0, 0.06);
@@ -536,13 +553,21 @@ body {
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: var(--text-base);
-  line-height: 1.6;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   transition: background 0.4s ease, color 0.3s ease;
 }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+code, .mono { font-family: var(--font-mono); }
 
 /* ──────────── App Shell ──────────── */
 .app-layout {
@@ -1326,9 +1351,9 @@ input::placeholder, textarea::placeholder {
    FOCUS — Accessible Blue Glow
    ══════════════════════════════════════ */
 :focus-visible {
-  outline: 2px solid var(--accent-primary);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-control);
 }
 
 /* ══════════════════════════════════════
