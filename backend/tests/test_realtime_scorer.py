@@ -155,3 +155,29 @@ def test_alert_nodes_ignore_ground_truth_role(split):
     assert alerts
     assert any(n.role in {"SOURCE", "MULE", "AGGREGATOR"} for a in alerts for n in a.nodes)
     assert all(e.pattern == "OBSERVED" for a in alerts for e in a.edges)
+
+
+# ── Shared-state safety ───────────────────────────────────────────────────────
+
+
+def _payment(txn_id="T1"):
+    return {
+        "txn_id": txn_id,
+        "from_account": "A",
+        "to_account": "B",
+        "amount": 100,
+        "timestamp": datetime(2026, 1, 1).isoformat(),
+    }
+
+
+def test_commit_false_does_not_change_history():
+    scorer = RealtimeScorer([], [])
+    scorer.score_payment(_payment(), commit=False)
+    assert scorer.history_size == 0
+
+
+def test_duplicate_txn_id_not_added_twice():
+    scorer = RealtimeScorer([], [])
+    scorer.score_payment(_payment())
+    scorer.score_payment(_payment())
+    assert scorer.history_size == 1

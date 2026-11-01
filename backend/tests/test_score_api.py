@@ -58,3 +58,11 @@ async def test_score_rejects_invalid_payment(score_app, bad):
     async with AsyncClient(transport=ASGITransport(app=score_app), base_url="http://test") as client:
         resp = await client.post("/api/v1/score", json=bad)
     assert resp.status_code in {400, 422}
+
+
+@pytest.mark.asyncio
+async def test_score_endpoint_does_not_write_shared_history(score_app):
+    scorer = score_app.dependency_overrides[get_realtime_scorer]()
+    async with AsyncClient(transport=ASGITransport(app=score_app), base_url="http://test") as client:
+        await client.post("/api/v1/score", json=PAYMENT)
+    assert scorer.history_size == 0

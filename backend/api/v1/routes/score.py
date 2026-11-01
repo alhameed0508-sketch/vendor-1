@@ -18,7 +18,7 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
     """Register the real-time scoring route on the given router."""
 
     @r.post("")
-    @limiter.limit("600/minute")
+    @limiter.limit("120/minute")
     def score_payment(
         request: Request,
         body: ScorePaymentRequest,
@@ -28,9 +28,10 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
         """Score one payment in the context of the account network.
 
         Never blocks the payment: ``FLAG`` only routes the case to a human reviewer.
+        Read-only against shared history, so callers cannot poison detection state.
         """
         try:
-            result = scorer.score_payment(body.model_dump())
+            result = scorer.score_payment(body.model_dump(), commit=False)
         except ValueError as exc:
             raise ValidationError("Payment could not be scored", str(exc)) from exc
         return success_response(

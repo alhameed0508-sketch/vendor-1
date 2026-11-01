@@ -9,8 +9,11 @@ keeps genuine customers out: a large genuine community can look "suspicious" by
 size and density alone, and one unusual payment never opens a case on its own.
 
 The scorer never blocks a payment. ``FLAG`` means "route to a human reviewer".
-State is a bounded rolling window held as an immutable tuple; every call
-replaces it rather than mutating it.
+State is a bounded rolling window held as an immutable tuple; every commit
+replaces it rather than mutating it. Only trusted ingest should commit
+(``commit=True``). The public API scores with ``commit=False`` so a caller
+cannot poison the shared history to hide a ring; duplicate ``txn_id`` values
+are never added twice.
 """
 
 from __future__ import annotations
@@ -79,15 +82,18 @@ class RealtimeScorer:
     def history_size(self) -> int:
         return len(self._history)
 
-    def score_payment(self, payment: Mapping) -> PaymentScore:
+    def score_payment(self, payment: Mapping, commit: bool = True) -> PaymentScore:
+        """Score one payment. ``commit`` adds it to the shared window (trusted ingest only)."""
         _validate(payment)
         started = time.perf_counter()
         txn = dict(payment)
 
         with self._lock:
-            window = (*self._history, txn)[-self._max_window :]
-            self._history = window
             accounts = self._accounts
+            seen = any(t["txn_id"] == txn["txn_id"] for t in self._history)
+            window = self._history if seen else (*self._history, txn)[-self._max_window :]
+            if commit and not seen:
+                self._history = window
 
         return self._score(txn, list(window), self._with_known_accounts(accounts, window), started)
 

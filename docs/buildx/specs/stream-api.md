@@ -8,3 +8,4 @@ Goal: server-sent events that replay payments through `RealtimeScorer` for the l
 - Keep labels server-side to maintain counters `payments`, `flagged`, `genuine_flagged`, `mule_flagged`. Send counters in each event. Never send `role` or other label fields.
 - Tests first: event shape, no label fields in any event, 409 outside demo mode.
 - Do not change `RealtimeScorer` behaviour or `ENDPOINT_EVIDENCE_MIN`.
+- Replay is trusted ingest: call `score_payment(payment, commit=True)`. The public `POST /score` uses `commit=False` and must stay read-only.
