@@ -1,4 +1,4 @@
-import { streamReducer, initialState, p95, MAX_EDGES, MAX_RING_PAYMENTS } from './streamReducer';
+import { streamReducer, initialState, p95, MAX_EDGES, MAX_RING_PAYMENTS, MAX_LOG } from './streamReducer';
 
 const event = (n, over = {}) => ({
   payment: { txn_id: `T${n}`, from_account: `A${n}`, to_account: `B${n}`, amount: 1000 },
@@ -109,5 +109,22 @@ describe('review decisions', () => {
     const withCase = streamReducer(live, { type: 'event', event: flagEvent(1) });
     expect(streamReducer(withCase, { type: 'review', caseId: 'CASE-1', decision: 'maybe' })).toBe(withCase);
     expect(streamReducer(withCase, { type: 'review', caseId: 'NOPE', decision: 'confirmed' })).toBe(withCase);
+  });
+});
+
+describe('account stats and event log', () => {
+  it('tracks money in and out per account', () => {
+    let state = streamReducer(initialState, { type: 'open' });
+    state = streamReducer(state, { type: 'event', event: event(1) });
+    state = streamReducer(state, { type: 'event', event: event(2, { payment: { txn_id: 'T9', from_account: 'B1', to_account: 'C1', amount: 400 } }) });
+    expect(state.accountStats.A1).toEqual({ inCount: 0, inAmount: 0, outCount: 1, outAmount: 1000 });
+    expect(state.accountStats.B1).toEqual({ inCount: 1, inAmount: 1000, outCount: 1, outAmount: 400 });
+  });
+
+  it('keeps a capped log of the latest events, newest last', () => {
+    let state = streamReducer(initialState, { type: 'open' });
+    for (let i = 1; i <= MAX_LOG + 3; i += 1) state = streamReducer(state, { type: 'event', event: event(i) });
+    expect(state.log).toHaveLength(MAX_LOG);
+    expect(state.log[state.log.length - 1]).toMatchObject({ seq: MAX_LOG + 3, txnId: `T${MAX_LOG + 3}`, decision: 'PASS' });
   });
 });

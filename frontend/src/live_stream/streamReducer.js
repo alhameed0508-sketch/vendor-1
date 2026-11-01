@@ -3,6 +3,7 @@
 export const MAX_EDGES = 120;
 export const MAX_LATENCIES = 200;
 export const MAX_RING_PAYMENTS = 30;
+export const MAX_LOG = 40;
 export const REVIEW_DECISIONS = ['confirmed', 'dismissed'];
 
 export const initialState = {
@@ -15,6 +16,8 @@ export const initialState = {
   latestCaseId: null,
   latencies: [],
   reviews: {},
+  accountStats: {},
+  log: [],
   error: null,
 };
 
@@ -22,6 +25,17 @@ export function p95(values) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
+}
+
+const EMPTY_STATS = { inCount: 0, inAmount: 0, outCount: 0, outAmount: 0 };
+
+function withFlow(stats, payment) {
+  const amount = Number(payment.amount) || 0;
+  const from = stats[payment.from_account] || EMPTY_STATS;
+  const to = stats[payment.to_account] || EMPTY_STATS;
+  const next = { ...stats, [payment.from_account]: { ...from, outCount: from.outCount + 1, outAmount: from.outAmount + amount } };
+  const target = next[payment.to_account] || to;
+  return { ...next, [payment.to_account]: { ...target, inCount: target.inCount + 1, inAmount: target.inAmount + amount } };
 }
 
 function applyEvent(state, event) {
@@ -55,6 +69,20 @@ function applyEvent(state, event) {
     flaggedAccounts: isFlag ? [...new Set([...state.flaggedAccounts, ...event.ring_members])] : state.flaggedAccounts,
     latestCaseId: isFlag ? event.case_id : state.latestCaseId,
     latencies: [...state.latencies, event.latency_ms].slice(-MAX_LATENCIES),
+    accountStats: withFlow(state.accountStats, payment),
+    log: [
+      ...state.log,
+      {
+        seq: state.events + 1,
+        txnId: payment.txn_id,
+        from: payment.from_account,
+        to: payment.to_account,
+        amount: payment.amount,
+        decision: event.decision,
+        caseId: isFlag ? event.case_id : null,
+        latencyMs: event.latency_ms,
+      },
+    ].slice(-MAX_LOG),
   };
 }
 

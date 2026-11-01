@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import useScoreStream from './useScoreStream';
 import { p95 } from './streamReducer';
-import { layoutNodes } from './layout';
 import CaseCard from './CaseCard';
+import GraphCanvas from './GraphCanvas';
+import NodeDetails from './NodeDetails';
+import EventLog from './EventLog';
 import './LiveStream.css';
 
-const VIEW = { width: 800, height: 480 };
 const RATES = [2, 5, 10, 20];
 const STATUS_LABEL = { idle: 'Ready', live: 'Streaming', ended: 'Replay finished', error: 'Unavailable' };
 
@@ -21,20 +22,22 @@ function Stat({ label, value, tone }) {
 export default function LiveStream() {
   const [rate, setRate] = useState(5);
   const { state, start, stop, review } = useScoreStream({ rate });
-  const { counters, edges, rings, flaggedAccounts, latestCaseId, latencies, reviews, status, error } = state;
+  const { counters, edges, rings, accountStats, log, latestCaseId, latencies, reviews, status, error } = state;
   const [picked, setPicked] = useState(null);
+  const [selected, setSelected] = useState(null);
 
   const ringList = useMemo(() => Object.values(rings), [rings]);
   const shownId = picked && rings[picked] ? picked : latestCaseId;
-  const accounts = useMemo(
-    () => [...new Set([...edges.flatMap((e) => [e.from, e.to]), ...flaggedAccounts])],
-    [edges, flaggedAccounts]
+  const selectedRing = useMemo(
+    () => ringList.filter((r) => r.members.includes(selected)).sort((a, b) => b.risk - a.risk)[0] || null,
+    [ringList, selected]
   );
-  const positions = useMemo(
-    () => layoutNodes({ accounts, rings: ringList, ...VIEW }),
-    [accounts, ringList]
+  const counterparties = useMemo(
+    () => [
+      ...new Set(edges.flatMap((e) => (e.from === selected ? [e.to] : e.to === selected ? [e.from] : []))),
+    ].sort(),
+    [edges, selected]
   );
-  const flagged = useMemo(() => new Set(flaggedAccounts), [flaggedAccounts]);
   const latency = p95(latencies);
   const running = status === 'live';
 
@@ -78,30 +81,20 @@ export default function LiveStream() {
       </div>
 
       <div className="live-stream__body">
-        <div className="live-stream__graph">
-          <svg viewBox={`0 0 ${VIEW.width} ${VIEW.height}`} role="img" aria-label="Account network with flagged rings highlighted">
-            {edges.map((e) =>
-              positions[e.from] && positions[e.to] ? (
-                <line
-                  key={e.id}
-                  className={`live-stream__edge${e.flagged ? ' live-stream__edge--flag' : ''}`}
-                  x1={positions[e.from].x}
-                  y1={positions[e.from].y}
-                  x2={positions[e.to].x}
-                  y2={positions[e.to].y}
-                />
-              ) : null
+        <div className="live-stream__graph-col">
+          <div className="live-stream__graph-wrap">
+            <GraphCanvas edges={edges} rings={rings} stats={accountStats} selected={selected} onSelect={setSelected} />
+            {selected && (
+              <NodeDetails
+                id={selected}
+                stats={accountStats[selected]}
+                ring={selectedRing}
+                counterparties={counterparties}
+                onClose={() => setSelected(null)}
+              />
             )}
-            {accounts.map((id) => (
-              <g
-                key={id}
-                className="live-stream__node"
-                style={{ transform: `translate(${positions[id].x}px, ${positions[id].y}px)` }}
-              >
-                <circle r={flagged.has(id) ? 6 : 3.5} fill={flagged.has(id) ? 'var(--critical)' : 'var(--text-faint)'} />
-              </g>
-            ))}
-          </svg>
+          </div>
+          <EventLog log={log} />
         </div>
         <div>
           {ringList.length > 1 && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import LiveStream from './LiveStream';
 
 jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
@@ -87,6 +87,19 @@ test('Stop ends a live stream', async () => {
   await screen.findByText('CASE-AB12');
   fireEvent.click(screen.getByRole('button', { name: /stop/i }));
   expect(await screen.findByRole('button', { name: /replay/i })).toBeInTheDocument();
+});
+
+test('clicking an account opens its details and logs the payment', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
+  render(<LiveStream />);
+  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
+  await screen.findByText('CASE-AB12');
+  expect(screen.getByRole('log')).toHaveTextContent(/A1 → B1/);
+  fireEvent.click(screen.getByRole('button', { name: 'Account A1' }));
+  const details = screen.getByRole('dialog', { name: 'Account A1' });
+  expect(details).toHaveTextContent('B1');
+  fireEvent.click(screen.getByRole('button', { name: /close/i }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
 test('lets a reviewer confirm the open case on this page only', async () => {
