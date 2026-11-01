@@ -21,10 +21,24 @@ test('contrastRatio black on white is 21', () => {
   expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 0);
 });
 
-test('dark accent tokens match spec', () => {
-  expect(token(darkBlock, '--accent')).toBe('#10B981');
-  expect(token(darkBlock, '--accent-hover')).toBe('#34D399');
-  expect(token(darkBlock, '--on-accent')).toBe('#04261A');
+test('dark accent tokens match the emerald vault spec', () => {
+  expect(token(darkBlock, '--accent')).toBe('#34C79A');
+  expect(token(darkBlock, '--accent-hover')).toBe('#5ED6AF');
+  expect(token(darkBlock, '--on-accent')).toBe('#06281D');
+});
+
+test('vault neutrals: green-biased base in both themes, no navy left over', () => {
+  expect(token(darkBlock, '--bg-base')).toBe('#0B1311');
+  expect(token(lightBlock, '--bg-base')).toBe('#F5F8F6');
+  expect(darkBlock).not.toMatch(/rgba\(\s*17,\s*24,\s*39/);
+  expect(token(darkBlock, '--chart-axis')).not.toBe('#1E2D45');
+});
+
+test('severity colours meet 4.5:1 as text in both themes', () => {
+  ['--critical', '--high', '--medium'].forEach(t => {
+    expect(contrastRatio(token(lightBlock, t), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(token(darkBlock, t), token(darkBlock, '--bg-base'))).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 test('light accent tokens match spec', () => {
@@ -40,9 +54,9 @@ test('on-accent text meets 4.5:1 in both themes', () => {
 });
 
 test('text tokens meet 4.5:1 on their theme backgrounds', () => {
-  const pairs = [[darkBlock, '#0A0A0A'], [lightBlock, token(lightBlock, '--bg-surface')], [lightBlock, token(lightBlock, '--bg-card')]];
+  const pairs = [[darkBlock, token(darkBlock, '--bg-base')], [lightBlock, token(lightBlock, '--bg-surface')], [lightBlock, token(lightBlock, '--bg-card')]];
   pairs.forEach(([b, bg]) => {
-    ['--text-secondary', '--text-muted'].forEach(t => {
+    ['--text-secondary', '--text-muted', '--text-faint'].forEach(t => {
       expect(contrastRatio(token(b, t), bg)).toBeGreaterThanOrEqual(4.5);
     });
   });
@@ -55,14 +69,21 @@ test('emerald aliases follow the accent', () => {
   });
 });
 
-test('fonts: Inter + JetBrains Mono, no Space Grotesk', () => {
-  expect(indexCss).toMatch(/Inter/);
-  expect(indexCss).toMatch(/JetBrains\+Mono/);
-  expect(indexCss).not.toMatch(/Space\+Grotesk/);
+test('fonts: IBM Plex Sans UI, Bodoni Moda display, IBM Plex Mono code', () => {
+  expect(indexCss).toMatch(/IBM\+Plex\+Sans/);
+  expect(indexCss).toMatch(/Bodoni\+Moda/);
+  expect(indexCss).toMatch(/IBM\+Plex\+Mono/);
+  expect(indexCss).not.toMatch(/family=Inter|JetBrains\+Mono/);
   expect(indexCss).toMatch(/display=swap/);
-  expect(token(darkBlock, '--font-sans')).toMatch(/sans-serif$/);
-  expect(token(darkBlock, '--font-mono')).toMatch(/monospace$/);
-  expect(token(darkBlock, '--font-display')).not.toMatch(/Space Grotesk/);
+  expect(token(darkBlock, '--font-sans')).toMatch(/^'IBM Plex Sans'.*sans-serif$/);
+  expect(token(darkBlock, '--font-display')).toMatch(/^'Bodoni Moda'.*serif$/);
+  expect(token(darkBlock, '--font-mono')).toMatch(/^'IBM Plex Mono'.*monospace$/);
+});
+
+test('display serif is limited to page titles and headline numbers', () => {
+  const headings = appCss.match(/^h1, h2, h3, h4 \{[^}]*\}/m)[0];
+  expect(headings).toMatch(/var\(--font-sans\)/);
+  expect(appCss).toMatch(/\.page-header h1[^{]*\{[^}]*var\(--font-display\)/);
 });
 
 test('focus ring uses accent token', () => {
