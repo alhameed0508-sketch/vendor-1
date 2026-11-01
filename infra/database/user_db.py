@@ -69,19 +69,25 @@ class UserDB:
         demo_users = [
             (
                 "investigator",
-                "iob@2024",
+                os.getenv("DEMO_INVESTIGATOR_PASSWORD", "iob@2024"),
                 "INVESTIGATOR",
                 "Fraud Investigator",
                 "Chennai HO",
             ),
             (
                 "supervisor",
-                "supervisor@2024",
+                os.getenv("DEMO_SUPERVISOR_PASSWORD", "supervisor@2024"),
                 "SUPERVISOR",
                 "Investigation Supervisor",
                 "Chennai HO",
             ),
-            ("admin", "admin@2024", "ADMIN", "System Administrator", "HO IT"),
+            (
+                "admin",
+                os.getenv("DEMO_ADMIN_PASSWORD", "admin@2024"),
+                "ADMIN",
+                "System Administrator",
+                "HO IT",
+            ),
         ]
         for username, password, role, display_name, branch in demo_users:
             existing = self.find_by_username(username)
