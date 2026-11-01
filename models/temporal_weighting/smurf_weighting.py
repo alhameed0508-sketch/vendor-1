@@ -73,6 +73,14 @@ class SmurfWeightingEngine:
     }
     FLAG_THRESHOLD = 0.45
 
+    def __init__(
+        self,
+        velocity_minutes: int = VELOCITY_WINDOW_MINUTES,
+        consolidation_hours: float = CONSOLIDATION_WINDOW_HOURS,
+    ):
+        self.velocity_minutes = velocity_minutes
+        self.consolidation_hours = consolidation_hours
+
     def score_account(
         self,
         account_id: str,
@@ -130,7 +138,7 @@ class SmurfWeightingEngine:
         timestamps = sorted(t.timestamp for t in txns)
         windows = []
         for i, ts in enumerate(timestamps):
-            window_end = ts + timedelta(minutes=VELOCITY_WINDOW_MINUTES)
+            window_end = ts + timedelta(minutes=self.velocity_minutes)
             count = sum(1 for t2 in timestamps[i:] if t2 <= window_end)
             windows.append(count)
         max_in_window = max(windows)
@@ -240,7 +248,7 @@ class SmurfWeightingEngine:
             # Mules don't interleave — they receive ALL funds THEN send.
             # Interleaved incoming/outgoing is normal account behavior.
             return 0.0
-        if delta_hours > CONSOLIDATION_WINDOW_HOURS:
+        if delta_hours > self.consolidation_hours:
             return 0.0
 
         in_sum = sum(t.amount for t in incoming)
@@ -252,7 +260,7 @@ class SmurfWeightingEngine:
         ratio = min(out_sum / in_sum, 1.0)
 
         # Urgency: tighter window = more suspicious
-        urgency = max(0.0, 1.0 - delta_hours / CONSOLIDATION_WINDOW_HOURS)
+        urgency = max(0.0, 1.0 - delta_hours / self.consolidation_hours)
 
         # Asymmetry bonus: few outgoing vs many incoming = mule pattern
         if len(incoming) >= 2 and len(outgoing) <= 2:
@@ -275,7 +283,7 @@ class SmurfWeightingEngine:
         if s.rhythm_score > 0.5:
             codes.append("RC04: Regular transaction spacing — potential automation")
         if s.consolidation_score > 0.5:
-            codes.append("RC05: Rapid consolidation — received and re-sent within 6 hours")
+            codes.append(f"RC05: Rapid consolidation — received and re-sent within {self.consolidation_hours:g} hours")
         return codes
 
     def _confidence(self, s: AccountScore, n_txns: int) -> float:
@@ -286,6 +294,7 @@ class SmurfWeightingEngine:
 
 def score_transaction_batch(
     transactions: List[Dict],
+    engine: "SmurfWeightingEngine | None" = None,
 ) -> Dict[str, AccountScore]:
     """
     Convenience wrapper: accepts raw transaction dicts,
@@ -293,7 +302,7 @@ def score_transaction_batch(
     """
     from collections import defaultdict
 
-    engine = SmurfWeightingEngine()
+    engine = engine or SmurfWeightingEngine()
 
     # Group transactions
     out_map: Dict[str, List[Transaction]] = defaultdict(list)
