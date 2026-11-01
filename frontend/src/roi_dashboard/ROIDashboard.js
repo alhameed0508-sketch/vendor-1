@@ -62,18 +62,13 @@ const CustomTooltip = ({ active, payload, label }) => {
 function ChartPanel({ title, children }) {
   return (
     <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      borderRadius: 12,
-      padding: '22px 24px',
-      boxShadow: 'var(--shadow)',
+      borderTop: '1px solid var(--border)',
+      padding: '20px 0',
     }}>
       <p style={{
         fontFamily: 'var(--font-sans)',
-        fontSize: 10,
+        fontSize: 12,
         color: 'var(--text-muted)',
-        textTransform: 'uppercase',
-        letterSpacing: '1.5px',
         fontWeight: 700,
         marginBottom: 18,
       }}>{title}</p>
@@ -127,7 +122,7 @@ export default function ROIDashboard() {
   );
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 1440, margin: '0 auto' }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -141,10 +136,8 @@ export default function ROIDashboard() {
           </h1>
           <span style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 10,
+            fontSize: 12,
             color: '#10B981',
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase',
             background: 'rgba(16,185,129,0.08)',
             border: '1px solid rgba(16,185,129,0.2)',
             padding: '2px 8px',
@@ -258,12 +251,10 @@ export default function ROIDashboard() {
                   { v: `${(feedbackStats.false_positive_rate * 100).toFixed(1)}%`, l: 'FP Rate', c: feedbackStats.false_positive_rate > 0.3 ? '#F43F5E' : '#10B981' },
                 ].map(({ v, l, c }) => (
                   <div key={l} style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 8,
+                    borderLeft: '2px solid var(--border)',
                     padding: '14px 16px',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 700, color: c, }}>{v}</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 600, color: 'var(--text-primary)' }}>{v}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-sans)' }}>{l}</div>
                   </div>
                 ))}
@@ -274,12 +265,10 @@ export default function ROIDashboard() {
                   { v: feedbackStats.false_positives, l: 'False Positives',  c: '#FB923C' },
                 ].map(({ v, l, c }) => (
                   <div key={l} style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 8,
+                    borderLeft: '2px solid var(--border)',
                     padding: '12px 16px',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: c }}>{v}</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)' }}>{v}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'var(--font-sans)' }}>{l}</div>
                   </div>
                 ))}
@@ -288,7 +277,7 @@ export default function ROIDashboard() {
                 paddingTop: 12,
                 borderTop: '1px solid var(--border)',
                 fontFamily: 'var(--font-sans)',
-                fontSize: 11,
+                fontSize: 12,
                 color: 'var(--text-muted)',
                 display: 'flex',
                 justifyContent: 'space-between',

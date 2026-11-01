@@ -256,7 +256,6 @@ export default function NetworkOverview() {
         <span style={{
           fontFamily: 'var(--font-sans)',
           fontSize: 12,
-          letterSpacing: '1px',
           color: 'var(--text-muted)',
         }}>
           LOADING NETWORK TOPOLOGY...
@@ -266,7 +265,7 @@ export default function NetworkOverview() {
   }
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1440, margin: '0 auto' }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
 
       {/* Page Header */}
       <motion.div
@@ -301,10 +300,8 @@ export default function NetworkOverview() {
               }} />
               <span style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: 9,
+                fontSize: 12,
                 color: connected ? '#10B981' : '#9CA3AF',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
                 fontWeight: 700,
               }}>{connected ? 'Live' : 'Offline'}</span>
             </div>
@@ -312,7 +309,7 @@ export default function NetworkOverview() {
 
           <p style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 11,
+            fontSize: 12,
             color: 'var(--text-muted)',
             letterSpacing: '0.3px',
             margin: 0,
@@ -320,7 +317,7 @@ export default function NetworkOverview() {
             alignItems: 'center',
             gap: 8,
           }}>
-            <span style={{ color: 'rgba(62,231,255,0.6)' }}>//</span>
+            
             Transaction graph topology
             <span style={{ color: 'var(--text-faint)' }}>·</span>
             Real-time cluster detection
@@ -411,7 +408,7 @@ export default function NetworkOverview() {
                 <button
                   className="btn btn-ghost"
                   onClick={() => setSelectedCity(null)}
-                  style={{ padding: '2px 8px', fontSize: 10, gap: 4 }}
+                  style={{ padding: '2px 8px', fontSize: 12, gap: 4 }}
                 >
                   <X size={10} />
                   <span style={{ fontFamily: 'var(--font-sans)', }}>Clear Filter</span>
@@ -420,10 +417,9 @@ export default function NetworkOverview() {
             </div>
             <span style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: 10,
+              fontSize: 12,
               color: 'var(--text-muted)',
-              letterSpacing: '0.5px',
-            }}>
+              }}>
               {filteredData.nodes.length} nodes
               <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
               {filteredData.edges.length} edges
@@ -466,13 +462,13 @@ export default function NetworkOverview() {
                 </p>
                 <p style={{
                   fontFamily: 'var(--font-sans)',
-                  fontSize: 11,
+                  fontSize: 12,
                   color: 'var(--text-muted)',
                   letterSpacing: '0.3px',
                 }}>
                   {selectedCity
-                    ? '// try selecting a different city or clear the filter'
-                    : '// run detection pipeline to populate the graph'}
+                    ? 'Try selecting a different city or clear the filter'
+                    : 'Run detection pipeline to populate the graph'}
                 </p>
               </div>
               {selectedCity && (

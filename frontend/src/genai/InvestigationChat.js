@@ -18,8 +18,7 @@ function StatusBadge({ status }) {
       fontSize: 12, fontFamily: 'var(--font-sans)', 
       padding: '2px 8px', borderRadius: 10,
       background: `${color}18`, color, border: `1px solid ${color}30`,
-      textTransform: 'uppercase',
-    }}>
+      }}>
       {status?.enabled ? 'GenAI' : 'Template'} · {label}
     </span>
   );
@@ -180,8 +179,7 @@ export default function InvestigationChat({ alertId, alertData }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
             fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-            letterSpacing: '2px', textTransform: 'uppercase',
-          }}>
+            }}>
             Ask MuleCatch AI
           </span>
           <StatusBadge status={status} />
@@ -253,7 +251,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                     key={i}
                     className="btn btn-ghost"
                     style={{
-                      fontSize: 10, padding: '5px 10px',
+                      fontSize: 12, padding: '5px 10px',
                       borderColor: 'rgba(62,231,255,0.15)',
                       color: 'var(--text-secondary)',
                     }}
@@ -298,7 +296,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                 className="btn btn-primary"
                 onClick={() => sendMessage(input)}
                 disabled={loading || !input.trim()}
-                style={{ padding: '8px 16px', fontSize: 11 }}
+                style={{ padding: '8px 16px', fontSize: 12 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
               >

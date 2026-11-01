@@ -57,10 +57,8 @@ const ACTIONS = [
 ];
 
 const cardStyle = {
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border)',
-  borderRadius: 10,
-  padding: 18,
+  borderTop: '1px solid var(--border)',
+  padding: '20px 0',
 };
 
 async function readResponse(response) {
@@ -122,30 +120,22 @@ export function summarizeBenchmark(result) {
 function MetricCard({ label, value, color, icon: Icon, detail }) {
   return (
     <div style={{ ...cardStyle, position: 'relative', overflow: 'hidden' }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: '0 0 auto',
-          height: 2,
-          background: `linear-gradient(90deg, ${color}, transparent)`,
-        }}
-      />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span className="eyebrow">{label}</span>
         <Icon size={14} color={color} />
       </div>
       <div
         style={{
-          color,
+          color: 'var(--text-primary)',
           fontFamily: 'var(--font-display)',
           fontSize: 28,
-          fontWeight: 700,
+          fontWeight: 600,
           marginTop: 10,
         }}
       >
         {value}
       </div>
-      <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
         {detail}
       </div>
     </div>
@@ -291,20 +281,20 @@ export default function BenchmarkPage() {
     Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '—';
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 1440, margin: '0 auto' }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: 28 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h1 className="gradient-text" style={{ margin: 0 }}>
+          <h1 className="text-page-title" style={{ margin: 0 }}>
             Model Benchmarks
           </h1>
           <span className="status-badge">EVALUATION</span>
         </div>
         <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
-          // executable detection benchmarks · precision/recall · adversarial testing
+          Executable detection benchmarks · precision/recall · adversarial testing
           · deterministic cross-validation
         </p>
       </motion.div>
@@ -342,9 +332,9 @@ export default function BenchmarkPage() {
                 alignItems: 'center',
                 gap: 7,
                 borderRadius: 8,
-                border: `1px solid ${action.color}45`,
-                background: `${action.color}12`,
-                color: action.color,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-primary)',
                 cursor: executionEnabled && !running ? 'pointer' : 'not-allowed',
                 opacity: executionEnabled && (!running || isRunning) ? 1 : 0.5,
               }}
@@ -448,7 +438,7 @@ export default function BenchmarkPage() {
         style={{
           color: 'var(--text-muted)',
           fontFamily: 'var(--font-sans)',
-          fontSize: 10,
+          fontSize: 12,
           marginTop: 16,
         }}
       >

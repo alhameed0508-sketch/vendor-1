@@ -291,10 +291,8 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             }}>
               <div style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: 9,
+                fontSize: 12,
                 color: 'var(--text-faint)',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
                 marginBottom: 6,
                 fontWeight: 600,
               }}>Queue</div>
@@ -313,7 +311,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 }}>
                   <span style={{
                     fontFamily: 'var(--font-sans)',
-                    fontSize: 11,
+                    fontSize: 12,
                     color: 'var(--text-muted)',
                   }}>{s.label}</span>
                   <motion.span
@@ -323,7 +321,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     style={{
                       fontFamily: 'var(--font-sans)',
-                      fontSize: 11,
+                      fontSize: 12,
                       color: s.color,
                       fontWeight: 600,
                     }}
@@ -363,7 +361,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 animate={{ opacity: 1, width: 'auto', x: 0 }}
                 exit={{ opacity: 0, width: 0, x: -6 }}
                 transition={CONTENT_SPRING}
-                style={{ letterSpacing: '0.5px', overflow: 'hidden', whiteSpace: 'nowrap' }}
+                style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}
               >
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </motion.span>

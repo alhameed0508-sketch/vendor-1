@@ -170,7 +170,7 @@ export default function CompliancePortal() {
   }, {});
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: '24px 32px', maxWidth: 1440, margin: '0 auto' }}>
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-page-title" style={{ fontSize: 22, marginBottom: 4 }}>Compliance Portal</h1>
@@ -197,12 +197,12 @@ export default function CompliancePortal() {
                 transition={{ delay: 0.1 + i * 0.05 }}
                 style={{ padding: '0 20px' }}
               >
-                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-sans)', color: s.color }}>
+                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
                   {typeof s.value === 'number' ? (
                     <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--font-sans)' }} />
                   ) : s.value}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', }}>{s.label}</div>
               </motion.div>
               {i < arr.length - 1 && (
                 <div style={{ width: 1, height: 32, background: 'var(--border-bright)', flexShrink: 0 }} />
@@ -234,10 +234,10 @@ export default function CompliancePortal() {
               <div key={status} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', borderRadius: 6,
-                background: `${color}10`, border: `1px solid ${color}30`,
+                background: 'transparent', border: '1px solid var(--border)',
               }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
                   {STATUS_LABELS[status]}
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', color }}>
@@ -290,7 +290,7 @@ export default function CompliancePortal() {
                               border: `2px solid ${selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'var(--border-bright)'}`,
                               background: selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'transparent',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 10, color: '#000',
+                              fontSize: 12, color: '#000',
                             }}
                             whileTap={{ scale: 0.85 }}
                             animate={{ scale: selected.has(a.alert_id) ? [1, 1.15, 1] : 1 }}
@@ -299,7 +299,7 @@ export default function CompliancePortal() {
                             {selected.has(a.alert_id) ? '✓' : ''}
                           </motion.div>
                         </td>
-                        <td><span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: 12 }}>{a.alert_id}</span></td>
+                        <td><span className="mono" style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{a.alert_id}</span></td>
                         <td><span className={`badge badge-${a.severity}`}>{a.severity}</span></td>
                         <td>
                           <div className="risk-bar">
@@ -328,7 +328,7 @@ export default function CompliancePortal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Exported STR list — shown first for prominence */}
           <AnimateIn delay={0.1} direction="left">
-            <GlassCard className="p-5" hover={false} style={{ borderLeft: `3px solid ${strReports.length > 0 ? 'var(--accent-green)' : 'var(--border)'}`, borderRadius: '0 8px 8px 0' }}>
+            <GlassCard className="p-5" hover={false} style={{ borderLeft: '2px solid var(--border)', borderRadius: '0 8px 8px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <p className="section-title" style={{ margin: 0 }}>
                   STR Reports {strReports.length > 0 ? `(${strReports.length})` : ''}
@@ -380,16 +380,14 @@ export default function CompliancePortal() {
                             <span style={{
                               fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 700,
                               background: `${statusColor}20`, color: statusColor,
-                              padding: '2px 8px', borderRadius: 4, letterSpacing: '0.5px',
-                              textTransform: 'uppercase',
-                            }}>
+                              padding: '2px 8px', borderRadius: 4, }}>
                               {STATUS_LABELS[status] || status}
                             </span>
                           </div>
 
                           {/* Alert + financial data */}
                           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                            <span style={{ color: 'var(--accent-cyan)' }}>{alertId}</span>
+                            <span style={{ color: 'var(--text-primary)' }}>{alertId}</span>
                             {r.total_amount != null && (
                               <span> · <span style={{ color: 'var(--accent-amber)' }}>₹{Number(r.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></span>
                             )}
@@ -418,7 +416,7 @@ export default function CompliancePortal() {
                               <motion.button
                                 className="btn btn-ghost"
                                 style={{
-                                  fontSize: 10, padding: '3px 10px',
+                                  fontSize: 12, padding: '3px 10px',
                                   border: `1px solid ${statusColor}40`,
                                   color: statusColor,
                                 }}
@@ -432,7 +430,7 @@ export default function CompliancePortal() {
                             )}
                             <motion.button
                               className="btn btn-ghost"
-                              style={{ fontSize: 10, padding: '3px 10px', color: 'var(--text-muted)' }}
+                              style={{ fontSize: 12, padding: '3px 10px', color: 'var(--text-muted)' }}
                               onClick={(e) => { e.stopPropagation(); downloadPdf(alertId); }}
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
@@ -493,7 +491,7 @@ export default function CompliancePortal() {
 
           {/* Live Audit Log */}
           <AnimateIn delay={0.3} direction="left">
-            <GlassCard className="p-4" hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 8px 8px 0' }}>
+            <GlassCard className="p-4" hover={false} style={{ borderLeft: '2px solid var(--border)', borderRadius: '0 8px 8px 0' }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">Audit Trail</p>
               {auditLog.length === 0 ? (
                 <p className="text-xs text-[var(--text-muted)] font-mono">No audit entries yet. Actions will be logged here.</p>
@@ -514,11 +512,11 @@ export default function CompliancePortal() {
                           <span style={{ color: actionColor }}>
                             {entry.action}
                           </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                             {new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                           {entry.user} {entry.alert_id ? `· ${entry.alert_id}` : ''} {entry.details ? `· ${entry.details}` : ''}
                         </div>
                       </div>

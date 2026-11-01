@@ -101,11 +101,9 @@ export default function LoginPage() {
 
             <div style={{
               fontFamily: 'var(--font-sans)',
-              fontSize: 10,
+              fontSize: 12,
               color: 'var(--text-muted)',
-              letterSpacing: '1.5px',
-              textTransform: 'uppercase',
-            }}>
+              }}>
               Fraud Intelligence Platform
             </div>
           </div>
@@ -115,12 +113,10 @@ export default function LoginPage() {
             <div style={{ marginBottom: 18 }}>
               <label style={{
                 display: 'block',
-                fontSize: 10,
+                fontSize: 12,
                 fontFamily: 'var(--font-sans)',
                 color: focused === 'username' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
                 marginBottom: 7,
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
                 transition: 'color 0.2s',
               }}>
                 Username
@@ -155,12 +151,10 @@ export default function LoginPage() {
             <div style={{ marginBottom: 26 }}>
               <label style={{
                 display: 'block',
-                fontSize: 10,
+                fontSize: 12,
                 fontFamily: 'var(--font-sans)',
                 color: focused === 'password' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
                 marginBottom: 7,
-                letterSpacing: '0.8px',
-                textTransform: 'uppercase',
                 transition: 'color 0.2s',
               }}>
                 Password
@@ -271,11 +265,10 @@ export default function LoginPage() {
           <div style={{
             marginTop: 28,
             textAlign: 'center',
-            fontSize: 10,
+            fontSize: 12,
             fontFamily: 'var(--font-sans)',
             color: 'var(--text-faint)',
-            letterSpacing: '0.5px',
-          }}>
+            }}>
             IOB Fraud Intelligence
           </div>
         </GlassCard>

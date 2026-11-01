@@ -45,7 +45,7 @@ export function ShortcutsModal({ open, onClose }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ fontSize: 16, fontWeight: 700 }}>Keyboard Shortcuts</h3>
-          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={onClose}>ESC</button>
+          <button className="btn btn-ghost" style={{ padding: '4px 8px', fontSize: 12 }} onClick={onClose}>ESC</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {SHORTCUTS.map(s => (

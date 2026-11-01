@@ -19,10 +19,9 @@ function SeverityBadge({ label, count, color }) {
       gap: 3,
       padding: '1px 6px',
       borderRadius: 4,
-      fontSize: 9,
+      fontSize: 12,
       fontFamily: 'var(--font-sans)',
       fontWeight: 700,
-      letterSpacing: '0.5px',
       background: `${color}18`,
       color,
       border: `1px solid ${color}30`,
@@ -72,10 +71,8 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
         <div style={{ padding: '12px 20px', background: 'var(--bg-card)' }}>
           <div style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 8,
+            fontSize: 12,
             color: 'var(--text-muted)',
-            letterSpacing: '1.2px',
-            textTransform: 'uppercase',
             marginBottom: 4,
           }}>Total Alerts</div>
           <div style={{
@@ -90,10 +87,8 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
         <div style={{ padding: '12px 20px', background: 'var(--bg-card)' }}>
           <div style={{
             fontFamily: 'var(--font-sans)',
-            fontSize: 8,
+            fontSize: 12,
             color: 'var(--text-muted)',
-            letterSpacing: '1.2px',
-            textTransform: 'uppercase',
             marginBottom: 4,
           }}>Suspicious Vol.</div>
           <div style={{
@@ -114,7 +109,7 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
             padding: '24px 20px',
             textAlign: 'center',
             fontFamily: 'var(--font-sans)',
-            fontSize: 11,
+            fontSize: 12,
             color: 'var(--text-muted)',
           }}>
             No city data available
@@ -152,7 +147,7 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontFamily: 'var(--font-sans)',
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 700,
                 flexShrink: 0,
                 background: i === 0 ? 'rgba(244,63,94,0.15)' : 'rgba(255,255,255,0.05)',
@@ -175,7 +170,7 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
                   </span>
                   <span style={{
                     fontFamily: 'var(--font-sans)',
-                    fontSize: 10,
+                    fontSize: 12,
                     color: 'var(--text-muted)',
                     flexShrink: 0,
                     marginLeft: 8,
@@ -202,7 +197,7 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
           padding: '8px 20px',
           borderTop: '1px solid rgba(255,255,255,0.06)',
           fontFamily: 'var(--font-sans)',
-          fontSize: 10,
+          fontSize: 12,
           color: 'var(--text-muted)',
           textAlign: 'center',
         }}>

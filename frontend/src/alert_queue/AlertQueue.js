@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { statusLabel } from '../utils/statusLabel';
 import { Link, useNavigate } from 'react-router-dom';
 import { alertPath } from '../utils/safeNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -169,7 +170,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
           <div>
             <p className="section-title" style={{ marginBottom: 12 }}>Reason codes</p>
             {(alert.reason_codes || []).map((rc, i) => (
-              <div key={i} className="reason-code" style={{ fontSize: 11 }}>
+              <div key={i} className="reason-code" style={{ fontSize: 12 }}>
                 {rc}
               </div>
             ))}
@@ -236,7 +237,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                       cursor: isActive ? 'default' : 'pointer',
                       opacity: isActive ? 0.5 : 1,
                       padding: '4px 10px',
-                      fontSize: 10,
+                      fontSize: 12,
                       transition: 'opacity 0.15s',
                     }}
                   >
@@ -405,7 +406,6 @@ export default function AlertQueue({ onSelectAlert }) {
         <div>
           <h1>Triage Queue</h1>
           <p className="page-meta">
-            <span className="comment">// </span>
             ML-ranked by priority score
             <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
             {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
@@ -488,7 +488,7 @@ export default function AlertQueue({ onSelectAlert }) {
               onClick={() => setFilterSeverity(s)}
               className={`filter-tab ${isActive ? activeCls : ''}`}
             >
-              {s}
+              {statusLabel(s)}
             </button>
           );
         })}
@@ -502,7 +502,7 @@ export default function AlertQueue({ onSelectAlert }) {
             onClick={() => setFilterStatus(s)}
             className={`filter-tab ${filterStatus === s ? 'active' : ''}`}
           >
-            {s.replace(/_/g, ' ')}
+            {statusLabel(s)}
           </button>
         ))}
       </div>
@@ -628,7 +628,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     <motion.span
                       animate={{ rotate: expanded ? 180 : 0 }}
                       transition={{ duration: 0.15 }}
-                      style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center' }}
+                      style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center' }}
                     >
                       ▾
                     </motion.span>

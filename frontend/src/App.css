@@ -1785,3 +1785,13 @@ html[data-theme="light"] .glass-card:not(.board-card):not(.node-panel):not(.appr
 .logo-tagline { text-transform: none; }
 
 .badge { display: inline-block; line-height: 1.5; }
+
+/* KPI numbers are neutral; colour is reserved for risk meaning */
+.stat-card .text-metric-value { color: var(--text-primary) !important; }
+
+
+.mono { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+
+input, textarea, select { border-radius: var(--radius-control); }
+.page-header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.page-meta { font-size: 13px; color: var(--text-muted); }
