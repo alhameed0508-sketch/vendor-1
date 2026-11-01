@@ -59,5 +59,7 @@ export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
 
   useEffect(() => abort, [abort]);
 
-  return { state, start, stop };
+  const review = useCallback((caseId, decision) => dispatch({ type: 'review', caseId, decision }), []);
+
+  return { state, start, stop, review };
 }

@@ -20,10 +20,12 @@ function Stat({ label, value, tone }) {
 
 export default function LiveStream() {
   const [rate, setRate] = useState(5);
-  const { state, start, stop } = useScoreStream({ rate });
-  const { counters, edges, rings, flaggedAccounts, latestCaseId, latencies, status, error } = state;
+  const { state, start, stop, review } = useScoreStream({ rate });
+  const { counters, edges, rings, flaggedAccounts, latestCaseId, latencies, reviews, status, error } = state;
+  const [picked, setPicked] = useState(null);
 
   const ringList = useMemo(() => Object.values(rings), [rings]);
+  const shownId = picked && rings[picked] ? picked : latestCaseId;
   const accounts = useMemo(
     () => [...new Set([...edges.flatMap((e) => [e.from, e.to]), ...flaggedAccounts])],
     [edges, flaggedAccounts]
@@ -101,7 +103,18 @@ export default function LiveStream() {
             ))}
           </svg>
         </div>
-        <CaseCard ring={latestCaseId ? rings[latestCaseId] : null} />
+        <div>
+          {ringList.length > 1 && (
+            <div className="live-stream__cases" role="group" aria-label="Open cases">
+              {ringList.map((r) => (
+                <button key={r.caseId} type="button" aria-pressed={r.caseId === shownId} onClick={() => setPicked(r.caseId)}>
+                  {r.caseId}
+                </button>
+              ))}
+            </div>
+          )}
+          <CaseCard ring={shownId ? rings[shownId] : null} decision={shownId ? reviews[shownId] : null} onReview={review} />
+        </div>
       </div>
       <p className="live-stream__note">
         Synthetic data only. Ground-truth labels stay on the server and are used only to count genuine accounts.

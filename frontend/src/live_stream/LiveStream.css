@@ -43,3 +43,13 @@
 .live-stream__sub-head { margin: 12px 0 4px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; }
 .live-stream__timeline { list-style: none; padding: 0 !important; max-height: 180px; overflow-y: auto; }
 .live-stream__mono { font-family: var(--font-mono); }
+.live-stream__flow { width: 100%; height: auto; display: block; margin: 8px 0; }
+.live-stream__flow-link { fill: none; stroke: var(--critical); opacity: 0.7; stroke-linecap: round; }
+.live-stream__flow-node { fill: var(--text-secondary); }
+.live-stream__flow-label { font-family: var(--font-mono); font-size: 8px; fill: var(--text-muted); }
+.live-stream__review { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.live-stream__review p { flex-basis: 100%; margin: 0; }
+.live-stream__review button { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; cursor: pointer; }
+.live-stream__cases { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.live-stream__cases button { font-family: var(--font-mono); font-size: 11px; background: var(--bg-card); color: var(--text-secondary); border: 1px solid var(--border-subtle); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.live-stream__cases button[aria-pressed="true"] { border-color: var(--critical); color: var(--critical); }

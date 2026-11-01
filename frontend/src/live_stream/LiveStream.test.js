@@ -88,3 +88,13 @@ test('Stop ends a live stream', async () => {
   fireEvent.click(screen.getByRole('button', { name: /stop/i }));
   expect(await screen.findByRole('button', { name: /replay/i })).toBeInTheDocument();
 });
+
+test('lets a reviewer confirm the open case on this page only', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
+  render(<LiveStream />);
+  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
+  await screen.findByText('CASE-AB12');
+  fireEvent.click(screen.getByRole('button', { name: /confirm mule ring/i }));
+  expect(await screen.findByText(/Confirmed by reviewer/)).toBeInTheDocument();
+  expect(screen.getByText(/demo only/i)).toBeInTheDocument();
+});

@@ -1,5 +1,6 @@
 import React from 'react';
 import { riskBand } from './riskBand';
+import FlowView from './FlowView';
 
 const money = (amount) => `₹${Number(amount).toLocaleString('en-IN')}`;
 
@@ -24,6 +25,7 @@ export default function CaseCard({ ring, decision, onReview }) {
           <li key={reason} className="live-stream__chip">{reason}</li>
         ))}
       </ul>
+      <FlowView payments={ring.payments} />
       <h3 className="live-stream__sub-head">Flagged payments ({ring.payments.length})</h3>
       <ul className="live-stream__timeline">
         {ring.payments.map((p) => (
