@@ -11,6 +11,7 @@ import AlertQueue from './alert_queue/AlertQueue';
 import DataImportPage from './data_import/DataImportPage';
 import RiskOperationsPage from './risk_operations/RiskOperationsPage';
 import BenchmarkPage from './benchmark/BenchmarkPage';
+import LiveStream from './live_stream/LiveStream';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider, useTheme } from './ThemeContext';
@@ -78,6 +79,7 @@ function AppContent() {
               <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
               <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />
               <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><LiveStream /></ProtectedRoute>} />
             </Routes>
           </ErrorBoundary>
         </main>
