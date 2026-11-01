@@ -254,8 +254,8 @@ def _chain(n):
     return [
         {
             "txn_id": f"R{i}",
-            "from_account": f"A{i}",
-            "to_account": f"B{i}",
+            "from_account": "A",
+            "to_account": "B",
             "amount": 100,
             "timestamp": (base + timedelta(minutes=i)).isoformat(),
         }
@@ -284,11 +284,33 @@ def test_refresh_every_one_recomputes_each_time(louvain_calls):
     assert len(louvain_calls) == 4
 
 
-def test_uncommitted_scoring_does_not_age_the_cache(louvain_calls):
+def test_uncommitted_scoring_never_writes_the_shared_cache(louvain_calls):
     scorer = RealtimeScorer([], [], community_refresh_every=3)
-    for txn in _chain(6):
+    for txn in _chain(4):
         scorer.score_payment(txn, commit=False)
+    assert len(louvain_calls) == 4  # each call computes its own partition
+    assert scorer._cached is None
+
+
+def test_uncommitted_payment_cannot_replace_a_trusted_partition():
+    scorer = RealtimeScorer([], [], community_refresh_every=50)
+    chain = _chain(3)
+    for txn in chain:
+        scorer.score_payment(txn)
+    trusted = scorer._cached
+    scorer.score_payment({**chain[0], "txn_id": "EVIL", "to_account": "B2"}, commit=False)
+    assert scorer._cached is trusted
+
+
+def test_payment_with_unseen_account_forces_a_fresh_partition(louvain_calls):
+    scorer = RealtimeScorer([], [], community_refresh_every=50)
+    for txn in _chain(3):
+        scorer.score_payment(txn)
     assert len(louvain_calls) == 1
+    scorer.score_payment(_chain(4)[3])  # both accounts already seen
+    assert len(louvain_calls) == 1
+    scorer.score_payment({**_chain(5)[4], "from_account": "NEW1", "to_account": "NEW2"})  # unseen
+    assert len(louvain_calls) == 2
 
 
 def test_rejects_non_positive_refresh_interval():
