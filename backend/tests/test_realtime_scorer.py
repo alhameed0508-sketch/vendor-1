@@ -256,7 +256,7 @@ def _chain(n):
             "txn_id": f"R{i}",
             "from_account": "A",
             "to_account": "B",
-            "amount": 100,
+            "amount": 1000,
             "timestamp": (base + timedelta(minutes=i)).isoformat(),
         }
         for i in range(n)
@@ -316,3 +316,64 @@ def test_payment_with_unseen_account_forces_a_fresh_partition(louvain_calls):
 def test_rejects_non_positive_refresh_interval():
     with pytest.raises(ValueError):
         RealtimeScorer([], [], community_refresh_every=0)
+
+
+# ── Evasion robustness ────────────────────────────────────────────────────────
+
+
+def _mule_recall(accounts, history, live):
+    role = {a["account_id"]: a.get("role") for a in accounts}
+    mule_roles = {"SOURCE", "MULE", "AGGREGATOR"}
+    scorer = RealtimeScorer(_strip_labels(accounts), _strip_labels(history))
+    hits = total = 0
+    for raw in live:
+        if role.get(raw["from_account"]) in mule_roles and role.get(raw["to_account"]) in mule_roles:
+            total += 1
+            hits += scorer.score_payment(_strip_labels([raw])[0]).decision == "FLAG"
+    return hits / total
+
+
+def test_small_decoy_payments_do_not_hide_a_ring(dataset):
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "evaluation"))
+    from evasion_playbooks import noise
+
+    role = {a["account_id"]: a.get("role") for a in dataset["accounts"]}
+    is_mule = {acc: r in {"SOURCE", "MULE", "AGGREGATOR"} for acc, r in role.items()}
+    txns = sorted(noise(dataset["transactions"], is_mule, random.Random(7)), key=lambda t: t["timestamp"])
+    live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
+    assert _mule_recall(dataset["accounts"], history, live) >= 0.5
+
+
+def test_dust_payment_is_still_scored(split):
+    scorer = _scorer(split)
+    txn = {**_strip_labels(split[2])[0], "txn_id": "DUST1", "amount": 50}
+    assert scorer.score_payment(txn, commit=False).decision in {"FLAG", "PASS"}
+
+
+def test_slowed_down_ring_is_still_found(dataset):
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "evaluation"))
+    from evasion_playbooks import slow_drip
+
+    role = {a["account_id"]: a.get("role") for a in dataset["accounts"]}
+    is_mule = {acc: r in {"SOURCE", "MULE", "AGGREGATOR"} for acc, r in role.items()}
+    txns = sorted(slow_drip(dataset["transactions"], is_mule, random.Random(7)), key=lambda t: t["timestamp"])
+    live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
+    assert _mule_recall(dataset["accounts"], history, live) >= 0.5
+
+
+def test_long_window_engine_sees_slow_consolidation():
+    from models.temporal_weighting.smurf_weighting import SmurfWeightingEngine, Transaction
+
+    base = datetime(2026, 1, 1)
+    incoming = [Transaction(f"I{i}", f"S{i}", "M", 20000, base + timedelta(hours=i), "", "") for i in range(3)]
+    outgoing = [Transaction("O1", "M", "A", 59000, base + timedelta(hours=22), "", "")]
+    short = SmurfWeightingEngine().score_account("M", outgoing, incoming)
+    long = SmurfWeightingEngine(consolidation_hours=36).score_account("M", outgoing, incoming)
+    assert short.consolidation_score == 0.0
+    assert long.consolidation_score > 0.5

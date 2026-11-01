@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from models.community_detection.louvain_detector import Community, LouvainClusterDetector
-from models.temporal_weighting.smurf_weighting import score_transaction_batch
+from models.temporal_weighting.smurf_weighting import SMURF_FLOOR, SmurfWeightingEngine, score_transaction_batch
 
 REQUIRED_FIELDS = ("txn_id", "from_account", "to_account", "amount", "timestamp")
 DEFAULT_MAX_WINDOW = 5000
@@ -40,6 +40,12 @@ ENDPOINT_EVIDENCE_MIN = 0.30
 # Share of ring members that must carry their own evidence ("no innocent bystanders").
 MIN_RING_PURITY = 0.30
 MERCHANT_TYPE = "MERCHANT"  # account_type whose own activity is not evidence (legitimate hubs)
+# Payments below this amount are kept in history but ignored as evidence and as graph links.
+# Small decoys sent to genuine accounts otherwise dilute a ring (see 05-evaluation.md 7.6c).
+MATERIAL_MIN_AMOUNT = SMURF_FLOOR
+# Evidence is scored at the default windows and at a slow scale (6x), keeping the stronger
+# score per account, so stretching the timeline does not hide a ring.
+SLOW_SCALE = SmurfWeightingEngine(velocity_minutes=360, consolidation_hours=36)
 MAX_REASONS = 6
 CASE_ID_PREFIX = "CASE-"
 CASE_ID_HEX_LEN = 8
@@ -68,6 +74,15 @@ def _validate(txn: Mapping) -> None:
 
 def _content(txn: Mapping) -> tuple:
     return (txn["from_account"], txn["to_account"], float(txn["amount"]), str(txn["timestamp"]))
+
+
+def _multi_scale_evidence(window: Sequence[Mapping]) -> Dict:
+    fast, slow = score_transaction_batch(list(window)), score_transaction_batch(list(window), SLOW_SCALE)
+    return {acc: max(fast[acc], slow[acc], key=lambda s: s.smurf_score) for acc in fast}
+
+
+def _is_material(txn: Mapping) -> bool:
+    return float(txn["amount"]) >= MATERIAL_MIN_AMOUNT
 
 
 def _case_id(members: Sequence[str]) -> str:
@@ -120,14 +135,14 @@ class RealtimeScorer:
             fresh = (
                 cached is not None
                 and self._commits - cached[0] < self._refresh_every
-                and txn["from_account"] in cached[2]
-                and txn["to_account"] in cached[2]
+                and (not _is_material(txn) or (txn["from_account"] in cached[2] and txn["to_account"] in cached[2]))
             )
             commits = self._commits
 
         communities = cached[1] if fresh else None
+        material = [t for t in window if _is_material(t)]
         return self._score(
-            txn, list(window), self._with_known_accounts(accounts, window), started, communities, commits, commit
+            txn, material, self._with_known_accounts(accounts, material), started, communities, commits, commit
         )
 
     @staticmethod
@@ -149,7 +164,7 @@ class RealtimeScorer:
         trusted: bool,
     ) -> PaymentScore:
         sender, receiver = txn["from_account"], txn["to_account"]
-        smurf = score_transaction_batch(window)
+        smurf = _multi_scale_evidence(window)
         if communities is None:
             communities = tuple(LouvainClusterDetector().detect_clusters(window, accounts))
             if trusted:  # an uncommitted payment must never shape the shared partition
