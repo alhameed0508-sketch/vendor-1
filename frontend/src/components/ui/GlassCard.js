@@ -5,7 +5,7 @@ export function GlassCard({
   children,
   className = '',
   glow = false,
-  glowColor = 'rgba(37,99,235,0.08)',
+  glowColor = 'rgba(16,185,129,0.08)',
   onClick,
   hover = true,
   as = 'div',
@@ -31,7 +31,7 @@ export function GlassCard({
         cursor: onClick ? 'pointer' : undefined,
       }}
       whileHover={hover ? {
-        borderColor: 'rgba(37,99,235,0.20)',
+        borderColor: 'rgba(16,185,129,0.20)',
         transition: { duration: 0.15 },
       } : undefined}
       {...props}

@@ -337,7 +337,7 @@ html[data-theme="light"] .logo-text {
   color: #0F172A;
 }
 html[data-theme="light"] .logo-tagline {
-  color: #64748B;
+  color: #475569;
 }
 html[data-theme="light"] .data-table th {
   background: #F8FAFC;
@@ -778,11 +778,9 @@ code, .mono { font-family: var(--font-mono); }
 }
 
 .logo-tagline {
-  font-family: var(--font-mono);
-  font-size: 9px;
+  font-family: var(--font-sans);
+  font-size: 12px;
   color: var(--text-muted);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
   padding: 0 16px 10px;
 }
 

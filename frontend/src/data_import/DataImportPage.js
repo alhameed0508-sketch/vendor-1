@@ -174,7 +174,7 @@ export default function DataImportPage() {
         transition={{ delay: 0.05, duration: 0.35 }}
         style={{ ...cardStyle, marginBottom: 24 }}
       >
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #3B82F6, transparent)', opacity: 0.7 }} />
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--accent), transparent)', opacity: 0.7 }} />
 
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
@@ -190,12 +190,12 @@ export default function DataImportPage() {
           onDragLeave={handleDrag}
           onDrop={handleDrop}
           style={{
-            border: `2px dashed ${dragActive ? '#3B82F6' : 'var(--border)'}`,
+            border: `2px dashed ${dragActive ? 'var(--accent)' : 'var(--border)'}`,
             borderRadius: 10,
             padding: '40px 24px',
             textAlign: 'center',
             cursor: 'pointer',
-            background: dragActive ? 'rgba(59,130,246,0.04)' : 'transparent',
+            background: dragActive ? 'rgba(16,185,129,0.04)' : 'transparent',
             transition: 'all 0.2s ease',
           }}
           onClick={() => document.getElementById('csv-file-input')?.click()}
@@ -214,9 +214,9 @@ export default function DataImportPage() {
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               >
-                <RefreshCw size={28} color="#3B82F6" />
+                <RefreshCw size={28} color="var(--accent)" />
               </motion.div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#3B82F6' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>
                 Processing {selectedFile?.name}...
               </span>
               <div style={{
@@ -227,18 +227,18 @@ export default function DataImportPage() {
                   initial={{ width: '0%' }}
                   animate={{ width: '100%' }}
                   transition={{ duration: 8, ease: 'linear' }}
-                  style={{ height: '100%', background: '#3B82F6', borderRadius: 2 }}
+                  style={{ height: '100%', background: 'var(--accent)', borderRadius: 2 }}
                 />
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-              <Upload size={28} color={dragActive ? '#3B82F6' : 'var(--text-muted)'} />
+              <Upload size={28} color={dragActive ? 'var(--accent)' : 'var(--text-muted)'} />
               <div>
                 <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-primary)' }}>
                   Drop CSV file here or{' '}
                 </span>
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: '#3B82F6', fontWeight: 600 }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
                   browse
                 </span>
               </div>
@@ -285,7 +285,7 @@ export default function DataImportPage() {
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 14, marginBottom: 24,
             }}>
-              <StatCard label="Accounts" value={uploadResult.accounts} color="#3B82F6" icon={Users} index={0} />
+              <StatCard label="Accounts" value={uploadResult.accounts} color="var(--accent)" icon={Users} index={0} />
               <StatCard label="Transactions" value={uploadResult.transactions} color="#8B5CF6" icon={Database} index={1} />
               <StatCard label="Alerts Generated" value={uploadResult.alerts_generated} color="#F43F5E" icon={AlertTriangle} index={2} />
               <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} color="#10B981" icon={BarChart2} index={3} />
@@ -433,7 +433,7 @@ export default function DataImportPage() {
                           borderBottom: '1px solid var(--border)',
                           cursor: 'default',
                         }}
-                        whileHover={{ backgroundColor: 'rgba(59,130,246,0.03)' }}
+                        whileHover={{ backgroundColor: 'rgba(16,185,129,0.03)' }}
                       >
                         <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>
                           {(acc.account_id || '').slice(0, 12)}...
@@ -513,7 +513,7 @@ export default function DataImportPage() {
                           <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{(txn.txn_id || '').slice(0, 10)}...</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-primary)' }}>{(txn.from_account || '').slice(0, 10)}...</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-primary)' }}>{(txn.to_account || '').slice(0, 10)}...</td>
-                          <td style={{ padding: '6px 10px', color: '#3B82F6', fontWeight: 600 }}>{txn.amount?.toLocaleString('en-IN')}</td>
+                          <td style={{ padding: '6px 10px', color: 'var(--accent)', fontWeight: 600 }}>{txn.amount?.toLocaleString('en-IN')}</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{txn.txn_type}</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{txn.channel}</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-faint)', fontSize: 10 }}>{txn.timestamp?.replace('T', ' ')}</td>
@@ -562,7 +562,7 @@ export default function DataImportPage() {
                 {/* Navigation links */}
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button className="btn btn-ghost" onClick={() => navigate('/')}
-                    style={{ gap: 8, color: '#3B82F6', borderColor: 'rgba(59,130,246,0.25)' }}
+                    style={{ gap: 8, color: 'var(--accent)', borderColor: 'rgba(16,185,129,0.25)' }}
                   >
                     <BarChart2 size={14} />
                     View Dashboard

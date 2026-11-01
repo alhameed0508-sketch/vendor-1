@@ -71,7 +71,7 @@ export default function LoginPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 20px',
-                boxShadow: '0 0 24px rgba(37,99,235,0.25), 0 4px 12px rgba(0,0,0,0.4)',
+                boxShadow: '0 0 24px rgba(16,185,129,0.25), 0 4px 12px rgba(0,0,0,0.4)',
               }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -139,7 +139,7 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '10px 14px',
                     background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'username' ? 'rgba(37,99,235,0.35)' : 'var(--border-strong)'}`,
+                    border: `1px solid ${focused === 'username' ? 'rgba(16,185,129,0.35)' : 'var(--border-strong)'}`,
                     borderRadius: 8,
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-sans)',
@@ -179,7 +179,7 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '10px 42px 10px 14px',
                     background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'password' ? 'rgba(37,99,235,0.35)' : 'var(--border-strong)'}`,
+                    border: `1px solid ${focused === 'password' ? 'rgba(16,185,129,0.35)' : 'var(--border-strong)'}`,
                     borderRadius: 8,
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-sans)',

@@ -39,8 +39,8 @@ export default function BackgroundGrid() {
         <div style={{
           position: 'absolute', inset: 0,
           backgroundImage: `
-            linear-gradient(rgba(37,99,235,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(37,99,235,0.03) 1px, transparent 1px)
+            linear-gradient(rgba(16,185,129,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16,185,129,0.03) 1px, transparent 1px)
           `,
           backgroundSize: '48px 48px',
           maskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black 40%, transparent 100%)',
@@ -52,7 +52,7 @@ export default function BackgroundGrid() {
       <div style={{
         position: 'absolute', inset: 0,
         background: isLight
-          ? 'radial-gradient(ellipse at center, transparent 70%, rgba(37,99,235,0.02) 100%)'
+          ? 'radial-gradient(ellipse at center, transparent 70%, rgba(16,185,129,0.02) 100%)'
           : 'radial-gradient(ellipse at center, transparent 40%, rgba(8,8,12,0.85) 100%)',
       }} />
     </div>

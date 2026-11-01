@@ -163,7 +163,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             exit={{ opacity: 0, x: -10, height: 0, marginBottom: 0 }}
             transition={{ ...CONTENT_SPRING, delay: 0.1 }}
           >
-            // IOB Fraud Intelligence
+            IOB Fraud Intelligence
           </motion.div>
         )}
       </AnimatePresence>
@@ -186,10 +186,9 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
           >
             <div className="sidebar-health-dot" />
             <span style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 10,
+              fontFamily: 'var(--font-sans)',
+              fontSize: 12,
               color: 'var(--text-muted)',
-              letterSpacing: '0.5px',
             }}>Online</span>
           </motion.div>
         )}

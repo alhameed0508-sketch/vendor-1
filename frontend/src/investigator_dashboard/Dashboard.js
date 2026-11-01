@@ -27,7 +27,7 @@ function EmptyState({ hasFilters }) {
         width: 48, height: 48,
         borderRadius: '50%',
         background: 'var(--accent-dim)',
-        border: '1px solid rgba(37,99,235,0.15)',
+        border: '1px solid rgba(16,185,129,0.15)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <Shield size={20} color="#818CF8" />
@@ -151,7 +151,6 @@ export default function Dashboard() {
         }}
       >
         <div>
-          <p className="eyebrow">Investigator workspace</p>
           <h1 className="text-page-title" style={{ margin: '0 0 4px' }}>
             Alert Queue
           </h1>

@@ -302,13 +302,13 @@ describe('Sidebar Component', () => {
     test('hides system tagline when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.queryByText('// IOB Fraud Intelligence')).not.toBeInTheDocument();
+      expect(screen.queryByText('IOB Fraud Intelligence')).not.toBeInTheDocument();
     });
 
     test('shows system tagline when expanded', () => {
       renderSidebar({ collapsed: false });
 
-      expect(screen.getByText('// IOB Fraud Intelligence')).toBeInTheDocument();
+      expect(screen.getByText('IOB Fraud Intelligence')).toBeInTheDocument();
     });
 
     test('renders sidebar element when collapsed', () => {
