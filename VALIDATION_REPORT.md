@@ -1,5 +1,12 @@
 # MuleCatch Model Validation Report
 
+> **Superseded on 2026-11-02.** Figures in this document come from a 6-account
+> sample, with thresholds tuned on those same accounts. They are not performance
+> claims. The benchmark of record is `docs/buildx/05-evaluation.md` (held-out
+> synthetic seeds, ground-truth labels stripped). "Production-ready" here means
+> only that the code is configurable and versioned; the repository is not certified
+> for bank production. Hardcoded values remain: see `HARDCODED_VALUES_AUDIT.md`.
+
 **Date:** August 11, 2026
 **Dataset:** Sample mule account data (6 accounts)
 **Validator:** Automated validation script
@@ -8,9 +15,9 @@
 
 ## Executive Summary
 
-✅ **Model is production-ready from a code architecture perspective**
+✅ **Code is configurable and version-tracked** (not certified for production)
 ⚠️ **Model accuracy needs improvement** (50% on sample data)
-✅ **No hardcoded values detected** - fully data-driven and configurable
+⚠️ **Some thresholds are still hardcoded** (see `HARDCODED_VALUES_AUDIT.md`)
 
 ---
 
@@ -150,7 +157,7 @@ onboarding_risk_threshold: float = Field(0.50, alias="ONBOARDING_RISK_THRESHOLD"
 1. ✅ **Excellent HIGH-risk detection** - 66.7% accuracy on high-risk accounts
 2. ✅ **Strong behavioral signal detection** - Pass-through ratio highly effective
 3. ✅ **Multi-engine anomaly detection** - DBSCAN + Isolation Forest provide redundancy
-4. ✅ **Production-ready architecture** - Fully configurable, no hardcoded values
+4. ✅ **Configurable architecture** - risk scorer thresholds come from config; other modules still contain constants
 5. ✅ **Version tracking** - Model and rule versions tracked for auditability
 
 ### Weaknesses
@@ -253,9 +260,9 @@ Based on `docs/PRODUCTION_READINESS.md`:
 
 ## 7. Conclusion
 
-### Is the model production-ready?
+### Is the model ready for bank production?
 
-**Code Architecture:** ✅ **YES** - Fully data-driven, configurable, version-tracked
+**Code Architecture:** ⚠️ **PARTIAL** - risk scorer is configurable and version-tracked; other modules still hardcode constants
 
 **Model Accuracy:** ⚠️ **NEEDS IMPROVEMENT** - 50% accuracy requires tuning before deployment
 
