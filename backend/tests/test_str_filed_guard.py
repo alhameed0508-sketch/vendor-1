@@ -17,6 +17,10 @@ class FakeDetection:
 class FakeAlerts:
     def __init__(self):
         self.updates = []
+        self.statuses = {}
+
+    def get_alert(self, alert_id):
+        return {"alert_id": alert_id, "status": self.statuses.get(alert_id, "OPEN")}
 
     def update_alert(self, alert_id, status, notes, user_id):
         self.updates.append((alert_id, status, notes))
@@ -86,3 +90,29 @@ async def test_other_statuses_unaffected(guard_app):
     app, state = guard_app
     state["role"] = "ANALYST"
     assert (await patch(app, "ALT-2", "RESOLVED")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_non_approver_cannot_change_a_filed_alert(guard_app):
+    app, state = guard_app
+    state["alerts"].statuses["ALT-1"] = "STR_FILED"
+    state["role"] = "ANALYST"
+    assert (await patch(app, "ALT-1", "OPEN")).status_code == 403
+    assert state["alerts"].updates == []
+
+
+@pytest.mark.asyncio
+async def test_approver_can_change_a_filed_alert(guard_app):
+    app, state = guard_app
+    state["alerts"].statuses["ALT-1"] = "STR_FILED"
+    assert (await patch(app, "ALT-1", "OPEN")).status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_notes_only_update_on_filed_alert_allowed_for_analyst(guard_app):
+    app, state = guard_app
+    state["alerts"].statuses["ALT-1"] = "STR_FILED"
+    state["role"] = "ANALYST"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        r = await c.patch("/api/v1/alerts/ALT-1", json={"investigator_notes": "note"})
+    assert r.status_code == 200

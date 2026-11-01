@@ -61,11 +61,11 @@ def register_alert_routes(r: APIRouter, limiter: Limiter) -> None:
         str_svc: STRService = Depends(get_str_service),
     ):
         detection_svc.ensure_alerts()
-        if req.status == "STR_FILED":
-            if user.get("role") not in STR_APPROVER_ROLES:
-                raise AuthorizationError("Only ADMIN or SUPERVISOR can mark an alert STR_FILED")
-            if not str_svc.has_str_for_alert(alert_id):
-                raise ConflictError("No STR exists for this alert; export one before filing")
+        if req.status and user.get("role") not in STR_APPROVER_ROLES:
+            if req.status == "STR_FILED" or alert_svc.get_alert(alert_id).get("status") == "STR_FILED":
+                raise AuthorizationError("Only ADMIN or SUPERVISOR can set or change STR_FILED")
+        if req.status == "STR_FILED" and not str_svc.has_str_for_alert(alert_id):
+            raise ConflictError("No STR exists for this alert; export one before filing")
         return success_response(
             alert_svc.update_alert(
                 alert_id,
