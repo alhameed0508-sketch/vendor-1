@@ -1616,3 +1616,13 @@ input::placeholder, textarea::placeholder {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Approval dialog ── */
+.eyebrow { font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 6px; }
+.approval-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); }
+.approval-dialog { width: min(480px, calc(100vw - 32px)); padding: 24px; }
+.approval-title { margin: 0 0 16px; font-size: 18px; color: var(--text-primary); }
+.approval-label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-secondary); }
+.approval-reason { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-primary); font: inherit; resize: vertical; }
+.approval-error { margin: 10px 0 0; color: var(--critical); font-size: 13px; }
+.approval-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
