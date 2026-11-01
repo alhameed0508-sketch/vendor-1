@@ -13,7 +13,6 @@ import RiskOperationsPage from './risk_operations/RiskOperationsPage';
 import BenchmarkPage from './benchmark/BenchmarkPage';
 import Sidebar from './components/Sidebar';
 import ErrorBoundary from './components/ErrorBoundary';
-import BackgroundGrid from './components/ui/BackgroundGrid';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { AuthProvider } from './auth/AuthContext';
 import ProtectedRoute from './auth/ProtectedRoute';
@@ -29,7 +28,7 @@ function ThemedToaster() {
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border)',
           color: 'var(--text-primary)',
-          fontFamily: 'var(--font-mono)',
+          fontFamily: 'var(--font-sans)',
           fontSize: 13,
           borderRadius: 6,
         },
@@ -55,7 +54,6 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      <BackgroundGrid />
       <ThemedToaster />
 
       {!isLoginPage && (

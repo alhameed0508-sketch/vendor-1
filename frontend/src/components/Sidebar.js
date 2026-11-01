@@ -290,7 +290,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
               padding: '10px 8px 4px',
             }}>
               <div style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 9,
                 color: 'var(--text-faint)',
                 letterSpacing: '1px',
@@ -312,7 +312,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                   gap: 8,
                 }}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: 11,
                     color: 'var(--text-muted)',
                   }}>{s.label}</span>
@@ -322,7 +322,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     style={{
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--font-sans)',
                       fontSize: 11,
                       color: s.color,
                       fontWeight: 600,

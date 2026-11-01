@@ -214,7 +214,7 @@ function ResultsTable({ result }) {
                       padding: 10,
                       textAlign: 'right',
                       color: 'var(--text-secondary)',
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: 'var(--font-sans)',
                     }}
                   >
                     {Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '—'}
@@ -303,7 +303,7 @@ export default function BenchmarkPage() {
           </h1>
           <span className="status-badge">EVALUATION</span>
         </div>
-        <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
           // executable detection benchmarks · precision/recall · adversarial testing
           · deterministic cross-validation
         </p>
@@ -424,7 +424,7 @@ export default function BenchmarkPage() {
                       style={{
                         color: 'var(--text-primary)',
                         marginTop: 5,
-                        fontFamily: 'var(--font-mono)',
+                        fontFamily: 'var(--font-sans)',
                       }}
                     >
                       {value}
@@ -447,7 +447,7 @@ export default function BenchmarkPage() {
       <p
         style={{
           color: 'var(--text-muted)',
-          fontFamily: 'var(--font-mono)',
+          fontFamily: 'var(--font-sans)',
           fontSize: 10,
           marginTop: 16,
         }}

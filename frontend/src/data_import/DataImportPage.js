@@ -34,10 +34,10 @@ function SeverityBadge({ severity, count }) {
       padding: '6px 12px', borderRadius: 6,
       background: `${color}12`, border: `1px solid ${color}25`,
     }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color, letterSpacing: '1px' }}>
+      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700, color, }}>
         {severity}
       </span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color }}>
+      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 700, color }}>
         {count}
       </span>
     </div>
@@ -160,7 +160,7 @@ export default function DataImportPage() {
           Data Import
         </h1>
         <p style={{
-          fontFamily: 'var(--font-mono)', fontSize: 12,
+          fontFamily: 'var(--font-sans)', fontSize: 12,
           color: 'var(--text-muted)', letterSpacing: '0.3px',
         }}>
           Upload CBS mule account data for detection pipeline analysis
@@ -177,7 +177,7 @@ export default function DataImportPage() {
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--accent), transparent)', opacity: 0.7 }} />
 
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+          fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
           letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
         }}>
           Upload File
@@ -216,7 +216,7 @@ export default function DataImportPage() {
               >
                 <RefreshCw size={28} color="var(--accent)" />
               </motion.div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent)' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent)' }}>
                 Processing {selectedFile?.name}...
               </span>
               <div style={{
@@ -242,7 +242,7 @@ export default function DataImportPage() {
                   browse
                 </span>
               </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-faint)' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-faint)' }}>
                 Pipe-delimited CBS format (.csv, max 50MB)
               </span>
             </div>
@@ -263,7 +263,7 @@ export default function DataImportPage() {
               }}
             >
               <XCircle size={14} color="#F43F5E" />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#F43F5E' }}>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#F43F5E' }}>
                 {error}
               </span>
             </motion.div>
@@ -294,7 +294,7 @@ export default function DataImportPage() {
             {uploadResult.data_quality && (
               <div style={{ ...cardStyle, marginBottom: 24 }}>
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                   letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
                 }}>
                   Data Quality & Linkage
@@ -308,8 +308,8 @@ export default function DataImportPage() {
                     ['Distinct times', uploadResult.data_quality.distinct_timestamps],
                   ].map(([label, value]) => (
                     <div key={label}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-faint)', textTransform: 'uppercase' }}>{label}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)', marginTop: 4 }}>{value}</div>
+                      <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-faint)', }}>{label}</div>
+                      <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-primary)', marginTop: 4 }}>{value}</div>
                     </div>
                   ))}
                 </div>
@@ -319,7 +319,7 @@ export default function DataImportPage() {
                       padding: '4px 8px', borderRadius: 4,
                       border: '1px solid rgba(251,146,60,0.25)',
                       background: 'rgba(251,146,60,0.07)',
-                      color: '#FB923C', fontFamily: 'var(--font-mono)', fontSize: 9,
+                      color: '#FB923C', fontFamily: 'var(--font-sans)', fontSize: 12,
                     }}>
                       {warning.replaceAll('_', ' ')}
                     </span>
@@ -339,7 +339,7 @@ export default function DataImportPage() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #10B981, transparent)', opacity: 0.7 }} />
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                   letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
                 }}>
                   Channel Breakdown
@@ -347,8 +347,8 @@ export default function DataImportPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {Object.entries(uploadResult.channels || {}).map(([ch, count]) => (
                     <div key={ch} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-primary)' }}>{ch}</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{count}</span>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-primary)' }}>{ch}</span>
+                      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>{count}</span>
                     </div>
                   ))}
                 </div>
@@ -363,14 +363,14 @@ export default function DataImportPage() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #FB923C, transparent)', opacity: 0.7 }} />
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                   letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
                 }}>
                   Anomaly Flags
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {(uploadResult.anomaly_flags || []).length === 0 ? (
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-faint)' }}>
                       No pre-processing anomalies detected
                     </span>
                   ) : (
@@ -381,10 +381,10 @@ export default function DataImportPage() {
                         background: 'rgba(251,146,60,0.06)',
                       }}>
                         <AlertTriangle size={11} color="#FB923C" />
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-primary)' }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-primary)' }}>
                           {flag.flag}
                         </span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-faint)', marginLeft: 'auto' }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-faint)', marginLeft: 'auto' }}>
                           {flag.account_id?.slice(0, 8)}...
                         </span>
                       </div>
@@ -403,14 +403,14 @@ export default function DataImportPage() {
             >
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #8B5CF6, transparent)', opacity: 0.7 }} />
               <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                 letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
               }}>
                 Account Summaries
               </div>
 
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)', fontSize: 12 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
                       {['Account', 'CIF', 'Age (days)', 'Balance', 'Debits', 'Credits', 'Avg Txn', 'KYC'].map(h => (
@@ -488,14 +488,14 @@ export default function DataImportPage() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #6366F1, transparent)', opacity: 0.7 }} />
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                   letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
                 }}>
                   Transaction Preview (first 50)
                 </div>
 
                 <div style={{ overflowX: 'auto', maxHeight: 400 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'var(--font-sans)', fontSize: 12 }}>
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'var(--bg-card)' }}>
                         {['Txn ID', 'From', 'To', 'Amount', 'Type', 'Channel', 'Time'].map(h => (
@@ -535,7 +535,7 @@ export default function DataImportPage() {
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #F43F5E, transparent)', opacity: 0.7 }} />
                 <div style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+                  fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
                   letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
                 }}>
                   Detection Results

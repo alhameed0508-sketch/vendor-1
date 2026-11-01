@@ -56,7 +56,7 @@ export function ShortcutsModal({ open, onClose }) {
                   <kbd key={k} style={{
                     background: 'var(--bg-elevated)', border: '1px solid var(--border)',
                     borderRadius: 4, padding: '2px 8px', fontSize: 12,
-                    fontFamily: 'var(--font-mono)', color: 'var(--text-primary)',
+                    fontFamily: 'var(--font-sans)', color: 'var(--text-primary)',
                     minWidth: 28, textAlign: 'center',
                   }}>{k}</kbd>
                 ))}

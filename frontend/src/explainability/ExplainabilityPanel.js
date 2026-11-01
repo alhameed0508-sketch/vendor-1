@@ -44,7 +44,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
       <GlassCard hover={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="spinner" />
-          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
             Generating explanation...
           </span>
         </div>
@@ -55,7 +55,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
   if (!explanation) {
     return (
       <GlassCard hover={false}>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
           No explanation available for this alert.
         </p>
       </GlassCard>
@@ -101,7 +101,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
           </div>
           <span style={{ fontWeight: 700, fontSize: 16 }}>Explainability Engine</span>
           <span style={{
-            fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-green)',
+            fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
             background: 'rgba(52,199,89,0.1)', padding: '2px 8px', borderRadius: 4,
           }}>
             ACTIVE
@@ -227,7 +227,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
       <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
-        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           {narrative}
         </p>
       </GlassCard>
@@ -244,18 +244,18 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
             transition={{ delay: i * 0.06 }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+              <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
                 {item.feature.replace(/_/g, ' ')}
               </span>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{
-                  fontSize: 9, fontFamily: 'var(--font-mono)', padding: '1px 5px', borderRadius: 3,
+                  fontSize: 12, fontFamily: 'var(--font-sans)', padding: '1px 5px', borderRadius: 3,
                   background: item.severity === 'HIGH' ? 'rgba(255,59,48,0.12)' : 'rgba(255,149,0,0.12)',
                   color: item.severity === 'HIGH' ? 'var(--critical)' : 'var(--high)',
                 }}>
                   {item.severity}
                 </span>
-                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', fontWeight: 600 }}>
                   +{(item.contribution * 100).toFixed(1)}%
                 </span>
               </div>
@@ -295,7 +295,7 @@ function FraudChainTab({ chain, narrative }) {
   if (!chain.length) {
     return (
       <GlassCard hover={false}>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
           {narrative || 'No clear money flow chain could be traced.'}
         </p>
       </GlassCard>
@@ -306,7 +306,7 @@ function FraudChainTab({ chain, narrative }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
       <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-amber)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
-        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           {narrative}
         </p>
       </GlassCard>
@@ -340,20 +340,20 @@ function FraudChainTab({ chain, narrative }) {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
                     Step {step.step}
                   </span>
                   <div style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
                       ...{step.from_account.slice(-8)}
                     </span>
                     <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>&rarr;</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
                       ...{step.to_account.slice(-8)}
                     </span>
                   </div>
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-amber)', fontWeight: 600 }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-amber)', fontWeight: 600 }}>
                   {'\u20B9'}{step.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
@@ -379,7 +379,7 @@ function SHAPTab({ data, loading }) {
       <GlassCard hover={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div className="spinner" />
-          <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
             Computing SHAP values...
           </span>
         </div>
@@ -390,7 +390,7 @@ function SHAPTab({ data, loading }) {
   if (!data) {
     return (
       <GlassCard hover={false}>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
           SHAP values not available for this alert.
         </p>
       </GlassCard>
@@ -408,7 +408,7 @@ function SHAPTab({ data, loading }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Feature Importance (SHAP)</p>
             <span style={{
-              fontSize: 9, fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: 3,
+              fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
               background: 'rgba(139,92,246,0.12)', color: '#8b5cf6',
             }}>
               RBI FREE-AI
@@ -427,11 +427,11 @@ function SHAPTab({ data, loading }) {
                 transition={{ delay: i * 0.05 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
                     {(item.feature || item.feature_name || '').replace(/_/g, ' ')}
                   </span>
                   <span style={{
-                    fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                    fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 600,
                     color: isPositive ? 'var(--critical)' : 'var(--accent-green)',
                   }}>
                     {isPositive ? '+' : ''}{(val * 100).toFixed(1)}%
@@ -467,7 +467,7 @@ function SHAPTab({ data, loading }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Regulatory Report</p>
             <span style={{
-              fontSize: 9, fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: 3,
+              fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
               background: 'rgba(16,185,129,0.12)', color: 'var(--accent-green)',
             }}>
               {regulatory.framework || 'RBI FREE-AI'}
@@ -480,12 +480,12 @@ function SHAPTab({ data, loading }) {
           )}
           {regulatory.feature_descriptions && (
             <div style={{ marginTop: 8 }}>
-              <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <p style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', marginBottom: 6, }}>
                 Feature Descriptions
               </p>
               {Object.entries(regulatory.feature_descriptions).map(([feat, desc], i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 11 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)', flexShrink: 0, minWidth: 120 }}>
+                  <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)', flexShrink: 0, minWidth: 120 }}>
                     {feat.replace(/_/g, ' ')}
                   </span>
                   <span style={{ color: 'var(--text-muted)' }}>{desc}</span>
@@ -495,7 +495,7 @@ function SHAPTab({ data, loading }) {
           )}
           {regulatory.bias_assessment && (
             <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 6 }}>
-              <p style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <p style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', marginBottom: 4, }}>
                 Bias Assessment
               </p>
               <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
@@ -528,7 +528,7 @@ function CyclesTab({ cycles, narrative }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
       <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--critical)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
-        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+        <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           {narrative}
         </p>
       </GlassCard>
@@ -545,16 +545,16 @@ function CyclesTab({ cycles, narrative }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
-                  fontSize: 10, fontFamily: 'var(--font-mono)', padding: '2px 6px',
+                  fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px',
                   background: 'rgba(255,59,48,0.12)', color: 'var(--critical)', borderRadius: 3,
                 }}>
                   RING {i + 1}
                 </span>
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
                   {cycle.cycle_length} accounts
                 </span>
               </div>
-              <span style={{ fontSize: 14, fontFamily: 'var(--font-mono)', color: 'var(--critical)', fontWeight: 700 }}>
+              <span style={{ fontSize: 14, fontFamily: 'var(--font-sans)', color: 'var(--critical)', fontWeight: 700 }}>
                 {'\u20B9'}{cycle.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </span>
             </div>
@@ -567,7 +567,7 @@ function CyclesTab({ cycles, narrative }) {
               {cycle.accounts.map((acc, j) => (
                 <React.Fragment key={j}>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--accent-cyan)',
+                    fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-cyan)',
                     padding: '2px 6px', background: 'rgba(90,200,250,0.08)', borderRadius: 4,
                   }}>
                     ...{acc.slice(-6)}

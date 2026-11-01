@@ -26,7 +26,7 @@ export default class ErrorBoundary extends React.Component {
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: 'var(--text-primary)' }}>
             Something went wrong
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12, marginBottom: 24, maxWidth: 400 }}>
+          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontSize: 12, marginBottom: 24, maxWidth: 400 }}>
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <div style={{ display: 'flex', gap: 12 }}>

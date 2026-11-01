@@ -174,7 +174,7 @@ export default function CompliancePortal() {
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-page-title" style={{ fontSize: 22, marginBottom: 4 }}>Compliance Portal</h1>
-          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontSize: 12 }}>
             Suspicious Transaction Report (STR) generation · FIU-IND format · RBI AML/CFT compliance
           </p>
         </div>
@@ -197,9 +197,9 @@ export default function CompliancePortal() {
                 transition={{ delay: 0.1 + i * 0.05 }}
                 style={{ padding: '0 20px' }}
               >
-                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-mono)', color: s.color }}>
+                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-sans)', color: s.color }}>
                   {typeof s.value === 'number' ? (
-                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--font-mono)' }} />
+                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--font-sans)' }} />
                   ) : s.value}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
@@ -237,10 +237,10 @@ export default function CompliancePortal() {
                 background: `${color}10`, border: `1px solid ${color}30`,
               }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color }}>
                   {STATUS_LABELS[status]}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)', color }}>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', color }}>
                   {statusCounts[status] || 0}
                 </span>
               </div>
@@ -335,7 +335,7 @@ export default function CompliancePortal() {
                 </p>
                 {strReports.length > 0 && (
                   <span style={{
-                    fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-green)',
+                    fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
                     background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 4,
                   }}>
                     FIU-IND v2.1
@@ -344,7 +344,7 @@ export default function CompliancePortal() {
               </div>
               {strReports.length === 0 ? (
                 <div style={{ padding: '20px 0', textAlign: 'center' }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
                     No STRs filed yet. Select alerts and click Export to generate reports.
                   </div>
                 </div>
@@ -374,11 +374,11 @@ export default function CompliancePortal() {
                         >
                           {/* Header: STR ID + Status badge */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
                               {r.str_id}
                             </span>
                             <span style={{
-                              fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 700,
+                              fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 700,
                               background: `${statusColor}20`, color: statusColor,
                               padding: '2px 8px', borderRadius: 4, letterSpacing: '0.5px',
                               textTransform: 'uppercase',
@@ -388,7 +388,7 @@ export default function CompliancePortal() {
                           </div>
 
                           {/* Alert + financial data */}
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
                             <span style={{ color: 'var(--accent-cyan)' }}>{alertId}</span>
                             {r.total_amount != null && (
                               <span> · <span style={{ color: 'var(--accent-amber)' }}>₹{Number(r.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></span>
@@ -402,7 +402,7 @@ export default function CompliancePortal() {
                           </div>
 
                           {/* Risk + entity */}
-                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                             {r.risk_score != null && (
                               <span style={{ color: r.risk_score > 0.8 ? '#EF4444' : r.risk_score > 0.5 ? '#FB923C' : 'var(--text-muted)' }}>
                                 Risk: {(r.risk_score * 100).toFixed(0)}%
@@ -440,7 +440,7 @@ export default function CompliancePortal() {
                               PDF
                             </motion.button>
                             {status === 'ACKNOWLEDGED' && (
-                              <span style={{ fontSize: 10, color: 'var(--accent-green)', fontFamily: 'var(--font-mono)', alignSelf: 'center', marginLeft: 'auto' }}>
+                              <span style={{ fontSize: 12, color: 'var(--accent-green)', fontFamily: 'var(--font-sans)', alignSelf: 'center', marginLeft: 'auto' }}>
                                 ✓ Complete
                               </span>
                             )}
@@ -506,7 +506,7 @@ export default function CompliancePortal() {
                     return (
                       <div key={entry.log_id || i} style={{
                         padding: '6px 0 6px 10px', borderBottom: '1px solid var(--border)',
-                        fontSize: 11, fontFamily: 'var(--font-mono)',
+                        fontSize: 12, fontFamily: 'var(--font-sans)',
                         borderLeft: `2px solid ${actionColor}`,
                         marginBottom: 2,
                       }}>

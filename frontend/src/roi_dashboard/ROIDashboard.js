@@ -49,9 +49,9 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={chartTooltipStyle}>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: '1px', textTransform: 'uppercase' }}>{label}</p>
+      <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: p.color, margin: 0, fontWeight: 600 }}>
+        <p key={i} style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: p.color, margin: 0, fontWeight: 600 }}>
           {p.name}: {p.value}
         </p>
       ))}
@@ -69,7 +69,7 @@ function ChartPanel({ title, children }) {
       boxShadow: 'var(--shadow)',
     }}>
       <p style={{
-        fontFamily: 'var(--font-mono)',
+        fontFamily: 'var(--font-sans)',
         fontSize: 10,
         color: 'var(--text-muted)',
         textTransform: 'uppercase',
@@ -120,7 +120,7 @@ export default function ROIDashboard() {
   if (loading) return (
     <div className="loading">
       <div className="spinner" />
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '1px', color: 'var(--text-muted)' }}>
+      <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)' }}>
         LOADING ANALYTICS...
       </span>
     </div>
@@ -140,7 +140,7 @@ export default function ROIDashboard() {
             ROI Analytics
           </h1>
           <span style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 10,
             color: '#10B981',
             letterSpacing: '1.5px',
@@ -189,8 +189,8 @@ export default function ROIDashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="prevented" name="₹ Lakh" stroke="#FB923C" strokeWidth={2} fill="url(#prevGrad)" dot={false} activeDot={{ r: 4, fill: '#FB923C', stroke: '#0A0A0F', strokeWidth: 2 }} />
             </AreaChart>
@@ -207,8 +207,8 @@ export default function ROIDashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
               <Tooltip content={<CustomTooltip />} />
               <Bar dataKey="hours" name="Hours" fill="url(#hoursGrad)" radius={[3, 3, 0, 0]} />
             </BarChart>
@@ -228,8 +228,8 @@ export default function ROIDashboard() {
             {detectionBreakdown.map(d => (
               <div key={d.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94A3B8' }}>{d.name}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: d.color, fontWeight: 700 }}>{d.count}</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#94A3B8' }}>{d.name}</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: d.color, fontWeight: 700 }}>{d.count}</span>
                 </div>
                 <div style={{ height: 4, background: 'var(--bg-input)', borderRadius: 2, overflow: 'hidden' }}>
                   <motion.div
@@ -263,8 +263,8 @@ export default function ROIDashboard() {
                     borderRadius: 8,
                     padding: '14px 16px',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700, color: c, letterSpacing: '-0.5px' }}>{v}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>{l}</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 700, color: c, }}>{v}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, fontFamily: 'var(--font-sans)' }}>{l}</div>
                   </div>
                 ))}
               </div>
@@ -279,15 +279,15 @@ export default function ROIDashboard() {
                     borderRadius: 8,
                     padding: '12px 16px',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: c }}>{v}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'var(--font-mono)' }}>{l}</div>
+                    <div style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: c }}>{v}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, fontFamily: 'var(--font-sans)' }}>{l}</div>
                   </div>
                 ))}
               </div>
               <div style={{
                 paddingTop: 12,
                 borderTop: '1px solid var(--border)',
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 11,
                 color: 'var(--text-muted)',
                 display: 'flex',
@@ -303,7 +303,7 @@ export default function ROIDashboard() {
               <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>—</span>
               </div>
-              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-mono)' }}>No feedback data yet.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }}>No feedback data yet.</p>
             </div>
           )}
         </ChartPanel>

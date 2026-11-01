@@ -31,7 +31,7 @@ function Result({ data }) {
       <div className="section-title">Decision</div>
       <pre style={{
         margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
-        color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)',
+        color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)',
         fontSize: 12, lineHeight: 1.6,
       }}>
         {JSON.stringify(data, null, 2)}

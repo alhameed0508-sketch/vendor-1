@@ -91,7 +91,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
                   border: 'none',
                   borderBottom: '1px solid var(--border)',
                   color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-sans)',
                   fontSize: 14,
                   outline: 'none',
                 }}
@@ -107,14 +107,14 @@ export default function CommandPalette({ alerts: alertsProp }) {
                   padding: '24px',
                   textAlign: 'center',
                   color: 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-sans)',
                   fontSize: 12,
                 }}>
                   No results found.
                 </Command.Empty>
 
                 <Command.Group
-                  heading={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 8px' }}>Pages</span>}
+                  heading={<span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 1, padding: '4px 8px' }}>Pages</span>}
                 >
                   {PAGES.map(page => (
                     <Command.Item
@@ -143,7 +143,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
 
                 {alerts.length > 0 && (
                   <Command.Group
-                    heading={<span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 8px' }}>Alerts</span>}
+                    heading={<span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', letterSpacing: 1, padding: '4px 8px' }}>Alerts</span>}
                   >
                     {alerts.slice(0, 20).map(alert => (
                       <Command.Item
@@ -163,8 +163,8 @@ export default function CommandPalette({ alerts: alertsProp }) {
                         data-cmdk-item=""
                       >
                         <span className={`badge badge-${alert.severity}`} style={{ flexShrink: 0 }}>{alert.severity}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent-cyan)' }}>{alert.alert_id}</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-cyan)' }}>{alert.alert_id}</span>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
                           {(alert.risk_score * 100).toFixed(0)}%
                         </span>
                       </Command.Item>
@@ -181,13 +181,13 @@ export default function CommandPalette({ alerts: alertsProp }) {
                 gap: 16,
                 alignItems: 'center',
               }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)' }}>
                   \u2191\u2193 Navigate
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)' }}>
                   \u23CE Select
                 </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)' }}>
                   ESC Close
                 </span>
               </div>

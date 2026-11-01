@@ -456,7 +456,7 @@ export default function NetworkGraph({
     clusterLabelEls.append('text')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .attr('font-family', 'var(--font-mono)')
+      .attr('font-family', 'var(--font-sans)')
       .attr('font-size', 9)
       .attr('font-weight', 600)
       .attr('letter-spacing', '0.5px')
@@ -515,7 +515,7 @@ export default function NetworkGraph({
       .attr('class', 'edge-label')
       .attr('fill', 'var(--text-muted)')
       .attr('font-size', 8)
-      .attr('font-family', 'var(--font-mono)')
+      .attr('font-family', 'var(--font-sans)')
       .attr('text-anchor', 'middle')
       .attr('opacity', 0);
 
@@ -596,7 +596,7 @@ export default function NetworkGraph({
       .attr('dominant-baseline', 'central')
       .attr('fill', d => ROLE_COLORS[d.role])
       .attr('font-size', d => nodeRadius(d) > 15 ? 9 : 7)
-      .attr('font-family', 'var(--font-mono)')
+      .attr('font-family', 'var(--font-sans)')
       .attr('font-weight', 600);
 
     // (f) Account ID label
@@ -606,7 +606,7 @@ export default function NetworkGraph({
       .attr('dy', d => nodeRadius(d) + 12)
       .attr('fill', 'var(--text-muted)')
       .attr('font-size', isLargeGraph ? 7 : 9)
-      .attr('font-family', 'var(--font-mono)');
+      .attr('font-family', 'var(--font-sans)');
 
     // (g) Risk % badge for high-risk nodes
     nodeGroup.filter(d => (d.smurf_score || 0) > 0.5)
@@ -616,7 +616,7 @@ export default function NetworkGraph({
       .attr('dy', d => nodeRadius(d) + 22)
       .attr('fill', d => riskColor(d.smurf_score))
       .attr('font-size', 7)
-      .attr('font-family', 'var(--font-mono)')
+      .attr('font-family', 'var(--font-sans)')
       .attr('font-weight', 700);
 
     /* ── Layer 5: Hub node annotations ── */
@@ -641,7 +641,7 @@ export default function NetworkGraph({
       .attr('stroke-width', 0.5);
 
     hubAnnotEls.append('text')
-      .attr('font-family', 'var(--font-mono)')
+      .attr('font-family', 'var(--font-sans)')
       .attr('font-size', 8)
       .attr('fill', 'rgba(62,231,255,0.8)')
       .attr('font-weight', 600)
@@ -698,7 +698,7 @@ export default function NetworkGraph({
       .style('border', '1px solid var(--border)')
       .style('border-radius', '8px')
       .style('padding', '12px 16px')
-      .style('font-family', 'var(--font-mono)')
+      .style('font-family', 'var(--font-sans)')
       .style('font-size', '11px')
       .style('color', 'var(--text-primary)')
       .style('pointer-events', 'none')
@@ -870,11 +870,11 @@ export default function NetworkGraph({
           minWidth: 190,
         }}>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+            fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 700,
             color: 'var(--text-muted)', letterSpacing: '1.5px',
             textTransform: 'uppercase', marginBottom: 8,
           }}>Graph Insights</div>
-          <div style={{ display: 'grid', gap: 5, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+          <div style={{ display: 'grid', gap: 5, fontFamily: 'var(--font-sans)', fontSize: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Clusters</span>
               <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{insights.clusterCount}</span>
@@ -933,7 +933,7 @@ export default function NetworkGraph({
               background: ROLE_COLORS[item.role] + '22',
               border: `2px solid ${ROLE_COLORS[item.role]}`,
             }} />
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
               {item.label}
             </span>
           </div>
@@ -948,7 +948,7 @@ export default function NetworkGraph({
               <path d="M0,4 Q10,0 20,4" fill="none" stroke={item.color} strokeWidth={2} opacity={0.6} />
               <polygon points="18,2 22,4 18,6" fill={item.color} opacity={0.6} />
             </svg>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
               {item.label}
             </span>
           </div>
@@ -958,7 +958,7 @@ export default function NetworkGraph({
 
         {/* Risk scale */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>Risk</span>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>Risk</span>
           <div style={{
             display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', width: 60,
           }}>
@@ -967,7 +967,7 @@ export default function NetworkGraph({
             <div style={{ flex: 1, background: '#F97316' }} />
             <div style={{ flex: 1, background: '#EF4444' }} />
           </div>
-          <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
             Low → High
           </span>
         </div>
@@ -978,7 +978,7 @@ export default function NetworkGraph({
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#3EE7FF', boxShadow: '0 0 4px #3EE7FF' }} />
             <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#3EE7FF', opacity: 0.3 }} />
           </div>
-          <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
             Money Flow
           </span>
         </div>

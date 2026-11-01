@@ -117,8 +117,8 @@ function PriorityRing({ score, rank }) {
         position: 'absolute', inset: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       }}>
-        <span style={{ fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', lineHeight: 1 }}>#{rank}</span>
-        <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-mono)', color: fill, lineHeight: 1.2 }}>
+        <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', lineHeight: 1 }}>#{rank}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--font-sans)', color: fill, lineHeight: 1.2 }}>
           {pct}
         </span>
       </div>
@@ -154,11 +154,11 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
             <p className="section-title" style={{ marginBottom: 12 }}>Score breakdown</p>
             {Object.entries(breakdown).map(([key, val]) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', width: 64, flexShrink: 0 }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', width: 64, flexShrink: 0 }}>
                   {BREAKDOWN_LABELS[key] || key}
                 </span>
                 <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
-                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', width: 32, textAlign: 'right', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', width: 32, textAlign: 'right', fontWeight: 600 }}>
                   {Math.round(val * 100)}
                 </span>
               </div>
@@ -177,12 +177,12 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
               marginTop: 14, padding: '10px 12px', borderRadius: 'var(--radius)',
               background: 'var(--bg-card)', border: '1px solid var(--border)',
             }}>
-              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', }}>
                 SAR filing probability
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                 <ScoreBar value={alert.sar_filing_probability || 0} color="var(--critical)" />
-                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--critical)' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--critical)' }}>
                   {Math.round((alert.sar_filing_probability || 0) * 100)}%
                 </span>
               </div>
@@ -205,17 +205,17 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                     background: 'var(--bg-card)', border: '1px solid var(--border-subtle)',
                   }}>
                     <span className="account-id">···{n.account_id.slice(-4)}</span>
-                    <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: roleColor, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: roleColor, fontWeight: 600, }}>
                       {n.role}
                     </span>
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)' }}>
+                    <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
                       {Math.round((n.smurf_score || 0) * 100)}%
                     </span>
                   </div>
                 );
               })}
               {(alert.nodes || []).length > 6 && (
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textAlign: 'center', padding: 4 }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'center', padding: 4 }}>
                   +{alert.nodes.length - 6} more
                 </span>
               )}
@@ -418,7 +418,7 @@ export default function AlertQueue({ onSelectAlert }) {
             {sseConnected && (
               <span style={{
                 marginLeft: 10, display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--accent-green)',
+                fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
               }}>
                 <span style={{
                   width: 7, height: 7, borderRadius: '50%',
@@ -433,7 +433,7 @@ export default function AlertQueue({ onSelectAlert }) {
               <span style={{
                 marginLeft: 10, padding: '2px 8px', borderRadius: 12,
                 background: 'var(--critical)', color: '#fff',
-                fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)',
                 animation: 'flash 0.5s ease-out',
               }}>
                 +{newAlertCount} new
@@ -533,12 +533,12 @@ export default function AlertQueue({ onSelectAlert }) {
             padding: '0 18px 8px',
             alignItems: 'center',
           }}>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Score</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Alert</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Breakdown</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'right' }}>Amount</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>SAR</span>
-            <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'right' }}>Time</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Score</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Alert</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', }}>Breakdown</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'right' }}>Amount</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'center' }}>SAR</span>
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'right' }}>Time</span>
             <span />
           </div>
 
@@ -575,7 +575,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     {/* Main info */}
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', }}>
                           {alert.alert_id}
                         </span>
                         <span className={`badge ${sevCfg.cls}`}>{alert.severity}</span>
@@ -583,7 +583,7 @@ export default function AlertQueue({ onSelectAlert }) {
                           {alert.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 12, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                      <div style={{ display: 'flex', gap: 12, fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
                         <span>{alert.account_count} accounts</span>
                         <span>{alert.txn_count} txns</span>
                         <span style={{ color: COMPLEXITY_COLORS[alert.investigation_complexity] }}>
@@ -596,7 +596,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {Object.entries(alert.score_breakdown || {}).slice(0, 3).map(([key, val]) => (
                         <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', width: 28, flexShrink: 0 }}>
+                          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', width: 28, flexShrink: 0 }}>
                             {(BREAKDOWN_LABELS[key] || key).slice(0, 4)}
                           </span>
                           <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
@@ -612,7 +612,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     {/* SAR probability */}
                     <div style={{ textAlign: 'center' }}>
                       <span style={{
-                        fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)',
+                        fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-sans)',
                         color: sarPct >= SCORE_BAR_CRITICAL * 100 ? 'var(--critical)' : sarPct >= SCORE_BAR_HIGH * 100 ? 'var(--high)' : 'var(--text-muted)',
                       }}>
                         {sarPct}%
@@ -620,7 +620,7 @@ export default function AlertQueue({ onSelectAlert }) {
                     </div>
 
                     {/* Time ago */}
-                    <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', textAlign: 'right' }}>
                       {timeAgo(alert.created_at)}
                     </span>
 

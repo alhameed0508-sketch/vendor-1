@@ -100,7 +100,7 @@ export default function LoginPage() {
             </h1>
 
             <div style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 10,
               color: 'var(--text-muted)',
               letterSpacing: '1.5px',
@@ -116,7 +116,7 @@ export default function LoginPage() {
               <label style={{
                 display: 'block',
                 fontSize: 10,
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 color: focused === 'username' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
                 marginBottom: 7,
                 letterSpacing: '0.8px',
@@ -156,7 +156,7 @@ export default function LoginPage() {
               <label style={{
                 display: 'block',
                 fontSize: 10,
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 color: focused === 'password' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
                 marginBottom: 7,
                 letterSpacing: '0.8px',
@@ -229,7 +229,7 @@ export default function LoginPage() {
                     border: '1px solid rgba(244,63,94,0.2)',
                     color: 'var(--critical)',
                     fontSize: 12,
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-sans)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
@@ -272,7 +272,7 @@ export default function LoginPage() {
             marginTop: 28,
             textAlign: 'center',
             fontSize: 10,
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-sans)',
             color: 'var(--text-faint)',
             letterSpacing: '0.5px',
           }}>

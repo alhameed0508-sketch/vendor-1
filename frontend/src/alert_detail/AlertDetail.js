@@ -144,11 +144,11 @@ export default function AlertDetail() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, fontFamily: 'var(--font-mono)' }}>{alert.alert_id}</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, fontFamily: 'var(--font-sans)' }}>{alert.alert_id}</h1>
             <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
             <span className={`badge badge-${status}`}>{status}</span>
           </div>
-          <p style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', margin: 0 }}>
+          <p style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', margin: 0 }}>
             Risk {riskPct}% · Confidence {confPct}%
             {alert.gnn_score != null && ` · GNN ${(alert.gnn_score * 100).toFixed(1)}%`}
             {' · '}{alert.account_count} accounts · {alert.txn_count} txns
@@ -214,13 +214,13 @@ export default function AlertDetail() {
             <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 18, boxShadow: 'var(--shadow-sm)' }}>
               <p className="section-title">Shared Fingerprints</p>
               {alert.shared_devices.map((d, i) => (
-                <div key={`dev-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                <div key={`dev-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span className="fingerprint-tag fingerprint-tag--device">DEV</span>
                   {d}
                 </div>
               ))}
               {alert.shared_ips.map((ip, i) => (
-                <div key={`ip-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', marginBottom: 6 }}>
+                <div key={`ip-${i}`} style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)', marginBottom: 6 }}>
                   <span className="fingerprint-tag fingerprint-tag--ip">IP</span>
                   {ip}
                 </div>
@@ -246,11 +246,11 @@ export default function AlertDetail() {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span style={{
-                        fontSize: 11, fontFamily: 'var(--font-mono)', padding: '2px 7px', borderRadius: 4,
+                        fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 7px', borderRadius: 4,
                         background: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'rgba(255,59,92,0.15)' : 'rgba(245,158,11,0.12)',
                         color: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'var(--critical)' : 'var(--high)',
                       }}>{n.role}</span>
-                      <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', marginTop: 2 }}>
                         {(n.smurf_score * 100).toFixed(0)}%
                       </div>
                     </div>
@@ -307,7 +307,7 @@ export default function AlertDetail() {
               id="alert-status"
               value={status}
               onChange={e => setStatus(e.target.value)}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}
+              style={{ fontFamily: 'var(--font-sans)', fontSize: 14 }}
             >
               {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'].map(s => (
                 <option key={s} value={s}>{s}</option>
@@ -326,7 +326,7 @@ export default function AlertDetail() {
             onChange={e => setNotes(e.target.value)}
             rows={3}
             placeholder="Investigation notes..."
-            style={{ fontFamily: 'var(--font-mono)', fontSize: 13, resize: 'vertical' }}
+            style={{ fontFamily: 'var(--font-sans)', fontSize: 13, resize: 'vertical' }}
           />
         </div>
       </div>

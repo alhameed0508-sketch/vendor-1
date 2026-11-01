@@ -15,7 +15,7 @@ function StatusBadge({ status }) {
   const color = status?.enabled ? STATUS_COLORS.active : STATUS_COLORS.fallback;
   return (
     <span style={{
-      fontSize: 9, fontFamily: 'var(--font-mono)', letterSpacing: '0.5px',
+      fontSize: 12, fontFamily: 'var(--font-sans)', 
       padding: '2px 8px', borderRadius: 10,
       background: `${color}18`, color, border: `1px solid ${color}30`,
       textTransform: 'uppercase',
@@ -45,7 +45,7 @@ function MessageBubble({ role, content }) {
         background: isUser ? 'rgba(62,231,255,0.10)' : 'var(--bg-elevated)',
         border: `1px solid ${isUser ? 'rgba(62,231,255,0.20)' : 'var(--border)'}`,
         fontSize: 12,
-        fontFamily: 'var(--font-mono)',
+        fontFamily: 'var(--font-sans)',
         color: 'var(--text-primary)',
         lineHeight: 1.6,
         whiteSpace: 'pre-wrap',
@@ -179,7 +179,7 @@ export default function InvestigationChat({ alertId, alertData }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)',
+            fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
             letterSpacing: '2px', textTransform: 'uppercase',
           }}>
             Ask MuleCatch AI
@@ -218,7 +218,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                 }}>
                   <div style={{ opacity: 0.08 }}><MessageSquare size={24} /></div>
                   <p style={{
-                    fontSize: 11, fontFamily: 'var(--font-mono)',
+                    fontSize: 12, fontFamily: 'var(--font-sans)',
                     color: 'var(--text-muted)', textAlign: 'center',
                   }}>
                     Ask questions about this alert, mule patterns, or RBI regulations.
@@ -233,7 +233,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   style={{
-                    fontSize: 11, fontFamily: 'var(--font-mono)',
+                    fontSize: 12, fontFamily: 'var(--font-sans)',
                     color: 'var(--text-muted)', padding: '8px 14px',
                   }}
                 >
@@ -287,7 +287,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                   border: '1px solid var(--border)',
                   borderRadius: 8,
                   color: 'var(--text-primary)',
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-sans)',
                   fontSize: 12,
                   outline: 'none',
                 }}

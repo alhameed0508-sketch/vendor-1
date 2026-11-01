@@ -122,7 +122,7 @@ export default function IndiaMap({
         <span style={{ fontWeight: 700, fontSize: 14 }}>Transaction Flow Map — India</span>
         <span
           style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 11,
             color: 'var(--text-muted)',
           }}

@@ -254,7 +254,7 @@ export default function NetworkOverview() {
       <div className="loading">
         <div className="spinner" />
         <span style={{
-          fontFamily: 'var(--font-mono)',
+          fontFamily: 'var(--font-sans)',
           fontSize: 12,
           letterSpacing: '1px',
           color: 'var(--text-muted)',
@@ -300,7 +300,7 @@ export default function NetworkOverview() {
                 animation: connected ? 'emeraldPulse 2s ease-in-out infinite' : 'none',
               }} />
               <span style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 9,
                 color: connected ? '#10B981' : '#9CA3AF',
                 letterSpacing: '1px',
@@ -311,7 +311,7 @@ export default function NetworkOverview() {
           </div>
 
           <p style={{
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 11,
             color: 'var(--text-muted)',
             letterSpacing: '0.3px',
@@ -339,7 +339,7 @@ export default function NetworkOverview() {
           style={{ gap: 7, marginTop: 4 }}
         >
           <RefreshCw size={13} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.5px' }}>Refresh</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, }}>Refresh</span>
         </button>
       </motion.div>
 
@@ -399,7 +399,7 @@ export default function NetworkOverview() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Share2 size={14} style={{ color: 'var(--accent-cyan)', opacity: 0.7 }} />
               <span style={{
-                fontFamily: 'var(--font-mono)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 12,
                 fontWeight: 600,
                 color: 'var(--text-primary)',
@@ -414,12 +414,12 @@ export default function NetworkOverview() {
                   style={{ padding: '2px 8px', fontSize: 10, gap: 4 }}
                 >
                   <X size={10} />
-                  <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.5px' }}>Clear Filter</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', }}>Clear Filter</span>
                 </button>
               )}
             </div>
             <span style={{
-              fontFamily: 'var(--font-mono)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 10,
               color: 'var(--text-muted)',
               letterSpacing: '0.5px',
@@ -465,7 +465,7 @@ export default function NetworkOverview() {
                     : 'No network data available'}
                 </p>
                 <p style={{
-                  fontFamily: 'var(--font-mono)',
+                  fontFamily: 'var(--font-sans)',
                   fontSize: 11,
                   color: 'var(--text-muted)',
                   letterSpacing: '0.3px',

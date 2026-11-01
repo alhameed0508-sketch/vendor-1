@@ -9,6 +9,8 @@ import { apiFetch } from '../auth/api';
 import { API_ALERTS_LIMIT, AMOUNT_DIVISOR_LAKHS, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
 import StatCard from '../components/StatCard';
 
+const label = s => (s === 'STR_FILED' ? 'STR filed' : s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' '));
+
 /* ── Empty State ── */
 function EmptyState({ hasFilters }) {
   return (
@@ -175,7 +177,7 @@ export default function Dashboard() {
           style={{ gap: 7, marginTop: 4 }}
         >
           <RefreshCw size={13} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.5px' }}>Refresh</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, }}>Refresh</span>
         </button>
       </div>
 
@@ -211,7 +213,7 @@ export default function Dashboard() {
               : ''
             }`}
             onClick={() => setFilter(f => ({ ...f, severity: s }))}
-          >{s}</button>
+          >{label(s)}</button>
         ))}
         <div className="filter-divider" />
         <span className="filter-label">Status</span>
@@ -220,7 +222,7 @@ export default function Dashboard() {
             key={`sta-${s}`}
             className={`filter-tab ${filter.status === s ? 'active' : ''}`}
             onClick={() => setFilter(f => ({ ...f, status: s }))}
-          >{s.replace(/_/g, ' ')}</button>
+          >{label(s)}</button>
         ))}
       </div>
 
@@ -269,15 +271,15 @@ export default function Dashboard() {
                         role="row"
                         onKeyDown={e => { if (e.key === 'Enter') navigate(alertPath(alert.alert_id)); }}
                       >
-                        <td style={{ color: 'var(--text-faint)', fontSize: 11, fontFamily: 'var(--font-mono)', paddingLeft: 16 }}>
+                        <td style={{ color: 'var(--text-faint)', fontSize: 12, fontFamily: 'var(--font-sans)', paddingLeft: 16 }}>
                           {idx + 1}
                         </td>
                         <td>
                           <span style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: 12,
-                            color: 'var(--accent-cyan)',
-                            letterSpacing: '0.3px',
+                            fontFamily: 'var(--font-sans)',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
                           }}>{alert.alert_id}</span>
                         </td>
                         <td>
@@ -294,7 +296,7 @@ export default function Dashboard() {
                               }} />
                             </div>
                             <span style={{
-                              fontFamily: 'var(--font-mono)',
+                              fontFamily: 'var(--font-sans)',
                               fontSize: 12,
                               color: getRiskColor(alert.risk_score),
                               fontWeight: 600,
@@ -304,13 +306,13 @@ export default function Dashboard() {
                           </div>
                         </td>
                         <td>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
                             {alert.account_count}
                           </span>
                         </td>
                         <td>
                           <span style={{
-                            fontFamily: 'var(--font-mono)',
+                            fontFamily: 'var(--font-sans)',
                             fontSize: 13,
                             color: 'var(--high)',
                             fontWeight: 600,
@@ -319,14 +321,14 @@ export default function Dashboard() {
                           </span>
                         </td>
                         <td>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+                          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
                             {alert.txn_count}
                           </span>
                         </td>
                         <td style={{ maxWidth: 180 }}>
                           <span style={{
                             fontSize: 11,
-                            fontFamily: 'var(--font-mono)',
+                            fontFamily: 'var(--font-sans)',
                             color: 'var(--text-secondary)',
                             letterSpacing: '0.2px',
                           }}>
@@ -338,7 +340,7 @@ export default function Dashboard() {
                             {alert.status.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+                        <td style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
                           {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                         </td>
                         <td style={{ paddingRight: 16 }}>
@@ -357,7 +359,7 @@ export default function Dashboard() {
             marginTop: 10,
             display: 'flex',
             gap: 16,
-            fontFamily: 'var(--font-mono)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 10,
             color: 'var(--text-faint)',
             letterSpacing: '0.5px',

@@ -149,12 +149,12 @@ export default function TimelineSlider({
           >
             {playing ? <Pause size={12} /> : <Play size={12} />}
           </button>
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
             Timeline
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--accent-cyan)' }}>
+          <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
             {activeEdges}/{edges.length} edges
           </span>
           <button
@@ -206,10 +206,10 @@ export default function TimelineSlider({
 
       {/* Time labels */}
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
           {formatTime(startTime)}
         </span>
-        <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
           {formatTime(endTime)}
         </span>
       </div>
