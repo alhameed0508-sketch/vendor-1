@@ -151,6 +151,7 @@ export default function Dashboard() {
         }}
       >
         <div>
+          <p className="eyebrow">Investigator workspace</p>
           <h1 className="text-page-title" style={{ margin: '0 0 4px' }}>
             Alert Queue
           </h1>
@@ -160,7 +161,7 @@ export default function Dashboard() {
             gap: 6,
             fontSize: 12,
           }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10B981', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block', flexShrink: 0 }} />
             {filtered.length} alerts
             {stats.critical > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
             {stats.high > 0     && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
@@ -215,12 +216,12 @@ export default function Dashboard() {
         ))}
         <div className="filter-divider" />
         <span className="filter-label">Status</span>
-        {['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED'].map(s => (
+        {['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'].map(s => (
           <button
             key={`sta-${s}`}
             className={`filter-tab ${filter.status === s ? 'active' : ''}`}
             onClick={() => setFilter(f => ({ ...f, status: s }))}
-          >{s.replace('_', ' ')}</button>
+          >{s.replace(/_/g, ' ')}</button>
         ))}
       </div>
 
@@ -335,7 +336,7 @@ export default function Dashboard() {
                         </td>
                         <td>
                           <span className={`badge badge-${alert.status}`}>
-                            {alert.status.replace('_', ' ')}
+                            {alert.status.replace(/_/g, ' ')}
                           </span>
                         </td>
                         <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>

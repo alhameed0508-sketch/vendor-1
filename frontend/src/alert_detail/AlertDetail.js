@@ -7,6 +7,8 @@ import TimelineSlider from '../graph_viz/TimelineSlider';
 import ExplainabilityPanel from '../explainability/ExplainabilityPanel';
 import InvestigationChat from '../genai/InvestigationChat';
 import { apiFetch } from '../auth/api';
+import ApprovalDialog from '../alert_queue/ApprovalDialog';
+import { fileStr } from '../alert_queue/alertActions';
 import { AMOUNT_DIVISOR_LAKHS } from '../config';
 
 export default function AlertDetail() {
@@ -21,6 +23,7 @@ export default function AlertDetail() {
   const [strExporting, setStrExporting] = useState(false);
   const [escalating, setEscalating] = useState(false);
   const [timeRange, setTimeRange] = useState(null);
+  const [approvalOpen, setApprovalOpen] = useState(false);
 
   useEffect(() => {
     apiFetch(`/api/v1/alerts/${alertId}`)
@@ -38,7 +41,18 @@ export default function AlertDetail() {
       });
   }, [alertId]);
 
+  const confirmFiling = async reason => {
+    await fileStr(alert, reason);
+    setAlert(prev => ({ ...prev, status: 'STR_FILED' }));
+    setApprovalOpen(false);
+    toast.success('STR filed');
+  };
+
   const saveUpdate = async () => {
+    if (status === 'STR_FILED' && alert.status !== 'STR_FILED') {
+      setApprovalOpen(true);
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch(`/api/v1/alerts/${alertId}`, {
@@ -295,7 +309,7 @@ export default function AlertDetail() {
               onChange={e => setStatus(e.target.value)}
               style={{ fontFamily: 'var(--font-mono)', fontSize: 14 }}
             >
-              {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE'].map(s => (
+              {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -316,6 +330,9 @@ export default function AlertDetail() {
           />
         </div>
       </div>
+      {approvalOpen && (
+        <ApprovalDialog alert={alert} onConfirm={confirmFiling} onCancel={() => setApprovalOpen(false)} />
+      )}
     </div>
   );
 }
