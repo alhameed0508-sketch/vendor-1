@@ -92,7 +92,9 @@ class RealtimeScorer:
         self._flag_threshold = flag_threshold
         self._refresh_every = community_refresh_every
         self._commits = 0
-        self._cached: Optional[Tuple[int, Tuple[Community, ...]]] = None  # (commit count at build, partition)
+        self._cached: Optional[Tuple[int, Tuple[Community, ...], frozenset]] = (
+            None  # (commits, partition, accounts seen)
+        )
         self._lock = threading.Lock()
 
     @property
@@ -115,12 +117,17 @@ class RealtimeScorer:
                 self._history = window
                 self._commits += 1
             cached = self._cached
-            fresh = cached is not None and self._commits - cached[0] < self._refresh_every
+            fresh = (
+                cached is not None
+                and self._commits - cached[0] < self._refresh_every
+                and txn["from_account"] in cached[2]
+                and txn["to_account"] in cached[2]
+            )
             commits = self._commits
 
         communities = cached[1] if fresh else None
         return self._score(
-            txn, list(window), self._with_known_accounts(accounts, window), started, communities, commits
+            txn, list(window), self._with_known_accounts(accounts, window), started, communities, commits, commit
         )
 
     @staticmethod
@@ -139,13 +146,17 @@ class RealtimeScorer:
         started: float,
         communities: Optional[Sequence[Community]],
         commits: int,
+        trusted: bool,
     ) -> PaymentScore:
         sender, receiver = txn["from_account"], txn["to_account"]
         smurf = score_transaction_batch(window)
         if communities is None:
             communities = tuple(LouvainClusterDetector().detect_clusters(window, accounts))
-            with self._lock:
-                self._cached = (commits, communities)
+            if trusted:  # an uncommitted payment must never shape the shared partition
+                seen = frozenset(acc for t in window for acc in (t["from_account"], t["to_account"]))
+                with self._lock:
+                    if self._cached is None or commits >= self._cached[0]:
+                        self._cached = (commits, communities, seen)
         ring = self._ring_for(communities, (sender, receiver))
 
         merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
