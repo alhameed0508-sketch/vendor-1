@@ -1,4 +1,4 @@
-import { streamReducer, initialState, p95, MAX_EDGES } from './streamReducer';
+import { streamReducer, initialState, p95, MAX_EDGES, MAX_RING_PAYMENTS } from './streamReducer';
 
 const event = (n, over = {}) => ({
   payment: { txn_id: `T${n}`, from_account: `A${n}`, to_account: `B${n}`, amount: 1000 },
@@ -76,5 +76,18 @@ describe('p95', () => {
     expect(p95([])).toBeNull();
     const values = Array.from({ length: 100 }, (_, i) => i + 1);
     expect(p95(values)).toBe(96);
+  });
+});
+
+describe('ring payment history', () => {
+  it('keeps flagged payments per case, keeps the first openedAt, and caps the list', () => {
+    let state = streamReducer(initialState, { type: 'open' });
+    for (let i = 1; i <= MAX_RING_PAYMENTS + 5; i += 1) {
+      state = streamReducer(state, { type: 'event', event: flagEvent(i) });
+    }
+    const ring = state.rings['CASE-1'];
+    expect(ring.openedAt).toBe(1);
+    expect(ring.payments).toHaveLength(MAX_RING_PAYMENTS);
+    expect(ring.payments[ring.payments.length - 1]).toMatchObject({ id: `T${MAX_RING_PAYMENTS + 5}`, amount: 1000 });
   });
 });

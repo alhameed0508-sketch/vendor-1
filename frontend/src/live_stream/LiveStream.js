@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import useScoreStream from './useScoreStream';
 import { p95 } from './streamReducer';
 import { layoutNodes } from './layout';
+import CaseCard from './CaseCard';
 import './LiveStream.css';
 
 const VIEW = { width: 800, height: 480 };
@@ -14,30 +15,6 @@ function Stat({ label, value, tone }) {
       <div className="live-stream__stat-label">{label}</div>
       <div className="live-stream__stat-value">{value}</div>
     </div>
-  );
-}
-
-function CaseCard({ ring }) {
-  if (!ring) {
-    return (
-      <aside className="live-stream__case live-stream__case--empty" aria-live="polite">
-        <p>No case open yet. When a payment joins a suspicious ring, the case appears here.</p>
-      </aside>
-    );
-  }
-  return (
-    <aside className="live-stream__case" aria-live="polite">
-      <h2>{ring.caseId}</h2>
-      <p>
-        Risk {ring.risk.toFixed(2)} · {ring.members.length} accounts · opened at payment #{ring.openedAt}
-      </p>
-      <ul>
-        {ring.reasons.map((reason) => (
-          <li key={reason}>{reason}</li>
-        ))}
-      </ul>
-      <p className="live-stream__note">Routed to a human reviewer. The payment is not blocked.</p>
-    </aside>
   );
 }
 

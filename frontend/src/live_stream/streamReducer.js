@@ -2,6 +2,7 @@
 
 export const MAX_EDGES = 120;
 export const MAX_LATENCIES = 200;
+export const MAX_RING_PAYMENTS = 30;
 
 export const initialState = {
   status: 'idle', // idle | live | ended | error
@@ -25,6 +26,7 @@ function applyEvent(state, event) {
   const { payment } = event;
   const isFlag = event.decision === 'FLAG' && event.case_id;
   const edge = { id: payment.txn_id, from: payment.from_account, to: payment.to_account, flagged: Boolean(isFlag) };
+  const previous = isFlag ? state.rings[event.case_id] : null;
   const rings = isFlag
     ? {
         ...state.rings,
@@ -33,7 +35,11 @@ function applyEvent(state, event) {
           members: event.ring_members,
           reasons: event.reasons,
           risk: event.risk_score,
-          openedAt: state.events + 1,
+          openedAt: previous ? previous.openedAt : state.events + 1,
+          payments: [
+            ...(previous ? previous.payments : []),
+            { id: payment.txn_id, from: payment.from_account, to: payment.to_account, amount: payment.amount, risk: event.risk_score },
+          ].slice(-MAX_RING_PAYMENTS),
         },
       }
     : state.rings;
