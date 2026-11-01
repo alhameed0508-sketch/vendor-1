@@ -63,6 +63,14 @@ describe('streamReducer', () => {
   });
 });
 
+describe('stopped', () => {
+  it('ends a live stream and leaves other states alone', () => {
+    const live = streamReducer(initialState, { type: 'open' });
+    expect(streamReducer(live, { type: 'stopped' }).status).toBe('ended');
+    expect(streamReducer(initialState, { type: 'stopped' }).status).toBe('idle');
+  });
+});
+
 describe('p95', () => {
   it('returns null for no data and the 95th percentile otherwise', () => {
     expect(p95([])).toBeNull();

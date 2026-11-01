@@ -56,6 +56,8 @@ export function streamReducer(state, action) {
       return { ...initialState, status: 'live' };
     case 'event':
       return applyEvent(state, action.event);
+    case 'stopped':
+      return state.status === 'live' ? { ...state, status: 'ended' } : state;
     case 'closed':
       return state.events > 0
         ? { ...state, status: 'ended' }

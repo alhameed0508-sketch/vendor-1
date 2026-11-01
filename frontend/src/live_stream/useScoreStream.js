@@ -1,48 +1,63 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react';
-import { resolveUrl, getToken } from '../auth/api';
+import { apiFetch } from '../auth/api';
 import { initialState, streamReducer } from './streamReducer';
+import { parseSse } from './sseParse';
 
 const STREAM_PATH = '/api/v1/score/stream';
 
 /**
- * Connects to the payment replay stream (demo mode only on the backend).
- * The server closes the stream when the replay ends; we do not auto-reconnect,
- * because a reconnect would restart the replay from the beginning.
+ * Reads the payment replay stream (demo mode only on the backend) with fetch,
+ * so the access token travels in the Authorization header and never in the URL.
+ * No auto-reconnect: a reconnect would restart the replay from the beginning.
  */
 export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
   const [state, dispatch] = useReducer(streamReducer, initialState);
-  const sourceRef = useRef(null);
+  const controllerRef = useRef(null);
 
-  const stop = useCallback(() => {
-    if (sourceRef.current) {
-      sourceRef.current.close();
-      sourceRef.current = null;
+  const abort = useCallback(() => {
+    if (controllerRef.current) {
+      controllerRef.current.abort();
+      controllerRef.current = null;
     }
   }, []);
 
-  const start = useCallback(() => {
-    stop();
-    const params = new URLSearchParams({ limit: String(limit), rate: String(rate) });
-    const token = getToken();
-    if (token) params.set('token', token);
-    const source = new EventSource(resolveUrl(`${STREAM_PATH}?${params}`));
-    sourceRef.current = source;
-    dispatch({ type: 'open' });
-    source.onmessage = (message) => {
-      try {
-        dispatch({ type: 'event', event: JSON.parse(message.data) });
-      } catch {
-        /* ignore a malformed frame rather than crash the page */
-      }
-    };
-    source.onerror = () => {
-      source.close();
-      sourceRef.current = null;
-      dispatch({ type: 'closed' });
-    };
-  }, [limit, rate, stop]);
+  const stop = useCallback(() => {
+    abort();
+    dispatch({ type: 'stopped' });
+  }, [abort]);
 
-  useEffect(() => stop, [stop]);
+  const start = useCallback(async () => {
+    abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    dispatch({ type: 'open' });
+    try {
+      const params = new URLSearchParams({ limit: String(limit), rate: String(rate) });
+      const res = await apiFetch(`${STREAM_PATH}?${params}`, {
+        signal: controller.signal,
+        headers: { Accept: 'text/event-stream' },
+      });
+      if (!res.ok || !res.body) throw new Error(`stream request failed (${res.status})`);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        // eslint-disable-next-line no-await-in-loop
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parsed = parseSse(buffer);
+        buffer = parsed.rest;
+        parsed.events.forEach((event) => dispatch({ type: 'event', event }));
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+    if (controllerRef.current === controller) controllerRef.current = null;
+    dispatch({ type: 'closed' });
+  }, [limit, rate, abort]);
+
+  useEffect(() => abort, [abort]);
 
   return { state, start, stop };
 }

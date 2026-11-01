@@ -2,18 +2,32 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import LiveStream from './LiveStream';
 
-jest.mock('../auth/api', () => ({ resolveUrl: (p) => p, getToken: () => null }));
+jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
+// eslint-disable-next-line import/first
+import { apiFetch } from '../auth/api';
 
-class FakeEventSource {
-  static last = null;
-  constructor(url) {
-    this.url = url;
-    this.closed = false;
-    FakeEventSource.last = this;
-  }
-  close() {
-    this.closed = true;
-  }
+if (typeof global.TextDecoder === 'undefined') {
+  // eslint-disable-next-line global-require
+  global.TextDecoder = require('util').TextDecoder;
+}
+
+function sseResponse(frames, { hold = false } = {}) {
+  const bytes = frames.map((f) => new TextEncoder().encode(`data: ${JSON.stringify(f)}\n\n`));
+  let i = 0;
+  return {
+    ok: true,
+    status: 200,
+    body: {
+      getReader: () => ({
+        read: () =>
+          i < bytes.length
+            ? Promise.resolve({ done: false, value: bytes[i++] })
+            : hold
+              ? new Promise(() => {})
+              : Promise.resolve({ done: true }),
+      }),
+    },
+  };
 }
 
 const flagEvent = {
@@ -28,7 +42,11 @@ const flagEvent = {
 };
 
 beforeEach(() => {
-  global.EventSource = FakeEventSource;
+  apiFetch.mockReset();
+  if (typeof global.TextEncoder === 'undefined') {
+    // eslint-disable-next-line global-require
+    global.TextEncoder = require('util').TextEncoder;
+  }
 });
 
 test('labels the data as synthetic and starts idle', () => {
@@ -37,19 +55,36 @@ test('labels the data as synthetic and starts idle', () => {
   expect(screen.getByRole('button', { name: /start stream/i })).toBeInTheDocument();
 });
 
-test('opens a case card when a flagged payment arrives', () => {
+test('opens a case card when a flagged payment arrives', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
   fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
-  act(() => FakeEventSource.last.onmessage({ data: JSON.stringify(flagEvent) }));
-  expect(screen.getByText('CASE-AB12')).toBeInTheDocument();
+  expect(await screen.findByText('CASE-AB12')).toBeInTheDocument();
   expect(screen.getByText(/not blocked/i)).toBeInTheDocument();
   expect(screen.getByText('Genuine accounts flagged').nextSibling).toHaveTextContent('0');
 });
 
-test('shows an error, not fake data, when the stream fails before any payment', () => {
+test('sends no token in the URL', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
   fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
-  act(() => FakeEventSource.last.onerror());
-  expect(screen.getByRole('alert')).toHaveTextContent(/unavailable/i);
-  expect(FakeEventSource.last.closed).toBe(true);
+  await screen.findByText('CASE-AB12');
+  const [url] = apiFetch.mock.calls[0];
+  expect(url).not.toMatch(/token/i);
+});
+
+test('shows an error, not fake data, when the request fails before any payment', async () => {
+  apiFetch.mockResolvedValue({ ok: false, status: 500, body: null });
+  render(<LiveStream />);
+  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(/unavailable/i);
+});
+
+test('Stop ends a live stream', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
+  render(<LiveStream />);
+  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
+  await screen.findByText('CASE-AB12');
+  fireEvent.click(screen.getByRole('button', { name: /stop/i }));
+  expect(await screen.findByRole('button', { name: /replay/i })).toBeInTheDocument();
 });
