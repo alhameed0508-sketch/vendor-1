@@ -5,9 +5,9 @@ import { CATEGORY, OUTCOME, SOURCE, formatWhen } from './labels';
 
 const STEP_MS = 1400;
 
-// The zero-liability label already says the customer pays nothing.
+// A ₹0 line adds nothing next to the outcome label, so only a real amount or a policy amount is shown.
 const liabilityText = step => {
-  if (step.outcome === 'ZERO_LIABILITY') return null;
+  if (step.customer_liability === 0) return null;
   return step.customer_liability == null ? 'Amount set by bank policy' : `Customer pays ${formatRupeesExact(step.customer_liability)}`;
 };
 
