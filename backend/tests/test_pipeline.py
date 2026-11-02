@@ -252,3 +252,36 @@ def test_pipeline_with_genai_triage(small_dataset):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ── Purity-weighted case ranking ──────────────────────────────────────────────
+
+
+def test_case_priority_weights_risk_by_member_evidence():
+    from backend.detection.pipeline import case_priority
+
+    priority, share = case_priority(0.9, [0.8, 0.6, 0.1, 0.1])
+    assert priority == pytest.approx(0.9 * 0.4)
+    assert share == 0.5  # two of four members carry their own evidence
+
+
+def test_case_priority_without_member_scores_is_zero():
+    from backend.detection.pipeline import case_priority
+
+    assert case_priority(0.9, []) == (0.0, 0.0)
+
+
+def test_alerts_are_ranked_by_rank_score_not_raw_risk(small_dataset):
+    alerts = DetectionPipeline().run(small_dataset["transactions"], small_dataset["accounts"])
+    ranks = [a.rank_score for a in alerts]
+    assert ranks == sorted(ranks, reverse=True)
+    assert all(0.0 <= a.rank_score <= a.risk_score and 0.0 <= a.evidence_share <= 1.0 for a in alerts)
+
+
+def test_alert_dict_carries_ranking_fields(small_dataset):
+    from services.detection_service import alert_to_dict
+
+    alert = DetectionPipeline().run(small_dataset["transactions"], small_dataset["accounts"])[0]
+    data = alert_to_dict(alert)
+    assert data["rank_score"] == alert.rank_score
+    assert data["evidence_share"] == alert.evidence_share

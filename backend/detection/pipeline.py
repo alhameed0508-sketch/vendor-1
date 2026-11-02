@@ -28,7 +28,7 @@ import sys
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +163,26 @@ class Alert:
     regulatory_report: Optional[Dict] = None
     model_version: str = "unversioned"
     rule_version: str = "unversioned"
+    # Queue ranking: risk weighted by the evidence members carry themselves, and the share of members that carry any.
+    rank_score: float = 0.0
+    evidence_share: float = 0.0
+
+
+# A member counts as carrying its own evidence at this smurf score (same level as the live scorer's gate).
+MEMBER_EVIDENCE_MIN = 0.30
+
+
+def case_priority(risk_score: float, member_smurf: List[float]) -> Tuple[float, float]:
+    """Purity-weighted ranking: (risk x mean member smurf score, share of members with evidence).
+
+    A community whose members show little individual evidence drops down the queue even when its
+    graph shape alone pushes the risk score to the cap. Uses no labels (05-evaluation.md 7.4).
+    """
+    if not member_smurf:
+        return 0.0, 0.0
+    mean = sum(member_smurf) / len(member_smurf)
+    share = sum(1 for s in member_smurf if s >= MEMBER_EVIDENCE_MIN) / len(member_smurf)
+    return risk_score * mean, share
 
 
 # ── Rule engine ───────────────────────────────────────────────────────────
@@ -719,8 +739,11 @@ class DetectionPipeline:
                                 "edges": [vars(e) for e in alert.edges],
                             }
                         )
+                        previous_risk = alert.risk_score
                         adjusted = alert.risk_score + triage.confidence_adjustment
                         alert.risk_score = round(min(max(adjusted, 0.0), self.RISK_SCORE_CAP), 3)
+                        if previous_risk > 0:  # keep the ranking in step with the adjusted risk
+                            alert.rank_score = round(alert.rank_score * alert.risk_score / previous_risk, 3)
                         # Recalculate severity after adjustment
                         alert.severity = (
                             "CRITICAL"
@@ -803,7 +826,7 @@ class DetectionPipeline:
             elapsed,
         )
 
-        return sorted(alerts, key=lambda a: -a.risk_score)
+        return sorted(alerts, key=lambda a: -a.rank_score)
 
     def _profile_devices(
         self,
@@ -1045,6 +1068,7 @@ class DetectionPipeline:
         )
 
         total_amount = sum(float(t["amount"]) for t in community_txns)
+        rank_score, evidence_share = case_priority(risk_score, member_smurf)
 
         severity = (
             "CRITICAL"
@@ -1081,6 +1105,8 @@ class DetectionPipeline:
             anomaly_score=round(max_anomaly, 3) if member_anomalies else None,
             model_version=self._model_version,
             rule_version=self._rule_version,
+            rank_score=round(rank_score, 3),
+            evidence_share=round(evidence_share, 3),
         )
 
 

@@ -10,6 +10,7 @@ import StatCard from '../components/StatCard';
 import BoardView from './BoardView';
 import ApprovalDialog from './ApprovalDialog';
 import useQueueView from './useQueueView';
+import { scorePriority, sarProbability, complexity, breakdown } from './scoring';
 import { canMove, requiresApproval } from './boardModel';
 import { updateAlertStatus, fileStr } from './alertActions';
 import {
@@ -19,14 +20,7 @@ import {
   PRIORITY_HIGH_THRESHOLD,
   SCORE_BAR_CRITICAL,
   SCORE_BAR_HIGH,
-  PRIORITY_WEIGHT_RISK,
-  PRIORITY_WEIGHT_AMOUNT,
-  PRIORITY_WEIGHT_CENTRALITY,
-  PRIORITY_WEIGHT_EVIDENCE,
-  PRIORITY_WEIGHT_TIME,
-  SEVERITY_PRIORITY,
   SAR_PROBABILITY_THRESHOLD,
-  AMOUNT_NORMALIZATION_BASE,
   FLASH_ANIMATION_MS,
   DEBOUNCE_MS,
 } from '../config';
@@ -156,6 +150,11 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                 </span>
               </div>
             ))}
+            {alert.evidence_share != null && (
+              <p style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', marginTop: 4 }}>
+                {Math.round(alert.evidence_share * 100)}% of accounts in this ring show suspicious activity of their own
+              </p>
+            )}
           </div>
 
           {/* Reason codes + SAR prob */}
@@ -398,7 +397,7 @@ export default function AlertQueue({ onSelectAlert }) {
         <div>
           <h1>Triage</h1>
           <p className="page-meta">
-            ML-ranked by priority score
+            Ranked by evidence-weighted priority
             <span style={{ margin: '0 8px', color: 'var(--border-strong)' }}>|</span>
             {alerts.length} alert{alerts.length !== 1 ? 's' : ''}
             {loadError && (
@@ -655,40 +654,4 @@ export default function AlertQueue({ onSelectAlert }) {
       )}
     </div>
   );
-}
-
-/* ── Client-side priority scoring fallback ──────────────────────── */
-
-function scorePriority(a) {
-  const risk   = Math.min(1, a.risk_score || 0);
-  const amt    = Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(AMOUNT_NORMALIZATION_BASE));
-  const nodes  = (a.nodes || []);
-  const cent   = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || n.betweenness || 0)) : 0;
-  const evid   = Math.min(1, (a.reason_codes || []).length / 10);
-  const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
-  const time   = Math.min(1, 0.5 + 0.5 * (newAcc / Math.max(nodes.length, 1)));
-  return PRIORITY_WEIGHT_RISK * risk + PRIORITY_WEIGHT_AMOUNT * amt + PRIORITY_WEIGHT_CENTRALITY * cent + PRIORITY_WEIGHT_EVIDENCE * evid + PRIORITY_WEIGHT_TIME * time;
-}
-
-function sarProbability(a) {
-  const base = SEVERITY_PRIORITY[a.severity?.toUpperCase()] || 0.1;
-  return Math.min(1, base + Math.min((a.reason_codes || []).length * 0.02, 0.1));
-}
-
-function complexity(a) {
-  const score = (a.account_count || 0) + (a.txn_count || 0) / 10 + (a.reason_codes || []).length;
-  return score > 15 ? 'HIGH' : score > 5 ? 'MEDIUM' : 'LOW';
-}
-
-function breakdown(a) {
-  const nodes = a.nodes || [];
-  const cent  = nodes.length ? Math.max(...nodes.map(n => n.betweenness_centrality || n.betweenness || 0)) : 0;
-  const newAcc = nodes.filter(n => (n.account_age_days || 999) < 7).length;
-  return {
-    risk_score:         Math.min(1, a.risk_score || 0),
-    amount_factor:      Math.min(1, Math.log1p(a.total_amount || 0) / Math.log1p(AMOUNT_NORMALIZATION_BASE)),
-    network_centrality: cent,
-    evidence_diversity: Math.min(1, (a.reason_codes || []).length / 10),
-    time_sensitivity:   Math.min(1, 0.5 + 0.5 * (newAcc / Math.max(nodes.length, 1))),
-  };
 }

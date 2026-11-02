@@ -48,6 +48,8 @@ def alert_to_dict(a: Alert) -> Dict:
         "mule_classification": a.mule_classification,
         "shap_explanation": a.shap_explanation,
         "regulatory_report": a.regulatory_report,
+        "rank_score": a.rank_score,
+        "evidence_share": a.evidence_share,
     }
 
 
@@ -109,7 +111,7 @@ class DetectionService:
         settings = get_settings()
         if settings.demo_mode and not skip_demo_statuses:
             # Assign diverse statuses for realistic demo
-            alert_dicts = sorted(alert_dicts, key=lambda a: -a["risk_score"])
+            alert_dicts = sorted(alert_dicts, key=lambda a: -a["rank_score"])
             demo_statuses = [
                 "OPEN",
                 "OPEN",
