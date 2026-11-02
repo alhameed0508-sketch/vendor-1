@@ -16,26 +16,16 @@ const FALLBACK_MONTHLY_TREND = [
   { month: 'Jan', alerts: 28, prevented: 44.2, hours: 84 },
 ];
 
+// Each bar is named, so all bars share one hue; colour would only repeat the label.
 const FALLBACK_DETECTION_BREAKDOWN = [
-  { name: 'Smurfing',      count: 34, color: '#F43F5E', pct: 100 },
-  { name: 'Consolidation', count: 21, color: '#FB923C', pct: 61.7 },
-  { name: 'Shared Device', count: 18, color: '#38BDF8', pct: 52.9 },
-  { name: 'Bot Pattern',   count: 12, color: '#10B981', pct: 35.3 },
-  { name: 'Fan-out',       count: 9,  color: '#22D3EE', pct: 26.5 },
+  { name: 'Smurfing',      count: 34, pct: 100 },
+  { name: 'Consolidation', count: 21, pct: 61.7 },
+  { name: 'Shared Device', count: 18, pct: 52.9 },
+  { name: 'Bot Pattern',   count: 12, pct: 35.3 },
+  { name: 'Fan-out',       count: 9,  pct: 26.5 },
 ];
 
-const PATTERN_COLORS = {
-  'Smurfing': '#F43F5E',
-  'Consolidation': '#FB923C',
-  'Shared Device': '#38BDF8',
-  'Bot Pattern': '#10B981',
-  'Fan-out': '#22D3EE',
-  'SMURF': '#F43F5E',
-  'CONSOLIDATION': '#FB923C',
-  'SHARED_DEVICE': '#38BDF8',
-  'BOT_PATTERN': '#10B981',
-  'FAN_OUT': '#22D3EE',
-};
+const AXIS_TICK = { fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' };
 
 const chartTooltipStyle = {
   background: 'var(--bg-elevated)',
@@ -51,7 +41,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     <div style={chartTooltipStyle}>
       <p style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: p.color, margin: 0, fontWeight: 600 }}>
+        <p key={i} style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-primary)', margin: 0, fontWeight: 600 }}>
           {p.name}: {p.value}
         </p>
       ))}
@@ -101,7 +91,6 @@ export default function ROIDashboard() {
         setDetectionBreakdown(roiData.detection_breakdown.map(d => ({
           name: d.pattern || d.name,
           count: d.count,
-          color: PATTERN_COLORS[d.pattern || d.name] || '#94A3B8',
           pct: maxCount > 0 ? (d.count / maxCount) * 100 : 0,
         })));
       }
@@ -130,22 +119,9 @@ export default function ROIDashboard() {
         transition={{ duration: 0.4 }}
         style={{ marginBottom: 32 }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 6 }}>
-          <h1 className="text-page-title" style={{ fontSize: 28, margin: 0 }}>
-            ROI Analytics
-          </h1>
-          <span style={{
-            fontFamily: 'var(--font-sans)',
-            fontSize: 12,
-            color: '#10B981',
-            background: 'rgba(16,185,129,0.08)',
-            border: '1px solid rgba(16,185,129,0.2)',
-            padding: '2px 8px',
-            borderRadius: 4,
-          }}>
-            LIVE
-          </span>
-        </div>
+        <h1 className="text-page-title" style={{ fontSize: 28, margin: '0 0 6px' }}>
+          ROI Analytics
+        </h1>
         <p className="text-mono-sm">
           Detection metrics · ROI tracking · Active learning feedback
         </p>
@@ -153,16 +129,16 @@ export default function ROIDashboard() {
 
       {/* Primary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
-        <StatCard label="Fraud Prevented"           value={`₹${(kpi?.fraud_prevented_crore || 0).toFixed(2)}Cr`} color="#FB923C" sub="flagged cluster amounts" />
-        <StatCard label="Investigation Time Saved"  value={`${kpi?.investigation_time_reduction_pct || 75}%`}    color="#22D3EE" sub="4h → 1h per alert" />
-        <StatCard label="False Positive Reduction"  value="40%"                                                   color="#10B981" sub="vs. legacy rule-based AML" />
+        <StatCard label="Fraud Prevented"           value={`₹${(kpi?.fraud_prevented_crore || 0).toFixed(2)}Cr`} sub="flagged cluster amounts" />
+        <StatCard label="Investigation Time Saved"  value={`${kpi?.investigation_time_reduction_pct || 75}%`} sub="4h → 1h per alert" />
+        <StatCard label="False Positive Reduction"  value="40%" sub="vs. legacy rule-based AML" />
       </div>
 
       {/* Secondary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 24 }}>
-        <StatCard label="Manpower Saved" value={`₹${(kpi?.manpower_saved_lakh || 0).toFixed(1)}L`} color="#8B5CF6" sub={kpi?.hours_saved ? `${kpi.hours_saved.toFixed(0)} hours freed` : '—'} />
-        <StatCard label="STRs Filed"     value={kpi?.strs_filed || 0}                                color="#38BDF8" sub="FIU-ready reports" />
-        <StatCard label="Total Alerts"   value={kpi?.total_alerts || 0}                              color="#F43F5E" sub="this cycle" />
+        <StatCard label="Manpower Saved" value={`₹${(kpi?.manpower_saved_lakh || 0).toFixed(1)}L`} sub={kpi?.hours_saved ? `${kpi.hours_saved.toFixed(0)} hours freed` : '—'} />
+        <StatCard label="STRs Filed"     value={kpi?.strs_filed || 0} sub="FIU-ready reports" />
+        <StatCard label="Total Alerts"   value={kpi?.total_alerts || 0} sub="this cycle" />
       </div>
 
       {/* Charts Row */}
@@ -177,15 +153,15 @@ export default function ROIDashboard() {
             <AreaChart data={monthlyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="prevGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#FB923C" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#FB923C" stopOpacity={0} />
+                  <stop offset="5%"  stopColor="var(--accent)" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="prevented" name="₹ Lakh" stroke="#FB923C" strokeWidth={2} fill="url(#prevGrad)" dot={false} activeDot={{ r: 4, fill: '#FB923C', stroke: '#0A0A0F', strokeWidth: 2 }} />
+              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--border-strong)' }} />
+              <Area type="monotone" dataKey="prevented" name="₹ Lakh" stroke="var(--accent)" strokeWidth={2} fill="url(#prevGrad)" dot={false} activeDot={{ r: 4, fill: 'var(--accent)', stroke: 'var(--bg-base)', strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -193,17 +169,11 @@ export default function ROIDashboard() {
         <ChartPanel title="Hours Saved per Month">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={monthlyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="hoursGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%"   stopColor="#22D3EE" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="#22D3EE" stopOpacity={0.3} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="month" tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="hours" name="Hours" fill="url(#hoursGrad)" radius={[3, 3, 0, 0]} />
+              <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
+              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--accent-tint)' }} />
+              <Bar dataKey="hours" name="Hours" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
         </ChartPanel>
@@ -221,20 +191,15 @@ export default function ROIDashboard() {
             {detectionBreakdown.map(d => (
               <div key={d.name}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#94A3B8' }}>{d.name}</span>
-                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: d.color, fontWeight: 700 }}>{d.count}</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-secondary)' }}>{d.name}</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>{d.count}</span>
                 </div>
-                <div style={{ height: 4, background: 'var(--bg-input)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: 6, background: 'var(--bg-input)', borderRadius: 3, overflow: 'hidden' }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${d.pct}%` }}
                     transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' }}
-                    style={{
-                      height: '100%',
-                      background: `linear-gradient(90deg, ${d.color}, ${d.color}80)`,
-                      borderRadius: 2,
-                      boxShadow: `0 0 8px ${d.color}40`,
-                    }}
+                    style={{ height: '100%', background: 'var(--accent)', borderRadius: 3 }}
                   />
                 </div>
               </div>
@@ -247,9 +212,9 @@ export default function ROIDashboard() {
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 {[
-                  { v: feedbackStats.total_feedback, l: 'Total Feedback', c: '#22D3EE' },
-                  { v: `${(feedbackStats.false_positive_rate * 100).toFixed(1)}%`, l: 'FP Rate', c: feedbackStats.false_positive_rate > 0.3 ? '#F43F5E' : '#10B981' },
-                ].map(({ v, l, c }) => (
+                  { v: feedbackStats.total_feedback, l: 'Total Feedback' },
+                  { v: `${(feedbackStats.false_positive_rate * 100).toFixed(1)}%`, l: 'FP Rate' },
+                ].map(({ v, l }) => (
                   <div key={l} style={{
                     borderLeft: '2px solid var(--border)',
                     padding: '14px 16px',
@@ -261,9 +226,9 @@ export default function ROIDashboard() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
                 {[
-                  { v: feedbackStats.true_positives,  l: 'Confirmed Mules',  c: '#10B981' },
-                  { v: feedbackStats.false_positives, l: 'False Positives',  c: '#FB923C' },
-                ].map(({ v, l, c }) => (
+                  { v: feedbackStats.true_positives,  l: 'Confirmed Mules' },
+                  { v: feedbackStats.false_positives, l: 'False Positives' },
+                ].map(({ v, l }) => (
                   <div key={l} style={{
                     borderLeft: '2px solid var(--border)',
                     padding: '12px 16px',
@@ -284,7 +249,7 @@ export default function ROIDashboard() {
                 alignItems: 'center',
               }}>
                 <span>Smurf Threshold</span>
-                <span style={{ color: '#10B981', fontWeight: 700 }}>{feedbackStats.current_smurf_threshold?.toFixed(3) || '0.550'}</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{feedbackStats.current_smurf_threshold?.toFixed(3) || '0.550'}</span>
               </div>
             </div>
           ) : (

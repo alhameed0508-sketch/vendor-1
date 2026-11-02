@@ -11,8 +11,8 @@ function EdgeSwatch({ flagged }) {
   );
 }
 
-/** Key for shapes, line styles and the risk ring. */
-export default function GraphLegend() {
+/** Key for shapes, line styles and the risk ring; the map drops the ring and adds its shading. */
+export default function GraphLegend({ ring = true, children }) {
   return (
     <div className="graph-legend">
       {LEGEND_ROLES.map(role => {
@@ -28,12 +28,15 @@ export default function GraphLegend() {
       })}
       <span className="graph-legend-item"><EdgeSwatch flagged />Flagged transfer</span>
       <span className="graph-legend-item"><EdgeSwatch flagged={false} />Other transfer</span>
-      <span className="graph-legend-item">
-        <svg width={16} height={16} viewBox="-8 -8 16 16" aria-hidden="true">
-          <circle r={6} fill="none" stroke="var(--text-primary)" strokeWidth={2.5} strokeDasharray="28 40" />
-        </svg>
-        Thicker ring, higher risk
-      </span>
+      {ring && (
+        <span className="graph-legend-item">
+          <svg width={16} height={16} viewBox="-8 -8 16 16" aria-hidden="true">
+            <circle r={6} fill="none" stroke="var(--text-primary)" strokeWidth={2.5} strokeDasharray="28 40" />
+          </svg>
+          Thicker ring, higher risk
+        </span>
+      )}
+      {children}
     </div>
   );
 }

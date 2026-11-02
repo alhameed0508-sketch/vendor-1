@@ -470,10 +470,10 @@ export default function AlertQueue({ onSelectAlert }) {
 
       {/* ── Summary stat cards ── */}
       <div className="stat-grid">
-        <StatCard label="Open alerts"       value={stats.open}                    color="var(--emerald-light)" />
-        <StatCard label="Critical severity" value={stats.critical}                color="var(--critical)" />
-        <StatCard label="High SAR risk"     value={stats.highSAR}                color="var(--high)" />
-        <StatCard label="Suspicious flow"   value={formatAmount(stats.totalAmt)} color="var(--accent-cyan)" />
+        <StatCard label="Open alerts"       value={stats.open} />
+        <StatCard label="Critical severity" value={stats.critical} />
+        <StatCard label="High SAR risk"     value={stats.highSAR} />
+        <StatCard label="Suspicious flow"   value={formatAmount(stats.totalAmt)} />
       </div>
 
       {/* ── Filters ── */}

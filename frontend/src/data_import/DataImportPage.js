@@ -280,10 +280,10 @@ export default function DataImportPage() {
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 14, marginBottom: 24,
             }}>
-              <StatCard label="Accounts" value={uploadResult.accounts} color="var(--accent)" icon={Users} index={0} />
-              <StatCard label="Transactions" value={uploadResult.transactions} color="#8B5CF6" icon={Database} index={1} />
-              <StatCard label="Alerts Generated" value={uploadResult.alerts_generated} color="#F43F5E" icon={AlertTriangle} index={2} />
-              <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} color="#10B981" icon={BarChart2} index={3} />
+              <StatCard label="Accounts" value={uploadResult.accounts} icon={Users} index={0} />
+              <StatCard label="Transactions" value={uploadResult.transactions} icon={Database} index={1} />
+              <StatCard label="Alerts Generated" value={uploadResult.alerts_generated} icon={AlertTriangle} index={2} />
+              <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} icon={BarChart2} index={3} />
             </div>
 
             {uploadResult.data_quality && (

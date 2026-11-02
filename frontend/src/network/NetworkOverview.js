@@ -288,20 +288,20 @@ export default function NetworkOverview() {
             {/* LIVE / OFFLINE badge */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: connected ? 'rgba(16,185,129,0.08)' : 'rgba(156,163,175,0.08)',
-              border: `1px solid ${connected ? 'rgba(16,185,129,0.25)' : 'rgba(156,163,175,0.2)'}`,
+              background: connected ? 'var(--accent-tint)' : 'var(--bg-input)',
+              border: '1px solid var(--border)',
               borderRadius: 5,
               padding: '2px 8px',
             }}>
               <div style={{
                 width: 5, height: 5, borderRadius: '50%',
-                background: connected ? '#10B981' : '#9CA3AF',
+                background: connected ? 'var(--accent)' : 'var(--text-faint)',
                 animation: connected ? 'emeraldPulse 2s ease-in-out infinite' : 'none',
               }} />
               <span style={{
                 fontFamily: 'var(--font-sans)',
                 fontSize: 12,
-                color: connected ? '#10B981' : '#9CA3AF',
+                color: connected ? 'var(--accent)' : 'var(--text-muted)',
                 fontWeight: 700,
               }}>{connected ? 'Live' : 'Offline'}</span>
             </div>
@@ -342,10 +342,10 @@ export default function NetworkOverview() {
 
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Total Accounts"      value={stats.totalAccounts}                   color="var(--accent-cyan)" icon={Users} />
-        <StatCard label="Total Transactions"  value={stats.totalTransactions.toLocaleString()} color="#FB923C"          icon={ArrowRightLeft} />
-        <StatCard label="Total Alerts"        value={stats.totalAlerts}                     color="#F43F5E"            icon={AlertTriangle} />
-        <StatCard label="Clusters Detected"   value={stats.clustersDetected}                color="#10B981"            icon={Share2} />
+        <StatCard label="Total Accounts"      value={stats.totalAccounts} icon={Users} />
+        <StatCard label="Total Transactions"  value={stats.totalTransactions.toLocaleString()}          icon={ArrowRightLeft} />
+        <StatCard label="Total Alerts"        value={stats.totalAlerts}            icon={AlertTriangle} />
+        <StatCard label="Clusters Detected"   value={stats.clustersDetected}            icon={Share2} />
       </div>
 
       {/* Map + Regional Stats Row */}
@@ -382,7 +382,7 @@ export default function NetworkOverview() {
             border: '1px solid var(--border)',
             borderRadius: 10,
             overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+            boxShadow: 'var(--shadow-card)',
           }}
         >
           {/* Graph header */}
@@ -394,7 +394,7 @@ export default function NetworkOverview() {
             alignItems: 'center',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Share2 size={14} style={{ color: 'var(--accent-cyan)', opacity: 0.7 }} />
+              <Share2 size={14} style={{ color: 'var(--text-muted)' }} />
               <span style={{
                 fontFamily: 'var(--font-sans)',
                 fontSize: 12,
@@ -442,11 +442,11 @@ export default function NetworkOverview() {
               <div style={{
                 width: 48, height: 48,
                 borderRadius: '50%',
-                background: 'rgba(62,231,255,0.08)',
-                border: '1px solid rgba(62,231,255,0.15)',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <Share2 size={20} color="var(--accent-cyan)" />
+                <Share2 size={20} color="var(--text-muted)" />
               </div>
               <div>
                 <p style={{

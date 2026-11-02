@@ -183,10 +183,10 @@ export default function Dashboard() {
 
       {/* ── Metric Cards ── */}
       <div className="stat-grid">
-        <StatCard label="Critical"      value={stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts" />
-        <StatCard label="High severity" value={stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts" />
-        <StatCard label="Open cases"    value={stats.open}     color="var(--medium)"   icon={Shield}        sub="under review" />
-        <StatCard label="Total flagged" value={`₹${stats.total}L`} color="var(--high)" icon={DollarSign}   sub="this cycle" />
+        <StatCard label="Critical"      value={stats.critical} icon={AlertTriangle} sub="active alerts" />
+        <StatCard label="High severity" value={stats.high}     icon={Activity}      sub="active alerts" />
+        <StatCard label="Open cases"    value={stats.open}   icon={Shield}        sub="under review" />
+        <StatCard label="Total flagged" value={`₹${stats.total}L`} icon={DollarSign}   sub="this cycle" />
       </div>
 
       {/* ── Filter Bar ── */}
