@@ -13,8 +13,13 @@ T0 = datetime(2027, 2, 1, 14, 0, tzinfo=IST)
 
 
 def _deadlines(**overrides):
-    args = {"occurred_at": T0, "reported_at": T0 + timedelta(hours=3), "cross_border": False,
-            "channel": "UPI", "now": T0 + timedelta(days=10)}
+    args = {
+        "occurred_at": T0,
+        "reported_at": T0 + timedelta(hours=3),
+        "cross_border": False,
+        "channel": "UPI",
+        "now": T0 + timedelta(days=10),
+    }
     return deadlines(**{**args, **overrides})
 
 
@@ -50,8 +55,13 @@ class TestDeadlines:
 
 
 def _assess(category, *, window=True, proof=True, amount=40_000, after=0):
-    return assess_liability(category=category, amount=amount, amount_after_report=after,
-                            within_zero_liability_window=window, proof_complete=proof)
+    return assess_liability(
+        category=category,
+        amount=amount,
+        amount_after_report=after,
+        within_zero_liability_window=window,
+        proof_complete=proof,
+    )
 
 
 class TestLiability:
@@ -86,9 +96,18 @@ class TestLiability:
 
 
 def _compensate(**overrides):
-    args = {"category": "CUSTOMER_NEGLIGENCE", "loss": 40_000, "recovered": 15_000, "cross_border": False,
-            "occurred_at": T0, "reported_after_days": 1, "ncrp_reported_after_days": 1,
-            "is_individual": True, "previously_compensated": False, "form_received_at": None}
+    args = {
+        "category": "CUSTOMER_NEGLIGENCE",
+        "loss": 40_000,
+        "recovered": 15_000,
+        "cross_border": False,
+        "occurred_at": T0,
+        "reported_after_days": 1,
+        "ncrp_reported_after_days": 1,
+        "is_individual": True,
+        "previously_compensated": False,
+        "form_received_at": None,
+    }
     return compensation(**{**args, **overrides})
 
 
@@ -108,16 +127,19 @@ class TestCompensation:
         c = _compensate(loss=50_000, recovered=0, cross_border=True)
         assert c["split"] == {"rbi": 19_118, "customer_bank": 5_882}
 
-    @pytest.mark.parametrize("overrides", [
-        {"category": "THIRD_PARTY_BREACH"},
-        {"loss": 50_001},
-        {"is_individual": False},
-        {"reported_after_days": 6},
-        {"ncrp_reported_after_days": None},
-        {"previously_compensated": True},
-        {"occurred_at": datetime(2028, 1, 1, 9, 0, tzinfo=IST)},
-        {"occurred_at": datetime(2026, 12, 31, 9, 0, tzinfo=IST)},
-    ])
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"category": "THIRD_PARTY_BREACH"},
+            {"loss": 50_001},
+            {"is_individual": False},
+            {"reported_after_days": 6},
+            {"ncrp_reported_after_days": None},
+            {"previously_compensated": True},
+            {"occurred_at": datetime(2028, 1, 1, 9, 0, tzinfo=IST)},
+            {"occurred_at": datetime(2026, 12, 31, 9, 0, tzinfo=IST)},
+        ],
+    )
     def test_ineligible_cases_get_nothing_and_say_why(self, overrides):
         c = _compensate(**overrides)
         assert c["eligible"] is False
@@ -129,7 +151,9 @@ class TestCompensation:
         assert _compensate()["pay_by"] is None
 
 
-@pytest.mark.parametrize(("amount", "text"), [(999, "₹999"), (64_999, "₹64,999"), (185_000, "₹1,85,000"),
-                                              (12_345_678, "₹1,23,45,678"), (-2_500, "-₹2,500")])
+@pytest.mark.parametrize(
+    ("amount", "text"),
+    [(999, "₹999"), (64_999, "₹64,999"), (185_000, "₹1,85,000"), (12_345_678, "₹1,23,45,678"), (-2_500, "-₹2,500")],
+)
 def test_rupees_use_indian_digit_grouping(amount, text):
     assert format_inr(amount) == text

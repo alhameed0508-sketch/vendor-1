@@ -44,13 +44,11 @@ def format_inr(amount: int, symbol: str = "₹") -> str:
     """Whole rupees with Indian digit grouping: ₹1,85,000."""
     digits = str(abs(int(amount)))
     head, tail = digits[:-3], digits[-3:]
-    groups = [head[max(i - 2, 0):i] for i in range(len(head), 0, -2)][::-1]
+    groups = [head[max(i - 2, 0) : i] for i in range(len(head), 0, -2)][::-1]
     return f"{'-' if amount < 0 else ''}{symbol}{','.join([*groups, tail])}"
 
 
-def deadlines(
-    *, occurred_at: datetime, reported_at: datetime, cross_border: bool, channel: str, now: datetime
-) -> Dict:
+def deadlines(*, occurred_at: datetime, reported_at: datetime, cross_border: bool, channel: str, now: datetime) -> Dict:
     """Every clock a complaint runs on, measured from the customer's report."""
     limit = RESOLUTION_DAYS_CROSS_BORDER if cross_border else RESOLUTION_DAYS_DOMESTIC
     resolve_by = reported_at + timedelta(days=limit)
@@ -76,20 +74,34 @@ def assess_liability(
 
     def result(outcome: str, customer: Optional[int], basis: str) -> Dict:
         bank = None if customer is None else amount - customer
-        return {"category": category, "outcome": outcome, "customer_liability": customer,
-                "bank_liability": bank, "basis": basis}
+        return {
+            "category": category,
+            "outcome": outcome,
+            "customer_liability": customer,
+            "bank_liability": bank,
+            "basis": basis,
+        }
 
     if category in ("CUSTOMER_NEGLIGENCE", "NOT_FRAUD") and not proof_complete:
         return result("UNPROVEN", 0, "The bank cannot yet prove customer liability, so the loss stays with the bank.")
     if category == "BANK_NEGLIGENCE":
         return result("ZERO_LIABILITY", 0, "Bank negligence: zero customer liability whenever it was reported.")
     if category == "THIRD_PARTY_BREACH" and within_zero_liability_window:
-        return result("ZERO_LIABILITY", 0, "Third-party breach reported within 5 calendar days: zero customer liability.")
+        return result(
+            "ZERO_LIABILITY", 0, "Third-party breach reported within 5 calendar days: zero customer liability."
+        )
     if category == "THIRD_PARTY_BREACH":
-        return result("BANK_POLICY", None, "Third-party breach reported after 5 days: liability follows the bank's board-approved policy.")
+        return result(
+            "BANK_POLICY",
+            None,
+            "Third-party breach reported after 5 days: liability follows the bank's board-approved policy.",
+        )
     if category == "CUSTOMER_NEGLIGENCE":
-        return result("CUSTOMER_LIABLE", amount - amount_after_report,
-                      "Customer negligence: the customer bears the loss until reporting, the bank after.")
+        return result(
+            "CUSTOMER_LIABLE",
+            amount - amount_after_report,
+            "Customer negligence: the customer bears the loss until reporting, the bank after.",
+        )
     if category == "NOT_FRAUD":
         return result("NOT_FRAUD", amount, "The customer made this payment, so it is not a fraudulent EBT.")
     return result("UNPROVEN", 0, "The evidence does not yet point to a category, so the loss stays with the bank.")
@@ -121,9 +133,14 @@ def compensation(
         {"label": f"Loss of ₹{COMPENSATION_LOSS_LIMIT:,} or less", "met": loss <= COMPENSATION_LOSS_LIMIT},
         {"label": "Individual or sole proprietor", "met": is_individual},
         {"label": "Reported to the bank within 5 days", "met": reported_after_days <= ZERO_LIABILITY_REPORT_DAYS},
-        {"label": "Reported to NCRP or 1930 within 5 days",
-         "met": ncrp_reported_after_days is not None and ncrp_reported_after_days <= ZERO_LIABILITY_REPORT_DAYS},
-        {"label": "Fraud in the scheme's first year", "met": RULES_IN_FORCE_FROM <= occurred_at < COMPENSATION_SCHEME_ENDS},
+        {
+            "label": "Reported to NCRP or 1930 within 5 days",
+            "met": ncrp_reported_after_days is not None and ncrp_reported_after_days <= ZERO_LIABILITY_REPORT_DAYS,
+        },
+        {
+            "label": "Fraud in the scheme's first year",
+            "met": RULES_IN_FORCE_FROM <= occurred_at < COMPENSATION_SCHEME_ENDS,
+        },
         {"label": "First claim in the customer's lifetime", "met": not previously_compensated},
     ]
     eligible = all(c["met"] for c in checks)

@@ -38,7 +38,8 @@ class ComplaintCreateRequest(BaseModel):
     previously_compensated: bool = False
 
     _aware = field_validator("occurred_at", "reported_at", "ncrp_reported_at", "compensation_form_at")(
-        _require_timezone)
+        _require_timezone
+    )
 
     @model_validator(mode="after")
     def _consistent(self):

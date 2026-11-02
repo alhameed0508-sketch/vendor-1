@@ -34,8 +34,14 @@ class EvidencePack(FPDF):
         self.set_font("Helvetica", "B", 14)
         self.cell(0, 8, "FRAUD COMPLAINT EVIDENCE PACK", align="C", new_x="LMARGIN", new_y="NEXT")
         self.set_font("Helvetica", "", 9)
-        self.cell(0, 5, "RBI directions on fraudulent electronic banking transactions  |  Confidential",
-                  align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(
+            0,
+            5,
+            "RBI directions on fraudulent electronic banking transactions  |  Confidential",
+            align="C",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
         self.line(10, self.get_y() + 2, 200, self.get_y() + 2)
         self.ln(6)
 
@@ -63,9 +69,13 @@ class EvidencePack(FPDF):
 def _case(pdf: EvidencePack, pack: Dict):
     pdf.section("1. Complaint")
     for label, value in (
-        ("Complaint", pack["complaint_id"]), ("Customer", f"{pack['customer_name']} ({pack['customer_type'].lower()})"),
-        ("Account", pack["account"]), ("Channel", pack["channel"]), ("Amount disputed", _money(pack["amount"])),
-        ("Fraud occurred", _when(pack["occurred_at"])), ("Reported to bank", _when(pack["reported_at"])),
+        ("Complaint", pack["complaint_id"]),
+        ("Customer", f"{pack['customer_name']} ({pack['customer_type'].lower()})"),
+        ("Account", pack["account"]),
+        ("Channel", pack["channel"]),
+        ("Amount disputed", _money(pack["amount"])),
+        ("Fraud occurred", _when(pack["occurred_at"])),
+        ("Reported to bank", _when(pack["reported_at"])),
         ("Beneficiary", f"{pack['beneficiary_account'] or '-'} {pack['beneficiary_bank']}".strip()),
         ("Status", pack["status"]),
     ):
@@ -74,8 +84,11 @@ def _case(pdf: EvidencePack, pack: Dict):
     clocks = pack["deadlines"]
     pdf.section("2. Clocks")
     pdf.row("Resolve by", f"{_when(clocks['resolve_by'])} ({clocks['resolution_limit_days']}-day limit)")
-    pdf.row("Reported after", f"{clocks['reported_after_days']} day(s); zero-liability window "
-                              f"{'met' if clocks['within_zero_liability_window'] else 'missed'}")
+    pdf.row(
+        "Reported after",
+        f"{clocks['reported_after_days']} day(s); zero-liability window "
+        f"{'met' if clocks['within_zero_liability_window'] else 'missed'}",
+    )
     if clocks["shadow_credit_by"]:
         pdf.row("Shadow credit by", _when(clocks["shadow_credit_by"]))
 
@@ -117,8 +130,10 @@ def _evidence(pdf: EvidencePack, pack: Dict):
         pdf.set_font("Helvetica", "B", 9)
         pdf.para(f"{item['id']}  {_when(item['at'])}  {item['source']} / {item['kind']}")
         pdf.set_font("Helvetica", "", 9)
-        pdf.para(f"{item['summary']}  (received {_when(item['received_at'])} from {item['submitted_by']}; "
-                 f"hash {item['hash'][:_HASH_CHARS]}...)")
+        pdf.para(
+            f"{item['summary']}  (received {_when(item['received_at'])} from {item['submitted_by']}; "
+            f"hash {item['hash'][:_HASH_CHARS]}...)"
+        )
     chain = pack["chain"]
     pdf.row("Chain integrity", "Intact" if chain["intact"] else f"Broken at {chain['broken_at']}")
 

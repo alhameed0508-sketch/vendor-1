@@ -59,8 +59,11 @@ def write_narrative(chain: List[Dict], assessment: Dict, provider: Optional[LLMP
         evidence = [{k: i[k] for k in ("id", "at", "source", "summary")} for i in chain]
         facts = {"category": assessment["category"], "finding": assessment["basis"], "evidence": evidence}
         try:
-            reply = provider.generate([LLMMessage("system", _SYSTEM), LLMMessage("user", json.dumps(facts, ensure_ascii=False))],
-                                      temperature=0.2, max_tokens=700)
+            reply = provider.generate(
+                [LLMMessage("system", _SYSTEM), LLMMessage("user", json.dumps(facts, ensure_ascii=False))],
+                temperature=0.2,
+                max_tokens=700,
+            )
             total = len([s for s in _SENTENCE_END.split(reply.content.strip()) if s])
             kept = _cited_sentences(reply.content, {i["id"] for i in chain})
             if len(kept) >= MIN_LLM_SENTENCES:

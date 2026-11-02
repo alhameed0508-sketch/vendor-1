@@ -17,8 +17,11 @@ from services.complaint_service import ComplaintService
 from infra.security.auth import create_access_token
 
 NOW = DEMO_NOW
-MULE_ALERT = {"alert_id": "ALT_MULE1", "risk_score": 0.97,
-              "nodes": [{"account_id": "AC_MULE_1", "role": "AGGREGATOR"}, {"account_id": "AC_SRC", "role": "SOURCE"}]}
+MULE_ALERT = {
+    "alert_id": "ALT_MULE1",
+    "risk_score": 0.97,
+    "nodes": [{"account_id": "AC_MULE_1", "role": "AGGREGATOR"}, {"account_id": "AC_SRC", "role": "SOURCE"}],
+}
 
 
 class FakeAlerts:
@@ -32,17 +35,29 @@ def _headers(role):
 
 GUEST, INVESTIGATOR, SUPERVISOR = _headers("GUEST"), _headers("INVESTIGATOR"), _headers("SUPERVISOR")
 NEW_COMPLAINT = {
-    "customer_name": "R. Iyer", "customer_type": "INDIVIDUAL", "account": "XXXX4821", "channel": "UPI",
-    "amount": 42000, "occurred_at": "2027-02-14T21:10:00+05:30", "reported_at": "2027-02-15T08:30:00+05:30",
-    "cross_border": False, "beneficiary_account": "AC_MULE_1", "beneficiary_bank": "SBI",
+    "customer_name": "R. Iyer",
+    "customer_type": "INDIVIDUAL",
+    "account": "XXXX4821",
+    "channel": "UPI",
+    "amount": 42000,
+    "occurred_at": "2027-02-14T21:10:00+05:30",
+    "reported_at": "2027-02-15T08:30:00+05:30",
+    "cross_border": False,
+    "beneficiary_account": "AC_MULE_1",
+    "beneficiary_bank": "SBI",
     "description": "Caller posing as KYC officer; UPI collect request approved.",
 }
 
 
 @pytest.fixture
 def service():
-    svc = ComplaintService(repo=ComplaintRepository(), alert_repo=FakeAlerts(), audit=get_audit_service(),
-                           provider=None, now_fn=lambda: NOW)
+    svc = ComplaintService(
+        repo=ComplaintRepository(),
+        alert_repo=FakeAlerts(),
+        audit=get_audit_service(),
+        provider=None,
+        now_fn=lambda: NOW,
+    )
     svc.seed_demo()
     return svc
 
@@ -76,7 +91,9 @@ async def test_list_shows_seeded_cases_with_deadline_counts(client):
     assert response.status_code == 200
     assert len(data["cases"]) >= 6
     assert data["as_of"].startswith("2027-03-01")
-    assert {"open", "due_soon", "overdue", "shadow_credits_pending", "compensation_due", "mule_linked"} <= set(data["summary"])
+    assert {"open", "due_soon", "overdue", "shadow_credits_pending", "compensation_due", "mule_linked"} <= set(
+        data["summary"]
+    )
     assert data["summary"]["overdue"] >= 1
 
 
@@ -96,12 +113,27 @@ async def test_evidence_arrives_extends_the_chain_and_moves_the_finding(client):
     case = await _create(client)
     url = f"/api/v1/complaints/{case['complaint_id']}/evidence"
     for item in (
-        {"source": "SMS_GATEWAY", "kind": "sms_alert", "at": "2027-02-14T21:10:30+05:30",
-         "summary": "Debit alert delivered to the registered mobile", "data": {"delivered": True}},
-        {"source": "AUTH_LOG", "kind": "login", "at": "2027-02-14T21:09:00+05:30",
-         "summary": "Collect request approved with UPI PIN on the customer's phone", "data": {"new_device": False, "otp_verified": True}},
-        {"source": "CUSTOMER", "kind": "credential_disclosed", "at": "2027-02-14T21:05:00+05:30",
-         "summary": "Customer approved the request while on a call with the fraudster", "data": {}},
+        {
+            "source": "SMS_GATEWAY",
+            "kind": "sms_alert",
+            "at": "2027-02-14T21:10:30+05:30",
+            "summary": "Debit alert delivered to the registered mobile",
+            "data": {"delivered": True},
+        },
+        {
+            "source": "AUTH_LOG",
+            "kind": "login",
+            "at": "2027-02-14T21:09:00+05:30",
+            "summary": "Collect request approved with UPI PIN on the customer's phone",
+            "data": {"new_device": False, "otp_verified": True},
+        },
+        {
+            "source": "CUSTOMER",
+            "kind": "credential_disclosed",
+            "at": "2027-02-14T21:05:00+05:30",
+            "summary": "Customer approved the request while on a call with the fraudster",
+            "data": {},
+        },
     ):
         response = await client.post(url, json=item, headers=INVESTIGATOR)
         assert response.status_code == 200, response.text
@@ -154,7 +186,9 @@ async def test_liability_above_the_amount_is_rejected(client):
     case = await _create(client)
     decision = {"outcome": "CUSTOMER_LIABLE", "customer_liability": 999999, "notes": "x"}
 
-    response = await client.post(f"/api/v1/complaints/{case['complaint_id']}/decision", json=decision, headers=SUPERVISOR)
+    response = await client.post(
+        f"/api/v1/complaints/{case['complaint_id']}/decision", json=decision, headers=SUPERVISOR
+    )
 
     assert response.status_code == 400
 
@@ -189,7 +223,9 @@ async def test_evidence_pack_as_json_and_pdf_for_staff_only(client):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(("method", "path"), [("POST", ""), ("POST", "/FC-2027-000101/evidence"), ("POST", "/FC-2027-000101/decision")])
+@pytest.mark.parametrize(
+    ("method", "path"), [("POST", ""), ("POST", "/FC-2027-000101/evidence"), ("POST", "/FC-2027-000101/decision")]
+)
 async def test_guest_cannot_change_complaints(client, method, path):
     response = await client.request(method, f"/api/v1/complaints{path}", json={}, headers=GUEST)
 

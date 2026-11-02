@@ -76,9 +76,7 @@ def register_complaint_routes(r: APIRouter, limiter: Limiter) -> None:
         svc: ComplaintService = Depends(get_complaint_service),
     ):
         """Supervisor records the decision. The recommendation never decides on its own."""
-        return success_response(
-            svc.decide(complaint_id, req.outcome, req.customer_liability, req.notes, _user(user))
-        )
+        return success_response(svc.decide(complaint_id, req.outcome, req.customer_liability, req.notes, _user(user)))
 
     @r.get("/{complaint_id}/narrative")
     @limiter.limit("30/minute")

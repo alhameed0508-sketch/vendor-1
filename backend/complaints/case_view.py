@@ -24,23 +24,36 @@ def _iso(values: Dict) -> Dict:
 
 
 def _clocks(case: Dict, now: datetime) -> Dict:
-    return deadlines(occurred_at=_at(case["occurred_at"]), reported_at=_at(case["reported_at"]),
-                     cross_border=case["cross_border"], channel=case["channel"], now=now)
+    return deadlines(
+        occurred_at=_at(case["occurred_at"]),
+        reported_at=_at(case["reported_at"]),
+        cross_border=case["cross_border"],
+        channel=case["channel"],
+        now=now,
+    )
 
 
 def _assess(case: Dict, chain: List[Dict], within_window: bool) -> Dict:
     found = classify(chain)
-    liability = assess_liability(category=found["category"], amount=case["amount"],
-                                 amount_after_report=case["amount_after_report"],
-                                 within_zero_liability_window=within_window, proof_complete=found["proof_complete"])
+    liability = assess_liability(
+        category=found["category"],
+        amount=case["amount"],
+        amount_after_report=case["amount_after_report"],
+        within_zero_liability_window=within_window,
+        proof_complete=found["proof_complete"],
+    )
     return {"finding": found, "liability": liability}
 
 
 def _compensation(case: Dict, category: str, reported_after_days: int) -> Dict:
     occurred, ncrp = _at(case["occurred_at"]), _at(case.get("ncrp_reported_at"))
     result = compensation(
-        category=category, loss=case["amount"], recovered=case["recovered"], cross_border=case["cross_border"],
-        occurred_at=occurred, reported_after_days=reported_after_days,
+        category=category,
+        loss=case["amount"],
+        recovered=case["recovered"],
+        cross_border=case["cross_border"],
+        occurred_at=occurred,
+        reported_after_days=reported_after_days,
         ncrp_reported_after_days=calendar_days(occurred, ncrp) if ncrp else None,
         is_individual=case["customer_type"] in COMPENSATION_CUSTOMER_TYPES,
         previously_compensated=case["previously_compensated"],
@@ -54,11 +67,18 @@ def _step(case: Dict, chain: List[Dict], within_window: bool) -> Dict:
     state = _assess(case, chain, within_window)
     checklist = state["finding"]["checklist"]
     return {
-        "evidence_id": latest["id"], "at": latest["at"], "received_at": latest["received_at"],
-        "source": latest["source"], "kind": latest["kind"], "summary": latest["summary"],
-        "category": state["finding"]["category"], "outcome": state["liability"]["outcome"],
-        "customer_liability": state["liability"]["customer_liability"], "flags": state["finding"]["flags"],
-        "proof_met": sum(c["met"] for c in checklist), "proof_needed": len(checklist),
+        "evidence_id": latest["id"],
+        "at": latest["at"],
+        "received_at": latest["received_at"],
+        "source": latest["source"],
+        "kind": latest["kind"],
+        "summary": latest["summary"],
+        "category": state["finding"]["category"],
+        "outcome": state["liability"]["outcome"],
+        "customer_liability": state["liability"]["customer_liability"],
+        "flags": state["finding"]["flags"],
+        "proof_met": sum(c["met"] for c in checklist),
+        "proof_needed": len(checklist),
     }
 
 
@@ -89,12 +109,19 @@ def summarize(view: Dict) -> Dict:
     """One row of the case list."""
     clocks = view["deadlines"]
     return {
-        **{k: view[k] for k in ("complaint_id", "customer_name", "channel", "amount", "reported_at", "status",
-                                "cross_border")},
-        "resolve_by": clocks["resolve_by"], "days_left": clocks["days_left"], "overdue": clocks["overdue"],
-        "resolution_limit_days": clocks["resolution_limit_days"], "shadow_credit_by": clocks["shadow_credit_by"],
-        "category": view["finding"]["category"], "outcome": view["liability"]["outcome"],
-        "flags": view["finding"]["flags"], "evidence_count": len(view["evidence"]),
+        **{
+            k: view[k]
+            for k in ("complaint_id", "customer_name", "channel", "amount", "reported_at", "status", "cross_border")
+        },
+        "resolve_by": clocks["resolve_by"],
+        "days_left": clocks["days_left"],
+        "overdue": clocks["overdue"],
+        "resolution_limit_days": clocks["resolution_limit_days"],
+        "shadow_credit_by": clocks["shadow_credit_by"],
+        "category": view["finding"]["category"],
+        "outcome": view["liability"]["outcome"],
+        "flags": view["finding"]["flags"],
+        "evidence_count": len(view["evidence"]),
     }
 
 
@@ -103,8 +130,9 @@ def desk_summary(views: List[Dict]) -> Dict:
     open_cases = [v for v in views if v["status"] == "OPEN"]
     return {
         "open": len(open_cases),
-        "due_soon": sum(not v["deadlines"]["overdue"] and v["deadlines"]["days_left"] <= DUE_SOON_DAYS
-                        for v in open_cases),
+        "due_soon": sum(
+            not v["deadlines"]["overdue"] and v["deadlines"]["days_left"] <= DUE_SOON_DAYS for v in open_cases
+        ),
         "overdue": sum(v["deadlines"]["overdue"] for v in open_cases),
         "shadow_credits_pending": sum(v["deadlines"]["shadow_credit_by"] is not None for v in open_cases),
         "compensation_due": sum(v["compensation"]["amount"] for v in open_cases),

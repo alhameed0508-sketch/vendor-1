@@ -12,16 +12,30 @@ from complaints.evidence import GENESIS, append, classify, mule_summary, verify_
 def _chain(*items):
     chain = []
     for n, (kind, data) in enumerate(items):
-        chain = append(chain, at=f"2027-02-01T10:{n:02d}:00+05:30", source=_SOURCE[kind], kind=kind,
-                       summary=f"{kind} happened", data=data, submitted_by="test",
-                       received_at=f"2027-02-01T11:{n:02d}:00+05:30")
+        chain = append(
+            chain,
+            at=f"2027-02-01T10:{n:02d}:00+05:30",
+            source=_SOURCE[kind],
+            kind=kind,
+            summary=f"{kind} happened",
+            data=data,
+            submitted_by="test",
+            received_at=f"2027-02-01T11:{n:02d}:00+05:30",
+        )
     return chain
 
 
 _SOURCE = {
-    "transaction": "BANK_CORE", "sms_alert": "SMS_GATEWAY", "login": "AUTH_LOG", "sim_swap": "TELECOM",
-    "credential_disclosed": "CUSTOMER", "bank_breach": "BANK_SECURITY", "delivery_confirmed": "COURIER",
-    "device_history": "MERCHANT", "return_inspection": "MERCHANT", "mule_match": "MULECATCH",
+    "transaction": "BANK_CORE",
+    "sms_alert": "SMS_GATEWAY",
+    "login": "AUTH_LOG",
+    "sim_swap": "TELECOM",
+    "credential_disclosed": "CUSTOMER",
+    "bank_breach": "BANK_SECURITY",
+    "delivery_confirmed": "COURIER",
+    "device_history": "MERCHANT",
+    "return_inspection": "MERCHANT",
+    "mule_match": "MULECATCH",
 }
 SENT = ("sms_alert", {"delivered": True})
 KNOWN_LOGIN = ("login", {"new_device": False, "otp_verified": True})
@@ -39,8 +53,16 @@ class TestChain:
 
     def test_append_does_not_mutate_the_chain(self):
         chain = _chain(SENT)
-        append(chain, at="2027-02-01T12:00:00+05:30", source="AUTH_LOG", kind="login", summary="x",
-               data={}, submitted_by="t", received_at="2027-02-01T12:00:00+05:30")
+        append(
+            chain,
+            at="2027-02-01T12:00:00+05:30",
+            source="AUTH_LOG",
+            kind="login",
+            summary="x",
+            data={},
+            submitted_by="t",
+            received_at="2027-02-01T12:00:00+05:30",
+        )
         assert len(chain) == 1
 
     def test_editing_any_item_breaks_the_chain_at_that_item(self):
@@ -50,8 +72,16 @@ class TestChain:
 
     @pytest.mark.parametrize(("field", "value"), [("kind", "made_up"), ("source", "NOWHERE")])
     def test_unknown_kind_or_source_is_rejected(self, field, value):
-        args = {"at": "2027-02-01T12:00:00+05:30", "source": "AUTH_LOG", "kind": "login", "summary": "x",
-                "data": {}, "submitted_by": "t", "received_at": "2027-02-01T12:00:00+05:30", field: value}
+        args = {
+            "at": "2027-02-01T12:00:00+05:30",
+            "source": "AUTH_LOG",
+            "kind": "login",
+            "summary": "x",
+            "data": {},
+            "submitted_by": "t",
+            "received_at": "2027-02-01T12:00:00+05:30",
+            field: value,
+        }
         with pytest.raises(ValueError):
             append([], **args)
 

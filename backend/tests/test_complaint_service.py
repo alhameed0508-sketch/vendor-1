@@ -33,16 +33,28 @@ class Audit:
 
 
 def _service(alerts=None, audit=None):
-    svc = ComplaintService(repo=ComplaintRepository(), alert_repo=alerts or Alerts([MULE]), audit=audit or Audit(),
-                           provider=None, now_fn=lambda: DEMO_NOW)
+    svc = ComplaintService(
+        repo=ComplaintRepository(),
+        alert_repo=alerts or Alerts([MULE]),
+        audit=audit or Audit(),
+        provider=None,
+        now_fn=lambda: DEMO_NOW,
+    )
     svc.seed_demo()
     return svc
 
 
 def test_demo_desk_has_one_case_in_each_state():
     desk = _service().list_cases()
-    assert desk["summary"] == {"open": 7, "due_soon": 1, "overdue": 1, "shadow_credits_pending": 1,
-                               "compensation_due": 21_250, "mule_linked": 1, "amount_disputed": 651_749}
+    assert desk["summary"] == {
+        "open": 7,
+        "due_soon": 1,
+        "overdue": 1,
+        "shadow_credits_pending": 1,
+        "compensation_due": 21_250,
+        "mule_linked": 1,
+        "amount_disputed": 651_749,
+    }
     assert desk["cases"][0]["overdue"] is True  # most urgent first
 
 
@@ -69,8 +81,17 @@ def test_decision_records_whether_it_followed_the_recommendation_and_closes_evid
     assert decided["decision"]["within_time_limit"] is True
     assert "COMPLAINT_DECIDED" in audit.actions
     with pytest.raises(ConflictError):
-        svc.add_evidence("FC-2027-000102", {"at": "2027-02-27T10:00:00+05:30", "source": "CUSTOMER",
-                                            "kind": "ncrp_report", "summary": "late", "data": {}}, "inv")
+        svc.add_evidence(
+            "FC-2027-000102",
+            {
+                "at": "2027-02-27T10:00:00+05:30",
+                "source": "CUSTOMER",
+                "kind": "ncrp_report",
+                "summary": "late",
+                "data": {},
+            },
+            "inv",
+        )
 
 
 def test_bank_policy_case_has_no_number_to_follow():

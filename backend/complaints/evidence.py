@@ -14,11 +14,29 @@ from typing import Callable, Dict, List
 
 GENESIS = "0" * 64
 SOURCES = (
-    "CUSTOMER", "BANK_CORE", "AUTH_LOG", "SMS_GATEWAY", "TELECOM", "BANK_SECURITY", "MERCHANT", "COURIER", "MULECATCH",
+    "CUSTOMER",
+    "BANK_CORE",
+    "AUTH_LOG",
+    "SMS_GATEWAY",
+    "TELECOM",
+    "BANK_SECURITY",
+    "MERCHANT",
+    "COURIER",
+    "MULECATCH",
 )
 KINDS = (
-    "complaint", "transaction", "sms_alert", "login", "sim_swap", "credential_disclosed", "bank_breach",
-    "delivery_confirmed", "device_history", "return_inspection", "mule_match", "ncrp_report",
+    "complaint",
+    "transaction",
+    "sms_alert",
+    "login",
+    "sim_swap",
+    "credential_disclosed",
+    "bank_breach",
+    "delivery_confirmed",
+    "device_history",
+    "return_inspection",
+    "mule_match",
+    "ncrp_report",
 )
 _HASHED_FIELDS = ("id", "at", "source", "kind", "summary", "data", "submitted_by", "received_at", "prev_hash")
 
@@ -36,9 +54,17 @@ def append(
         raise ValueError(f"Unknown evidence source: {source}")
     if kind not in KINDS:
         raise ValueError(f"Unknown evidence kind: {kind}")
-    item = {"id": f"E{len(chain) + 1}", "at": at, "source": source, "kind": kind, "summary": summary,
-            "data": dict(data), "submitted_by": submitted_by, "received_at": received_at,
-            "prev_hash": chain[-1]["hash"] if chain else GENESIS}
+    item = {
+        "id": f"E{len(chain) + 1}",
+        "at": at,
+        "source": source,
+        "kind": kind,
+        "summary": summary,
+        "data": dict(data),
+        "submitted_by": submitted_by,
+        "received_at": received_at,
+        "prev_hash": chain[-1]["hash"] if chain else GENESIS,
+    }
     return [*chain, {**item, "hash": _digest(item)}]
 
 
@@ -78,14 +104,20 @@ def classify(chain: List[Dict]) -> Dict:
         checklist = [
             _check("Customer disclosed their credentials", disclosed),
             _check("Bank sent the mandatory SMS alert", alert_sent),
-            _check("Payment passed OTP in the customer's session", _ids(chain, "login", lambda d: d.get("otp_verified") is True)),
+            _check(
+                "Payment passed OTP in the customer's session",
+                _ids(chain, "login", lambda d: d.get("otp_verified") is True),
+            ),
         ]
     elif delivered and repeat_device and not third_party:
         category, decisive = "NOT_FRAUD", delivered + repeat_device
         checklist = [
             _check("Goods delivered to the registered address with OTP", delivered),
             _check("Same device as earlier undisputed orders", repeat_device),
-            _check("Payment made from a device the bank knows", _ids(chain, "login", lambda d: d.get("new_device") is False)),
+            _check(
+                "Payment made from a device the bank knows",
+                _ids(chain, "login", lambda d: d.get("new_device") is False),
+            ),
         ]
     elif third_party:
         category, decisive = "THIRD_PARTY_BREACH", third_party
@@ -94,7 +126,8 @@ def classify(chain: List[Dict]) -> Dict:
 
     by_id = {i["id"]: i for i in chain}
     flags = (["MULE_BENEFICIARY"] if mule else []) + (
-        ["RETURN_ABUSE"] if _ids(chain, "return_inspection", lambda d: d.get("item_matches") is False) else [])
+        ["RETURN_ABUSE"] if _ids(chain, "return_inspection", lambda d: d.get("item_matches") is False) else []
+    )
     return {
         "category": category,
         "reasons": [{"text": by_id[i]["summary"], "evidence": [i]} for i in decisive],
