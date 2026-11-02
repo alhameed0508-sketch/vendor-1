@@ -208,17 +208,69 @@ Raw output: `evasion_results_v2.json`, `payment_eval_results_v2.json`.
 - **Known limit: bystander dilution.** A probe on one dataset (seed 7, not part of the harness) sent material decoys (≥ ₹400 per pair) from every mule to genuine accounts. With 2 bystanders per mule, recall stayed at 100%. With 4 per mule, it fell to 76-79%, whether the money went as one payment or several small ones. Bystanders join the ring and push it under the 30% purity gate. The operator pays real money for each bystander, but this is the current weak point.
 - p95 latency is still above a typical 100 ms payment budget.
 
+## 7.6e Gap fixes: ring-internal evidence, faster scoring, ranked queue
+
+Gate still 0.30, nothing re-tuned. Raw output: `evasion_results_v3.json`, `payment_eval_results_v3.json`.
+
+**What changed.**
+- **Ring-internal evidence.** Once a ring is found, its members are also scored on payments between ring members only, at three scales (default, 6 h / 36 h, and 6 h velocity with a 6-day consolidation wait). Decoys sent to outsiders no longer dilute a member's evidence. A velocity window of 12 h or more was tried and rejected: it made genuine communities look like bursts (48 of 97 genuine payments flagged in the small test set).
+- **Faster scoring.** The per-account velocity score was quadratic (about 80% of smurf time); it is now O(k log k) with identical results. One first-time account paying into a known ring no longer forces a full Louvain run.
+- **Ranked queue.** Batch alerts carry `rank_score` (risk x mean member smurf score) and `evidence_share` (share of members with their own evidence). The pipeline, the demo status assignment and the Triage page rank by it (backlog #3). Severity is unchanged. On the demo data every top alert still has raw risk 0.99; the rank spreads them from 0.39 down to 0.11, and the 60-account ring with 2% evidence share is last.
+
+**Evasion (test seeds 100-104, standard).** Two new playbooks were added: `dilute` (each mule pays 4 distinct genuine bystanders a material amount) and `slower` (gaps stretched 24x), plus `combo` (split, noise and slow drip together).
+
+| Playbook | Mule payments flagged, before → after | Genuine payments flagged, after | Mule accounts in flagged rings, after |
+|---|---|---|---|
+| Baseline | 100% → 100% | 0.0% | 92.1% |
+| Split | 100% → 100% | 0.0% | 100% |
+| Noise | 100% → 100% | 0.0% | 100% |
+| Slow drip (6x) | 92.9% → 94.9% | 0.0% | 97.4% |
+| **Dilute** | **0.0% → 68.4%** | **2.0%** | 69.5% |
+| **Slower (24x)** | **19% → 62.1%** | 0.0% | 63.9% |
+| Combo | 99% → 99.3% | 0.0% | 100% |
+
+**Per-payment test (seeds 100-119, stride 25).**
+
+| Scenario | Mule payments flagged | Genuine payments flagged | Mule accounts in flagged rings | Latency p50 / p95 |
+|---|---|---|---|---|
+| Standard | 99.2% (was 98.8%) | 0.0% | 90.7% | 68 ms / 197 ms (was 154 / 265) |
+| Hardened | 98.0% (was 97.5%) | 0.0% | 89.3% | 75 ms / 204 ms (was 148 / 219) |
+
+**Caveats.**
+- `dilute` is only partly fixed and has a cost: the rings are found, but bystanders sit inside them. Genuine payments flagged rose to 2.0% (over the 1% budget) and a median 45 genuine accounts were inside flagged rings on that playbook. A case view should show which members carry their own evidence (`evidence_share`).
+- `slower` at 24x is still missed in about 38% of payments. A longer velocity window fixes it but flags genuine communities. Treat slowing a whole ring operation by a day-scale factor as an open limit.
+- Latency was measured with two evaluations and a dev server sharing the machine; p95 is still the 1-in-10 Louvain refresh payment. A background refresh would bring it near 70 ms (not built).
+- The playbooks are still written by the team that wrote the fixes (see 7.6d caveats).
+
 ## 7.7 Still to measure (not yet run)
 
 | Measurement | Plan | Why |
 |---|---|---|
-| Independent dataset | IBM AMLworld HI-Small (Kaggle; Altman et al., NeurIPS 2023): map accounts and transfers, run the same harness with a **time split** (train/calibrate on earlier days, test on later) | Breaks the generator/detector circularity |
+| Independent dataset, time split | Run done without a time split: see 7.8. Still to do: calibrate on earlier days, test on later | Breaks the generator/detector circularity |
 | Investigation time | 4–6 volunteers, 10 cases each, account view vs case view, randomised order; time to decision and agreement with ground truth | Converts "review units" into minutes |
 | Evidence traceability | For each top case, check every reason code links to specific transactions in the evidence table | Audit requirement |
 | Per-segment false positives | On real or AMLworld data: FPR by account age band and KYC type | Fairness |
 | Real-time path | Per-payment latency measured in 7.6b (p95 264-370 ms). Still to measure: micro-batch latency at 100 / 1,000 txn and load under concurrent callers | Challenge says real time |
 
+## 7.8 Independent dataset: IBM AMLworld (HI-Small)
+
+Script: `scripts/evaluation/evaluate_ibm_aml.py`; adapter: `data/adapters/ibm_aml_adapter.py`; raw output: `ibm_aml_results.json`. Data: a public third-party mirror of the IBM HI-Small files (5.08M payments, 5,177 laundering payments in 370 attempts of 8 typologies), downloaded to `data/external/ibm-aml/` and never committed. Amounts converted to rupees with fixed approximate rates. The gate is the same 0.30, nothing tuned on this data.
+
+Each of 20 cases holds 4 random laundering attempts, each mule's other payments (up to 30) and 60 ordinary accounts (up to 30 payments each), about 2,000 payments, replayed one at a time.
+
+| Measure | Result |
+|---|---|
+| Laundering payments flagged | **0.0%** (0 of 136 replayed; every one of the 8 typologies is 0) |
+| Genuine payments flagged | 0.04% |
+| Laundering accounts in flagged rings | 0.1% |
+| Account evidence AUC (multi-scale smurf score, mule vs not) | 0.68 |
+| Latency p50 / p95 | 49 ms / 110 ms |
+
+**Finding.** The detector does not transfer. Evidence scores of laundering accounts are barely above ordinary ones (AUC 0.68, with no laundering account reaching 0.30 in the probe case), and the graph communities score low (suspicion about 0.3). The features were built for fast, structured, below-ceiling smurfing; AMLworld laundering is cycles, stacks and scatter-gather over days, hidden in normal activity. The system is quiet on this data (almost no false flags) but finds nothing.
+
+**Caveats.** The case construction (neighbourhood samples, rupee conversion, no time split, one 475 MB file) is mine and not a published benchmark protocol; it is not a leaderboard number. The result says our current evidence does not carry over, not that no signal exists (AUC 0.68). **Next:** pass-through, cycle and amount-scale-free features, calibrated on earlier days and tested on later ones.
+
 **Decision:** Graph + temporal signals give a measurable improvement over the
 rules baseline on synthetic data. Ring-level, purity-weighted cases are the
 strongest measured result. The full 7-layer stack is not justified by the
-measurements. **Next action:** implement backlog #3 and #5, then run AMLworld.
+measurements. **Next action:** backlog #3 is done (7.6e). AMLworld (7.8) shows the evidence features do not transfer: build features for cycles and pass-through next, then run the time split.

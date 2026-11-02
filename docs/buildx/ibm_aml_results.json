@@ -1,0 +1,51 @@
+{
+  "dataset": "IBM AMLworld HI-Small (third-party mirror, unmodified)",
+  "gate": 0.3,
+  "cases": 20,
+  "payments_per_case_median": 2015,
+  "pooled": {
+    "datasets": 20,
+    "mule_payment_recall": 0.0,
+    "genuine_payment_flag_rate": 0.0004,
+    "mule_accounts_covered": 0.001,
+    "cases_opened_median": 0.0,
+    "genuine_accounts_exposed_median": 0.0,
+    "latency_ms_p50": 49.0,
+    "latency_ms_p95": 110.3
+  },
+  "account_evidence_auc": 0.6827,
+  "by_typology": {
+    "BIPARTITE": {
+      "mule_payments": 7,
+      "recall": 0.0
+    },
+    "CYCLE": {
+      "mule_payments": 14,
+      "recall": 0.0
+    },
+    "FAN-IN": {
+      "mule_payments": 4,
+      "recall": 0.0
+    },
+    "FAN-OUT": {
+      "mule_payments": 27,
+      "recall": 0.0
+    },
+    "GATHER-SCATTER": {
+      "mule_payments": 26,
+      "recall": 0.0
+    },
+    "RANDOM": {
+      "mule_payments": 5,
+      "recall": 0.0
+    },
+    "SCATTER-GATHER": {
+      "mule_payments": 27,
+      "recall": 0.0
+    },
+    "STACK": {
+      "mule_payments": 26,
+      "recall": 0.0
+    }
+  }
+}
