@@ -121,7 +121,7 @@ else:
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
 | **Data-Driven Configuration** | ✅ PASS | All thresholds in `core/config.py`, loaded from environment |
-| **No Hardcoded Thresholds** | ✅ PASS | `SMURF_FLAG_THRESHOLD`, `ONBOARDING_RISK_THRESHOLD` configurable |
+| **No Hardcoded Thresholds** | ❌ SUPERSEDED | Only some thresholds (e.g. `SMURF_FLAG_THRESHOLD`) are configurable; ~50 values remain in code, see `HARDCODED_VALUES_AUDIT.md` |
 | **Version Tracking** | ✅ PASS | `MODEL_VERSION` and `RULE_VERSION` tracked |
 | **Configurable Risk Logic** | ✅ PASS | All detection parameters externalized |
 
@@ -239,7 +239,7 @@ Based on `docs/PRODUCTION_READINESS.md`:
 
 ### Code & Configuration ✅
 - [x] All thresholds are configurable
-- [x] No hardcoded values in detection logic
+- [ ] No hardcoded values in detection logic (not met: see `HARDCODED_VALUES_AUDIT.md`)
 - [x] Model and rule versions tracked
 - [x] Configuration loaded from environment
 

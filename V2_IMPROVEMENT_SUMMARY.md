@@ -129,7 +129,7 @@ if (anomaly_flags >= 2 and behavioral_flags >= 2) or \
 
 ### ✅ Code Architecture (PASS)
 
-- **No hardcoded values:** All thresholds in `core/config.py`
+- **Some thresholds externalized** to `core/config.py`; many remain in code (see `HARDCODED_VALUES_AUDIT.md`)
 - **Fully configurable:** Can be tuned via `.env` without code changes
 - **Version tracking:** `MODEL_VERSION` and `RULE_VERSION` tracked
 - **Clean separation:** Risk scoring logic isolated in `detection/risk_scorer.py`
@@ -162,7 +162,7 @@ RISK_HIGH_BEHAVIORAL_ALT=3
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
 | **Code is data-driven** | ✅ PASS | All thresholds configurable |
-| **No hardcoded values** | ✅ PASS | Fully externalized to config |
+| **No hardcoded values** | ❌ SUPERSEDED | Not true: ~50 values remain in code, see `HARDCODED_VALUES_AUDIT.md` |
 | **Version tracking** | ✅ PASS | MODEL_VERSION and RULE_VERSION set |
 | **HIGH RISK precision** | ⚠️ SAMPLE ONLY | 3/3 on a 6-account sample |
 | **Overall accuracy** | ⚠️ SAMPLE ONLY | 5/6 on a 6-account in-sample set |
