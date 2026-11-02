@@ -126,6 +126,8 @@ Declared in `RuleEngine.RULES` at
 with RBI/RBIH MuleHunter framework" while 20 are defined — a documentation defect, recorded in the
 delta register.
 
+> **Update (rules-2026.2):** R07, R08, R09, R10, R11, R16 and R19 were removed after firing more on genuine accounts than on mules; see `docs/buildx/05-evaluation.md` §7.6f. Rows and line numbers below describe the earlier 20-rule set.
+
 **No rule threshold is configurable.** `core/config.py` exposes exactly two detection thresholds —
 `smurf_flag_threshold` ([config.py:84](../../backend/core/config.py#L84)) and
 `onboarding_risk_threshold` ([:85](../../backend/core/config.py#L85)) — and neither is a rule

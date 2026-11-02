@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     # GNN model persistence
     gnn_model_path: str = Field("models/gnn/trained_model.pt", alias="GNN_MODEL_PATH")
     model_version: str = Field("unvalidated-dev", alias="MODEL_VERSION")
-    rule_version: str = Field("rules-2026.1", alias="RULE_VERSION")
+    rule_version: str = Field("rules-2026.2", alias="RULE_VERSION")
 
     # GenAI / LLM
     genai_enabled: bool = Field(False, alias="GENAI_ENABLED")

@@ -242,6 +242,31 @@ Gate still 0.30, nothing re-tuned. Raw output: `evasion_results_v3.json`, `payme
 - Latency was measured with two evaluations and a dev server sharing the machine; p95 is still the 1-in-10 Louvain refresh payment. A background refresh would bring it near 70 ms (not built).
 - The playbooks are still written by the team that wrote the fixes (see 7.6d caveats).
 
+## 7.6f Rule discrimination and the rules removed
+
+`scripts/evaluation/evaluate_rules.py` measures the share of mule and of genuine accounts each rule fires on (20 test seeds, pooled; output in `rule_discrimination.json` and `rule_discrimination_hardened.json`, measured on the full 20-rule set before removal). A rule is kept only if it fires on at least 10 % of mules and at least 3 times as often as on genuine accounts.
+
+| Rule | Mule | Genuine | Outcome |
+|---|---|---|---|
+| R01 account age | 0.84 | 0.05 | keep (0.00 / 0.00 once ages are equalised: this is the data shortcut from 7.3) |
+| R18 shared device | 0.55 | 0.02 | keep |
+| R11 cross-bank layering | 0.08 | 0.90 | **removed** |
+| R07 fan-in then consolidation | 0.00 | 0.66 | **removed** |
+| R10 beneficiary spike | 0.08 | 0.65 | **removed** |
+| R16 intermediary only | 0.00 | 0.59 | **removed** |
+| R19 rapid fund sweep | 0.01 | 0.42 | **removed** |
+| R08 night-time high value | 0.03 | 0.15 | **removed** |
+| R09 round trip | 0.00 | 0.13 | **removed** |
+| R02, R03, R04, R06, R14, R17, R20 | 0.00-0.06 | 0.00-0.06 | kept for now: rare, near-equal rates, little noise |
+| R05, R12, R13, R15 | 0.00 | 0.00 | kept, **untested**: the synthetic data never triggers them |
+
+Rules only add reason codes to a case; they do not change the risk score, so benchmark numbers are unchanged. The removed rules were the ones adding misleading reason codes to most genuine accounts. The rule version is now `rules-2026.2`.
+
+Caveats:
+
+- Synthetic data. The genuine class includes deliberate hard cases (payroll fan-in), so fan-in rules fire there by design. A bank should re-run this script on its own labelled history before trusting any rule, including the two kept.
+- Rare rules are not proven useful, only not harmful here. Externalising thresholds (the hardcoded-values audit) should now cover only the surviving rules.
+
 ## 7.7 Still to measure (not yet run)
 
 | Measurement | Plan | Why |

@@ -44,12 +44,6 @@ STRUCTURED_AMOUNT_UPPER = 50000  # upper bound (the ₹50k reporting threshold)
 STRUCTURED_MIN_TXNS = 3  # minimum outgoing txns to evaluate
 STRUCTURED_RATIO_THRESHOLD = 0.7  # fraction of txns near ceiling to flag
 
-# R08: Night-time high-value transactions
-NIGHT_HOUR_START = 23  # 11 PM
-NIGHT_HOUR_END = 5  # 5 AM
-NIGHT_HIGH_VALUE_AMOUNT = 10000  # ₹10k minimum to count as high-value
-NIGHT_TXN_MIN_COUNT = 3  # minimum night txns to trigger rule
-
 # R14: Split transactions
 SPLIT_TXN_AMOUNT_UPPER = 10000  # individual txn ceiling (< ₹10k each)
 SPLIT_TXN_MIN_COUNT = 5  # minimum number of small txns
@@ -58,10 +52,6 @@ SPLIT_TXN_TOTAL_THRESHOLD = 100000  # aggregate total must exceed ₹1L
 # R15: High-risk UPI handles
 UPI_DIGIT_RATIO_THRESHOLD = 0.6  # fraction of digits in UPI handle
 UPI_MIN_LENGTH = 10  # minimum UPI handle length
-
-# R19: Rapid fund sweep
-FUND_SWEEP_MIN_INCOMING = 10000  # minimum incoming volume to evaluate
-FUND_SWEEP_RATIO_THRESHOLD = 0.90  # outgoing / incoming ratio to flag
 
 # R20: 72-hour anomaly
 EARLY_ANOMALY_AGE_DAYS = 3  # account age threshold (days)
@@ -191,7 +181,8 @@ def case_priority(risk_score: float, member_smurf: List[float]) -> Tuple[float, 
 class RuleEngine:
     """
     Fast, deterministic rules applied before ML scoring.
-    19 behavioral patterns aligned with RBI/RBIH MuleHunter framework.
+    Behavioral patterns aligned with RBI/RBIH MuleHunter framework. R07-R11, R16 and R19 were
+    removed after firing more on genuine accounts than on mules (scripts/evaluation/evaluate_rules.py).
     """
 
     RULES = [
@@ -230,31 +221,6 @@ class RuleEngine:
             lambda a, txns: _same_day_credit_debit(a["account_id"], txns),
         ),
         (
-            "R07",
-            "Funds received from multiple sources then consolidated",
-            lambda a, txns: _fan_in_then_out(a["account_id"], txns),
-        ),
-        (
-            "R08",
-            "Night-time high-value transactions (11PM-5AM)",
-            lambda a, txns: _night_transactions(a["account_id"], txns),
-        ),
-        (
-            "R09",
-            "Round-trip transfer detected",
-            lambda a, txns: _round_trip(a["account_id"], txns),
-        ),
-        (
-            "R10",
-            "Sudden beneficiary addition spike",
-            lambda a, txns: _sudden_beneficiary_spike(a["account_id"], txns),
-        ),
-        (
-            "R11",
-            "Cross-bank rapid layering",
-            lambda a, txns: _cross_bank_layering(a, txns),
-        ),
-        (
             "R12",
             "Identical amounts to multiple recipients",
             lambda a, txns: _identical_amounts(a["account_id"], txns),
@@ -271,11 +237,6 @@ class RuleEngine:
         ),
         ("R15", "High-risk UPI handle pattern", lambda a, txns: _high_risk_upi(a)),
         (
-            "R16",
-            "Account used as intermediary only (no self-use)",
-            lambda a, txns: _intermediary_only(a["account_id"], txns),
-        ),
-        (
             "R17",
             "Velocity acceleration — txn rate doubling",
             lambda a, txns: _velocity_acceleration(a["account_id"], txns),
@@ -284,11 +245,6 @@ class RuleEngine:
             "R18",
             "Shared device across multiple accounts",
             lambda a, txns: _shared_device(a["account_id"], txns),
-        ),
-        (
-            "R19",
-            "Rapid fund sweep — balance cleared within hours",
-            lambda a, txns: _rapid_fund_sweep(a["account_id"], txns),
         ),
         # ── 72-hour early detection (BioCatch research) ──────────────
         (
@@ -338,49 +294,14 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
     return len(overlap) >= 2
 
 
-def _fan_in_then_out(account_id: str, txns: List[Dict]) -> bool:
-    """Detects consolidation: many sources → one account → one destination."""
-    senders = set(t["from_account"] for t in txns if t["to_account"] == account_id)
-    recipients = set(t["to_account"] for t in txns if t["from_account"] == account_id)
-    return len(senders) >= 3 and len(recipients) >= 1
 
 
-def _night_transactions(account_id: str, txns: List[Dict]) -> bool:
-    """High-value transactions between 11PM-5AM."""
-    night_count = 0
-    for t in txns:
-        if t["from_account"] != account_id:
-            continue
-        ts = t["timestamp"]
-        hour = int(ts[11:13]) if isinstance(ts, str) and len(ts) > 13 else 12
-        if hour >= NIGHT_HOUR_START or hour < NIGHT_HOUR_END:
-            if float(t["amount"]) > NIGHT_HIGH_VALUE_AMOUNT:
-                night_count += 1
-    return night_count >= NIGHT_TXN_MIN_COUNT
 
 
-def _round_trip(account_id: str, txns: List[Dict]) -> bool:
-    """Detects A→B and B→A transfers."""
-    sent_to = set(t["to_account"] for t in txns if t["from_account"] == account_id)
-    received_from = set(t["from_account"] for t in txns if t["to_account"] == account_id)
-    return len(sent_to & received_from) >= 1
 
 
-def _sudden_beneficiary_spike(account_id: str, txns: List[Dict]) -> bool:
-    """Suddenly transacting with 5+ new recipients."""
-    recipients = set(t["to_account"] for t in txns if t["from_account"] == account_id)
-    return len(recipients) >= 5
 
 
-def _cross_bank_layering(a: Dict, txns: List[Dict]) -> bool:
-    """Transfers to recipients across 3+ different banks."""
-    recipient_banks = set()
-    for t in txns:
-        if t["from_account"] == a["account_id"]:
-            # In real systems, recipient bank is in txn data;
-            # here we check if this account transacts with diverse nodes
-            recipient_banks.add(t["to_account"][:4])  # bank prefix proxy
-    return len(recipient_banks) >= 3
 
 
 def _identical_amounts(account_id: str, txns: List[Dict]) -> bool:
@@ -420,11 +341,6 @@ def _high_risk_upi(a: Dict) -> bool:
     return digit_ratio > UPI_DIGIT_RATIO_THRESHOLD and len(upi) > UPI_MIN_LENGTH
 
 
-def _intermediary_only(account_id: str, txns: List[Dict]) -> bool:
-    """Account only receives and re-sends, never self-use."""
-    incoming = sum(1 for t in txns if t["to_account"] == account_id)
-    outgoing = sum(1 for t in txns if t["from_account"] == account_id)
-    return incoming >= 3 and outgoing >= 3
 
 
 def _velocity_acceleration(account_id: str, txns: List[Dict]) -> bool:
@@ -448,14 +364,6 @@ def _shared_device(account_id: str, txns: List[Dict]) -> bool:
     return False
 
 
-def _rapid_fund_sweep(account_id: str, txns: List[Dict]) -> bool:
-    """Incoming funds swept out within same window (balance near zero)."""
-    incoming_total = sum(float(t["amount"]) for t in txns if t["to_account"] == account_id)
-    outgoing_total = sum(float(t["amount"]) for t in txns if t["from_account"] == account_id)
-    if incoming_total < FUND_SWEEP_MIN_INCOMING:
-        return False
-    # If >90% of incoming is swept out, flag it
-    return outgoing_total / max(incoming_total, 1) > FUND_SWEEP_RATIO_THRESHOLD
 
 
 def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict]) -> bool:
@@ -591,7 +499,7 @@ class DetectionPipeline:
         gnn_model_path: Optional[str] = None,
         genai_service=None,
         model_version: str = "unvalidated-dev",
-        rule_version: str = "rules-2026.1",
+        rule_version: str = "rules-2026.2",
         device_profiler: Optional[DeviceProfiler] = None,
         anomaly_scorer: Optional[UnsupervisedAccountScorer] = None,
     ):
