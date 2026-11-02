@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
+from complaints.evidence import mule_summary
 from complaints.rules import IST
 
 DEMO_NOW = datetime(2027, 3, 1, 10, 0, tzinfo=IST)
@@ -43,7 +44,7 @@ def demo_cases(now: datetime, mule: Optional[Dict]) -> List[Dict]:
 
     beneficiary = mule["account_id"] if mule else FALLBACK_BENEFICIARY
     mule_items = [item(ago(6, 9, 16), "MULECATCH", "mule_match",
-                       f"Beneficiary {beneficiary} is a {mule['role'].lower()} in MuleCatch alert {mule['alert_id']}",
+                       mule_summary(beneficiary, mule),
                        ago(6, 9, 16), dict(mule), by="mulecatch")] if mule else []
 
     return [

@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Callable, Dict, List, Optional
 
 from complaints.case_view import build_view, desk_summary, summarize
-from complaints.evidence import append
+from complaints.evidence import append, mule_summary
 from complaints.narrative import write_narrative
 from complaints.pdf import build_pack_pdf
 from complaints.rules import format_inr
@@ -171,5 +171,5 @@ class ComplaintService:
         if not match:
             return chain
         return append(chain, at=now.isoformat(), source="MULECATCH", kind="mule_match",
-                      summary=f"Beneficiary {beneficiary} is a {match['role'].lower()} in MuleCatch alert {match['alert_id']}",
+                      summary=mule_summary(beneficiary, match),
                       data=match, submitted_by="mulecatch", received_at=now.isoformat())

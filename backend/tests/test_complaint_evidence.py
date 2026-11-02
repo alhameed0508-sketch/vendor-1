@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from complaints.evidence import GENESIS, append, classify, verify_chain
+from complaints.evidence import GENESIS, append, classify, mule_summary, verify_chain
 
 
 def _chain(*items):
@@ -97,3 +97,8 @@ class TestClassify:
         assert result["category"] == "UNDETERMINED"
         assert result["checklist"] == []
         assert result["proof_complete"] is False
+
+
+@pytest.mark.parametrize(("role", "text"), [("AGGREGATOR", "is an aggregator"), ("MULE", "is a mule")])
+def test_mule_summary_reads_naturally(role, text):
+    assert text in mule_summary("AC_1", {"role": role, "alert_id": "ALT_1"})

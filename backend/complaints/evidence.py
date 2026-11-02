@@ -102,3 +102,10 @@ def classify(chain: List[Dict]) -> Dict:
         "proof_complete": bool(checklist) and all(c["met"] for c in checklist),
         "flags": flags,
     }
+
+
+def mule_summary(beneficiary: str, match: Dict) -> str:
+    """How a MuleCatch match reads in the evidence: 'Beneficiary X is an aggregator in MuleCatch alert Y'."""
+    role = str(match["role"]).lower()
+    article = "an" if role[:1] in "aeiou" else "a"
+    return f"Beneficiary {beneficiary} is {article} {role} in MuleCatch alert {match['alert_id']}"
