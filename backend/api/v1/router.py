@@ -6,6 +6,7 @@ from api.v1.routes.alerts import register_alert_routes
 from api.v1.routes.audit import register_audit_routes
 from api.v1.routes.auth import register_auth_routes
 from api.v1.routes.benchmark import register_benchmark_routes
+from api.v1.routes.complaints import register_complaint_routes
 from api.v1.routes.compliance import register_compliance_routes
 from api.v1.routes.csv_upload import register_csv_upload_routes
 from api.v1.routes.detection import register_detection_routes
@@ -53,6 +54,10 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     compliance_router = APIRouter(prefix="/compliance", tags=["compliance"])
     register_compliance_routes(compliance_router, limiter)
     v1.include_router(compliance_router)
+
+    complaints_router = APIRouter(prefix="/complaints", tags=["complaints"])
+    register_complaint_routes(complaints_router, limiter)
+    v1.include_router(complaints_router)
 
     graph_router = APIRouter(prefix="/graph", tags=["graph"])
     register_graph_routes(graph_router, limiter)

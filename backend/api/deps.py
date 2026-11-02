@@ -464,6 +464,32 @@ def get_genai_service():
     return GenAIService(provider=get_llm_provider())
 
 
+# ── Fraud complaint singletons ──────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_complaint_service():
+    from datetime import datetime
+
+    from complaints.rules import IST
+    from complaints.seed import demo_clock
+    from repositories.complaint_repository import ComplaintRepository
+    from services.complaint_service import ComplaintService
+
+    settings = get_settings()
+    # The RBI rules start on 1 Jan 2027, so the demo desk runs on a clock that is already past it.
+    service = ComplaintService(
+        repo=ComplaintRepository(),
+        alert_repo=get_alert_repo(),
+        audit=get_audit_service(),
+        provider=get_llm_provider(),
+        now_fn=demo_clock if settings.demo_mode else lambda: datetime.now(IST),
+    )
+    if settings.demo_mode:
+        service.seed_demo()
+    return service
+
+
 # ── Benchmark singletons ─────────────────────────────────────────────────
 
 
