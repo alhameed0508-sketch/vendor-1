@@ -7,6 +7,7 @@ import {
   Network, Upload, UserCheck, Gauge
 } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
+import LogoutButton from './LogoutButton';
 
 const NAV_SECTIONS = [
   {
@@ -370,6 +371,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             )}
           </AnimatePresence>
         </motion.button>
+        <LogoutButton collapsed={collapsed} />
       </div>
     </motion.aside>
   );
