@@ -4,6 +4,7 @@ import random
 from datetime import datetime, timedelta
 
 import pytest
+
 from models.temporal_weighting.smurf_weighting import SmurfWeightingEngine, Transaction
 
 START = datetime(2026, 1, 1, 9, 0, 0)
