@@ -3,6 +3,8 @@ export const BOARD_COLUMNS = [
   { status: 'UNDER_REVIEW', label: 'Under Review' },
   { status: 'RESOLVED', label: 'Resolved' },
   { status: 'FALSE_POSITIVE', label: 'False Positive' },
+  { status: 'NO_FURTHER_ACTION', label: 'No further action' },
+  { status: 'SUSPICION_CONFIRMED_ESCALATED', label: 'Suspicion confirmed, escalated' },
   { status: 'STR_FILED', label: 'STR Filed' },
 ];
 
@@ -16,6 +18,10 @@ export function groupByStatus(alerts) {
   });
   return groups;
 }
+
+const REASON_STATUSES = new Set(['NO_FURTHER_ACTION', 'SUSPICION_CONFIRMED_ESCALATED']);
+
+export const requiresReason = toStatus => REASON_STATUSES.has(toStatus);
 
 export const requiresApproval = toStatus => toStatus === 'STR_FILED';
 

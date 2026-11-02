@@ -8,3 +8,8 @@ test('statusLabel makes sentence case', () => {
 test('statusLabel keeps STR uppercase', () => {
   expect(statusLabel('STR_FILED')).toBe('STR filed');
 });
+
+test('statusLabel reads the disposition statuses as plain phrases', () => {
+  expect(statusLabel('NO_FURTHER_ACTION')).toBe('No further action');
+  expect(statusLabel('SUSPICION_CONFIRMED_ESCALATED')).toBe('Suspicion confirmed, escalated');
+});

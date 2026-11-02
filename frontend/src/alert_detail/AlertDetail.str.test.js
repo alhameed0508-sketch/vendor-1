@@ -58,3 +58,13 @@ it('confirming files the STR: export then PATCH', async () => {
   const writes = apiFetch.mock.calls.filter(([, i]) => i && i.method).map(([u, i]) => `${i.method} ${u}`);
   expect(writes).toEqual(['POST /api/v1/compliance/str-export', 'PATCH /api/v1/alerts/ALT-1']);
 });
+
+it('a disposition status cannot be saved without a reason in Notes', async () => {
+  renderPage();
+  await userEvent.selectOptions(await screen.findByLabelText('Status'), 'NO_FURTHER_ACTION');
+  await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+  expect(apiFetch.mock.calls.some(([, i]) => i && i.method)).toBe(false);
+  await userEvent.type(screen.getByLabelText('Notes'), 'payroll batch');
+  await userEvent.click(screen.getByRole('button', { name: /^save$/i }));
+  await waitFor(() => expect(apiFetch.mock.calls.some(([, i]) => i && i.method === 'PATCH')).toBe(true));
+});

@@ -11,7 +11,7 @@ import BoardView from './BoardView';
 import ApprovalDialog from './ApprovalDialog';
 import useQueueView from './useQueueView';
 import { scorePriority, sarProbability, complexity, breakdown } from './scoring';
-import { canMove, requiresApproval } from './boardModel';
+import { canMove, requiresApproval, requiresReason } from './boardModel';
 import { updateAlertStatus, fileStr } from './alertActions';
 import {
   API_ALERTS_QUEUE_LIMIT,
@@ -57,6 +57,8 @@ const STATUS_CONFIG = {
   RESOLVED:     { cls: 'badge-RESOLVED' },
   ESCALATED:    { cls: 'badge-CRITICAL' },
   STR_FILED:    { cls: 'badge-STR_FILED' },
+  NO_FURTHER_ACTION:             { cls: 'badge-FALSE_POSITIVE' },
+  SUSPICION_CONFIRMED_ESCALATED: { cls: 'badge-CRITICAL' },
   FALSE_POSITIVE: { cls: 'badge-FALSE_POSITIVE' },
 };
 
@@ -259,6 +261,7 @@ export default function AlertQueue({ onSelectAlert }) {
   const [view, setView]              = useQueueView();
   const navigate                     = useNavigate();
   const [approvalAlert, setApprovalAlert] = useState(null);
+  const [approvalStatus, setApprovalStatus] = useState('STR_FILED');
   const [moveError, setMoveError]     = useState(null);
   const flashTimer = useRef(null);
 
@@ -352,7 +355,8 @@ export default function AlertQueue({ onSelectAlert }) {
   const handleMove = async (alert, toStatus) => {
     if (!canMove(alert.status, toStatus)) return;
     setMoveError(null);
-    if (requiresApproval(toStatus)) {
+    if (requiresApproval(toStatus) || requiresReason(toStatus)) {
+      setApprovalStatus(toStatus);
       setApprovalAlert(alert);
       return;
     }
@@ -373,8 +377,9 @@ export default function AlertQueue({ onSelectAlert }) {
   };
 
   const confirmFiling = async reason => {
-    await fileStr(approvalAlert, reason);
-    applyStatus(approvalAlert.alert_id, 'STR_FILED');
+    if (requiresReason(approvalStatus)) await updateAlertStatus(approvalAlert.alert_id, approvalStatus, reason);
+    else await fileStr(approvalAlert, reason);
+    applyStatus(approvalAlert.alert_id, approvalStatus);
     setApprovalAlert(null);
   };
 
@@ -387,7 +392,7 @@ export default function AlertQueue({ onSelectAlert }) {
   }), [alerts]);
 
   const severities = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
-  const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'];
+  const statuses   = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'NO_FURTHER_ACTION', 'SUSPICION_CONFIRMED_ESCALATED', 'STR_FILED'];
 
   return (
     <div className="page">
@@ -649,7 +654,7 @@ export default function AlertQueue({ onSelectAlert }) {
 
       {moveError && <p role="alert" className="approval-error">{moveError}</p>}
       {approvalAlert && (
-        <ApprovalDialog alert={approvalAlert} onConfirm={confirmFiling}
+        <ApprovalDialog alert={approvalAlert} status={approvalStatus} onConfirm={confirmFiling}
                         onCancel={() => setApprovalAlert(null)} />
       )}
     </div>

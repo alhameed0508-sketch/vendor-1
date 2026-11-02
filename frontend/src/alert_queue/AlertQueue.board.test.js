@@ -59,3 +59,17 @@ it('cancelling the dialog sends no write requests', async () => {
   expect(apiFetch.mock.calls.some(([, i]) => i && i.method)).toBe(false);
   expect(within(col('Under Review')).getByText('ALT-1')).toBeInTheDocument();
 });
+
+it('closing as No further action asks for a reason and PATCHes it', async () => {
+  mockApi();
+  render(<MemoryRouter><AlertQueue /></MemoryRouter>);
+  await screen.findByText('ALT-1');
+  await userEvent.selectOptions(screen.getByLabelText('Move to'), 'NO_FURTHER_ACTION');
+  const confirm = screen.getByRole('button', { name: /confirm decision/i });
+  expect(confirm).toBeDisabled();
+  await userEvent.type(screen.getByLabelText(/reason for decision/i), 'payroll batch');
+  await userEvent.click(confirm);
+  await waitFor(() => expect(within(col('No further action')).getByText('ALT-1')).toBeInTheDocument());
+  const patch = apiFetch.mock.calls.find(([, i]) => i && i.method === 'PATCH');
+  expect(JSON.parse(patch[1].body)).toEqual({ status: 'NO_FURTHER_ACTION', investigator_notes: 'payroll batch' });
+});

@@ -9,6 +9,7 @@ import InvestigationChat from '../genai/InvestigationChat';
 import { apiFetch } from '../auth/api';
 import ApprovalDialog from '../alert_queue/ApprovalDialog';
 import { fileStr } from '../alert_queue/alertActions';
+import { requiresReason } from '../alert_queue/boardModel';
 import { formatAmount } from '../utils/formatAmount';
 import { statusLabel } from '../utils/statusLabel';
 
@@ -54,6 +55,10 @@ export default function AlertDetail() {
   };
 
   const saveUpdate = async () => {
+    if (requiresReason(status) && !notes.trim()) {
+      toast.error('Add a reason in Notes before closing this alert');
+      return;
+    }
     if (status === 'STR_FILED' && alert.status !== 'STR_FILED') {
       setApprovalOpen(true);
       return;
@@ -320,7 +325,7 @@ export default function AlertDetail() {
               onChange={e => setStatus(e.target.value)}
               style={{ fontFamily: 'var(--font-sans)', fontSize: 14 }}
             >
-              {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'].map(s => (
+              {['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'NO_FURTHER_ACTION', 'SUSPICION_CONFIRMED_ESCALATED', 'STR_FILED'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
