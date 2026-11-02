@@ -340,6 +340,8 @@ Continuous learning is presently a data-collection capability.
 
 ## 6. Evidence base — stated without flattery
 
+> **Update:** `data/benchmark_results.json` was regenerated with `scripts/regenerate_benchmark_results.py`. It now holds three clean runs, and the earlier 32 rows (duplicates, and cases with 0 true negatives) are gone. The figures below describe that earlier file. For current numbers see `docs/buildx/05-evaluation.md`.
+
 All figures below come from [benchmark_results.json](../../data/benchmark_results.json) and the test
 suite. Ranges are given because single figures would misrepresent the spread.
 
