@@ -2,8 +2,10 @@ import {
   AlertTriangle, BarChart2, FileCheck, Gauge, Network, Radio, Scale, Upload, UserCheck, Zap,
 } from 'lucide-react';
 
+import { EXTRA_PATHS, EXTRA_PAGES_ENABLED } from '../config/features';
+
 // One name per page: the same label appears in the sidebar, the phone tabs and the page title.
-export const NAV_SECTIONS = [
+const ALL_SECTIONS = [
   {
     label: 'Intelligence',
     items: [
@@ -25,6 +27,11 @@ export const NAV_SECTIONS = [
     ],
   },
 ];
+
+export const NAV_SECTIONS = ALL_SECTIONS.map(section => ({
+  ...section,
+  items: section.items.filter(i => EXTRA_PAGES_ENABLED || !EXTRA_PATHS.includes(i.path)),
+}));
 
 export const isActivePath = (item, pathname) =>
   item.end ? pathname === item.path : pathname.startsWith(item.path);

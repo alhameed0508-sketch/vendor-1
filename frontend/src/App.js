@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import Dashboard from './investigator_dashboard/Dashboard';
 import AlertDetail from './alert_detail/AlertDetail';
@@ -21,6 +21,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { AuthProvider } from './auth/AuthContext';
 import ProtectedRoute from './auth/ProtectedRoute';
+import { EXTRA_PAGES_ENABLED } from './config/features';
 import { apiFetch } from './auth/api';
 
 function ThemedToaster() {
@@ -80,14 +81,19 @@ function AppContent() {
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
-              <Route path="/complaints" element={<ProtectedRoute><ComplaintsPage /></ProtectedRoute>} />
-              <Route path="/complaints/:complaintId" element={<ProtectedRoute><CaseView /></ProtectedRoute>} />
-              <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
-              <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
-              <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />
               <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><LiveStream /></ProtectedRoute>} />
+              {EXTRA_PAGES_ENABLED && (
+                <>
+                  <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
+                  <Route path="/complaints" element={<ProtectedRoute><ComplaintsPage /></ProtectedRoute>} />
+                  <Route path="/complaints/:complaintId" element={<ProtectedRoute><CaseView /></ProtectedRoute>} />
+                  <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
+                  <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
+                  <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />
+                </>
+              )}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </ErrorBoundary>
         </main>
