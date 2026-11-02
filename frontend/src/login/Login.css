@@ -192,3 +192,10 @@
   /* 16px stops iOS zooming the page when a field gets focus */
   .login-input { font-size: 16px; }
 }
+
+/* Touch screens: 44px targets for the eye toggle and the forgot-password link */
+@media (pointer: coarse) {
+  .login-reveal { width: 44px; height: 44px; right: 0; }
+  .login-input--padded { padding-right: 48px; }
+  .login-link { min-height: 44px; margin-bottom: 0; padding: 0 4px; }
+}

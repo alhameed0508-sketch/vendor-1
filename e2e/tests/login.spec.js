@@ -55,10 +55,12 @@ test.describe('home page', () => {
       await expect(page.locator('.stat-card', { hasText: label }).first()).toBeVisible();
     }
 
+    // A cold server can take a while to score the first alerts.
+    await expect(page.locator('.loading')).toBeHidden({ timeout: 45_000 });
     await filterGroup(page, 'Severity').getByRole('button', { name: 'High', exact: true }).click();
     await expect(filterGroup(page, 'Severity').getByRole('button', { name: 'High', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('tbody tr .col-sev .badge').first()).toBeVisible();
     const badges = await page.locator('tbody tr .col-sev .badge').allTextContents();
-    expect(badges.length).toBeGreaterThan(0);
     expect(new Set(badges)).toEqual(new Set(['HIGH']));
   });
 

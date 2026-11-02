@@ -2579,3 +2579,8 @@ html[data-theme="light"] {
   .dash-filters { flex-direction: column; align-items: stretch; gap: 8px; overflow: visible; margin-inline: 0; padding-inline: 0; }
   .segmented { width: 100%; }
 }
+
+/* Touch screens, whatever their width (a phone in landscape is wider than 768px) */
+@media (pointer: coarse) {
+  .filter-tab { min-height: 40px; }
+}
