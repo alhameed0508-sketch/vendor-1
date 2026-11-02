@@ -5,3 +5,4 @@ frontend/build
 .pytest_cache
 .env
 *.env.local
+e2e
