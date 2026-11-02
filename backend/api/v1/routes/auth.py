@@ -18,6 +18,7 @@ from slowapi import Limiter
 
 from infra.security.auth import (
     DEMO_USERS,
+    GUEST_ROLE,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -33,7 +34,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 # Redis key prefix for blacklisted refresh tokens
 _BLACKLIST_PREFIX = "token:blacklist:"
 GUEST_USER = "guest"
-GUEST_ROLE = "READONLY"
 
 
 def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -160,6 +160,9 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
 
         if payload.get("type") != "refresh":
             raise AuthenticationError("Token is not a refresh token")
+
+        if payload.get("role") == GUEST_ROLE and not get_settings().demo_mode:
+            raise AuthenticationError("Guest access is only available in the demo")
 
         # Check blacklist
         try:

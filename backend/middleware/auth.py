@@ -20,6 +20,7 @@ from core.config import get_settings
 from core.exceptions import AuthenticationError, AuthorizationError
 
 from infra.security.auth import (
+    GUEST_ROLE,
     ROLE_PERMISSIONS,
     decode_token,
 )
@@ -77,6 +78,10 @@ async def get_current_user(
     # Only accept access tokens for API access (not refresh tokens)
     if payload.get("type") == "refresh":
         raise AuthenticationError("Cannot use refresh token for API access")
+
+    # Guest sessions only make sense on synthetic demo data.
+    if payload.get("role") == GUEST_ROLE and not settings.demo_mode:
+        raise AuthenticationError("Guest access is only available in the demo")
 
     return payload
 

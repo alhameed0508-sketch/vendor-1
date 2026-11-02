@@ -63,7 +63,7 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
     def export_str_pdf(
         request: Request,
         alert_id: str,
-        user: dict = Depends(require_permission("str:read")),
+        user: dict = Depends(require_permission("str:export")),
         detection_svc: DetectionService = Depends(get_detection_service),
         compliance_svc: ComplianceService = Depends(get_compliance_service),
     ):

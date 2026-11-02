@@ -147,7 +147,7 @@ export function AuthProvider({ children }) {
     if (!data.access_token) {
       throw new Error('No access token in response');
     }
-    return startSession(data, { username: GUEST_USER, role: 'READONLY' });
+    return startSession(data, { username: GUEST_USER, role: 'GUEST' });
   }, [startSession]);
 
   /**

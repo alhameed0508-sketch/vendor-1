@@ -16,7 +16,7 @@ from middleware.auth import require_role
 from slowapi import Limiter
 
 BENCHMARK_ROLES = ("ADMIN", "SUPERVISOR")
-READ_ROLES = ("ADMIN", "SUPERVISOR", "INVESTIGATOR", "AUDITOR", "READONLY")
+READ_ROLES = ("ADMIN", "SUPERVISOR", "INVESTIGATOR", "AUDITOR", "GUEST")
 
 
 def _ensure_execution_enabled() -> None:

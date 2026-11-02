@@ -9,6 +9,7 @@ Roles:
   SUPERVISOR    - all investigator + approve STR batch exports
   ADMIN         - full access including config changes
   READONLY      - view-only access for compliance officers
+  GUEST         - public demo visitor: sees every page, changes nothing (demo mode only)
 """
 
 from fastapi import Request
@@ -66,6 +67,7 @@ _audit_handler.setFormatter(logging.Formatter("%(message)s"))
 _audit_logger.addHandler(_audit_handler)
 
 # ── Permissions per role ──────────────────────────────────────────────────────
+GUEST_ROLE = "GUEST"
 ROLE_PERMISSIONS: Dict[str, List[str]] = {
     "ADMIN": [
         "alerts:read",
@@ -106,6 +108,12 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "onboarding:read",
     ],
     "READONLY": [
+        "alerts:read",
+        "kpi:read",
+        "onboarding:read",
+    ],
+    # Honoured only in demo mode, where all data is synthetic (see middleware.auth).
+    GUEST_ROLE: [
         "alerts:read",
         "str:read",
         "kpi:read",

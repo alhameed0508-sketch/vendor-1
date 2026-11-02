@@ -13,8 +13,8 @@ from services.realtime_scorer import RealtimeScorer
 from slowapi import Limiter
 
 SCORE_ROLES = ("ADMIN", "SUPERVISOR", "INVESTIGATOR")
-# Watching the synthetic replay changes nothing, so view-only users may too.
-STREAM_ROLES = (*SCORE_ROLES, "READONLY")
+# Watching the synthetic replay changes nothing, so demo guests may too.
+STREAM_ROLES = (*SCORE_ROLES, "GUEST")
 ACTION_REVIEW = "route_to_human_review"
 ACTION_NONE = "none"
 
