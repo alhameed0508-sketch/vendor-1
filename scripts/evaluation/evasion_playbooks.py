@@ -8,6 +8,9 @@ alone, except for decoys that mules send to or receive from genuine accounts.
   split      each mule payment becomes SPLIT_PARTS smaller payments a few minutes apart
   noise      mules exchange small decoy payments with random genuine accounts
   slow_drip  mule payments are spread out in time (gaps stretched SLOW_FACTOR times)
+  dilute     every mule pays DILUTE_PER_MULE distinct genuine accounts a material amount (bystanders)
+  slower     slow_drip with gaps stretched SLOWER_FACTOR times
+  combo      split, then noise, then slow_drip together
 """
 
 from __future__ import annotations
@@ -21,6 +24,9 @@ SPLIT_GAP_MINUTES = 7
 NOISE_PER_MULE = 4
 NOISE_AMOUNT = 150.0
 SLOW_FACTOR = 6
+SLOWER_FACTOR = 24
+DILUTE_PER_MULE = 4
+DILUTE_AMOUNT = 600.0  # above the scorer's materiality floor, so decoys are not ignored
 
 Txn = Dict
 Playbook = Callable[[Sequence[Txn], Mapping[str, bool], random.Random], List[Txn]]
@@ -77,17 +83,58 @@ def noise(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) 
     return [*(dict(t) for t in txns), *decoys]
 
 
-def slow_drip(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) -> List[Txn]:
+def _stretch(txns: Sequence[Txn], is_mule: Mapping[str, bool], factor: int) -> List[Txn]:
     mule_times = [_when(t) for t in txns if _is_mule_payment(t, is_mule)]
     if not mule_times:
         return [dict(t) for t in txns]
     origin = min(mule_times)
     return [
-        {**t, "timestamp": (origin + (_when(t) - origin) * SLOW_FACTOR).isoformat()}
+        {**t, "timestamp": (origin + (_when(t) - origin) * factor).isoformat()}
         if _is_mule_payment(t, is_mule)
         else dict(t)
         for t in txns
     ]
 
 
-PLAYBOOKS: Dict[str, Playbook] = {"split": split, "noise": noise, "slow_drip": slow_drip}
+def slow_drip(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) -> List[Txn]:
+    return _stretch(txns, is_mule, SLOW_FACTOR)
+
+
+def slower(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) -> List[Txn]:
+    return _stretch(txns, is_mule, SLOWER_FACTOR)
+
+
+def dilute(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) -> List[Txn]:
+    mules = sorted(a for a, m in is_mule.items() if m)
+    genuine = sorted(a for a, m in is_mule.items() if not m)
+    if not txns or not mules or not genuine:
+        return [dict(t) for t in txns]
+    times = sorted(_when(t) for t in txns)
+    decoys = []
+    for mule in mules:
+        for n, other in enumerate(rng.sample(genuine, min(DILUTE_PER_MULE, len(genuine)))):
+            sender, receiver = (mule, other) if n % 2 == 0 else (other, mule)
+            decoys.append(
+                {
+                    "txn_id": f"DILUTE-{mule}-{n}",
+                    "from_account": sender,
+                    "to_account": receiver,
+                    "amount": DILUTE_AMOUNT,
+                    "timestamp": rng.choice(times).isoformat(),
+                }
+            )
+    return [*(dict(t) for t in txns), *decoys]
+
+
+def combo(txns: Sequence[Txn], is_mule: Mapping[str, bool], rng: random.Random) -> List[Txn]:
+    return slow_drip(noise(split(txns, is_mule, rng), is_mule, rng), is_mule, rng)
+
+
+PLAYBOOKS: Dict[str, Playbook] = {
+    "split": split,
+    "noise": noise,
+    "slow_drip": slow_drip,
+    "dilute": dilute,
+    "slower": slower,
+    "combo": combo,
+}

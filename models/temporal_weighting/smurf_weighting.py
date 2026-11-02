@@ -16,6 +16,7 @@ Key signals:
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List
@@ -136,12 +137,9 @@ class SmurfWeightingEngine:
         if len(txns) < 2:
             return 0.0
         timestamps = sorted(t.timestamp for t in txns)
-        windows = []
-        for i, ts in enumerate(timestamps):
-            window_end = ts + timedelta(minutes=self.velocity_minutes)
-            count = sum(1 for t2 in timestamps[i:] if t2 <= window_end)
-            windows.append(count)
-        max_in_window = max(windows)
+        window = timedelta(minutes=self.velocity_minutes)
+        # Largest number of payments inside any window that starts at a payment: O(k log k).
+        max_in_window = max(bisect_right(timestamps, ts + window, lo=i) - i for i, ts in enumerate(timestamps))
         # >10 txns/hour is highly suspicious; normalise to 0-1
         return min(max_in_window / 12.0, 1.0)
 

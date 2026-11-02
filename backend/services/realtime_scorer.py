@@ -23,7 +23,7 @@ import hashlib
 import math
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from models.community_detection.louvain_detector import Community, LouvainClusterDetector
@@ -48,6 +48,12 @@ MATERIAL_MIN_AMOUNT = SMURF_FLOOR
 # Evidence is scored at the default windows and at a slow scale (6x), keeping the stronger
 # score per account, so stretching the timeline does not hide a ring.
 SLOW_SCALE = SmurfWeightingEngine(velocity_minutes=360, consolidation_hours=36)
+# A ring is also judged on payments between its own members, with a third scale that waits up to
+# 6 days for the forward (consolidation), so decoys sent to outsiders or a very slow timeline cannot
+# dilute the evidence. The velocity window stays at 6 h: a window of 12 h or more made genuine
+# communities look like bursts (48 of 97 genuine payments flagged in the small test set).
+LONG_FORWARD_SCALE = SmurfWeightingEngine(velocity_minutes=360, consolidation_hours=144)
+RING_SCALES = (None, SLOW_SCALE, LONG_FORWARD_SCALE)
 MAX_REASONS = 6
 CASE_ID_PREFIX = "CASE-"
 CASE_ID_HEX_LEN = 8
@@ -83,6 +89,21 @@ def _content(txn: Mapping) -> tuple:
 def _multi_scale_evidence(window: Sequence[Mapping]) -> Dict:
     fast, slow = score_transaction_batch(list(window)), score_transaction_batch(list(window), SLOW_SCALE)
     return {acc: max(fast[acc], slow[acc], key=lambda s: s.smurf_score) for acc in fast}
+
+
+def _with_ring_evidence(smurf: Dict, ring: Optional[Community], window: Sequence[Mapping]) -> Dict:
+    """Keep the stronger of an account's overall evidence and its evidence from ring-internal payments."""
+    if ring is None or ring.size < MIN_RING_SIZE:
+        return smurf
+    internal = [t for t in window if t["from_account"] in ring.accounts and t["to_account"] in ring.accounts]
+    if not internal:
+        return smurf
+    merged = dict(smurf)
+    for engine in RING_SCALES:
+        for acc, score in score_transaction_batch(internal, engine).items():
+            if acc not in merged or score.smurf_score > merged[acc].smurf_score:
+                merged[acc] = score
+    return merged
 
 
 def _pair_is_material(window: Sequence[Mapping], txn: Mapping) -> bool:
@@ -150,18 +171,29 @@ class RealtimeScorer:
             cached = self._cached
             commits = self._commits
 
-        fresh = (
-            cached is not None
-            and commits - cached[0] < self._refresh_every
-            and (
-                not _pair_is_material(window, txn)
-                or (txn["from_account"] in cached[2] and txn["to_account"] in cached[2])
-            )
+        endpoints = (txn["from_account"], txn["to_account"])
+        young = cached is not None and commits - cached[0] < self._refresh_every
+        unseen = (
+            frozenset(a for a in endpoints if a not in cached[2])
+            if young and _pair_is_material(window, txn)
+            else frozenset()
         )
-        communities = cached[1] if fresh else None
+        # One first-time account paying into a known ring joins that ring without a full Louvain run;
+        # the next scheduled refresh places it properly. Two new accounts could be a ring forming from
+        # nothing, so that case still gets a fresh partition.
+        newcomer_ok = len(unseen) == 1 and any(a in c.accounts for c in cached[1] for a in endpoints if a not in unseen)
+        reuse = young and (not unseen or newcomer_ok)
+        communities = cached[1] if reuse else None
         material = _material_window(window)
         return self._score(
-            txn, material, self._with_known_accounts(accounts, material), started, communities, commits, commit
+            txn,
+            material,
+            self._with_known_accounts(accounts, material),
+            started,
+            communities,
+            commits,
+            commit,
+            unseen if newcomer_ok else frozenset(),
         )
 
     @staticmethod
@@ -181,6 +213,7 @@ class RealtimeScorer:
         communities: Optional[Sequence[Community]],
         commits: int,
         trusted: bool,
+        newcomers: frozenset = frozenset(),
     ) -> PaymentScore:
         sender, receiver = txn["from_account"], txn["to_account"]
         smurf = _multi_scale_evidence(window)
@@ -191,7 +224,8 @@ class RealtimeScorer:
                 with self._lock:
                     if self._cached is None or commits >= self._cached[0]:
                         self._cached = (commits, communities, seen)
-        ring = self._ring_for(communities, (sender, receiver))
+        ring = self._ring_for(communities, (sender, receiver), newcomers)
+        smurf = _with_ring_evidence(smurf, ring, window)
 
         merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
         endpoint_scores = []
@@ -234,6 +268,11 @@ class RealtimeScorer:
         return with_evidence / len(ring.accounts) >= MIN_RING_PURITY
 
     @staticmethod
-    def _ring_for(communities: Sequence[Community], endpoints: Sequence[str]) -> Optional[Community]:
+    def _ring_for(
+        communities: Sequence[Community], endpoints: Sequence[str], newcomers: frozenset = frozenset()
+    ) -> Optional[Community]:
         touching = [c for c in communities if any(e in c.accounts for e in endpoints)]
-        return max(touching, key=lambda c: c.suspicion_score, default=None)
+        best = max(touching, key=lambda c: c.suspicion_score, default=None)
+        if best is None or not newcomers:
+            return best
+        return replace(best, accounts=best.accounts | newcomers, size=best.size + len(newcomers))

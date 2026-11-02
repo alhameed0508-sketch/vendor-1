@@ -91,6 +91,56 @@ def test_flagged_payment_reports_ring_case(split):
         assert r.reasons
 
 
+def _count_partition_builds(monkeypatch):
+    from models.community_detection.louvain_detector import LouvainClusterDetector
+
+    builds = []
+    original = LouvainClusterDetector.detect_clusters
+
+    def counting(self, transactions, accounts):
+        builds.append(1)
+        return original(self, transactions, accounts)
+
+    monkeypatch.setattr(LouvainClusterDetector, "detect_clusters", counting)
+    return builds
+
+
+def _new_account_payment(i, to_account, when):
+    return {
+        "txn_id": f"NEW-{i}",
+        "from_account": f"NEWACCT{i}",
+        "to_account": to_account,
+        "amount": 5000,
+        "timestamp": when,
+    }
+
+
+def test_new_accounts_do_not_rebuild_the_partition(split, monkeypatch):
+    """A first-time account must not trigger a full Louvain run on every payment."""
+    scorer = _scorer(split)
+    live = _strip_labels(split[2])
+    scorer.score_payment(live[0])  # builds the partition once
+    builds = _count_partition_builds(monkeypatch)
+
+    known = live[0]["to_account"]
+    for i in range(5):
+        scorer.score_payment(_new_account_payment(i, known, live[0]["timestamp"]))
+
+    assert sum(builds) == 0
+
+
+def test_new_account_joins_the_ring_it_pays_into(split):
+    scorer = _scorer(split)
+    live = _strip_labels(split[2])
+    first_flag = next(r for r, t in ((scorer.score_payment(t), t) for t in live) if r.decision == "FLAG")
+    member = first_flag.ring_members[0]
+
+    result = scorer.score_payment(_new_account_payment(99, member, live[-1]["timestamp"]), commit=False)
+
+    if result.decision == "FLAG":
+        assert "NEWACCT99" in result.ring_members
+
+
 def test_unknown_accounts_pass_without_error():
     scorer = RealtimeScorer([], [])
     result = scorer.score_payment(
@@ -402,6 +452,24 @@ def test_slowed_down_ring_is_still_found(dataset):
     txns = sorted(slow_drip(dataset["transactions"], is_mule, random.Random(7)), key=lambda t: t["timestamp"])
     live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
     assert _mule_recall(dataset["accounts"], history, live) >= 0.5
+
+
+def _playbook_recall(dataset, name):
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "evaluation"))
+    from evasion_playbooks import PLAYBOOKS
+
+    role = {a["account_id"]: a.get("role") for a in dataset["accounts"]}
+    is_mule = {acc: r in {"SOURCE", "MULE", "AGGREGATOR"} for acc, r in role.items()}
+    txns = sorted(PLAYBOOKS[name](dataset["transactions"], is_mule, random.Random(7)), key=lambda t: t["timestamp"])
+    live, history = txns[::5], [t for i, t in enumerate(txns) if i % 5]
+    return _mule_recall(dataset["accounts"], history, live)
+
+
+def test_bystander_decoys_do_not_hide_a_ring(dataset):
+    assert _playbook_recall(dataset, "dilute") >= 0.5
 
 
 def test_long_window_engine_sees_slow_consolidation():

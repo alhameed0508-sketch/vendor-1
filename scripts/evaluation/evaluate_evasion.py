@@ -24,13 +24,15 @@ def main() -> None:
     parser.add_argument("--seeds", type=int, default=5, help="number of test seeds per cell")
     parser.add_argument("--stride", type=int, default=LIVE_STRIDE)
     parser.add_argument("--out", default="docs/buildx/evasion_results.json")
+    parser.add_argument("--playbooks", default=",".join(PLAYBOOKS), help="comma-separated playbook names")
+    parser.add_argument("--scenarios", default=",".join(SCENARIOS), help="comma-separated: standard, hardened")
     args = parser.parse_args()
 
     seeds = list(TEST_SEEDS)[: args.seeds]
     report = {"gate": args.gate, "seeds": seeds, "live_stride": args.stride, "scenarios": {}}
-    for scenario in SCENARIOS:
+    for scenario in args.scenarios.split(","):
         cells = {}
-        for name in (None, *PLAYBOOKS):
+        for name in (None, *args.playbooks.split(",")):
             cells[name or "baseline"] = pool([replay(s, scenario, args.gate, args.stride, name) for s in seeds])
             print(f"[{scenario}/{name or 'baseline'}] {json.dumps(cells[name or 'baseline'])}", flush=True)
         report["scenarios"][scenario] = cells

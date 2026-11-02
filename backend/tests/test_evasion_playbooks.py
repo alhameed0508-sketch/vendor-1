@@ -7,7 +7,14 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "evaluation"))
 
-from evasion_playbooks import NOISE_PER_MULE, PLAYBOOKS, SPLIT_PARTS  # noqa: E402
+from evasion_playbooks import (  # noqa: E402
+    DILUTE_AMOUNT,
+    DILUTE_PER_MULE,
+    NOISE_PER_MULE,
+    PLAYBOOKS,
+    SLOWER_FACTOR,
+    SPLIT_PARTS,
+)
 
 IS_MULE = {"M1": True, "M2": True, "G1": False, "G2": False}
 TXNS = [
@@ -52,3 +59,32 @@ def test_slow_drip_stretches_gaps_between_mule_payments():
     out = {t["txn_id"]: t for t in run("slow_drip")}
     assert out["T1"]["timestamp"] == TXNS[0]["timestamp"]
     assert out["T2"]["timestamp"] == "2026-01-01T22:00:00"  # 2 h gap x SLOW_FACTOR 6
+
+
+def test_dilute_sends_material_decoys_to_distinct_bystanders():
+    big = {**IS_MULE, **{f"G{i}": False for i in range(3, 12)}}
+    out = PLAYBOOKS["dilute"](TXNS, big, random.Random(1))
+    decoys = [t for t in out if t["txn_id"].startswith("DILUTE-")]
+    assert len(decoys) == DILUTE_PER_MULE * 2
+    assert all(t["amount"] == DILUTE_AMOUNT for t in decoys)
+    for mule in ("M1", "M2"):
+        partners = [
+            t["to_account"] if t["from_account"] == mule else t["from_account"]
+            for t in decoys
+            if mule in (t["from_account"], t["to_account"])
+        ]
+        assert len(partners) == len(set(partners)) == DILUTE_PER_MULE
+
+
+def test_slower_stretches_gaps_further_than_slow_drip():
+    out = {t["txn_id"]: t for t in run("slower")}
+    assert out["T2"]["timestamp"] == "2026-01-03T10:00:00"  # 2 h gap x SLOWER_FACTOR 24
+    assert SLOWER_FACTOR > 6
+
+
+def test_combo_splits_adds_decoys_and_stretches():
+    out = run("combo")
+    ids = {t["txn_id"] for t in out}
+    assert any(i.startswith("T1-s") for i in ids)
+    assert any(i.startswith("NOISE-") for i in ids)
+    assert len(ids) == len(out)
