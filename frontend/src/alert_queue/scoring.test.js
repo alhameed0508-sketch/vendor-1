@@ -1,4 +1,4 @@
-import { riskTerm, scorePriority, breakdown } from './scoring';
+import { filingBand, riskTerm, scorePriority, breakdown } from './scoring';
 
 const base = { risk_score: 0.99, total_amount: 100000, nodes: [], reason_codes: [] };
 
@@ -26,5 +26,15 @@ describe('queue ranking', () => {
 
   test('the score breakdown shows the same risk term as the ranking', () => {
     expect(breakdown({ ...base, rank_score: 0.4 }).risk_score).toBe(0.4);
+  });
+});
+
+describe('filingBand', () => {
+  test('shows a band, never a falsely precise percentage', () => {
+    expect(filingBand(1)).toBe('High');
+    expect(filingBand(0.7)).toBe('High');
+    expect(filingBand(0.5)).toBe('Medium');
+    expect(filingBand(0.1)).toBe('Low');
+    expect(filingBand(undefined)).toBe('Low');
   });
 });

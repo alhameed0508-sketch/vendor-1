@@ -5,6 +5,8 @@ import {
   PRIORITY_WEIGHT_EVIDENCE,
   PRIORITY_WEIGHT_RISK,
   PRIORITY_WEIGHT_TIME,
+  SCORE_BAR_CRITICAL,
+  SCORE_BAR_HIGH,
   SEVERITY_PRIORITY,
 } from '../config';
 
@@ -28,6 +30,12 @@ export function scorePriority(a) {
 export function sarProbability(a) {
   const base = SEVERITY_PRIORITY[a.severity?.toUpperCase()] || 0.1;
   return Math.min(1, base + Math.min((a.reason_codes || []).length * 0.02, 0.1));
+}
+
+// The filing probability is derived from severity, not measured, so it is shown as a band.
+export function filingBand(p) {
+  const v = p || 0;
+  return v >= SCORE_BAR_CRITICAL ? 'High' : v >= SCORE_BAR_HIGH ? 'Medium' : 'Low';
 }
 
 export function complexity(a) {

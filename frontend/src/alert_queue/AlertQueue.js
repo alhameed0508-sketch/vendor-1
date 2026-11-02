@@ -10,7 +10,7 @@ import StatCard from '../components/StatCard';
 import BoardView from './BoardView';
 import ApprovalDialog from './ApprovalDialog';
 import useQueueView from './useQueueView';
-import { scorePriority, sarProbability, complexity, breakdown } from './scoring';
+import { scorePriority, sarProbability, filingBand, complexity, breakdown } from './scoring';
 import { canMove, requiresApproval, requiresReason } from './boardModel';
 import { updateAlertStatus, fileStr } from './alertActions';
 import {
@@ -172,12 +172,12 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
               background: 'var(--bg-card)', border: '1px solid var(--border)',
             }}>
               <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', }}>
-                SAR filing probability
+                Likelihood of STR filing
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                 <ScoreBar value={alert.sar_filing_probability || 0} color="var(--critical)" />
                 <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--critical)' }}>
-                  {Math.round((alert.sar_filing_probability || 0) * 100)}%
+                  {filingBand(alert.sar_filing_probability)}
                 </span>
               </div>
             </div>
@@ -536,7 +536,6 @@ export default function AlertQueue({ onSelectAlert }) {
             {alerts.map((alert, idx) => {
               const expanded = expandedId === alert.alert_id;
               const sevCfg = SEV_CONFIG[alert.severity] || SEV_CONFIG.MEDIUM;
-              const sarPct = Math.round((alert.sar_filing_probability || 0) * 100);
 
               return (
                 <div key={alert.alert_id}>
@@ -599,9 +598,9 @@ export default function AlertQueue({ onSelectAlert }) {
                     <div className="q-sar">
                       <span style={{
                         fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-sans)',
-                        color: sarPct >= SCORE_BAR_CRITICAL * 100 ? 'var(--critical)' : sarPct >= SCORE_BAR_HIGH * 100 ? 'var(--high)' : 'var(--text-muted)',
+                        color: { High: 'var(--critical)', Medium: 'var(--high)' }[filingBand(alert.sar_filing_probability)] || 'var(--text-muted)',
                       }}>
-                        {sarPct}%
+                        {filingBand(alert.sar_filing_probability)}
                       </span>
                     </div>
 
