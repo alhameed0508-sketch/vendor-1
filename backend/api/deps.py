@@ -486,6 +486,10 @@ def get_complaint_service():
         now_fn=demo_clock if settings.demo_mode else lambda: datetime.now(IST),
     )
     if settings.demo_mode:
+        try:
+            get_detection_service().ensure_alerts()  # so the SIM-swap demo case can point at a real mule
+        except Exception as exc:
+            _deps_logger.warning("Demo complaints seeded without mule alerts: %s", exc)
         service.seed_demo()
     return service
 
