@@ -75,37 +75,65 @@ test('emerald aliases follow the accent', () => {
   });
 });
 
-test('fonts: Anek Latin for text and headings, IBM Plex Mono code', () => {
-  expect(indexCss).toMatch(/family=Anek\+Latin:wdth,wght@75\.\.125,/);
-  expect(indexCss).toMatch(/IBM\+Plex\+Mono/);
-  expect(indexCss).not.toMatch(/family=Inter|JetBrains\+Mono|Bodoni|IBM\+Plex\+Sans/);
-  expect(indexCss).toMatch(/display=swap/);
-  expect(token(darkBlock, '--font-sans')).toMatch(/^'Anek Latin'.*sans-serif$/);
-  expect(token(darkBlock, '--font-display')).toMatch(/^'Anek Latin'.*sans-serif$/);
-  expect(token(darkBlock, '--font-mono')).toMatch(/^'IBM Plex Mono'.*monospace$/);
+const indexHtml = fs.readFileSync(path.join(SRC, '..', 'public', 'index.html'), 'utf8');
+
+test('fonts load from Google Fonts with preconnect and swap, not a CSS @import', () => {
+  expect(indexHtml).toMatch(/<link rel="preconnect" href="https:\/\/fonts\.googleapis\.com"/);
+  expect(indexHtml).toMatch(/<link rel="preconnect" href="https:\/\/fonts\.gstatic\.com" crossorigin/);
+  const sheet = indexHtml.match(/<link rel="stylesheet" href="(https:\/\/fonts\.googleapis\.com\/css2[^"]+)"/)[1];
+  expect(sheet).toMatch(/family=IBM\+Plex\+Sans:wght@400;500;600;700/);
+  expect(sheet).toMatch(/family=IBM\+Plex\+Serif:wght@400/);
+  expect(sheet).toMatch(/family=IBM\+Plex\+Mono:wght@400;500/);
+  expect(sheet).toMatch(/display=swap/);
+  expect(indexCss).not.toMatch(/googleapis/);
 });
 
-test('narrow display width is limited to page titles and headline numbers', () => {
+test('no generic or retired families anywhere', () => {
+  [indexHtml, indexCss, appCss].forEach(text => {
+    expect(text).not.toMatch(/Inter\b|Roboto|Open Sans|Lato|Anek|Bodoni|JetBrains/);
+  });
+});
+
+test('font tokens: Plex Sans for UI and text, Plex Serif for editorial headings, Plex Mono for IDs', () => {
+  expect(token(darkBlock, '--font-sans')).toBe("'IBM Plex Sans', 'IBM Plex Sans Fallback', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif");
+  expect(token(darkBlock, '--font-serif')).toBe("'IBM Plex Serif', 'IBM Plex Serif Fallback', Georgia, serif");
+  expect(token(darkBlock, '--font-display')).toBe('var(--font-sans)');
+  expect(token(darkBlock, '--font-mono')).toMatch(/^'IBM Plex Mono'.*monospace$/);
+  expect(ruleBody('.graph-verdict-title')).toMatch(/var\(--font-serif\)/);
+});
+
+test('metric-matched fallbacks keep text from jumping when Plex arrives', () => {
+  ['IBM Plex Sans Fallback', 'IBM Plex Serif Fallback'].forEach(name => {
+    const face = indexCss.match(new RegExp(`@font-face \\{[^}]*font-family: '${name}'[^}]*\\}`))[0];
+    expect(face).toMatch(/src: local\(/);
+    expect(face).toMatch(/size-adjust: \d+\.\d+%/);
+    expect(face).toMatch(/ascent-override: \d+\.\d+%/);
+    expect(face).toMatch(/descent-override: \d+\.\d+%/);
+  });
+});
+
+test('body text is 16px with relaxed leading; headings are tight and heavy', () => {
+  expect(token(darkBlock, '--text-base')).toBe('16px');
+  const body = appCss.match(/^body \{[^}]*\}/m)[0];
+  expect(body).toMatch(/font-size: var\(--text-base\)/);
+  const leading = Number(body.match(/line-height: ([\d.]+)/)[1]);
+  expect(leading).toBeGreaterThanOrEqual(1.5);
+  expect(leading).toBeLessThanOrEqual(1.7);
   const headings = appCss.match(/^h1, h2, h3, h4 \{[^}]*\}/m)[0];
   expect(headings).toMatch(/var\(--font-sans\)/);
+  const tight = Number(headings.match(/line-height: ([\d.]+)/)[1]);
+  expect(tight).toBeGreaterThanOrEqual(1.1);
+  expect(tight).toBeLessThanOrEqual(1.25);
+  expect(Number(headings.match(/font-weight: (\d+)/)[1])).toBeGreaterThanOrEqual(600);
+});
+
+test('no weight above the loaded 700 and no leftover width tweaks', () => {
+  expect(appCss).not.toMatch(/font-weight: [89]00|font-stretch|--display-stretch/);
+  sourceFiles(SRC).forEach(file => expect(`${file} ${/fontStretch|fontWeight: [89]00/.test(read(file))}`).toBe(`${file} false`));
+});
+
+test('page titles still use the display token', () => {
   expect(appCss).toMatch(/\.page-header h1[^{]*\{[^}]*var\(--font-display\)/);
-});
-
-test('every display-font rule also sets the narrow display width', () => {
-  const rules = appCss.match(/[^{}]+\{[^}]*var\(--font-display\)[^}]*\}/g)
-    .filter(r => !r.includes('--font-display:'));
-  expect(rules.length).toBeGreaterThan(5);
-  rules.forEach(r => expect(r).toMatch(/font-stretch:\s*var\(--display-stretch\)/));
-  expect(token(darkBlock, '--display-stretch')).toMatch(/^\d+%$/);
-});
-
-test('inline display-font styles also set the narrow display width', () => {
-  sourceFiles(SRC).forEach(file => {
-    const src = read(file);
-    const uses = (src.match(/fontFamily: 'var\(--font-display\)'/g) || []).length;
-    const stretched = (src.match(/fontStretch: 'var\(--display-stretch\)'/g) || []).length;
-    expect(`${file} ${stretched}`).toBe(`${file} ${uses}`);
-  });
 });
 
 test('focus ring uses accent token', () => {

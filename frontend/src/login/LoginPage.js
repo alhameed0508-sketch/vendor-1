@@ -93,7 +93,7 @@ export default function LoginPage() {
                 color: 'var(--on-accent)',
                 fontSize: 20,
                 fontWeight: 700,
-                fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)',
+                fontFamily: 'var(--font-display)',
                 letterSpacing: '-0.5px',
               }}>
                 MC
@@ -103,7 +103,7 @@ export default function LoginPage() {
             <h1 style={{
               fontSize: 24,
               fontWeight: 700,
-              fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)',
+              fontFamily: 'var(--font-display)',
               color: 'var(--text-primary)',
               letterSpacing: '-0.3px',
               marginBottom: 8,

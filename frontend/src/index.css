@@ -1,1 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap');
+/* Plex loads from <link> tags in public/index.html. Until it arrives, text draws in a
+   local face resized to Plex's metrics, so nothing jumps when the swap happens. */
+@font-face {
+  font-family: 'IBM Plex Sans Fallback';
+  src: local('Arial'), local('ArialMT'), local('Liberation Sans');
+  size-adjust: 101.20%;
+  ascent-override: 101.28%;
+  descent-override: 27.17%;
+  line-gap-override: 0.00%;
+}
+@font-face {
+  font-family: 'IBM Plex Serif Fallback';
+  src: local('Times New Roman'), local('TimesNewRomanPSMT'), local('Liberation Serif');
+  size-adjust: 116.98%;
+  ascent-override: 87.62%;
+  descent-override: 23.51%;
+  line-gap-override: 0.00%;
+}
