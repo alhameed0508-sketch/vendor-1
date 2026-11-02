@@ -530,20 +530,6 @@ def get_benchmark_service():
 # ── Propensity singletons ────────────────────────────────────────────────
 
 
-@lru_cache(maxsize=1)
-def get_propensity_store():
-    from cache.propensity_store import PropensityStore
-
-    return PropensityStore(redis_client=get_redis_client())
-
-
-@lru_cache(maxsize=1)
-def get_propensity_scorer():
-    from models.propensity.rolling_scorer import RollingPropensityScorer
-
-    return RollingPropensityScorer(propensity_store=get_propensity_store())
-
-
 # ── Device / Semantics singletons ──────────────────────────────────────
 
 
@@ -554,104 +540,13 @@ def get_device_profiler():
     return DeviceProfiler()
 
 
-@lru_cache(maxsize=1)
-def get_semantics_analyzer():
-    from models.semantics.transaction_analyzer import TransactionSemanticsAnalyzer
-
-    return TransactionSemanticsAnalyzer()
-
-
 # ── Typology singletons ────────────────────────────────────────────────
-
-
-@lru_cache(maxsize=1)
-def get_typology_classifier():
-    from models.typology.mule_classifier import MuleTypologyClassifier
-
-    return MuleTypologyClassifier()
-
-
-@lru_cache(maxsize=1)
-def get_response_orchestrator():
-    from models.typology.response_orchestrator import ResponseOrchestrator
-
-    return ResponseOrchestrator()
 
 
 # ── India-specific singletons ──────────────────────────────────────────
 
 
-@lru_cache(maxsize=1)
-def get_fri_client():
-    from models.india.fri_scorer import FRIClient
-
-    settings = get_settings()
-    return FRIClient(
-        demo_mode=settings.demo_mode,
-        api_url=settings.fri_api_url or None,
-    )
-
-
-@lru_cache(maxsize=1)
-def get_jan_dhan_detector():
-    from models.india.jan_dhan_detector import JanDhanDetector
-
-    return JanDhanDetector()
-
-
-@lru_cache(maxsize=1)
-def get_crypto_gaming_detector():
-    from models.india.crypto_gaming_detector import CryptoGamingDetector
-
-    return CryptoGamingDetector()
-
-
-@lru_cache(maxsize=1)
-def get_upi_compliance_monitor():
-    from models.india.upi_compliance import UPIComplianceMonitor
-
-    return UPIComplianceMonitor()
-
-
 # ── Investigation singletons ──────────────────────────────────────────
 
 
-@lru_cache(maxsize=1)
-def get_case_assembler():
-    from services.investigation.case_assembler import CaseAssemblyAgent
-
-    return CaseAssemblyAgent(
-        persistence=get_persistence(),
-        genai_service=get_genai_service(),
-    )
-
-
-@lru_cache(maxsize=1)
-def get_narrative_agent():
-    from services.investigation.narrative_agent import NarrativeAgent
-
-    return NarrativeAgent(genai_service=get_genai_service())
-
-
-@lru_cache(maxsize=1)
-def get_priority_scorer():
-    from models.investigation.priority_scorer import AlertPriorityScorer
-
-    return AlertPriorityScorer()
-
-
 # ── Scam detection singletons ─────────────────────────────────────────
-
-
-@lru_cache(maxsize=1)
-def get_victim_detector():
-    from models.scam.victim_detector import ScamVictimDetector
-
-    return ScamVictimDetector()
-
-
-@lru_cache(maxsize=1)
-def get_dual_risk_engine():
-    from models.scam.dual_risk_engine import DualRiskEngine
-
-    return DualRiskEngine(victim_detector=get_victim_detector())
