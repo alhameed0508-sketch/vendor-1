@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Eye, EyeOff, Shield } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
-import { GlassCard } from '../components/ui/GlassCard';
-import { Shield, Eye, EyeOff } from 'lucide-react';
+import LoginHero, { BrandMark } from './LoginHero';
+import './Login.css';
+
+const LOCKED = 'Account locked. Please contact your administrator.';
 
 export default function LoginPage() {
   const { login, loginAsGuest, isAuthenticated } = useAuth();
@@ -13,7 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [focused, setFocused] = useState(null);
+  const [showResetNote, setShowResetNote] = useState(false);
 
   if (isAuthenticated) {
     navigate('/', { replace: true });
@@ -42,268 +45,123 @@ export default function LoginPage() {
       navigate('/', { replace: true });
     } catch (err) {
       const message = err.message || 'Login failed';
-      if (message.toLowerCase().includes('lock')) {
-        setError('Account locked. Please contact your administrator.');
-      } else {
-        setError(message);
-      }
+      setError(message.toLowerCase().includes('lock') ? LOCKED : message);
     } finally {
       setLoading(false);
     }
   };
 
+  const incomplete = loading || !username || !password;
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-        style={{ width: '100%', maxWidth: 420, padding: 24, position: 'relative', zIndex: 2 }}
-      >
-        <GlassCard className="p-8" hover={false} style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-        }}>
-          {/* Logo */}
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
-            <motion.div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 14,
-                background: 'var(--gradient-brand)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-                boxShadow: 'var(--shadow-glow), var(--shadow-sm)',
-              }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <span style={{
-                color: 'var(--on-accent)',
-                fontSize: 20,
-                fontWeight: 700,
-                fontFamily: 'var(--font-display)',
-                letterSpacing: '-0.5px',
-              }}>
-                MC
-              </span>
-            </motion.div>
+    <div className="login">
+      <LoginHero />
 
-            <h1 style={{
-              fontSize: 24,
-              fontWeight: 700,
-              fontFamily: 'var(--font-display)',
-              color: 'var(--text-primary)',
-              letterSpacing: '-0.3px',
-              marginBottom: 8,
-            }}>
-              MuleCatch
-            </h1>
-
-            <div style={{
-              fontFamily: 'var(--font-sans)',
-              fontSize: 12,
-              color: 'var(--text-muted)',
-              }}>
-              Fraud Intelligence Platform
-            </div>
+      <main className="login-panel">
+        <motion.div
+          className="login-card"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        >
+          <div className="login-brand login-brand--compact">
+            <BrandMark />
+            <div className="login-brand__name">MuleCatch</div>
           </div>
 
-          {/* Login Form */}
+          <h2 className="login-card__title">Sign in to MuleCatch</h2>
+          <p className="login-card__lead">Enter your credentials to open the analyst workspace</p>
+
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: 18 }}>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontFamily: 'var(--font-sans)',
-                color: focused === 'username' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                marginBottom: 7,
-                transition: 'color 0.2s',
-              }}>
-                Username
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                  required
-                  autoComplete="username"
-                  onFocus={() => setFocused('username')}
-                  onBlur={() => setFocused(null)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'username' ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border-strong)'}`,
-                    borderRadius: 8,
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 13,
-                    outline: 'none',
-                    transition: 'border-color 0.15s ease',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
+            <div className="login-field">
+              <label htmlFor="login-username">Username</label>
+              <input
+                id="login-username"
+                className="login-input"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+                autoComplete="username"
+              />
             </div>
 
-            <div style={{ marginBottom: 26 }}>
-              <label style={{
-                display: 'block',
-                fontSize: 12,
-                fontFamily: 'var(--font-sans)',
-                color: focused === 'password' ? 'var(--accent-secondary)' : 'var(--text-secondary)',
-                marginBottom: 7,
-                transition: 'color 0.2s',
-              }}>
-                Password
-              </label>
-              <div style={{ position: 'relative' }}>
+            <div className="login-field">
+              <div className="login-field__row">
+                <label htmlFor="login-password">Password</label>
+                <button
+                  type="button"
+                  className="login-link"
+                  aria-expanded={showResetNote}
+                  onClick={() => setShowResetNote(open => !open)}
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="login-field__control">
                 <input
+                  id="login-password"
+                  className="login-input login-input--padded"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
                   required
                   autoComplete="current-password"
-                  onFocus={() => setFocused('password')}
-                  onBlur={() => setFocused(null)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 42px 10px 14px',
-                    background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'password' ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border-strong)'}`,
-                    borderRadius: 8,
-                    color: 'var(--text-primary)',
-                    fontFamily: 'var(--font-sans)',
-                    fontSize: 13,
-                    outline: 'none',
-                    transition: 'border-color 0.15s ease',
-                    boxSizing: 'border-box',
-                  }}
                 />
                 <button
                   type="button"
+                  className="login-reveal"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   onClick={() => setShowPassword(prev => !prev)}
-                  style={{
-                    position: 'absolute',
-                    right: 12,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    padding: 4,
-                    display: 'flex',
-                    alignItems: 'center',
-                    transition: 'color 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-secondary)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              {showResetNote && (
+                <p role="note" className="login-note">Password resets go through your bank administrator.</p>
+              )}
             </div>
 
-            {/* Error message */}
             <AnimatePresence>
               {error && (
                 <motion.div
+                  role="alert"
+                  className="login-error"
                   initial={{ opacity: 0, y: -8, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
-                  style={{
-                    marginBottom: 18,
-                    padding: '10px 14px',
-                    borderRadius: 10,
-                    background: 'color-mix(in srgb, var(--critical) 8%, transparent)',
-                    border: '1px solid color-mix(in srgb, var(--critical) 20%, transparent)',
-                    color: 'var(--critical)',
-                    fontSize: 12,
-                    fontFamily: 'var(--font-sans)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
                 >
-                  <Shield size={13} />
+                  <Shield size={14} aria-hidden="true" />
                   {error}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <button
-              type="submit"
-              disabled={loading || !username || !password}
-              className="btn btn-primary"
-              style={{
-                width: '100%',
-                padding: '12px',
-                fontSize: 13,
-                fontWeight: 600,
-                letterSpacing: '0.3px',
-                borderRadius: 10,
-                cursor: loading || !username || !password ? 'not-allowed' : 'pointer',
-                opacity: loading || !username || !password ? 0.5 : 1,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {loading && (
-                  <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
-                )}
-                {loading ? 'Authenticating...' : 'Sign In'}
-              </span>
+            <button type="submit" disabled={incomplete} className="btn btn-primary login-submit">
+              {loading ? (
+                <>
+                  <span className="spinner login-submit__spinner" aria-hidden="true" />
+                  Authenticating...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight size={16} aria-hidden="true" />
+                </>
+              )}
             </button>
           </form>
 
-          <button
-            type="button"
-            onClick={handleGuest}
-            disabled={loading}
-            className="btn btn-ghost"
-            style={{ width: '100%', marginTop: 12, padding: '12px', fontSize: 13, borderRadius: 10 }}
-          >
+          <button type="button" onClick={handleGuest} disabled={loading} className="btn btn-ghost login-guest">
             View as guest
           </button>
-          <p style={{
-            marginTop: 8,
-            textAlign: 'center',
-            fontSize: 12,
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--text-muted)',
-          }}>
-            No password needed. Guests can look around but not change anything.
-          </p>
+          <p className="login-hint">No password needed. Guests can look around but not change anything.</p>
 
-          {/* Footer */}
-          <div style={{
-            marginTop: 28,
-            textAlign: 'center',
-            fontSize: 12,
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--text-faint)',
-            }}>
-            IOB Fraud Intelligence
-          </div>
-        </GlassCard>
-      </motion.div>
+          <div className="login-footer">IOB Fraud Intelligence</div>
+        </motion.div>
+      </main>
     </div>
   );
 }

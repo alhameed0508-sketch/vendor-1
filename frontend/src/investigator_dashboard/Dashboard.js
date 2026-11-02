@@ -4,35 +4,25 @@ import { alertPath } from '../utils/safeNavigation';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import { RefreshCw, ArrowUp, ArrowDown, AlertTriangle, Activity, Shield, DollarSign, ChevronRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
 import { API_ALERTS_LIMIT, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
 import { formatAmount } from '../utils/formatAmount';
 import StatCard from '../components/StatCard';
-import { statusLabel as label } from '../utils/statusLabel';
+import FilterGroup from './FilterGroup';
+
+const SEVERITIES = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'];
+const STATUSES = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'];
+const SEVERITY_ACTIVE = { CRITICAL: 'active-critical', HIGH: 'active-high', MEDIUM: 'active-medium' };
+// Rows fade in one after another, but only the first dozen so a long queue does not crawl.
+const MAX_STAGGER = 12;
 
 /* ── Empty State ── */
 function EmptyState({ hasFilters }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '80px 40px',
-        gap: 16,
-        textAlign: 'center',
-      }}
-    >
-      <div style={{
-        width: 48, height: 48,
-        borderRadius: '50%',
-        background: 'var(--accent-dim)',
-        border: '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <Shield size={20} color="var(--accent)" />
+    <div className="dash-empty">
+      <div className="dash-empty__icon">
+        <Shield size={22} color="var(--accent)" />
+        <span className="dash-empty__ring" />
       </div>
       <div>
         <p style={{
@@ -183,48 +173,28 @@ export default function Dashboard() {
       </div>
 
       {/* ── Metric Cards ── */}
-      <div className="stat-grid">
-        <StatCard label="Critical"      value={stats.critical} icon={AlertTriangle} sub="active alerts" />
-        <StatCard label="High severity" value={stats.high}     icon={Activity}      sub="active alerts" />
-        <StatCard label="Open cases"    value={stats.open}   icon={Shield}        sub="under review" />
-        <StatCard label="Total flagged" value={formatAmount(stats.total)} icon={DollarSign}   sub="this cycle" />
+      <div className="stat-grid stat-grid--cards">
+        <StatCard label="Critical"      value={stats.critical} icon={AlertTriangle} sub="active alerts" tone="critical" index={0} />
+        <StatCard label="High severity" value={stats.high}     icon={Activity}      sub="active alerts" tone="high"     index={1} />
+        <StatCard label="Open cases"    value={stats.open}     icon={Shield}        sub="under review"  index={2} />
+        <StatCard label="Total flagged" value={formatAmount(stats.total)} icon={DollarSign} sub="this cycle" index={3} />
       </div>
 
       {/* ── Filter Bar ── */}
-      <div className="filter-bar filter-bar-attached" style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0,
-        marginBottom: 0,
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg-card)',
-        borderRadius: '10px 10px 0 0',
-        padding: '2px 4px',
-        overflow: 'auto',
-      }}>
-        <span className="filter-label">Severity</span>
-        {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM'].map(s => (
-          <button
-            key={`sev-${s}`}
-            className={`filter-tab ${filter.severity === s
-              ? s === 'CRITICAL' ? 'active-critical'
-              : s === 'HIGH'     ? 'active-high'
-              : s === 'MEDIUM'   ? 'active-medium'
-              : 'active'
-              : ''
-            }`}
-            onClick={() => setFilter(f => ({ ...f, severity: s }))}
-          >{label(s)}</button>
-        ))}
-        <div className="filter-divider" />
-        <span className="filter-label">Status</span>
-        {['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE', 'STR_FILED'].map(s => (
-          <button
-            key={`sta-${s}`}
-            className={`filter-tab ${filter.status === s ? 'active' : ''}`}
-            onClick={() => setFilter(f => ({ ...f, status: s }))}
-          >{label(s)}</button>
-        ))}
+      <div className="filter-bar dash-filters">
+        <FilterGroup
+          label="Severity"
+          options={SEVERITIES}
+          value={filter.severity}
+          activeClass={SEVERITY_ACTIVE}
+          onChange={severity => setFilter(f => ({ ...f, severity }))}
+        />
+        <FilterGroup
+          label="Status"
+          options={STATUSES}
+          value={filter.status}
+          onChange={status => setFilter(f => ({ ...f, status }))}
+        />
       </div>
 
       {/* ── Table ── */}
@@ -235,13 +205,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div>
-          <div style={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderTop: 'none',
-            borderRadius: '0 0 10px 10px',
-            overflow: 'hidden',
-          }}>
+          <div className="dash-card">
             {filtered.length === 0 ? (
               <EmptyState hasFilters={hasFilters} />
             ) : (
@@ -266,7 +230,8 @@ export default function Dashboard() {
                     {filtered.map((alert, idx) => (
                       <tr
                         key={alert.alert_id}
-                        className={`clickable ${idx === selectedIndex ? 'selected' : ''}`}
+                        className={`clickable dash-row ${idx === selectedIndex ? 'selected' : ''}`}
+                        style={{ '--i': Math.min(idx, MAX_STAGGER) }}
                         onClick={() => navigate(alertPath(alert.alert_id))}
                         tabIndex={0}
                         role="row"
