@@ -32,7 +32,7 @@ function HamburgerIcon({ isOpen }) {
     width: 14,
     height: 1.5,
     borderRadius: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--text-primary)',
     transformOrigin: 'center',
   };
 

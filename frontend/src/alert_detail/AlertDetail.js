@@ -175,7 +175,7 @@ export default function AlertDetail() {
             {triage?.recommendation && (
               <span className={triage.recommendation === 'ESCALATE' ? 'tag-purple' : 'tag-amber'}
                 style={triage.recommendation === 'ESCALATE' ? {
-                  background: 'rgba(255,59,48,0.12)', color: 'var(--critical)',
+                  background: 'color-mix(in srgb, var(--critical) 12%, transparent)', color: 'var(--critical)',
                 } : undefined}
               >
                 AI: {triage.recommendation}
@@ -186,7 +186,7 @@ export default function AlertDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-danger" onClick={markFalsePositive}>False Positive</button>
-          <button className="btn btn-ghost" onClick={escalateAlert} disabled={escalating} style={{ borderColor: 'var(--accent-amber)' }}>
+          <button className="btn btn-ghost" onClick={escalateAlert} disabled={escalating} style={{ borderColor: 'var(--high)' }}>
             {escalating ? '...' : 'Escalate'}
           </button>
           <button className="btn btn-primary" onClick={exportSTR} disabled={strExporting}>
@@ -254,7 +254,7 @@ export default function AlertDetail() {
                     <div style={{ textAlign: 'right' }}>
                       <span style={{
                         fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 7px', borderRadius: 4,
-                        background: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'rgba(255,59,92,0.15)' : 'rgba(245,158,11,0.12)',
+                        background: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'color-mix(in srgb, var(--critical) 15%, transparent)' : 'color-mix(in srgb, var(--high) 12%, transparent)',
                         color: n.role === 'SOURCE' || n.role === 'AGGREGATOR' ? 'var(--critical)' : 'var(--high)',
                       }}>{n.role}</span>
                       <div style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', marginTop: 2 }}>

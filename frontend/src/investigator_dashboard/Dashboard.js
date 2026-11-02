@@ -29,10 +29,10 @@ function EmptyState({ hasFilters }) {
         width: 48, height: 48,
         borderRadius: '50%',
         background: 'var(--accent-dim)',
-        border: '1px solid rgba(16,185,129,0.15)',
+        border: '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Shield size={20} color="#818CF8" />
+        <Shield size={20} color="var(--accent)" />
       </div>
       <div>
         <p style={{
@@ -163,7 +163,7 @@ export default function Dashboard() {
             gap: '4px 12px',
             fontSize: 13,
           }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', display: 'inline-block', flexShrink: 0 }} />
             {filtered.length} alerts
             {stats.critical > 0 && <span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span>}
             {stats.high > 0     && <span style={{ color: 'var(--high)' }}>{stats.high} high</span>}

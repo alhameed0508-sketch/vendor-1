@@ -331,7 +331,7 @@ export default function NetworkOverview() {
       </motion.div>
 
       {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+      <div className="stat-grid">
         <StatCard label="Accounts"            value={stats.totalAccounts} icon={Users} />
         <StatCard label="Transfers"           value={stats.totalTransactions.toLocaleString()}          icon={ArrowRightLeft} />
         <StatCard label="Alerts"              value={stats.totalAlerts}            icon={AlertTriangle} />

@@ -18,12 +18,12 @@ const cardStyle = {
 
 function SeverityBadge({ severity, count }) {
   const colorMap = {
-    CRITICAL: '#F43F5E',
-    HIGH: '#FB923C',
-    MEDIUM: '#FBBF24',
-    LOW: '#10B981',
+    CRITICAL: 'var(--critical)',
+    HIGH: 'var(--high)',
+    MEDIUM: 'var(--medium)',
+    LOW: 'var(--accent)',
   };
-  const color = colorMap[severity] || '#6B7280';
+  const color = colorMap[severity] || 'var(--text-muted)';
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
@@ -190,7 +190,7 @@ export default function DataImportPage() {
             padding: '40px 24px',
             textAlign: 'center',
             cursor: 'pointer',
-            background: dragActive ? 'rgba(16,185,129,0.04)' : 'transparent',
+            background: dragActive ? 'color-mix(in srgb, var(--accent) 4%, transparent)' : 'transparent',
             transition: 'all 0.2s ease',
           }}
           onClick={() => document.getElementById('csv-file-input')?.click()}
@@ -253,12 +253,12 @@ export default function DataImportPage() {
               exit={{ opacity: 0, height: 0 }}
               style={{
                 marginTop: 12, padding: '10px 14px', borderRadius: 6,
-                background: 'rgba(244,63,94,0.08)', border: '1px solid rgba(244,63,94,0.2)',
+                background: 'color-mix(in srgb, var(--critical) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--critical) 20%, transparent)',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}
             >
-              <XCircle size={14} color="#F43F5E" />
-              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: '#F43F5E' }}>
+              <XCircle size={14} color="var(--critical)" />
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--critical)' }}>
                 {error}
               </span>
             </motion.div>
@@ -312,9 +312,9 @@ export default function DataImportPage() {
                   {(uploadResult.data_quality.warnings || []).map(warning => (
                     <span key={warning} style={{
                       padding: '4px 8px', borderRadius: 4,
-                      border: '1px solid rgba(251,146,60,0.25)',
-                      background: 'rgba(251,146,60,0.07)',
-                      color: '#FB923C', fontFamily: 'var(--font-sans)', fontSize: 12,
+                      border: '1px solid color-mix(in srgb, var(--high) 25%, transparent)',
+                      background: 'color-mix(in srgb, var(--high) 7%, transparent)',
+                      color: 'var(--high)', fontFamily: 'var(--font-sans)', fontSize: 12,
                     }}>
                       {warning.replaceAll('_', ' ')}
                     </span>
@@ -371,9 +371,9 @@ export default function DataImportPage() {
                       <div key={i} style={{
                         display: 'flex', alignItems: 'center', gap: 8,
                         padding: '4px 8px', borderRadius: 4,
-                        background: 'rgba(251,146,60,0.06)',
+                        background: 'color-mix(in srgb, var(--high) 6%, transparent)',
                       }}>
-                        <AlertTriangle size={11} color="#FB923C" />
+                        <AlertTriangle size={11} color="var(--high)" />
                         <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-primary)' }}>
                           {flag.flag}
                         </span>
@@ -424,7 +424,7 @@ export default function DataImportPage() {
                           borderBottom: '1px solid var(--border)',
                           cursor: 'default',
                         }}
-                        whileHover={{ backgroundColor: 'rgba(16,185,129,0.03)' }}
+                        whileHover={{ backgroundColor: 'color-mix(in srgb, var(--accent) 3%, transparent)' }}
                       >
                         <td style={{ padding: '8px 10px', color: 'var(--text-primary)' }}>
                           {(acc.account_id || '').slice(0, 12)}...
@@ -437,15 +437,15 @@ export default function DataImportPage() {
                         </td>
                         <td style={{
                           padding: '8px 10px',
-                          color: (acc.balance || 0) < 0 ? '#F43F5E' : 'var(--text-primary)',
+                          color: (acc.balance || 0) < 0 ? 'var(--critical)' : 'var(--text-primary)',
                           fontWeight: (acc.balance || 0) < 0 ? 600 : 400,
                         }}>
                           {(acc.balance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                         </td>
-                        <td style={{ padding: '8px 10px', color: '#F43F5E' }}>
+                        <td style={{ padding: '8px 10px', color: 'var(--critical)' }}>
                           {acc.debit_count || 0}
                         </td>
-                        <td style={{ padding: '8px 10px', color: '#10B981' }}>
+                        <td style={{ padding: '8px 10px', color: 'var(--accent)' }}>
                           {acc.credit_count || 0}
                         </td>
                         <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
@@ -454,9 +454,9 @@ export default function DataImportPage() {
                         <td style={{ padding: '8px 10px' }}>
                           <span style={{
                             fontSize: 12, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
-                            background: acc.kyc_status === 'VERIFIED' ? 'rgba(16,185,129,0.1)' : 'rgba(251,146,60,0.1)',
-                            color: acc.kyc_status === 'VERIFIED' ? '#10B981' : '#FB923C',
-                            border: `1px solid ${acc.kyc_status === 'VERIFIED' ? 'rgba(16,185,129,0.2)' : 'rgba(251,146,60,0.2)'}`,
+                            background: acc.kyc_status === 'VERIFIED' ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'color-mix(in srgb, var(--high) 10%, transparent)',
+                            color: acc.kyc_status === 'VERIFIED' ? 'var(--accent)' : 'var(--high)',
+                            border: `1px solid ${acc.kyc_status === 'VERIFIED' ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'color-mix(in srgb, var(--high) 20%, transparent)'}`,
                           }}>
                             {acc.kyc_status}
                           </span>
@@ -529,7 +529,7 @@ export default function DataImportPage() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                  <CheckCircle size={20} color="#10B981" />
+                  <CheckCircle size={20} color="var(--accent)" />
                   <span style={{ fontFamily: 'var(--font-sans)', fontSize: 14, color: 'var(--text-primary)' }}>
                     Pipeline generated <strong>{uploadResult.alerts_generated}</strong> alerts from uploaded data
                   </span>
@@ -549,7 +549,7 @@ export default function DataImportPage() {
                 {/* Navigation links */}
                 <div style={{ display: 'flex', gap: 12 }}>
                   <button className="btn btn-ghost" onClick={() => navigate('/')}
-                    style={{ gap: 8, color: 'var(--accent)', borderColor: 'rgba(16,185,129,0.25)' }}
+                    style={{ gap: 8, color: 'var(--accent)', borderColor: 'color-mix(in srgb, var(--accent) 25%, transparent)' }}
                   >
                     <BarChart2 size={14} />
                     View Dashboard
@@ -557,7 +557,7 @@ export default function DataImportPage() {
                   </button>
 
                   <button className="btn btn-ghost" onClick={() => navigate('/queue')}
-                    style={{ gap: 8, color: '#F43F5E', borderColor: 'rgba(244,63,94,0.25)' }}
+                    style={{ gap: 8, color: 'var(--critical)', borderColor: 'color-mix(in srgb, var(--critical) 25%, transparent)' }}
                   >
                     <FileText size={14} />
                     Triage

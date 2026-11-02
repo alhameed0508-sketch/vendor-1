@@ -117,14 +117,14 @@ export default function ROIDashboard() {
       </motion.div>
 
       {/* Primary KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 14 }}>
+      <div className="stat-grid stat-grid--3" style={{ marginBottom: 14 }}>
         <StatCard label="Fraud Prevented"           value={formatAmount(kpi?.fraud_prevented_inr)} sub="In flagged clusters" />
         <StatCard label="Investigation Time Saved"  value={percentOr(kpi?.investigation_time_reduction_pct, '—')} sub="Per alert, against manual review" />
         <StatCard label="False Positive Reduction"  value={percentOr(kpi?.false_positive_reduction_pct, 'Not measured')} sub="Against rule-based AML" />
       </div>
 
       {/* Secondary KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14, marginBottom: 24 }}>
+      <div className="stat-grid stat-grid--3">
         <StatCard label="Manpower Saved" value={kpi?.roi_assumptions?.analyst_hourly_cost_inr ? formatAmount(kpi.manpower_saved_lakh * 100000) : 'Cost not set'} sub={kpi?.hours_saved ? `${kpi.hours_saved.toFixed(0)} hours freed` : '—'} />
         <StatCard label="STRs Filed"     value={kpi?.strs_filed || 0} sub="FIU-ready reports" />
         <StatCard label="Total Alerts"   value={kpi?.total_alerts || 0} sub="this cycle" />

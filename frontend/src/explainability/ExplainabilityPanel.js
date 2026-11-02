@@ -95,14 +95,14 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
             width: 24, height: 24, borderRadius: 6,
             background: 'var(--gradient-brand)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, color: '#fff', fontWeight: 700,
+            fontSize: 12, color: 'var(--on-accent)', fontWeight: 700,
           }}>
             ?
           </div>
           <span style={{ fontWeight: 700, fontSize: 16 }}>Explainability Engine</span>
           <span style={{
-            fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
-            background: 'rgba(52,199,89,0.1)', padding: '2px 8px', borderRadius: 4,
+            fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent)',
+            background: 'color-mix(in srgb, var(--accent) 10%, transparent)', padding: '2px 8px', borderRadius: 4,
           }}>
             ACTIVE
           </span>
@@ -120,7 +120,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
               ...(activeTab === tab.key ? {
                 borderColor: 'var(--accent-gold)',
                 color: 'var(--accent-gold)',
-                background: 'rgba(245,158,11,0.08)',
+                background: 'color-mix(in srgb, var(--high) 8%, transparent)',
               } : {}),
             }}
             onClick={() => setActiveTab(tab.key)}
@@ -130,7 +130,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
             {tab.key === 'cycles' && explanation.cycles?.length > 0 && (
               <span style={{
                 marginLeft: 4, fontSize: 12, background: 'var(--critical)',
-                color: '#fff', padding: '1px 4px', borderRadius: 3,
+                color: 'var(--on-accent)', padding: '1px 4px', borderRadius: 3,
               }}>
                 {explanation.cycles.length}
               </span>
@@ -186,7 +186,7 @@ function SummaryTab({ explanation }) {
 
       {/* Recommendation */}
       <GlassCard hover={false} style={{
-        borderLeft: `3px solid ${explanation.severity === 'CRITICAL' ? 'var(--critical)' : explanation.severity === 'HIGH' ? 'var(--high)' : 'var(--accent-cyan)'}`,
+        borderLeft: `3px solid ${explanation.severity === 'CRITICAL' ? 'var(--critical)' : explanation.severity === 'HIGH' ? 'var(--high)' : 'var(--accent)'}`,
         borderRadius: '0 var(--radius) var(--radius) 0',
       }}>
         <p className="section-title" style={{ fontSize: 12, marginBottom: 8 }}>Recommendation</p>
@@ -207,7 +207,7 @@ function SummaryTab({ explanation }) {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.05 }}
             >
-              <span style={{ color: 'var(--accent-green)', fontSize: 12, flexShrink: 0, marginTop: 2 }}>+</span>
+              <span style={{ color: 'var(--accent)', fontSize: 12, flexShrink: 0, marginTop: 2 }}>+</span>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{f}</span>
             </motion.div>
           ))}
@@ -226,7 +226,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
-      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           {narrative}
         </p>
@@ -250,7 +250,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span style={{
                   fontSize: 12, fontFamily: 'var(--font-sans)', padding: '1px 5px', borderRadius: 3,
-                  background: item.severity === 'HIGH' ? 'rgba(255,59,48,0.12)' : 'rgba(255,149,0,0.12)',
+                  background: item.severity === 'HIGH' ? 'color-mix(in srgb, var(--critical) 12%, transparent)' : 'color-mix(in srgb, var(--high) 12%, transparent)',
                   color: item.severity === 'HIGH' ? 'var(--critical)' : 'var(--high)',
                 }}>
                   {item.severity}
@@ -271,7 +271,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
                   height: '100%', borderRadius: 3,
                   background: item.severity === 'HIGH'
                     ? 'linear-gradient(90deg, var(--critical), var(--high))'
-                    : 'linear-gradient(90deg, var(--high), var(--accent-amber))',
+                    : 'linear-gradient(90deg, var(--high), var(--high))',
                 }}
                 initial={{ width: 0 }}
                 animate={{ width: `${(item.contribution / maxContribution) * 100}%` }}
@@ -305,7 +305,7 @@ function FraudChainTab({ chain, narrative }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Narrative */}
-      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--accent-amber)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+      <GlassCard padding={16} hover={false} style={{ borderLeft: '3px solid var(--high)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
         <p style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)' }}>
           {narrative}
         </p>
@@ -318,7 +318,7 @@ function FraudChainTab({ chain, narrative }) {
           {/* Vertical line */}
           <div style={{
             position: 'absolute', left: 8, top: 4, bottom: 4, width: 2,
-            background: 'linear-gradient(to bottom, var(--accent-amber), var(--critical))',
+            background: 'linear-gradient(to bottom, var(--high), var(--critical))',
             borderRadius: 1,
           }} />
 
@@ -334,7 +334,7 @@ function FraudChainTab({ chain, narrative }) {
               <div style={{
                 position: 'absolute', left: -20, top: 4,
                 width: 10, height: 10, borderRadius: '50%',
-                background: i === 0 ? 'var(--accent-amber)' : i === chain.length - 1 ? 'var(--critical)' : 'var(--accent-cyan)',
+                background: i === 0 ? 'var(--high)' : i === chain.length - 1 ? 'var(--critical)' : 'var(--accent)',
                 border: '2px solid var(--bg-card)',
               }} />
 
@@ -344,16 +344,16 @@ function FraudChainTab({ chain, narrative }) {
                     Step {step.step}
                   </span>
                   <div style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent)' }}>
                       ...{step.from_account.slice(-8)}
                     </span>
                     <span style={{ color: 'var(--text-muted)', margin: '0 6px' }}>&rarr;</span>
-                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)' }}>
+                    <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent)' }}>
                       ...{step.to_account.slice(-8)}
                     </span>
                   </div>
                 </div>
-                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-amber)', fontWeight: 600 }}>
+                <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--high)', fontWeight: 600 }}>
                   {'\u20B9'}{step.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
@@ -409,7 +409,7 @@ function SHAPTab({ data, loading }) {
             <p className="section-title" style={{ fontSize: 12, margin: 0 }}>Feature Importance (SHAP)</p>
             <span style={{
               fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
-              background: 'rgba(139,92,246,0.12)', color: '#8b5cf6',
+              background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--accent)',
             }}>
               RBI FREE-AI
             </span>
@@ -432,7 +432,7 @@ function SHAPTab({ data, loading }) {
                   </span>
                   <span style={{
                     fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 600,
-                    color: isPositive ? 'var(--critical)' : 'var(--accent-green)',
+                    color: isPositive ? 'var(--critical)' : 'var(--accent)',
                   }}>
                     {isPositive ? '+' : ''}{(val * 100).toFixed(1)}%
                   </span>
@@ -443,7 +443,7 @@ function SHAPTab({ data, loading }) {
                       height: '100%', borderRadius: 3,
                       background: isPositive
                         ? 'linear-gradient(90deg, var(--high), var(--critical))'
-                        : 'linear-gradient(90deg, var(--accent-green), var(--accent-cyan))',
+                        : 'linear-gradient(90deg, var(--accent), var(--accent))',
                     }}
                     initial={{ width: 0 }}
                     animate={{ width: `${(val / maxVal) * 100}%` }}
@@ -463,12 +463,12 @@ function SHAPTab({ data, loading }) {
 
       {/* Regulatory Report */}
       {regulatory && (
-        <GlassCard hover={false} style={{ borderLeft: '3px solid #8b5cf6', borderRadius: '0 var(--radius) var(--radius) 0' }}>
+        <GlassCard hover={false} style={{ borderLeft: '3px solid var(--accent)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <p className="section-title" style={{ fontSize: 12, margin: 0 }}>Regulatory Report</p>
             <span style={{
               fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
-              background: 'rgba(16,185,129,0.12)', color: 'var(--accent-green)',
+              background: 'color-mix(in srgb, var(--accent) 12%, transparent)', color: 'var(--accent)',
             }}>
               {regulatory.framework || 'RBI FREE-AI'}
             </span>
@@ -485,7 +485,7 @@ function SHAPTab({ data, loading }) {
               </p>
               {Object.entries(regulatory.feature_descriptions).map(([feat, desc], i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 12 }}>
-                  <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)', flexShrink: 0, minWidth: 120 }}>
+                  <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent)', flexShrink: 0, minWidth: 120 }}>
                     {feat.replace(/_/g, ' ')}
                   </span>
                   <span style={{ color: 'var(--text-muted)' }}>{desc}</span>
@@ -515,7 +515,7 @@ function CyclesTab({ cycles, narrative }) {
     return (
       <GlassCard hover={false}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: 'var(--accent-green)', fontSize: 14 }}>{'\u2713'}</span>
+          <span style={{ color: 'var(--accent)', fontSize: 14 }}>{'\u2713'}</span>
           <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             {narrative || 'No circular money flows detected.'}
           </p>
@@ -541,12 +541,12 @@ function CyclesTab({ cycles, narrative }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
         >
-          <GlassCard hover={false} glow glowColor="rgba(255,59,48,0.08)">
+          <GlassCard hover={false} glow glowColor="color-mix(in srgb, var(--critical) 8%, transparent)">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{
                   fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px',
-                  background: 'rgba(255,59,48,0.12)', color: 'var(--critical)', borderRadius: 3,
+                  background: 'color-mix(in srgb, var(--critical) 12%, transparent)', color: 'var(--critical)', borderRadius: 3,
                 }}>
                   RING {i + 1}
                 </span>
@@ -567,8 +567,8 @@ function CyclesTab({ cycles, narrative }) {
               {cycle.accounts.map((acc, j) => (
                 <React.Fragment key={j}>
                   <span style={{
-                    fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-cyan)',
-                    padding: '2px 6px', background: 'rgba(90,200,250,0.08)', borderRadius: 4,
+                    fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent)',
+                    padding: '2px 6px', background: 'color-mix(in srgb, var(--text-muted) 8%, transparent)', borderRadius: 4,
                   }}>
                     ...{acc.slice(-6)}
                   </span>

@@ -44,6 +44,11 @@ describe('NetworkOverview', () => {
     expect(await screen.findByText('Live updates off')).toBeInTheDocument();
   });
 
+  it('puts the stat tiles in the shared grid that folds to two columns on phones', async () => {
+    render(<NetworkOverview />);
+    expect((await screen.findByText('Mule clusters')).closest('.stat-grid')).not.toBeNull();
+  });
+
   it('counts each alert once in the regional flagged amount', async () => {
     render(<NetworkOverview />);
     expect(await screen.findByText('₹15L')).toBeInTheDocument();
