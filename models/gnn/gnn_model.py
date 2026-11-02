@@ -331,7 +331,7 @@ def build_graph_data(
             min(acc.get("account_age_days", 365) / 365.0, 1.0),
             min(acc.get("avg_monthly_txn", 100) / 500.0, 1.0),
             1.0 if acc.get("kyc_status") == "VERIFIED" else 0.0,
-            1.0 if acc.get("high_risk", False) else 0.0,
+            0.0,  # was the generator's high_risk label (a leak); slot kept so saved models keep their shape, retrain to drop it
             ss.velocity_score if ss else 0.0,
             ss.amount_ceiling_score if ss else 0.0,
             ss.fan_out_score if ss else 0.0,

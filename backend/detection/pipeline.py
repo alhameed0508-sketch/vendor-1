@@ -151,7 +151,7 @@ class Alert:
     shared_devices: List[str]
     shared_ips: List[str]
     created_at: str
-    status: str = "OPEN"  # OPEN | UNDER_REVIEW | RESOLVED | FALSE_POSITIVE
+    status: str = "OPEN"  # OPEN | UNDER_REVIEW | RESOLVED | FALSE_POSITIVE | NO_FURTHER_ACTION | SUSPICION_CONFIRMED_ESCALATED | STR_FILED
     investigator_notes: str = ""
     gnn_score: Optional[float] = None
     anomaly_score: Optional[float] = None
@@ -739,19 +739,7 @@ class DetectionPipeline:
                                 "edges": [vars(e) for e in alert.edges],
                             }
                         )
-                        previous_risk = alert.risk_score
-                        adjusted = alert.risk_score + triage.confidence_adjustment
-                        alert.risk_score = round(min(max(adjusted, 0.0), self.RISK_SCORE_CAP), 3)
-                        if previous_risk > 0:  # keep the ranking in step with the adjusted risk
-                            alert.rank_score = round(alert.rank_score * alert.risk_score / previous_risk, 3)
-                        # Recalculate severity after adjustment
-                        alert.severity = (
-                            "CRITICAL"
-                            if alert.risk_score >= self.SEVERITY_CRITICAL_THRESHOLD
-                            else "HIGH"
-                            if alert.risk_score >= self.SEVERITY_HIGH_THRESHOLD
-                            else "MEDIUM"
-                        )
+                        # Advisory only: the LLM opinion is shown to the analyst and never changes risk or rank.
                         alert.genai_triage = triage.to_dict()
                     except Exception as exc:
                         logger.warning(

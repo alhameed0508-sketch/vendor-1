@@ -250,6 +250,31 @@ def test_pipeline_with_genai_triage(small_dataset):
         assert a.genai_triage["confidence_adjustment"] == 0.0
 
 
+def test_genai_triage_is_advisory_and_never_changes_risk(small_dataset):
+    from backend.services.genai_capabilities.models import TriageResult
+
+    class _Lower:
+        def triage_cluster(self, alert_data):
+            return TriageResult(
+                cluster_id=str(alert_data.get("cluster_id")),
+                llm_assessment="LOW",
+                confidence_adjustment=-0.10,
+                reasoning="r",
+                provider="p",
+                model="m",
+                latency_ms=0.0,
+                is_llm_generated=True,
+            )
+
+    txns, accounts = small_dataset["transactions"], small_dataset["accounts"]
+    plain = {a.cluster_id: (a.risk_score, a.severity, a.rank_score) for a in DetectionPipeline().run(txns, accounts)}
+    pipeline = DetectionPipeline(genai_service=_Lower())
+    pipeline.GENAI_TRIAGE_LOWER, pipeline.GENAI_TRIAGE_UPPER = 0.0, 1.0
+    alerts = pipeline.run(txns, accounts)
+    assert any(a.genai_triage is not None for a in alerts)
+    assert {a.cluster_id: (a.risk_score, a.severity, a.rank_score) for a in alerts} == plain
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
