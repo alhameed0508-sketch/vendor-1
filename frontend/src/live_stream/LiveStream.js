@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import useScoreStream from './useScoreStream';
 import { p95 } from './streamReducer';
 import CaseCard from './CaseCard';
@@ -38,6 +38,9 @@ export default function LiveStream() {
     ].sort(),
     [edges, selected]
   );
+  // Starts once on mount so the graph is never an empty page; Stop and Replay still work.
+  useEffect(() => { start(); }, []);
+
   const latency = p95(latencies);
   const running = status === 'live';
 

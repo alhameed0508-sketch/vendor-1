@@ -49,16 +49,17 @@ beforeEach(() => {
   }
 });
 
-test('labels the data as synthetic and starts idle', () => {
+test('labels the data as synthetic and starts the replay on its own', async () => {
+  apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
   expect(screen.getAllByText(/synthetic data/i).length).toBeGreaterThan(0);
-  expect(screen.getByRole('button', { name: /start stream/i })).toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: /stop/i })).toBeInTheDocument();
+  expect(apiFetch).toHaveBeenCalledTimes(1);
 });
 
 test('opens a case card when a flagged payment arrives', async () => {
   apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   expect(await screen.findByText('CASE-AB12')).toBeInTheDocument();
   expect(screen.getByText(/not blocked/i)).toBeInTheDocument();
   expect(screen.getByText('Genuine accounts flagged').nextSibling).toHaveTextContent('0');
@@ -67,7 +68,6 @@ test('opens a case card when a flagged payment arrives', async () => {
 test('sends no token in the URL', async () => {
   apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   await screen.findByText('CASE-AB12');
   const [url] = apiFetch.mock.calls[0];
   expect(url).not.toMatch(/token/i);
@@ -76,14 +76,12 @@ test('sends no token in the URL', async () => {
 test('shows an error, not fake data, when the request fails before any payment', async () => {
   apiFetch.mockResolvedValue({ ok: false, status: 500, body: null });
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   expect(await screen.findByRole('alert')).toHaveTextContent(/unavailable/i);
 });
 
 test('Stop ends a live stream', async () => {
   apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   await screen.findByText('CASE-AB12');
   fireEvent.click(screen.getByRole('button', { name: /stop/i }));
   expect(await screen.findByRole('button', { name: /replay/i })).toBeInTheDocument();
@@ -92,7 +90,6 @@ test('Stop ends a live stream', async () => {
 test('clicking an account opens its details and logs the payment', async () => {
   apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   await screen.findByText('CASE-AB12');
   expect(screen.getByRole('log')).toHaveTextContent(/A1 → B1/);
   fireEvent.click(screen.getByRole('button', { name: 'Account A1' }));
@@ -105,7 +102,6 @@ test('clicking an account opens its details and logs the payment', async () => {
 test('lets a reviewer confirm the open case on this page only', async () => {
   apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
   render(<LiveStream />);
-  fireEvent.click(screen.getByRole('button', { name: /start stream/i }));
   await screen.findByText('CASE-AB12');
   fireEvent.click(screen.getByRole('button', { name: /confirm mule ring/i }));
   expect(await screen.findByText(/Confirmed by reviewer/)).toBeInTheDocument();
