@@ -69,31 +69,32 @@ describe('LoginPage guest access', () => {
 });
 
 describe('LoginPage hero', () => {
-  it('says what the product does in plain words', async () => {
+  it('shows the product name and what it does', async () => {
     renderLogin();
-    expect(await screen.findByRole('heading', { level: 1, name: 'Trace mule accounts. Close fraud complaints on time.' })).toBeInTheDocument();
-    expect(screen.getByText(/tamper-evident evidence chain for every fraud complaint/)).toBeInTheDocument();
+    expect(await screen.findByText('Enterprise Financial Intelligence')).toBeInTheDocument();
+    expect(screen.getByText(/Empowering bank fraud analysts and FIU investigators/)).toBeInTheDocument();
   });
 
   it('lists only what the product really does', async () => {
     renderLogin();
-    const features = await screen.findByRole('list', { name: 'What MuleCatch gives you' });
-    expect(features).toHaveTextContent('Role-based access');
-    expect(features).toHaveTextContent('Hash-chained evidence');
-    expect(features).toHaveTextContent('RBI complaint deadlines');
-    expect(document.body).not.toHaveTextContent(/AES-256|ISO 27001|OAuth2|Certified/);
+    await screen.findByText('Role-based access');
+    expect(screen.getByText('Hash-chained evidence')).toBeInTheDocument();
+    expect(screen.getByText('RBI complaint deadlines')).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/AES-256|ISO 27001|OAuth2|Certified|Compliant/);
   });
 
-  it('draws the money-flow example with a text description for screen readers', async () => {
+  it('types out its taglines one character at a time', async () => {
     renderLogin();
-    expect(await screen.findByRole('img', { name: /three source accounts feed one aggregator/ })).toBeInTheDocument();
+    await screen.findByText('Enterprise Financial Intelligence');
+    expect(await screen.findByText(/^Multi/)).toBeInTheDocument();
+    expect(screen.queryByText('Multi-Layer Mule Ring Detection Running')).not.toBeInTheDocument();
   });
 });
 
 describe('LoginPage sign-in form', () => {
   it('labels both fields so they can be found by name', async () => {
     renderLogin();
-    expect(await screen.findByLabelText('Username')).toHaveAttribute('placeholder', 'Enter username');
+    expect(await screen.findByLabelText('Username')).toHaveAttribute('placeholder', 'analyst@bank.com');
     expect(screen.getByLabelText('Password')).toHaveAttribute('type', 'password');
   });
 
@@ -136,7 +137,7 @@ describe('LoginPage sign-in form', () => {
     await fillCredentials();
     await userEvent.click(screen.getByRole('button', { name: /^Sign In/ }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Account locked. Please contact your administrator.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Account locked. Please contact your system administrator.');
   });
 
   it('shows and hides the password on request', async () => {
@@ -148,15 +149,18 @@ describe('LoginPage sign-in form', () => {
     expect(password).toHaveAttribute('type', 'password');
   });
 
-  it('answers "Forgot password?" on the page, without a browser pop-up', async () => {
+  it('points a user who forgot the password to the administrator', async () => {
     window.alert = jest.fn();
     renderLogin();
-    const forgot = await screen.findByRole('button', { name: 'Forgot password?' });
-    expect(forgot).toHaveAttribute('aria-expanded', 'false');
-    await userEvent.click(forgot);
+    await userEvent.click(await screen.findByRole('button', { name: 'Forgot Password?' }));
+    expect(window.alert).toHaveBeenCalledWith('Please contact your FIU Security Administrator to reset your password.');
+  });
 
-    expect(forgot).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('note')).toHaveTextContent('Password resets go through your bank administrator.');
-    expect(window.alert).not.toHaveBeenCalled();
+  it('keeps the session option as a checkbox', async () => {
+    renderLogin();
+    const remember = await screen.findByLabelText('Remember session on this device');
+    expect(remember).not.toBeChecked();
+    await userEvent.click(remember);
+    expect(remember).toBeChecked();
   });
 });

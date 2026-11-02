@@ -32,22 +32,22 @@ for (const phone of PHONES) {
 
     test('login: no sideways scroll, the form is reachable, taps are big', async ({ page }) => {
       await page.goto('/login');
-      await expect(page.getByRole('heading', { name: 'Sign in to MuleCatch' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Sign In to MuleCatch' })).toBeVisible();
       expect(await overflow(page)).toBe(0);
       const submit = page.getByRole('button', { name: /^Sign In/ });
       await submit.scrollIntoViewIfNeeded();
       await expect(submit).toBeInViewport();
-      expect(await smallTargets(page, '.login-card')).toEqual([]);
-      const fontSize = await page.getByLabel('Username', { exact: true }).evaluate(el => parseFloat(getComputedStyle(el).fontSize));
+      expect(await smallTargets(page, '.lg-form')).toEqual([]);
+      const fontSize = await page.locator('#login-username').evaluate(el => parseFloat(getComputedStyle(el).fontSize));
       expect(fontSize).toBeGreaterThanOrEqual(16);
     });
 
     test('home: no sideways scroll, cards and filters fit', async ({ page }) => {
       await signInAsGuest(page);
-      await expect(page.locator('.stat-card', { hasText: 'Total flagged' })).toBeVisible();
+      await expect(page.locator('.premium-card', { hasText: 'Total Flagged' })).toBeVisible();
       await expect(page.locator('.loading')).toBeHidden({ timeout: 45_000 });
       expect(await overflow(page)).toBe(0);
-      const cards = await page.locator('.stat-card').evaluateAll(els => els.map(el => el.getBoundingClientRect()));
+      const cards = await page.locator('.premium-card').evaluateAll(els => els.map(el => el.getBoundingClientRect()));
       for (const r of cards) expect(r.right).toBeLessThanOrEqual(phone.width);
       expect(await smallTargets(page, '.dash-filters')).toEqual([]);
     });

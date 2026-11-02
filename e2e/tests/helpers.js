@@ -15,8 +15,8 @@ async function signInAsGuest(page) {
 
 async function signIn(page, username) {
   await page.goto('/login');
-  await page.getByPlaceholder('Enter username').fill(username);
-  await page.getByPlaceholder('Enter password').fill(passwordFor(username));
+  await page.getByLabel('Username', { exact: true }).fill(username);
+  await page.getByLabel('Password', { exact: true }).fill(passwordFor(username));
   await page.locator('form button[type=submit]').click();
   await expect(page).not.toHaveURL(/\/login/);
 }

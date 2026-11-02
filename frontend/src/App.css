@@ -90,6 +90,7 @@
 
   /* ── Spacing scale ── */
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-0-5: 2px;
   --space-5: 24px; --space-6: 32px;
 
   /* ── Shape ── */
@@ -1846,7 +1847,7 @@ html[data-theme="light"] .glass-card:not(.board-card):not(.node-panel):not(.appr
 }
 .filter-tab { background: transparent; border-color: transparent; }
 @media (hover: hover) {
-  .filter-tab:hover { background: var(--bg-hover); }
+  .filter-tab:hover { background: var(--bg-hover, var(--bg-elevated)); }
 }
 .filter-tab.active { background: var(--accent-tint); color: var(--accent); border-color: transparent; }
 .filter-label { font-family: var(--font-sans); font-size: 12px; letter-spacing: 0; text-transform: none; }
@@ -2499,85 +2500,101 @@ html[data-theme="light"] {
 }
 
 /* ══════════════════════════════════════
-   HOME PAGE — stat cards, segmented filters, table card, empty state
-   The layout of the frontend redesign PR, drawn with this app's flat tokens.
+   HOME PAGE — premium cards, segmented filters, enterprise table
+   From the frontend redesign PR (Shahid), hover rules behind (hover: hover).
    ══════════════════════════════════════ */
-
-/* Separate cards instead of a hairline strip. Colour stays reserved for a risk level. */
-.stat-grid--cards { gap: 12px; }
-.stat-grid.stat-grid--cards > .stat-card {
-  padding: 16px 20px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+.premium-card {
   background: var(--bg-card);
-}
-.stat-card--critical .text-metric-value { color: var(--critical) !important; }
-.stat-card--high .text-metric-value { color: var(--high) !important; }
-
-/* Each filter group sits in its own track, so the chosen option reads as a pressed segment */
-.dash-filters { gap: 12px; }
-.segmented {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  max-width: 100%;
-  padding: 3px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-}
-.segmented::-webkit-scrollbar { display: none; }
-.segmented .filter-label { flex: 0 0 auto; padding: 0 8px; }
-.segmented .filter-tab { flex: 0 0 auto; border-radius: 6px; }
-
-.dash-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   overflow: hidden;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-}
-
-.dash-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 72px 24px;
-  text-align: center;
-}
-.dash-empty__icon {
   position: relative;
-  width: 56px;
-  height: 56px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--accent-tint);
-  border: 1px solid var(--border-glow);
 }
-.dash-empty__ring {
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  border: 1px solid var(--accent-glow);
+@media (hover: hover) {
+  .premium-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+  }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .stat-grid--cards > .stat-card { animation: dash-rise 0.35s ease-out both; animation-delay: calc(var(--i, 0) * 50ms); }
-  .dash-row { animation: dash-fade 0.3s ease-out both; animation-delay: calc(var(--i, 0) * 20ms); }
-  .dash-empty__ring { animation: glowPulse 2s ease-in-out infinite; }
-  @keyframes dash-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @keyframes dash-fade { from { opacity: 0; } to { opacity: 1; } }
+.data-value {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
 
+.meta-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.segmented-control {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 4px;
+  gap: 2px;
+}
+.segmented-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .segmented-btn:hover { color: var(--text-primary); background: var(--bg-hover, var(--bg-elevated)); }
+}
+.segmented-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.enterprise-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+.enterprise-table tbody tr { transition: background 0.15s ease; }
+@media (hover: hover) {
+  .enterprise-table tbody tr:hover { background: var(--bg-hover, var(--bg-elevated)); }
+}
+
+/* Phone layer: the cards go two across, the two filter groups stack and scroll on their own */
+.dash-page { padding: 28px 32px; max-width: 1440px; margin: 0 auto; }
+.dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 1023px) {
+  .dash-stats { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 768px) {
-  .stat-grid.stat-grid--cards > .stat-card { padding: 12px 14px; }
-  /* The two groups stack, and each scrolls on its own */
-  .dash-filters { flex-direction: column; align-items: stretch; gap: 8px; overflow: visible; margin-inline: 0; padding-inline: 0; }
-  .segmented { width: 100%; }
+  .dash-page { padding: 16px; }
+  .dash-head { flex-wrap: wrap; gap: 12px; }
+  .dash-filters { flex-direction: column; align-items: stretch !important; overflow: visible !important; }
+  .dash-filters .segmented-control { overflow-x: auto; }
+}
+@media (pointer: coarse) {
+  .segmented-btn { min-height: 40px; }
 }
 
 /* Touch screens, whatever their width (a phone in landscape is wider than 768px) */

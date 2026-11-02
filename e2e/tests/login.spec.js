@@ -8,10 +8,10 @@ const filterGroup = (page, name) => page.getByRole('group', { name });
 test.describe('login page', () => {
   test('the hero says what the product does, beside the sign-in form', async ({ page }) => {
     await page.goto('/login');
-    await expect(page.getByRole('heading', { level: 1, name: 'Trace mule accounts. Close fraud complaints on time.' })).toBeVisible();
-    await expect(page.getByRole('img', { name: /three source accounts feed one aggregator/ })).toBeVisible();
-    await expect(page.getByRole('list', { name: 'What MuleCatch gives you' })).toContainText('Hash-chained evidence');
-    await expect(page.getByRole('heading', { name: 'Sign in to MuleCatch' })).toBeVisible();
+    await expect(page.getByText('Enterprise Financial Intelligence')).toBeVisible();
+    await expect(page.locator('.lg-hero svg')).toBeVisible();
+    await expect(page.locator('.lg-hero')).toContainText('Hash-chained evidence');
+    await expect(page.getByRole('heading', { name: 'Sign In to MuleCatch' })).toBeVisible();
     expect(await overflow(page)).toBe(0);
   });
 
@@ -28,10 +28,13 @@ test.describe('login page', () => {
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test('"Forgot password?" answers on the page', async ({ page }) => {
+  test('"Forgot Password?" points to the administrator', async ({ page }) => {
     await page.goto('/login');
-    await page.getByRole('button', { name: 'Forgot password?' }).click();
-    await expect(page.getByRole('note')).toHaveText('Password resets go through your bank administrator.');
+    const dialog = page.waitForEvent('dialog');
+    await page.getByRole('button', { name: 'Forgot Password?' }).click();
+    const popup = await dialog;
+    expect(popup.message()).toContain('contact your FIU Security Administrator');
+    await popup.dismiss();
   });
 
   test.describe('on a phone', () => {
@@ -39,9 +42,9 @@ test.describe('login page', () => {
 
     test('the form fits, and a short brand line replaces the hero', async ({ page }) => {
       await page.goto('/login');
-      await expect(page.getByRole('heading', { name: 'Sign in to MuleCatch' })).toBeVisible();
-      await expect(page.getByRole('heading', { level: 1 })).toBeHidden();
-      await expect(page.locator('.login-brand--compact')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Sign In to MuleCatch' })).toBeVisible();
+      await expect(page.locator('.lg-hero')).toBeHidden();
+      await expect(page.locator('.lg-mobile-brand')).toBeVisible();
       expect(await overflow(page)).toBe(0);
     });
   });
@@ -50,15 +53,15 @@ test.describe('login page', () => {
 test.describe('home page', () => {
   test('a guest sees the alert cards, and the filters narrow the table', async ({ page }) => {
     await signInAsGuest(page);
-    await expect(page.getByRole('heading', { level: 1, name: 'Alerts' })).toBeVisible();
-    for (const label of ['Critical', 'High severity', 'Open cases', 'Total flagged']) {
-      await expect(page.locator('.stat-card', { hasText: label }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Alert Queue' })).toBeVisible();
+    for (const label of ['Critical', 'High Severity', 'Open Cases', 'Total Flagged']) {
+      await expect(page.locator('.premium-card', { hasText: label }).first()).toBeVisible();
     }
 
     // A cold server can take a while to score the first alerts.
     await expect(page.locator('.loading')).toBeHidden({ timeout: 45_000 });
-    await filterGroup(page, 'Severity').getByRole('button', { name: 'High', exact: true }).click();
-    await expect(filterGroup(page, 'Severity').getByRole('button', { name: 'High', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await filterGroup(page, 'Severity').getByRole('button', { name: 'HIGH', exact: true }).click();
+    await expect(filterGroup(page, 'Severity').getByRole('button', { name: 'HIGH', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('tbody tr .col-sev .badge').first()).toBeVisible();
     const badges = await page.locator('tbody tr .col-sev .badge').allTextContents();
     expect(new Set(badges)).toEqual(new Set(['HIGH']));
@@ -69,7 +72,7 @@ test.describe('home page', () => {
 
     test('the cards and filters fit the screen', async ({ page }) => {
       await signInAsGuest(page);
-      await expect(page.locator('.stat-card', { hasText: 'Total flagged' })).toBeVisible();
+      await expect(page.locator('.premium-card', { hasText: 'Total Flagged' })).toBeVisible();
       expect(await overflow(page)).toBe(0);
     });
   });
