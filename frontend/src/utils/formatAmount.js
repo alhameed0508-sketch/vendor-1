@@ -18,3 +18,11 @@ export function formatAmount(amount) {
   if (Math.round(value) >= THOUSAND) return `₹${thousands}K`;
   return `₹${Math.round(value)}`;
 }
+
+/**
+ * Exact rupees with Indian digit grouping (₹1,85,000), for what someone owes or is paid:
+ * a liability or a compensation figure rounded to ₹21K would misstate the amount.
+ */
+export function formatRupeesExact(amount) {
+  return `₹${Math.round(Number(amount) || 0).toLocaleString('en-IN')}`;
+}

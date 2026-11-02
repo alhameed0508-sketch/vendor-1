@@ -12,6 +12,8 @@ import DataImportPage from './data_import/DataImportPage';
 import RiskOperationsPage from './risk_operations/RiskOperationsPage';
 import BenchmarkPage from './benchmark/BenchmarkPage';
 import LiveStream from './live_stream/LiveStream';
+import ComplaintsPage from './complaints/ComplaintsPage';
+import CaseView from './complaints/CaseView';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import GuestBanner from './components/GuestBanner';
@@ -79,6 +81,8 @@ function AppContent() {
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
+              <Route path="/complaints" element={<ProtectedRoute><ComplaintsPage /></ProtectedRoute>} />
+              <Route path="/complaints/:complaintId" element={<ProtectedRoute><CaseView /></ProtectedRoute>} />
               <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
               <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
               <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />

@@ -17,6 +17,7 @@ jest.mock('lucide-react', () => ({
   Upload: () => <div data-testid="icon-upload" />,
   UserCheck: () => <div data-testid="icon-user-check" />,
   Gauge: () => <div data-testid="icon-gauge" />,
+  Scale: () => <div data-testid="icon-scale" />,
 }));
 
 // Helper to render Sidebar with all required providers
@@ -52,6 +53,7 @@ describe('Sidebar Component', () => {
       expect(screen.getByText('Alerts')).toBeInTheDocument();
       expect(screen.getByText('Triage')).toBeInTheDocument();
       expect(screen.getByText('Network')).toBeInTheDocument();
+      expect(screen.getByText('Fraud complaints')).toBeInTheDocument();
       expect(screen.getByText('ROI analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
       expect(screen.getByText('Data import')).toBeInTheDocument();
@@ -66,12 +68,14 @@ describe('Sidebar Component', () => {
       const complianceLink = screen.getByText('Compliance').closest('a');
       const dataImportLink = screen.getByText('Data import').closest('a');
       const benchmarkLink = screen.getByText('Model benchmarks').closest('a');
+      const complaintsLink = screen.getByText('Fraud complaints').closest('a');
 
       expect(dashboardLink).toHaveAttribute('href', '/');
       expect(analyticsLink).toHaveAttribute('href', '/analytics');
       expect(complianceLink).toHaveAttribute('href', '/compliance');
       expect(dataImportLink).toHaveAttribute('href', '/data-import');
       expect(benchmarkLink).toHaveAttribute('href', '/benchmarks');
+      expect(complaintsLink).toHaveAttribute('href', '/complaints');
     });
 
     test('renders navigation items with icons', () => {
@@ -282,6 +286,7 @@ describe('Sidebar Component', () => {
       renderSidebar({ collapsed: false });
 
       expect(screen.getByText('Alerts')).toBeInTheDocument();
+      expect(screen.getByText('Fraud complaints')).toBeInTheDocument();
       expect(screen.getByText('ROI analytics')).toBeInTheDocument();
       expect(screen.getByText('Compliance')).toBeInTheDocument();
       expect(screen.getByText('Data import')).toBeInTheDocument();
@@ -428,7 +433,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(8); // 8 nav items
+      expect(links).toHaveLength(9); // 9 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -446,7 +451,7 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Alerts', 'Triage', 'Network',
+        'Alerts', 'Triage', 'Network', 'Fraud complaints',
         'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
         'Model benchmarks',
       ];

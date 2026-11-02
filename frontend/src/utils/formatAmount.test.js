@@ -1,4 +1,4 @@
-import { formatAmount } from './formatAmount';
+import { formatAmount, formatRupeesExact } from './formatAmount';
 
 describe('formatAmount', () => {
   it.each([
@@ -20,4 +20,9 @@ describe('formatAmount', () => {
 
   it.each([[undefined], [null], [NaN], ['abc']])('shows ₹0 for a missing amount (%s)', amount =>
     expect(formatAmount(amount)).toBe('₹0'));
+});
+
+describe('formatRupeesExact', () => {
+  it.each([[21250, '₹21,250'], [185000, '₹1,85,000'], [12345678, '₹1,23,45,678'], [950, '₹950'], [null, '₹0']])(
+    '%s -> %s', (amount, text) => expect(formatRupeesExact(amount)).toBe(text));
 });

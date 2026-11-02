@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, BarChart2, FileCheck, Gauge, Network, Upload, UserCheck, Zap,
+  AlertTriangle, BarChart2, FileCheck, Gauge, Network, Scale, Upload, UserCheck, Zap,
 } from 'lucide-react';
 
 // One name per page: the same label appears in the sidebar, the phone tabs and the page title.
@@ -15,6 +15,7 @@ export const NAV_SECTIONS = [
   {
     label: 'Operations',
     items: [
+      { path: '/complaints',      label: 'Fraud complaints', icon: Scale },
       { path: '/analytics',       label: 'ROI analytics',    icon: BarChart2 },
       { path: '/compliance',      label: 'Compliance',       icon: FileCheck },
       { path: '/risk-operations', label: 'Customer risk',    icon: UserCheck },
