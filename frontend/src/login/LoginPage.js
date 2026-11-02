@@ -56,8 +56,8 @@ export default function LoginPage() {
         style={{ width: '100%', maxWidth: 420, padding: 24, position: 'relative', zIndex: 2 }}
       >
         <GlassCard className="p-8" hover={false} style={{
-          background: 'rgba(14, 14, 22, 0.92)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
         }}>
           {/* Logo */}
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
@@ -71,14 +71,14 @@ export default function LoginPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 20px',
-                boxShadow: '0 0 24px rgba(16,185,129,0.25), 0 4px 12px rgba(0,0,0,0.4)',
+                boxShadow: 'var(--shadow-glow), var(--shadow-sm)',
               }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <span style={{
-                color: '#fff',
+                color: 'var(--on-accent)',
                 fontSize: 20,
                 fontWeight: 700,
                 fontFamily: 'var(--font-display)',
@@ -135,7 +135,7 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '10px 14px',
                     background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'username' ? 'rgba(16,185,129,0.35)' : 'var(--border-strong)'}`,
+                    border: `1px solid ${focused === 'username' ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border-strong)'}`,
                     borderRadius: 8,
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-sans)',
@@ -173,7 +173,7 @@ export default function LoginPage() {
                     width: '100%',
                     padding: '10px 42px 10px 14px',
                     background: 'var(--bg-elevated)',
-                    border: `1px solid ${focused === 'password' ? 'rgba(16,185,129,0.35)' : 'var(--border-strong)'}`,
+                    border: `1px solid ${focused === 'password' ? 'color-mix(in srgb, var(--accent) 35%, transparent)' : 'var(--border-strong)'}`,
                     borderRadius: 8,
                     color: 'var(--text-primary)',
                     fontFamily: 'var(--font-sans)',
@@ -219,8 +219,8 @@ export default function LoginPage() {
                     marginBottom: 18,
                     padding: '10px 14px',
                     borderRadius: 10,
-                    background: 'rgba(244,63,94,0.08)',
-                    border: '1px solid rgba(244,63,94,0.2)',
+                    background: 'color-mix(in srgb, var(--critical) 8%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--critical) 20%, transparent)',
                     color: 'var(--critical)',
                     fontSize: 12,
                     fontFamily: 'var(--font-sans)',

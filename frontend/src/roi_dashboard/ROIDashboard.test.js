@@ -51,6 +51,13 @@ describe('ROIDashboard', () => {
     expect(screen.queryByText('Smurfing')).toBeNull();
   });
 
+  it('puts the KPI tiles in the shared grid that folds to two columns on phones', async () => {
+    render(<ROIDashboard />);
+    await screen.findByText('Fraud Prevented');
+    expect(tile('Fraud Prevented').closest('.stat-grid')).not.toBeNull();
+    expect(tile('Manpower Saved').closest('.stat-grid')).not.toBeNull();
+  });
+
   it('shows fraud prevented in the shared rupee format', async () => {
     render(<ROIDashboard />);
     await screen.findByText('Fraud Prevented');

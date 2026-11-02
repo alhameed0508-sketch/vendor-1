@@ -54,7 +54,7 @@ const SEV_CONFIG = {
   CRITICAL: { color: 'var(--critical)',   bg: 'var(--critical-dim)', cls: 'badge-CRITICAL' },
   HIGH:     { color: 'var(--high)',       bg: 'var(--high-dim)',     cls: 'badge-HIGH' },
   MEDIUM:   { color: 'var(--medium)',     bg: 'var(--medium-dim)',   cls: 'badge-MEDIUM' },
-  LOW:      { color: 'var(--accent-green)', bg: 'rgba(16,185,129,0.10)', cls: 'badge-MEDIUM' },
+  LOW:      { color: 'var(--accent)', bg: 'color-mix(in srgb, var(--accent) 10%, transparent)', cls: 'badge-MEDIUM' },
 };
 
 const STATUS_CONFIG = {
@@ -92,7 +92,7 @@ function ScoreBar({ value, color = 'var(--emerald)' }) {
 function PriorityRing({ score, rank }) {
   const r = 20, circ = 2 * Math.PI * r;
   const pct = Math.round(score * 100);
-  const fill = score >= PRIORITY_CRITICAL_THRESHOLD ? 'var(--critical)' : score >= PRIORITY_HIGH_THRESHOLD ? 'var(--high)' : 'var(--accent-green)';
+  const fill = score >= PRIORITY_CRITICAL_THRESHOLD ? 'var(--critical)' : score >= PRIORITY_HIGH_THRESHOLD ? 'var(--high)' : 'var(--accent)';
   return (
     <div style={{ position: 'relative', width: 50, height: 50, flexShrink: 0 }}>
       <svg width={50} height={50} style={{ transform: 'rotate(-90deg)' }}>
@@ -150,7 +150,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                 <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', width: 64, flexShrink: 0 }}>
                   {BREAKDOWN_LABELS[key] || key}
                 </span>
-                <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
+                <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent)'} />
                 <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', width: 32, textAlign: 'right', fontWeight: 600 }}>
                   {Math.round(val * 100)}
                 </span>
@@ -189,7 +189,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
               {(alert.nodes || []).slice(0, 6).map(n => {
                 const roleColor = {
                   SOURCE: 'var(--critical)', AGGREGATOR: 'var(--high)',
-                  MULE: 'var(--accent-amber)', LEGITIMATE: 'var(--accent-green)',
+                  MULE: 'var(--high)', LEGITIMATE: 'var(--accent)',
                 }[n.role] || 'var(--text-muted)';
                 return (
                   <div key={n.account_id} style={{
@@ -410,12 +410,12 @@ export default function AlertQueue({ onSelectAlert }) {
             {sseConnected && (
               <span style={{
                 marginLeft: 10, display: 'inline-flex', alignItems: 'center', gap: 5,
-                fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
+                fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent)',
               }}>
                 <span style={{
                   width: 7, height: 7, borderRadius: '50%',
-                  background: 'var(--accent-green)',
-                  boxShadow: '0 0 6px var(--accent-green)',
+                  background: 'var(--accent)',
+                  boxShadow: '0 0 6px var(--accent)',
                   animation: 'pulse 2s infinite',
                 }} />
                 Live
@@ -424,7 +424,7 @@ export default function AlertQueue({ onSelectAlert }) {
             {newAlertCount > 0 && (
               <span style={{
                 marginLeft: 10, padding: '2px 8px', borderRadius: 12,
-                background: 'var(--critical)', color: '#fff',
+                background: 'var(--critical)', color: 'var(--on-accent)',
                 fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)',
                 animation: 'flash 0.5s ease-out',
               }}>
@@ -581,7 +581,7 @@ export default function AlertQueue({ onSelectAlert }) {
                           <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-faint)', width: 58, flexShrink: 0 }}>
                             {BREAKDOWN_LABELS[key] || key}
                           </span>
-                          <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent-green)'} />
+                          <ScoreBar value={val} color={val >= SCORE_BAR_CRITICAL ? 'var(--critical)' : val >= SCORE_BAR_HIGH ? 'var(--high)' : 'var(--accent)'} />
                         </div>
                       ))}
                     </div>

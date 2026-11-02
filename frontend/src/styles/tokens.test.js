@@ -118,3 +118,21 @@ test('interactive classes set cursor pointer', () => {
 test('reduced motion block exists', () => {
   expect(appCss).toMatch(/prefers-reduced-motion:\s*reduce/);
 });
+
+const SURFACES = ['--bg-base', '--bg-surface', '--bg-elevated'];
+const THEMES = [['dark', darkBlock], ['light', lightBlock]];
+
+test.each(THEMES)('accent and muted text meet 4.5:1 on every %s surface', (_, b) => {
+  const short = SURFACES.flatMap(bg => ['--accent', '--text-muted', '--critical', '--high', '--medium']
+    .map(t => [t, bg, Number(contrastRatio(token(b, t), token(b, bg)).toFixed(2))]))
+    .filter(([, , ratio]) => ratio < 4.5);
+  expect(short).toEqual([]);
+});
+
+// Graph nodes and map markers carry meaning, so WCAG 1.4.11 asks 3:1 against the canvas.
+test.each(THEMES)('graph role colours meet 3:1 on the %s canvas', (_, b) => {
+  const short = ['--role-source', '--role-aggregator', '--role-mule', '--role-neutral']
+    .map(t => [t, Number(contrastRatio(token(b, t), token(b, '--bg-base')).toFixed(2))])
+    .filter(([, ratio]) => ratio < 3);
+  expect(short).toEqual([]);
+});

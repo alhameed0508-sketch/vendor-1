@@ -75,7 +75,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
                 border: '1px solid var(--tooltip-border)',
                 borderRadius: 'var(--radius-lg)',
                 overflow: 'hidden',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.15), var(--shadow-brand)',
+                boxShadow: 'var(--shadow-lg)',
               }}
             >
               <Command.Input
@@ -159,7 +159,7 @@ export default function CommandPalette({ alerts: alertsProp }) {
                         data-cmdk-item=""
                       >
                         <span className={`badge badge-${alert.severity}`} style={{ flexShrink: 0 }}>{alert.severity}</span>
-                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent-cyan)' }}>{alert.alert_id}</span>
+                        <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--accent)' }}>{alert.alert_id}</span>
                         <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
                           {(alert.risk_score * 100).toFixed(0)}%
                         </span>

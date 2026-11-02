@@ -30,7 +30,7 @@ export function ShortcutsModal({ open, onClose }) {
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+        background: 'color-mix(in srgb, var(--bg-void) 70%, transparent)', backdropFilter: 'blur(4px)',
         animation: 'fadeIn 0.2s ease both',
       }}
       onClick={onClose}
