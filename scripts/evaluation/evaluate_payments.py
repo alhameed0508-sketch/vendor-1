@@ -57,6 +57,19 @@ def replay(seed: int, scenario: str, gate: float, stride: int = LIVE_STRIDE, pla
     accounts, txns, is_mule = _labels_with_roles(seed, scenario)
     if playbook:
         txns = PLAYBOOKS[playbook](txns, is_mule, random.Random(seed))
+    return replay_case(accounts, txns, is_mule, gate, stride)
+
+
+def replay_case(
+    accounts: Sequence[Dict],
+    txns: Sequence[Dict],
+    is_mule: Dict[str, bool],
+    gate: float,
+    stride: int = LIVE_STRIDE,
+    mule_payment_ids: frozenset = None,
+) -> Dict:
+    """Replay one labelled case. ``mule_payment_ids`` labels payments directly (when given, a mule
+    payment is one in the set, and a genuine payment has two non-mule accounts and is not in it)."""
     txns = sorted(txns, key=lambda t: t["timestamp"])
     live = txns[::stride]
     history = [t for i, t in enumerate(txns) if i % stride]
@@ -69,15 +82,22 @@ def replay(seed: int, scenario: str, gate: float, stride: int = LIVE_STRIDE, pla
         latencies: List[float] = []
         cases: set = set()
         ring_accounts: set = set()
+        caught: List[str] = []
         for txn in live:
             result = scorer.score_payment(txn, commit=True)
             latencies.append(result.latency_ms)
-            both_mule = is_mule.get(txn["from_account"], False) and is_mule.get(txn["to_account"], False)
+            both_mule = (
+                txn["txn_id"] in mule_payment_ids
+                if mule_payment_ids is not None
+                else is_mule.get(txn["from_account"], False) and is_mule.get(txn["to_account"], False)
+            )
             both_genuine = not is_mule.get(txn["from_account"], False) and not is_mule.get(txn["to_account"], False)
             flagged = result.decision == "FLAG"
             mule_total += both_mule
             genuine_total += both_genuine
             mule_flagged += flagged and both_mule
+            if flagged and both_mule:
+                caught.append(txn["txn_id"])
             genuine_flagged += flagged and both_genuine
             if flagged:
                 cases.add(result.case_id)
@@ -96,6 +116,7 @@ def replay(seed: int, scenario: str, gate: float, stride: int = LIVE_STRIDE, pla
         "mules_total": len(mules),
         "genuine_exposed": len(ring_accounts - mules),
         "latencies_ms": latencies,
+        "mule_flagged_ids": caught,
     }
 
 

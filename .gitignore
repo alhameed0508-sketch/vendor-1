@@ -69,3 +69,6 @@ models/gnn/checkpoints/
 # Playwright e2e output
 e2e/report/
 e2e/results/
+
+# Third-party datasets (downloaded by scripts/evaluation, never committed)
+data/external/
