@@ -222,7 +222,7 @@ export default function Dashboard() {
             gap: 6,
           }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block', flexShrink: 0 }} />
-            {filtered.length} alerts
+            {loading ? 'Loading alerts…' : `${filtered.length} alerts`}
             {stats.critical > 0 && <><span style={{ color: 'var(--text-faint)' }}>|</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
             {stats.high > 0     && <><span style={{ color: 'var(--text-faint)' }}>|</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
             {stats.open > 0     && <><span style={{ color: 'var(--text-faint)' }}>|</span><span>{stats.open} open</span></>}
@@ -242,10 +242,10 @@ export default function Dashboard() {
 
       {/* ── Metric Cards ── */}
       <div className="dash-stats">
-        <StatCard label="Critical"      value={stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts"   index={0} />
-        <StatCard label="High Severity" value={stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts"   index={1} />
-        <StatCard label="Open Cases"    value={stats.open}     color="var(--medium)"   icon={Shield}        sub="under review"    index={2} />
-        <StatCard label="Total Flagged" value={formatAmount(stats.total)} color="var(--high)" icon={DollarSign}   sub="this cycle"      index={3} />
+        <StatCard label="Critical"      value={loading ? '–' : stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts"   index={0} />
+        <StatCard label="High Severity" value={loading ? '–' : stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts"   index={1} />
+        <StatCard label="Open Cases"    value={loading ? '–' : stats.open}     color="var(--medium)"   icon={Shield}        sub="under review"    index={2} />
+        <StatCard label="Total Flagged" value={loading ? '–' : formatAmount(stats.total)} color="var(--high)" icon={DollarSign}   sub="this cycle"      index={3} />
       </div>
 
       {/* ── Filter Bar ── */}

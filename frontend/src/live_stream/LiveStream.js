@@ -22,7 +22,7 @@ function Stat({ label, value, tone }) {
 export default function LiveStream() {
   const [rate, setRate] = useState(5);
   const { state, start, stop, review } = useScoreStream({ rate });
-  const { counters, edges, rings, accountStats, log, latestCaseId, latencies, reviews, status, error } = state;
+  const { counters, edges, rings, accountStats, log, latestCaseId, latencies, reviews, status, error, events } = state;
   const [picked, setPicked] = useState(null);
   const [selected, setSelected] = useState(null);
 
@@ -73,6 +73,9 @@ export default function LiveStream() {
         </div>
       </header>
 
+      {running && events === 0 && (
+        <div className="live-stream__waiting" role="status">Connecting to the payment stream…</div>
+      )}
       {status === 'error' && <div className="live-stream__error" role="alert">{error}</div>}
 
       <div className="live-stream__stats" role="status" aria-label={STATUS_LABEL[status]}>

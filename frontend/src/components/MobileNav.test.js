@@ -13,6 +13,7 @@ jest.mock('lucide-react', () => ({
   MoreHorizontal: () => <span />,
   Moon: () => <span />,
   Network: () => <span />,
+  Radio: () => <span />,
   Scale: () => <span />,
   Sun: () => <span />,
   Upload: () => <span />,
@@ -52,7 +53,7 @@ describe('MobileNav', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'More pages' }));
     const sheet = screen.getByRole('dialog', { name: 'More pages' });
-    ['Fraud complaints', 'ROI analytics', 'Compliance', 'Customer risk', 'Data import', 'Model benchmarks']
+    ['Live stream', 'Fraud complaints', 'ROI analytics', 'Compliance', 'Customer risk', 'Data import', 'Model benchmarks']
       .forEach(label => expect(sheet).toHaveTextContent(label));
     expect(screen.getByRole('button', { name: /switch to light theme/i })).toBeInTheDocument();
   });

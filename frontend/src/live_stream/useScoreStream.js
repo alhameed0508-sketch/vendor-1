@@ -52,6 +52,9 @@ export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
       }
     } catch (err) {
       if (err && err.name === 'AbortError') return;
+      if (controllerRef.current === controller) controllerRef.current = null;
+      dispatch({ type: 'failed', message: `Stream unavailable: ${err && err.message ? err.message : 'connection failed'}` });
+      return;
     }
     if (controllerRef.current === controller) controllerRef.current = null;
     dispatch({ type: 'closed' });

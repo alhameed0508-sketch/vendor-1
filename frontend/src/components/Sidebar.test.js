@@ -14,6 +14,7 @@ jest.mock('lucide-react', () => ({
   Zap: () => <div data-testid="icon-zap" />,
   FileCheck: () => <div data-testid="icon-file-check" />,
   Network: () => <div data-testid="icon-network" />,
+  Radio: () => <div data-testid="icon-radio" />,
   Upload: () => <div data-testid="icon-upload" />,
   UserCheck: () => <div data-testid="icon-user-check" />,
   Gauge: () => <div data-testid="icon-gauge" />,
@@ -307,13 +308,13 @@ describe('Sidebar Component', () => {
     test('hides system tagline when collapsed', () => {
       renderSidebar({ collapsed: true });
 
-      expect(screen.queryByText('IOB Fraud Intelligence')).not.toBeInTheDocument();
+      expect(screen.queryByText('Mule account intelligence')).not.toBeInTheDocument();
     });
 
     test('shows system tagline when expanded', () => {
       renderSidebar({ collapsed: false });
 
-      expect(screen.getByText('IOB Fraud Intelligence')).toBeInTheDocument();
+      expect(screen.getByText('Mule account intelligence')).toBeInTheDocument();
     });
 
     test('renders sidebar element when collapsed', () => {
@@ -433,7 +434,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(9); // 9 nav items
+      expect(links).toHaveLength(10); // 10 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -451,7 +452,7 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Alerts', 'Triage', 'Network', 'Fraud complaints',
+        'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints',
         'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
         'Model benchmarks',
       ];

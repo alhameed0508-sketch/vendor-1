@@ -96,6 +96,8 @@ export function streamReducer(state, action) {
       return REVIEW_DECISIONS.includes(action.decision) && state.rings[action.caseId]
         ? { ...state, reviews: { ...state.reviews, [action.caseId]: action.decision } }
         : state;
+    case 'failed':
+      return { ...state, status: 'error', error: action.message };
     case 'stopped':
       return state.status === 'live' ? { ...state, status: 'ended' } : state;
     case 'closed':

@@ -140,7 +140,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             exit={{ opacity: 0, x: -10, height: 0, marginBottom: 0 }}
             transition={{ ...CONTENT_SPRING, delay: 0.1 }}
           >
-            IOB Fraud Intelligence
+            Mule account intelligence
           </motion.div>
         )}
       </AnimatePresence>

@@ -29,6 +29,7 @@
 .live-stream__case ul { padding-left: 18px; margin: 8px 0; }
 .live-stream__note { font-size: 12px; color: var(--text-muted); }
 .live-stream__error { border: 1px solid var(--critical); border-radius: var(--radius-md); padding: 12px 14px; color: var(--critical); }
+.live-stream__waiting { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 14px; color: var(--text-muted); }
 .live-stream .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .live-stream__band { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; }
 .live-stream__band--high { color: var(--critical); }

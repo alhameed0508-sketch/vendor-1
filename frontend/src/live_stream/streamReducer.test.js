@@ -63,6 +63,15 @@ describe('streamReducer', () => {
   });
 });
 
+describe('failed', () => {
+  it('shows why the stream could not be read instead of a silent empty state', () => {
+    const live = streamReducer(initialState, { type: 'open' });
+    const next = streamReducer(live, { type: 'failed', message: 'stream request failed (502)' });
+    expect(next.status).toBe('error');
+    expect(next.error).toBe('stream request failed (502)');
+  });
+});
+
 describe('stopped', () => {
   it('ends a live stream and leaves other states alone', () => {
     const live = streamReducer(initialState, { type: 'open' });
