@@ -42,7 +42,7 @@ export default function LiveStream() {
   const running = status === 'live';
 
   return (
-    <section className="live-stream" aria-label="Live payment stream">
+    <section className="page live-stream" aria-label="Live payment stream">
       <header className="live-stream__head">
         <div>
           <h1 className="live-stream__title">Live payment stream</h1>
