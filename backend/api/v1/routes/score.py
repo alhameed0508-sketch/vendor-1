@@ -2,7 +2,7 @@
 
 import json
 
-from api.deps import get_demo_replay, get_realtime_scorer
+from api.deps import get_demo_replay, get_live_feed, get_realtime_scorer
 from api.v1.schemas.score import ScorePaymentRequest
 from core.exceptions import ValidationError
 from core.response import success_response
@@ -58,10 +58,13 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
         request: Request,
         limit: int = Query(300, ge=1, le=2000),
         rate: float = Query(5.0, ge=0, le=100),
+        source: str = Query("demo", pattern="^(demo|live)$"),
         user: dict = Depends(require_role(*STREAM_ROLES)),
         replay=Depends(get_demo_replay),
+        feed=Depends(get_live_feed),
     ):
-        """Server-sent events replaying synthetic payments through the scorer (demo only)."""
+        """Server-sent events through the scorer: a synthetic replay (demo only) or real public payments (source=live)."""
+        replay = feed if source == "live" else replay
 
         def _sse():
             for event in replay.events(limit=limit, rate=rate):

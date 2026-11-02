@@ -107,3 +107,42 @@ test('lets a reviewer confirm the open case on this page only', async () => {
   expect(await screen.findByText(/Confirmed by reviewer/)).toBeInTheDocument();
   expect(screen.getByText(/demo only/i)).toBeInTheDocument();
 });
+
+describe('real payment source', () => {
+  const liveEvent = {
+    ...flagEvent,
+    source: 'live',
+    counters: { payments: 1, flagged: 1, accounts: 2 },
+  };
+
+  async function startLive() {
+    apiFetch.mockResolvedValueOnce(sseResponse([], {}));
+    render(<LiveStream />);
+    await screen.findByRole('button', { name: /replay/i });
+    apiFetch.mockResolvedValue(sseResponse([liveEvent], { hold: true }));
+    fireEvent.change(screen.getByLabelText(/data source/i), { target: { value: 'live' } });
+    fireEvent.click(screen.getByRole('button', { name: /replay/i }));
+    await screen.findByRole('button', { name: /stop/i });
+  }
+
+  test('asks the server for real payments and says so', async () => {
+    await startLive();
+    expect(apiFetch.mock.calls[1][0]).toContain('source=live');
+    expect(screen.getAllByText(/real data/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/mempool\.space/i)).toBeInTheDocument();
+  });
+
+  test('swaps the ground-truth counters for ones that exist without labels', async () => {
+    await startLive();
+    expect(screen.getByText('Accounts seen')).toBeInTheDocument();
+    expect(screen.queryByText('Mule payments caught')).not.toBeInTheDocument();
+    expect(screen.queryByText('Genuine accounts flagged')).not.toBeInTheDocument();
+  });
+
+  test('the synthetic source still sends no source parameter', async () => {
+    apiFetch.mockResolvedValue(sseResponse([flagEvent], { hold: true }));
+    render(<LiveStream />);
+    await screen.findByRole('button', { name: /stop/i });
+    expect(apiFetch.mock.calls[0][0]).not.toContain('source=');
+  });
+});

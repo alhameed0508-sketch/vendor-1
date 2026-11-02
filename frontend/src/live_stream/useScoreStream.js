@@ -6,11 +6,11 @@ import { parseSse } from './sseParse';
 const STREAM_PATH = '/api/v1/score/stream';
 
 /**
- * Reads the payment replay stream (demo mode only on the backend) with fetch,
+ * Reads the payment stream (synthetic replay, or real public payments with source 'live') with fetch,
  * so the access token travels in the Authorization header and never in the URL.
  * No auto-reconnect: a reconnect would restart the replay from the beginning.
  */
-export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
+export default function useScoreStream({ limit = 300, rate = 5, source = 'demo' } = {}) {
   const [state, dispatch] = useReducer(streamReducer, initialState);
   const controllerRef = useRef(null);
 
@@ -33,6 +33,7 @@ export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
     dispatch({ type: 'open' });
     try {
       const params = new URLSearchParams({ limit: String(limit), rate: String(rate) });
+      if (source === 'live') params.set('source', 'live');
       const res = await apiFetch(`${STREAM_PATH}?${params}`, {
         signal: controller.signal,
         headers: { Accept: 'text/event-stream' },
@@ -58,7 +59,7 @@ export default function useScoreStream({ limit = 300, rate = 5 } = {}) {
     }
     if (controllerRef.current === controller) controllerRef.current = null;
     dispatch({ type: 'closed' });
-  }, [limit, rate, abort]);
+  }, [limit, rate, source, abort]);
 
   useEffect(() => abort, [abort]);
 

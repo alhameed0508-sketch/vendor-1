@@ -21,7 +21,9 @@ function Stat({ label, value, tone }) {
 
 export default function LiveStream() {
   const [rate, setRate] = useState(5);
-  const { state, start, stop, review } = useScoreStream({ rate });
+  const [source, setSource] = useState('demo');
+  const isLive = source === 'live';
+  const { state, start, stop, review } = useScoreStream({ rate, source });
   const { counters, edges, rings, accountStats, log, latestCaseId, latencies, reviews, status, error, events } = state;
   const [picked, setPicked] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -54,10 +56,17 @@ export default function LiveStream() {
           </p>
         </div>
         <div className="live-stream__controls">
-          <span className="live-stream__pill">Synthetic data</span>
+          <span className="live-stream__pill">{isLive ? 'Real data' : 'Synthetic data'}</span>
+          <label>
+            <span className="sr-only">Data source </span>
+            <select value={source} onChange={(e) => setSource(e.target.value)} disabled={running}>
+              <option value="demo">Synthetic replay</option>
+              <option value="live">Real Bitcoin payments</option>
+            </select>
+          </label>
           <label>
             <span className="sr-only">Payments per second </span>
-            <select value={rate} onChange={(e) => setRate(Number(e.target.value))} disabled={running}>
+            <select value={rate} onChange={(e) => setRate(Number(e.target.value))} disabled={running || isLive}>
               {RATES.map((r) => (
                 <option key={r} value={r}>
                   {r} payments/s
@@ -81,8 +90,14 @@ export default function LiveStream() {
       <div className="live-stream__stats" role="status" aria-label={STATUS_LABEL[status]}>
         <Stat label="Payments scored" value={counters.payments} />
         <Stat label="Flagged for review" value={counters.flagged} tone={counters.flagged ? 'alert' : undefined} />
-        <Stat label="Mule payments caught" value={counters.mule_payments_flagged} />
-        <Stat label="Genuine accounts flagged" value={counters.genuine_accounts_flagged} tone="good" />
+        {isLive ? (
+          <Stat label="Accounts seen" value={counters.accounts ?? 0} />
+        ) : (
+          <>
+            <Stat label="Mule payments caught" value={counters.mule_payments_flagged} />
+            <Stat label="Genuine accounts flagged" value={counters.genuine_accounts_flagged} tone="good" />
+          </>
+        )}
         <Stat label="p95 latency" value={latency == null ? '–' : `${Math.round(latency)} ms`} />
       </div>
 
@@ -116,7 +131,9 @@ export default function LiveStream() {
         </div>
       </div>
       <p className="live-stream__note">
-        Synthetic data only. Ground-truth labels stay on the server and are used only to count genuine accounts.
+        {isLive
+          ? 'Real, unlabelled Bitcoin transactions from mempool.space, shown as payments between addresses and converted to rupees at the current rate. No one has marked these addresses as mules, so a flag is a lead for a reviewer, not a measured catch. The detector was built for UPI, not Bitcoin.'
+          : 'Synthetic data only. Ground-truth labels stay on the server and are used only to count genuine accounts.'}
       </p>
     </section>
   );

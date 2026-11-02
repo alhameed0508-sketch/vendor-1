@@ -299,3 +299,19 @@ Each of 20 cases holds 4 random laundering attempts, each mule's other payments 
 rules baseline on synthetic data. Ring-level, purity-weighted cases are the
 strongest measured result. The full 7-layer stack is not justified by the
 measurements. **Next action:** backlog #3 is done (7.6e). AMLworld (7.8) shows the evidence features do not transfer: build features for cycles and pass-through next, then run the time split.
+
+## 7.9 Real-time public data: Bitcoin mempool (`source=live`)
+
+`GET /api/v1/score/stream?source=live` scores real, public Bitcoin transactions from mempool.space as they appear (no key). Each transaction becomes payments from its input addresses to its non-change output addresses, converted to rupees at the current BTC/USD and USD/INR rates (`data/adapters/mempool_adapter.py`). A private scorer handles each stream, so live traffic never reaches the public scorer's history.
+
+| Check | Result |
+|---|---|
+| Real network run, 25 payments | 25 scored in 19 s, 0 flagged, 33 accounts, latency about 1 ms per payment |
+| Tests | Adapter (change outputs, equal-share split, caps, coinbase), feed (dedupe, bounded fetch, time budget, upstream failure), route (gating, unknown source) all offline |
+
+What this is and is not:
+
+- **No labels.** Nobody marks these addresses as mules, so no recall or precision can be reported. A flag is a lead for a reviewer. The live page replaces the mule/genuine counters with "Accounts seen".
+- **Not a UPI test.** Addresses are not bank accounts and the detector was built for UPI. This shows the pipeline running on real traffic; it does not show it works on Bitcoin.
+- **Short windows.** A few minutes of mempool rarely contains a ring, so zero flags is the expected result.
+- **Fair use.** One poll every 4 s, at most 3 new transactions per poll, 5 minutes per stream. In production the feed is off unless `LIVE_FEED_ENABLED=true`.

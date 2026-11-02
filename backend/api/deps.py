@@ -10,6 +10,7 @@ from cache.redis_client import RedisClient
 from core.config import get_settings
 from core.exceptions import ConflictError
 from detection.pipeline import DetectionPipeline
+from fastapi import Query
 from graph_engine.persistence import PersistenceLayer
 from ingest.kafka_consumer import KAFKA_ENABLED, TransactionConsumer
 from repositories.alert_repository import AlertRepository
@@ -117,11 +118,14 @@ def get_realtime_scorer() -> RealtimeScorer:
     return RealtimeScorer(strip_labels(data["accounts"]), strip_labels(data["transactions"]))
 
 
-def get_demo_replay():
+def get_demo_replay(source: str = Query("demo", pattern="^(demo|live)$")):
     """A fresh seeded replay per stream, so every viewer sees the same story from the start.
 
     Refuses outside demo mode before doing any work (the replay builds a dataset).
+    Returns None for ``source=live``, which has its own provider.
     """
+    if source == "live":
+        return None
     if not get_settings().demo_mode:
         raise ConflictError(
             "Synthetic payment replay is disabled in production",
@@ -130,6 +134,21 @@ def get_demo_replay():
     from services.realtime_demo import DemoReplay
 
     return DemoReplay()
+
+
+def get_live_feed(source: str = Query("demo", pattern="^(demo|live)$")):
+    """A fresh feed of real public Bitcoin payments per stream (source=live). Demo mode, or LIVE_FEED_ENABLED."""
+    if source != "live":
+        return None
+    settings = get_settings()
+    if not (settings.demo_mode or getattr(settings, "live_feed_enabled", False)):
+        raise ConflictError(
+            "Live payment feed is disabled",
+            "Set LIVE_FEED_ENABLED=true to stream public mempool.space transactions.",
+        )
+    from services.live_feed import LiveFeed
+
+    return LiveFeed()
 
 
 def _build_threshold_config() -> ThresholdConfig:
