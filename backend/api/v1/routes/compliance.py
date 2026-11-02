@@ -63,7 +63,7 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
     def export_str_pdf(
         request: Request,
         alert_id: str,
-        user: dict = Depends(require_permission("str:export")),
+        user: dict = Depends(require_permission("str:read")),
         detection_svc: DetectionService = Depends(get_detection_service),
         compliance_svc: ComplianceService = Depends(get_compliance_service),
     ):
@@ -105,7 +105,7 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
         status: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
-        user: dict = Depends(require_permission("str:export")),
+        user: dict = Depends(require_permission("str:read")),
         str_svc: STRService = Depends(get_str_service),
     ):
         """List STRs with optional status filter."""
@@ -116,7 +116,7 @@ def register_compliance_routes(r: APIRouter, limiter: Limiter) -> None:
     def get_str(
         request: Request,
         str_id: str,
-        user: dict = Depends(require_permission("str:export")),
+        user: dict = Depends(require_permission("str:read")),
         str_svc: STRService = Depends(get_str_service),
     ):
         """Get STR details."""

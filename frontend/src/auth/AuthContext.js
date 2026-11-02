@@ -11,6 +11,9 @@ import { TOKEN_REFRESH_BUFFER_MS, TOKEN_MIN_REFRESH_INTERVAL_MS } from '../confi
 
 const AuthContext = createContext(null);
 
+// Matches GUEST_USER in backend/api/v1/routes/auth.py.
+export const GUEST_USER = 'guest';
+
 /**
  * Decode JWT payload to extract expiry (exp) without a library.
  * Returns the payload object or null if parsing fails.
@@ -93,6 +96,18 @@ export function AuthProvider({ children }) {
     refreshIntervalRef.current = setInterval(refreshToken, refreshInMs);
   }, [refreshToken]);
 
+  const startSession = useCallback((data, fallbackUser) => {
+    setToken(data.access_token);
+    if (data.refresh_token) {
+      setRefreshToken(data.refresh_token);
+    }
+    setUser(data.user || fallbackUser);
+    setIsAuthenticated(true);
+    setAuthError(null);
+    scheduleRefresh(data.access_token);
+    return data;
+  }, [scheduleRefresh]);
+
   /**
    * Login with username and password.
    */
@@ -112,19 +127,28 @@ export function AuthProvider({ children }) {
     }
 
     if (data.access_token) {
-      setToken(data.access_token);
-      if (data.refresh_token) {
-        setRefreshToken(data.refresh_token);
-      }
-      setUser(data.user || { username });
-      setIsAuthenticated(true);
-      setAuthError(null);
-      scheduleRefresh(data.access_token);
-      return data;
+      return startSession(data, { username });
     }
 
     throw new Error('No access token in response');
-  }, [scheduleRefresh]);
+  }, [startSession]);
+
+  /**
+   * View-only session without a password (the backend allows it in the demo only).
+   */
+  const loginAsGuest = useCallback(async () => {
+    const res = await fetch(resolveUrl('/api/v1/auth/guest'), { method: 'POST' });
+    const body = await res.json();
+    const data = body?.data || body;
+
+    if (!res.ok) {
+      throw new Error(body?.error?.message || 'Guest access failed');
+    }
+    if (!data.access_token) {
+      throw new Error('No access token in response');
+    }
+    return startSession(data, { username: GUEST_USER, role: 'READONLY' });
+  }, [startSession]);
 
   /**
    * Logout — clear tokens and state.
@@ -220,7 +244,9 @@ export function AuthProvider({ children }) {
     isAuthenticated,
     isLoading,
     authError,
+    isGuest: user?.username === GUEST_USER,
     login,
+    loginAsGuest,
     logout,
     refreshToken,
   };

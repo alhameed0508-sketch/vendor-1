@@ -122,7 +122,7 @@ function MetricCard({ label, value, icon: Icon, detail }) {
       <div
         style={{
           color: 'var(--text-primary)',
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)',
           fontSize: 28,
           fontWeight: 600,
           marginTop: 10,

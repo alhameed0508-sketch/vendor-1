@@ -71,6 +71,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "alerts:read",
         "alerts:write",
         "alerts:delete",
+        "str:read",
         "str:export",
         "str:approve",
         "config:read",
@@ -85,6 +86,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
     "SUPERVISOR": [
         "alerts:read",
         "alerts:write",
+        "str:read",
         "str:export",
         "str:approve",
         "feedback:write",
@@ -96,6 +98,7 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
     "INVESTIGATOR": [
         "alerts:read",
         "alerts:write",
+        "str:read",
         "str:export",
         "feedback:write",
         "kpi:read",
@@ -104,7 +107,9 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
     ],
     "READONLY": [
         "alerts:read",
+        "str:read",
         "kpi:read",
+        "screening:read",
         "onboarding:read",
     ],
 }

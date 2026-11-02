@@ -2,7 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { contrastRatio } from './contrast';
 
-const read = f => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
+const SRC = path.join(__dirname, '..');
+const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
+const sourceFiles = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
+  const full = path.join(dir, entry.name);
+  if (entry.isDirectory()) return sourceFiles(full);
+  return /\.js$/.test(entry.name) && !/\.test\.js$/.test(entry.name) ? [path.relative(SRC, full)] : [];
+});
 const appCss = read('App.css');
 const indexCss = read('index.css');
 
@@ -69,21 +75,37 @@ test('emerald aliases follow the accent', () => {
   });
 });
 
-test('fonts: IBM Plex Sans UI, Bodoni Moda display, IBM Plex Mono code', () => {
-  expect(indexCss).toMatch(/IBM\+Plex\+Sans/);
-  expect(indexCss).toMatch(/Bodoni\+Moda/);
+test('fonts: Anek Latin for text and headings, IBM Plex Mono code', () => {
+  expect(indexCss).toMatch(/family=Anek\+Latin:wdth,wght@75\.\.125,/);
   expect(indexCss).toMatch(/IBM\+Plex\+Mono/);
-  expect(indexCss).not.toMatch(/family=Inter|JetBrains\+Mono/);
+  expect(indexCss).not.toMatch(/family=Inter|JetBrains\+Mono|Bodoni|IBM\+Plex\+Sans/);
   expect(indexCss).toMatch(/display=swap/);
-  expect(token(darkBlock, '--font-sans')).toMatch(/^'IBM Plex Sans'.*sans-serif$/);
-  expect(token(darkBlock, '--font-display')).toMatch(/^'Bodoni Moda'.*serif$/);
+  expect(token(darkBlock, '--font-sans')).toMatch(/^'Anek Latin'.*sans-serif$/);
+  expect(token(darkBlock, '--font-display')).toMatch(/^'Anek Latin'.*sans-serif$/);
   expect(token(darkBlock, '--font-mono')).toMatch(/^'IBM Plex Mono'.*monospace$/);
 });
 
-test('display serif is limited to page titles and headline numbers', () => {
+test('narrow display width is limited to page titles and headline numbers', () => {
   const headings = appCss.match(/^h1, h2, h3, h4 \{[^}]*\}/m)[0];
   expect(headings).toMatch(/var\(--font-sans\)/);
   expect(appCss).toMatch(/\.page-header h1[^{]*\{[^}]*var\(--font-display\)/);
+});
+
+test('every display-font rule also sets the narrow display width', () => {
+  const rules = appCss.match(/[^{}]+\{[^}]*var\(--font-display\)[^}]*\}/g)
+    .filter(r => !r.includes('--font-display:'));
+  expect(rules.length).toBeGreaterThan(5);
+  rules.forEach(r => expect(r).toMatch(/font-stretch:\s*var\(--display-stretch\)/));
+  expect(token(darkBlock, '--display-stretch')).toMatch(/^\d+%$/);
+});
+
+test('inline display-font styles also set the narrow display width', () => {
+  sourceFiles(SRC).forEach(file => {
+    const src = read(file);
+    const uses = (src.match(/fontFamily: 'var\(--font-display\)'/g) || []).length;
+    const stretched = (src.match(/fontStretch: 'var\(--display-stretch\)'/g) || []).length;
+    expect(`${file} ${stretched}`).toBe(`${file} ${uses}`);
+  });
 });
 
 test('focus ring uses accent token', () => {

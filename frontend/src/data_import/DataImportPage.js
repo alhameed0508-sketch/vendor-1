@@ -150,7 +150,7 @@ export default function DataImportPage() {
         style={{ marginBottom: 28 }}
       >
         <h1 style={{
-          fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700,
+          fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)', fontSize: 22, fontWeight: 700,
           color: 'var(--text-primary)', letterSpacing: '-0.3px', marginBottom: 4,
         }}>
           Data Import

@@ -9,7 +9,7 @@ from api.deps import get_redis_client, get_user_repository
 from api.v1.schemas.auth import LoginRequest, LogoutRequest, RefreshRequest
 from cache.redis_client import RedisClient
 from core.config import get_settings
-from core.exceptions import AuthenticationError
+from core.exceptions import AuthenticationError, AuthorizationError
 from core.response import success_response
 from fastapi import APIRouter, Depends, Request
 from middleware.auth import get_current_user
@@ -32,6 +32,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Redis key prefix for blacklisted refresh tokens
 _BLACKLIST_PREFIX = "token:blacklist:"
+GUEST_USER = "guest"
+GUEST_ROLE = "READONLY"
 
 
 def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -127,6 +129,22 @@ def register_auth_routes(r: APIRouter, limiter: Limiter) -> None:
             {
                 "access_token": access,
                 "refresh_token": refresh,
+                "token_type": "bearer",
+                "auth_enabled": settings.auth_enabled,
+            }
+        )
+
+    @r.post("/guest")
+    @limiter.limit("10/minute")
+    def guest_login(request: Request):
+        """Issue a view-only session without a password; demo only, where all data is synthetic."""
+        settings = get_settings()
+        if not settings.demo_mode:
+            raise AuthorizationError("Guest access is only available in the demo")
+        return success_response(
+            {
+                "access_token": create_access_token(GUEST_USER, GUEST_ROLE),
+                "refresh_token": create_refresh_token(GUEST_USER, GUEST_ROLE),
                 "token_type": "bearer",
                 "auth_enabled": settings.auth_enabled,
             }

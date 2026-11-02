@@ -6,7 +6,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, loginAsGuest, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +19,18 @@ export default function LoginPage() {
     navigate('/', { replace: true });
     return null;
   }
+
+  const handleGuest = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginAsGuest();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setError(err.message || 'Guest access failed');
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,7 +93,7 @@ export default function LoginPage() {
                 color: 'var(--on-accent)',
                 fontSize: 20,
                 fontWeight: 700,
-                fontFamily: 'var(--font-display)',
+                fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)',
                 letterSpacing: '-0.5px',
               }}>
                 MC
@@ -91,7 +103,7 @@ export default function LoginPage() {
             <h1 style={{
               fontSize: 24,
               fontWeight: 700,
-              fontFamily: 'var(--font-display)',
+              fontFamily: 'var(--font-display)', fontStretch: 'var(--display-stretch)',
               color: 'var(--text-primary)',
               letterSpacing: '-0.3px',
               marginBottom: 8,
@@ -260,6 +272,25 @@ export default function LoginPage() {
               </span>
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={handleGuest}
+            disabled={loading}
+            className="btn btn-ghost"
+            style={{ width: '100%', marginTop: 12, padding: '12px', fontSize: 13, borderRadius: 10 }}
+          >
+            View as guest
+          </button>
+          <p style={{
+            marginTop: 8,
+            textAlign: 'center',
+            fontSize: 12,
+            fontFamily: 'var(--font-sans)',
+            color: 'var(--text-muted)',
+          }}>
+            No password needed. Guests can look around but not change anything.
+          </p>
 
           {/* Footer */}
           <div style={{

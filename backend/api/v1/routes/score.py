@@ -13,6 +13,8 @@ from services.realtime_scorer import RealtimeScorer
 from slowapi import Limiter
 
 SCORE_ROLES = ("ADMIN", "SUPERVISOR", "INVESTIGATOR")
+# Watching the synthetic replay changes nothing, so view-only users may too.
+STREAM_ROLES = (*SCORE_ROLES, "READONLY")
 ACTION_REVIEW = "route_to_human_review"
 ACTION_NONE = "none"
 
@@ -56,7 +58,7 @@ def register_score_routes(r: APIRouter, limiter: Limiter) -> None:
         request: Request,
         limit: int = Query(300, ge=1, le=2000),
         rate: float = Query(5.0, ge=0, le=100),
-        user: dict = Depends(require_role(*SCORE_ROLES)),
+        user: dict = Depends(require_role(*STREAM_ROLES)),
         replay=Depends(get_demo_replay),
     ):
         """Server-sent events replaying synthetic payments through the scorer (demo only)."""
