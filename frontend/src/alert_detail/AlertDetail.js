@@ -31,6 +31,10 @@ export default function AlertDetail() {
       .then(r => r.json())
       .then(body => {
         const data = body?.data || body;
+        if (!data || body?.success === false) { // an alert that no longer exists comes back as an error envelope
+          setLoading(false);
+          return;
+        }
         setAlert(data);
         setStatus(data.status);
         setNotes(data.investigator_notes || '');
