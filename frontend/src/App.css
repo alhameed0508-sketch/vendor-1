@@ -1221,7 +1221,7 @@ input::placeholder, textarea::placeholder {
 
 .amount {
   font-family: var(--font-sans);
-  color: var(--high);
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -1929,6 +1929,7 @@ html[data-theme="light"] {
   letter-spacing: -0.01em;
 }
 .graph-figures { display: flex; flex-wrap: wrap; gap: 8px 32px; margin: 0; }
+.alert-figures { margin-top: 10px; }
 .graph-figures dt { font: 12px var(--font-sans); color: var(--text-muted); }
 .graph-figures dd {
   margin: 2px 0 0;

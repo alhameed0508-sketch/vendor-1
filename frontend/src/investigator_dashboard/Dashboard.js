@@ -6,7 +6,8 @@ import { toast } from 'sonner';
 import { RefreshCw, ArrowUp, ArrowDown, AlertTriangle, Activity, Shield, DollarSign, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
-import { API_ALERTS_LIMIT, AMOUNT_DIVISOR_LAKHS, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
+import { API_ALERTS_LIMIT, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
+import { formatAmount } from '../utils/formatAmount';
 import StatCard from '../components/StatCard';
 import { statusLabel as label } from '../utils/statusLabel';
 
@@ -127,7 +128,7 @@ export default function Dashboard() {
     critical: alerts.filter(a => a.severity === 'CRITICAL').length,
     high:     alerts.filter(a => a.severity === 'HIGH').length,
     open:     alerts.filter(a => a.status === 'OPEN').length,
-    total:    (alerts.reduce((s, a) => s + a.total_amount, 0) / AMOUNT_DIVISOR_LAKHS).toFixed(1),
+    total:    alerts.reduce((s, a) => s + (a.total_amount || 0), 0),
   };
 
   const hasFilters = filter.severity !== 'ALL' || filter.status !== 'ALL';
@@ -167,7 +168,7 @@ export default function Dashboard() {
             {stats.critical > 0 && <span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span>}
             {stats.high > 0     && <span style={{ color: 'var(--high)' }}>{stats.high} high</span>}
             {stats.open > 0     && <span>{stats.open} open</span>}
-            {parseFloat(stats.total) > 0 && <span>₹{stats.total}L flagged</span>}
+            {stats.total > 0 && <span>{formatAmount(stats.total)} flagged</span>}
           </p>
         </div>
 
@@ -186,7 +187,7 @@ export default function Dashboard() {
         <StatCard label="Critical"      value={stats.critical} icon={AlertTriangle} sub="active alerts" />
         <StatCard label="High severity" value={stats.high}     icon={Activity}      sub="active alerts" />
         <StatCard label="Open cases"    value={stats.open}   icon={Shield}        sub="under review" />
-        <StatCard label="Total flagged" value={`₹${stats.total}L`} icon={DollarSign}   sub="this cycle" />
+        <StatCard label="Total flagged" value={formatAmount(stats.total)} icon={DollarSign}   sub="this cycle" />
       </div>
 
       {/* ── Filter Bar ── */}

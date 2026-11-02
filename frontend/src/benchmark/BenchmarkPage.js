@@ -19,7 +19,6 @@ const ACTIONS = [
     id: 'synthetic',
     label: 'Synthetic',
     icon: Play,
-    color: '#6366F1',
     endpoint: '/api/v1/benchmark/synthetic',
     body: { num_clusters: 3, num_legit_accounts: 30 },
   },
@@ -27,7 +26,6 @@ const ACTIONS = [
     id: 'adversarial',
     label: 'Adversarial',
     icon: Zap,
-    color: '#F43F5E',
     endpoint: '/api/v1/benchmark/adversarial',
     body: { num_clusters: 3, num_legit: 30, num_adversarial: 20 },
   },
@@ -35,7 +33,6 @@ const ACTIONS = [
     id: 'cross_validation',
     label: 'Cross-Validation',
     icon: Layers,
-    color: '#FB923C',
     endpoint: '/api/v1/benchmark/cross-validation',
     body: { num_clusters: 3, num_legit: 30, num_folds: 5 },
   },
@@ -43,7 +40,6 @@ const ACTIONS = [
     id: 'comparison',
     label: 'Comparison',
     icon: BarChart2,
-    color: '#22D3EE',
     endpoint: '/api/v1/benchmark/comparison',
     body: { cluster_counts: [3, 5, 8] },
   },
@@ -51,7 +47,6 @@ const ACTIONS = [
     id: 'full_evaluation',
     label: 'Full Evaluation',
     icon: Target,
-    color: '#10B981',
     endpoint: '/api/v1/benchmark/full-evaluation',
   },
 ];
@@ -117,12 +112,12 @@ export function summarizeBenchmark(result) {
   return result;
 }
 
-function MetricCard({ label, value, color, icon: Icon, detail }) {
+function MetricCard({ label, value, icon: Icon, detail }) {
   return (
     <div style={{ ...cardStyle, position: 'relative', overflow: 'hidden' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span className="eyebrow">{label}</span>
-        <Icon size={14} color={color} />
+        <Icon size={14} color="var(--text-muted)" />
       </div>
       <div
         style={{
@@ -271,7 +266,7 @@ export default function BenchmarkPage() {
     return (
       <div className="loading">
         <div className="spinner" />
-        <span>LOADING BENCHMARK PROGRAMS...</span>
+        <span>Loading benchmarks…</span>
       </div>
     );
   }
@@ -291,11 +286,11 @@ export default function BenchmarkPage() {
           <h1 className="text-page-title" style={{ margin: 0 }}>
             Model Benchmarks
           </h1>
-          <span className="status-badge">EVALUATION</span>
+          <span className="status-badge">Evaluation</span>
         </div>
         <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
-          Executable detection benchmarks · precision/recall · adversarial testing
-          · deterministic cross-validation
+          Run detection benchmarks: precision and recall, adversarial tests and
+          repeatable cross-validation.
         </p>
       </motion.div>
 
@@ -304,12 +299,12 @@ export default function BenchmarkPage() {
           role="alert"
           style={{
             ...cardStyle,
-            borderColor: 'rgba(251,146,60,.45)',
+            borderColor: 'var(--high)',
             color: 'var(--text-secondary)',
             marginBottom: 18,
           }}
         >
-          <Shield size={15} color="#FB923C" style={{ marginRight: 8 }} />
+          <Shield size={15} color="var(--high)" style={{ marginRight: 8 }} />
           {capabilities?.restriction ||
             'Synthetic benchmarks are unavailable in this environment.'}
         </div>
@@ -359,28 +354,24 @@ export default function BenchmarkPage() {
             <MetricCard
               label="Precision"
               value={percentage(summary.precision)}
-              color="#6366F1"
               icon={Target}
               detail="flagged accounts confirmed by labels"
             />
             <MetricCard
               label="Recall"
               value={percentage(summary.recall)}
-              color="#22D3EE"
               icon={Zap}
               detail="labelled mule accounts detected"
             />
             <MetricCard
               label="F1 score"
               value={percentage(summary.f1_score)}
-              color="#10B981"
               icon={CheckCircle}
               detail="precision/recall balance"
             />
             <MetricCard
               label="Accuracy"
               value={percentage(summary.accuracy)}
-              color="#FB923C"
               icon={Shield}
               detail="overall account classification"
             />

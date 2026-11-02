@@ -7,3 +7,10 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
   disconnect() {}
 };
+
+// Polyfill IntersectionObserver for jsdom (required by framer-motion useInView in AnimatedCounter)
+global.IntersectionObserver = class IntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

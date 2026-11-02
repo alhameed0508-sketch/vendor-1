@@ -4,15 +4,21 @@ import ROIDashboard from './ROIDashboard';
 
 jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
 
-const BODIES = {
-  '/api/v1/kpi': { data: { fraud_prevented_crore: 1.79, total_alerts: 9 } },
-  '/api/v1/feedback/stats': { data: null },
-  '/api/v1/roi': { data: { detection_breakdown: [{ pattern: 'SMURF', count: 4 }, { pattern: 'FAN_OUT', count: 2 }] } },
+const KPI = {
+  fraud_prevented_inr: 25000000, fraud_prevented_crore: 2.5, total_alerts: 9,
+  hours_saved: 27, manpower_saved_lakh: 0, false_positive_reduction_pct: null,
+  roi_assumptions: { analyst_hourly_cost_inr: 0 },
 };
 
-beforeEach(() => {
-  apiFetch.mockImplementation(url => Promise.resolve({ json: () => Promise.resolve(BODIES[url]) }));
-});
+const mockBodies = kpi => apiFetch.mockImplementation(url => Promise.resolve({ json: () => Promise.resolve({
+  '/api/v1/kpi': { data: kpi },
+  '/api/v1/feedback/stats': { data: null },
+  '/api/v1/roi': { data: { detection_breakdown: [{ pattern: 'SMURF', count: 4 }, { pattern: 'FAN_OUT', count: 2 }] } },
+}[url]) }));
+
+const tile = label => screen.getByText(label).closest('.stat-card');
+
+beforeEach(() => mockBodies(KPI));
 
 afterEach(() => apiFetch.mockReset());
 
@@ -23,10 +29,56 @@ describe('ROIDashboard', () => {
     expect(screen.queryByText(/^live$/i)).toBeNull();
   });
 
-  it('lists detections by pattern with their counts', async () => {
+  it('describes the page without middle dots', async () => {
     render(<ROIDashboard />);
-    expect(await screen.findByText('SMURF')).toBeInTheDocument();
+    const heading = await screen.findByRole('heading', { name: 'ROI Analytics' });
+    expect(heading.nextSibling.textContent).not.toMatch('·');
+  });
+
+  it('lists detections by pattern in words, with their counts', async () => {
+    render(<ROIDashboard />);
+    expect(await screen.findByText('Smurf')).toBeInTheDocument();
     expect(screen.getByText('4')).toBeInTheDocument();
-    expect(screen.getByText('FAN_OUT')).toBeInTheDocument();
+    expect(screen.getByText('Fan out')).toBeInTheDocument();
+  });
+
+  it('says there is no data yet instead of showing demo figures', async () => {
+    apiFetch.mockImplementation(url => Promise.resolve({ json: () => Promise.resolve(
+      url === '/api/v1/kpi' ? { data: KPI } : { data: { monthly_trends: [], detection_breakdown: [] } }) }));
+    render(<ROIDashboard />);
+    expect(await screen.findByText('No detections yet.')).toBeInTheDocument();
+    expect(screen.getAllByText('No monthly figures yet.')).toHaveLength(2);
+    expect(screen.queryByText('Smurfing')).toBeNull();
+  });
+
+  it('shows fraud prevented in the shared rupee format', async () => {
+    render(<ROIDashboard />);
+    await screen.findByText('Fraud Prevented');
+    expect(tile('Fraud Prevented')).toHaveTextContent('₹2.5Cr');
+  });
+
+  it('says a figure is not measured instead of showing a made-up percentage', async () => {
+    render(<ROIDashboard />);
+    await screen.findByText('False Positive Reduction');
+    expect(tile('False Positive Reduction')).toHaveTextContent('Not measured');
+    expect(screen.queryByText('40%')).toBeNull();
+    expect(tile('Investigation Time Saved')).toHaveTextContent('—');
+  });
+
+  it('asks for the analyst hourly cost instead of showing ₹0 next to hours freed', async () => {
+    render(<ROIDashboard />);
+    await screen.findByText('Manpower Saved');
+    expect(tile('Manpower Saved')).toHaveTextContent('Cost not set');
+    expect(tile('Manpower Saved')).toHaveTextContent('27 hours freed');
+  });
+
+  it('shows manpower saved in rupees once a cost is set', async () => {
+    mockBodies({ ...KPI, manpower_saved_lakh: 4.5, false_positive_reduction_pct: 38, investigation_time_reduction_pct: 75,
+      roi_assumptions: { analyst_hourly_cost_inr: 1500 } });
+    render(<ROIDashboard />);
+    await screen.findByText('Manpower Saved');
+    expect(tile('Manpower Saved')).toHaveTextContent('₹4.5L');
+    expect(tile('False Positive Reduction')).toHaveTextContent('38%');
+    expect(tile('Investigation Time Saved')).toHaveTextContent('75%');
   });
 });

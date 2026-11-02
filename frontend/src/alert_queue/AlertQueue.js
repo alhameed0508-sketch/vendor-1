@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { statusLabel } from '../utils/statusLabel';
+import { formatAmount } from '../utils/formatAmount';
 import { Link, useNavigate } from 'react-router-dom';
 import { alertPath } from '../utils/safeNavigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -39,13 +40,6 @@ import {
 
 /* ── Helpers ────────────────────────────────────────────────────── */
 
-function formatAmount(v) {
-  if (v >= 10000000) return `₹${(v / 10000000).toFixed(1)}Cr`;
-  if (v >= 100000)   return `₹${(v / 100000).toFixed(1)}L`;
-  if (v >= 1000)     return `₹${(v / 1000).toFixed(0)}K`;
-  return `₹${Math.round(v)}`;
-}
-
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -71,8 +65,6 @@ const STATUS_CONFIG = {
   STR_FILED:    { cls: 'badge-STR_FILED' },
   FALSE_POSITIVE: { cls: 'badge-FALSE_POSITIVE' },
 };
-
-const COMPLEXITY_COLORS = { HIGH: 'var(--critical)', MEDIUM: 'var(--high)', LOW: 'var(--accent-green)' };
 
 const BREAKDOWN_LABELS = {
   risk_score:          'Risk',
@@ -241,7 +233,7 @@ function AlertExpandedDetail({ alert, onStatusChange, statusLoading }) {
                       transition: 'opacity 0.15s',
                     }}
                   >
-                    {statusLoading === s ? 'Updating...' : s.replace(/_/g, ' ')}
+                    {statusLoading === s ? 'Updating…' : statusLabel(s)}
                   </button>
                 );
               })}
@@ -568,17 +560,17 @@ export default function AlertQueue({ onSelectAlert }) {
                         <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)', }}>
                           {alert.alert_id}
                         </span>
-                        <span className={`badge ${sevCfg.cls}`}>{alert.severity}</span>
+                        <span className={`badge ${sevCfg.cls}`}>{statusLabel(alert.severity)}</span>
                         <span className={`badge ${(STATUS_CONFIG[alert.status] || {}).cls || ''}`}>
-                          {alert.status.replace(/_/g, ' ')}
+                          {statusLabel(alert.status)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: 12, fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)' }}>
                         <span>{alert.account_count} accounts</span>
-                        <span>{alert.txn_count} txns</span>
-                        <span style={{ color: COMPLEXITY_COLORS[alert.investigation_complexity] }}>
-                          {alert.investigation_complexity}
-                        </span>
+                        <span>{alert.txn_count} transfers</span>
+                        {alert.investigation_complexity && (
+                          <span>{statusLabel(alert.investigation_complexity)} effort</span>
+                        )}
                       </div>
                     </div>
 

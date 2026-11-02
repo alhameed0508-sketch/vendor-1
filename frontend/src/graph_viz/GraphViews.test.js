@@ -18,7 +18,7 @@ describe('GraphVerdict', () => {
       figures: { accounts: 5, flaggedAmount: 700000, flaggedTransfers: 3, highestRisk: 0.9 },
     }} />);
     expect(screen.getByRole('heading', { name: 'Likely mule ring' })).toBeInTheDocument();
-    expect(screen.getByText('₹7.0L')).toBeInTheDocument();
+    expect(screen.getByText('₹7L')).toBeInTheDocument();
     expect(screen.getByText('90%')).toBeInTheDocument();
     expect(screen.getByText('Flagged transfers')).toBeInTheDocument();
   });

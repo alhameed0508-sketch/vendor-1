@@ -24,13 +24,6 @@ const ROLE_REASONS = {
 
 export const roleLabel = role => ROLE_LABELS[role] || 'Unknown';
 
-export function formatAmount(amount = 0) {
-  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
-  if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
-  return `₹${Math.round(amount)}`;
-}
-
 const fromOf = e => e.from_account ?? e.source;
 const toOf = e => e.to_account ?? e.target;
 export const edgeKey = e => `${fromOf(e)}->${toOf(e)}`;

@@ -8,10 +8,11 @@ const CITIES = [
 ];
 
 describe('RegionalStatsPanel', () => {
-  it('sums alerts and suspicious volume across cities', () => {
-    render(<RegionalStatsPanel cityData={CITIES} />);
-    expect(screen.getByText('17')).toBeInTheDocument();
-    expect(screen.getByText('₹1.8Cr')).toBeInTheDocument();
+  it('shows the city count and the flagged amount it is given, not a per-city sum', () => {
+    render(<RegionalStatsPanel cityData={CITIES} totalVolume={12500000} />);
+    expect(screen.getByText('Cities').nextSibling).toHaveTextContent('2');
+    expect(screen.getByText('Flagged amount').nextSibling).toHaveTextContent('₹1.25Cr');
+    expect(screen.queryByText('Total Alerts')).not.toBeInTheDocument();
   });
 
   it('names severity counts in words, never colour alone', () => {

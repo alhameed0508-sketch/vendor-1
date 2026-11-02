@@ -1,5 +1,6 @@
 import React from 'react';
-import { accountRows, formatAmount, roleLabel } from './graphModel';
+import { accountRows, roleLabel } from './graphModel';
+import { formatAmount } from '../utils/formatAmount';
 import { roleStyle, shapePath } from './graphStyle';
 
 function RoleMark({ role }) {

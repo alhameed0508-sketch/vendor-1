@@ -16,6 +16,8 @@ import { API_ALERTS_LIMIT } from '../config';
 
 /* ── Aggregate helpers ── */
 
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
 function aggregateGraphData(alerts) {
   const nodeMap = new Map();
   const edgeMap = new Map();
@@ -206,6 +208,7 @@ export default function NetworkOverview() {
 
   // City-level aggregation for map + stats panel
   const cityData = useMemo(() => aggregateCityData(alerts), [alerts]);
+  const flaggedVolume = useMemo(() => edges.reduce((s, e) => s + (e.total_amount || 0), 0), [edges]);
 
   // State-level alert counts for heatmap coloring
   const stateAlertCounts = useMemo(() => {
@@ -258,7 +261,7 @@ export default function NetworkOverview() {
           fontSize: 12,
           color: 'var(--text-muted)',
         }}>
-          LOADING NETWORK TOPOLOGY...
+          Loading the network…
         </span>
       </div>
     );
@@ -303,7 +306,7 @@ export default function NetworkOverview() {
                 fontSize: 12,
                 color: connected ? 'var(--accent)' : 'var(--text-muted)',
                 fontWeight: 700,
-              }}>{connected ? 'Live' : 'Offline'}</span>
+              }}>{connected ? 'Live updates on' : 'Live updates off'}</span>
             </div>
           </div>
 
@@ -311,22 +314,9 @@ export default function NetworkOverview() {
             fontFamily: 'var(--font-sans)',
             fontSize: 12,
             color: 'var(--text-muted)',
-            letterSpacing: '0.3px',
             margin: 0,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
           }}>
-            
-            Transaction graph topology
-            <span style={{ color: 'var(--text-faint)' }}>·</span>
-            Real-time cluster detection
-            {updatedAgo && (
-              <>
-                <span style={{ color: 'var(--text-faint)' }}>·</span>
-                <span style={{ color: 'var(--text-faint)' }}>Updated {updatedAgo}</span>
-              </>
-            )}
+            Where flagged money moves across India.{updatedAgo && ` Updated ${updatedAgo}.`}
           </p>
         </div>
 
@@ -342,10 +332,10 @@ export default function NetworkOverview() {
 
       {/* Stats Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Total Accounts"      value={stats.totalAccounts} icon={Users} />
-        <StatCard label="Total Transactions"  value={stats.totalTransactions.toLocaleString()}          icon={ArrowRightLeft} />
-        <StatCard label="Total Alerts"        value={stats.totalAlerts}            icon={AlertTriangle} />
-        <StatCard label="Clusters Detected"   value={stats.clustersDetected}            icon={Share2} />
+        <StatCard label="Accounts"            value={stats.totalAccounts} icon={Users} />
+        <StatCard label="Transfers"           value={stats.totalTransactions.toLocaleString()}          icon={ArrowRightLeft} />
+        <StatCard label="Alerts"              value={stats.totalAlerts}            icon={AlertTriangle} />
+        <StatCard label="Mule clusters"       value={stats.clustersDetected}            icon={Share2} />
       </div>
 
       {/* Map + Regional Stats Row */}
@@ -367,6 +357,7 @@ export default function NetworkOverview() {
           />
           <RegionalStatsPanel
             cityData={cityData}
+            totalVolume={flaggedVolume}
             selectedCity={selectedCity}
             onCityClick={handleCityClick}
           />
@@ -402,7 +393,7 @@ export default function NetworkOverview() {
                 color: 'var(--text-primary)',
                 letterSpacing: '0.3px',
               }}>
-                {selectedCity ? `Network Graph — ${selectedCity}` : 'Combined Network Graph'}
+                {selectedCity ? `Money flow in ${selectedCity}` : 'Money flow across all alerts'}
               </span>
               {selectedCity && (
                 <button
@@ -411,7 +402,7 @@ export default function NetworkOverview() {
                   style={{ padding: '2px 8px', fontSize: 12, gap: 4 }}
                 >
                   <X size={10} />
-                  <span style={{ fontFamily: 'var(--font-sans)', }}>Clear Filter</span>
+                  <span style={{ fontFamily: 'var(--font-sans)', }}>Show all cities</span>
                 </button>
               )}
             </div>
@@ -420,11 +411,7 @@ export default function NetworkOverview() {
               fontSize: 12,
               color: 'var(--text-muted)',
               }}>
-              {filteredData.nodes.length} nodes
-              <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
-              {filteredData.edges.length} edges
-              <span style={{ margin: '0 6px', color: 'var(--text-faint)' }}>·</span>
-              {alerts.length} alerts merged
+              {plural(filteredData.nodes.length, 'account')}, {plural(filteredData.edges.length, 'transfer')} from {plural(alerts.length, 'alert')}
             </span>
           </div>
 
@@ -457,8 +444,8 @@ export default function NetworkOverview() {
                   marginBottom: 4,
                 }}>
                   {selectedCity
-                    ? `No network data for ${selectedCity}`
-                    : 'No network data available'}
+                    ? `No flagged accounts in ${selectedCity}`
+                    : 'No network data yet'}
                 </p>
                 <p style={{
                   fontFamily: 'var(--font-sans)',
@@ -467,8 +454,8 @@ export default function NetworkOverview() {
                   letterSpacing: '0.3px',
                 }}>
                   {selectedCity
-                    ? 'Try selecting a different city or clear the filter'
-                    : 'Run detection pipeline to populate the graph'}
+                    ? 'Pick another city on the map, or show all cities.'
+                    : 'Import transactions and run detection to fill the graph.'}
                 </p>
               </div>
               {selectedCity && (
@@ -477,7 +464,7 @@ export default function NetworkOverview() {
                   onClick={() => setSelectedCity(null)}
                   style={{ marginTop: 8 }}
                 >
-                  Clear Filter
+                  Show all cities
                 </button>
               )}
             </div>

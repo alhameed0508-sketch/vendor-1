@@ -34,7 +34,7 @@ describe('NetworkGraph', () => {
   it('leads with the verdict for the accounts it is given', () => {
     renderGraph();
     expect(screen.getByRole('heading', { name: 'Likely mule ring' })).toBeInTheDocument();
-    expect(screen.getByText('₹5.0L')).toBeInTheDocument();
+    expect(screen.getByText('₹5L')).toBeInTheDocument();
   });
 
   it('replays the money flow on request', async () => {

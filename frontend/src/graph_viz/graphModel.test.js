@@ -1,6 +1,6 @@
 import {
   roleLabel, isFlaggedEdge, hopRounds, summariseClusters, riskiestCluster,
-  graphVerdict, whyFlagged, formatAmount, edgeKey, accountRows,
+  graphVerdict, whyFlagged, edgeKey, accountRows,
 } from './graphModel';
 
 const node = (account_id, role, smurf_score = 0, extra = {}) => ({ account_id, role, smurf_score, ...extra });
@@ -20,11 +20,6 @@ describe('roleLabel', () => {
   it.each([['SOURCE', 'Source'], ['AGGREGATOR', 'Aggregator'], ['MULE', 'Mule'], ['LEGITIMATE', 'Legitimate']])(
     '%s -> %s', (role, label) => expect(roleLabel(role)).toBe(label));
   it('falls back to Unknown', () => expect(roleLabel(undefined)).toBe('Unknown'));
-});
-
-describe('formatAmount', () => {
-  it.each([[25000000, '₹2.5Cr'], [450000, '₹4.5L'], [8000, '₹8K'], [950, '₹950'], [0, '₹0']])(
-    '%s -> %s', (amount, text) => expect(formatAmount(amount)).toBe(text));
 });
 
 describe('isFlaggedEdge', () => {

@@ -1,8 +1,9 @@
 import * as d3 from 'd3';
 import {
-  edgeKey, formatAmount, hopRounds, isFlaggedEdge, riskiestCluster, roleLabel, summariseClusters,
+  edgeKey, hopRounds, isFlaggedEdge, riskiestCluster, roleLabel, summariseClusters,
 } from './graphModel';
 import { edgeStyle, nodeRadius, ringWidth, roleStyle, shapePath } from './graphStyle';
+import { formatAmount } from '../utils/formatAmount';
 import { computeHullPath, curvedEdgePath, pointOnEdge } from './graphGeometry';
 
 const HOP_MS = 1100;

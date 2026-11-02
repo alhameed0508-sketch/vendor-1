@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatAmount } from './graphModel';
+import { formatAmount } from '../utils/formatAmount';
 
 /** Plain verdict for the graph, with the few figures that back it up. */
 export default function GraphVerdict({ verdict }) {

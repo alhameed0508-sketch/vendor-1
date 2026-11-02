@@ -5,21 +5,22 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { apiFetch } from '../auth/api';
 
 const STATUS_COLORS = {
-  active: 'var(--accent-green)',
-  fallback: 'var(--accent-amber)',
+  active: 'var(--accent)',
+  fallback: 'var(--text-muted)',
   offline: 'var(--text-muted)',
 };
 
 function StatusBadge({ status }) {
-  const label = status?.enabled ? status.provider : 'Template Fallback';
+  const label = status?.enabled ? `AI: ${status.provider}` : 'Template answers';
   const color = status?.enabled ? STATUS_COLORS.active : STATUS_COLORS.fallback;
   return (
     <span style={{
       fontSize: 12, fontFamily: 'var(--font-sans)', 
       padding: '2px 8px', borderRadius: 10,
-      background: `${color}18`, color, border: `1px solid ${color}30`,
+      background: `color-mix(in srgb, ${color} 10%, transparent)`, color,
+      border: `1px solid color-mix(in srgb, ${color} 20%, transparent)`,
       }}>
-      {status?.enabled ? 'GenAI' : 'Template'} · {label}
+      {label}
     </span>
   );
 }
@@ -41,8 +42,8 @@ function MessageBubble({ role, content }) {
         maxWidth: '85%',
         padding: '10px 14px',
         borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-        background: isUser ? 'rgba(62,231,255,0.10)' : 'var(--bg-elevated)',
-        border: `1px solid ${isUser ? 'rgba(62,231,255,0.20)' : 'var(--border)'}`,
+        background: isUser ? 'var(--accent-tint)' : 'var(--bg-elevated)',
+        border: `1px solid ${isUser ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'var(--border)'}`,
         fontSize: 12,
         fontFamily: 'var(--font-sans)',
         color: 'var(--text-primary)',
@@ -252,11 +253,11 @@ export default function InvestigationChat({ alertId, alertData }) {
                     className="btn btn-ghost"
                     style={{
                       fontSize: 12, padding: '5px 10px',
-                      borderColor: 'rgba(62,231,255,0.15)',
+                      borderColor: 'var(--border)',
                       color: 'var(--text-secondary)',
                     }}
                     onClick={() => sendMessage(q)}
-                    whileHover={{ scale: 1.02, borderColor: 'rgba(62,231,255,0.4)' }}
+                    whileHover={{ scale: 1.02, borderColor: 'var(--accent)' }}
                     whileTap={{ scale: 0.97 }}
                   >
                     {q}
@@ -289,7 +290,7 @@ export default function InvestigationChat({ alertId, alertData }) {
                   fontSize: 12,
                   outline: 'none',
                 }}
-                onFocus={e => e.target.style.borderColor = 'var(--accent-cyan)'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
               <motion.button

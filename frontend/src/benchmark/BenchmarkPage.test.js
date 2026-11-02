@@ -105,6 +105,18 @@ describe('BenchmarkPage', () => {
       screen.getByRole('button', { name: /Run Full Evaluation benchmark/i })
     ).toBeDisabled();
   });
+
+  test('labels the page in sentence case without middle dots', async () => {
+    apiFetch
+      .mockResolvedValueOnce(response({ execution_enabled: true }))
+      .mockResolvedValueOnce(response({ results: [] }));
+
+    render(<BenchmarkPage />);
+
+    const heading = await screen.findByRole('heading', { name: 'Model Benchmarks' });
+    expect(screen.getByText('Evaluation')).toBeInTheDocument();
+    expect(heading.parentElement.nextSibling.textContent).not.toMatch('·');
+  });
 });
 
 test('summarizes cross-validation metrics for the top cards', () => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
-import { formatAmount } from '../graph_viz/graphModel';
+import { formatAmount } from '../utils/formatAmount';
 
 const SEVERITIES = [
   ['critical', 'Critical', 'criticalCount'],
@@ -37,9 +37,8 @@ function CityRow({ city, rank, isSelected, onCityClick }) {
   );
 }
 
-export default function RegionalStatsPanel({ cityData = [], selectedCity, onCityClick }) {
-  const totalAlerts = cityData.reduce((s, c) => s + c.alertCount, 0);
-  const totalVolume = cityData.reduce((s, c) => s + c.totalVolume, 0);
+// totalVolume comes from the parent: an alert spanning two cities sits in both rows, so summing rows double counts.
+export default function RegionalStatsPanel({ cityData = [], totalVolume = 0, selectedCity, onCityClick }) {
   const top5 = cityData.slice(0, 5);
 
   return (
@@ -51,11 +50,11 @@ export default function RegionalStatsPanel({ cityData = [], selectedCity, onCity
 
       <div className="region-totals">
         <div>
-          <div className="region-total-label">Total Alerts</div>
-          <div className="region-total-value">{totalAlerts}</div>
+          <div className="region-total-label">Cities</div>
+          <div className="region-total-value">{cityData.length}</div>
         </div>
         <div>
-          <div className="region-total-label">Suspicious Vol.</div>
+          <div className="region-total-label">Flagged amount</div>
           <div className="region-total-value">{formatAmount(totalVolume)}</div>
         </div>
       </div>

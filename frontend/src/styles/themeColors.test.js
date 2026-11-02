@@ -5,8 +5,11 @@ const SRC = path.join(__dirname, '..');
 // A raw hex or rgba() ignores the theme switch; these screens use App.css tokens instead.
 const RAW_COLOUR = /#[0-9A-Fa-f]{3,8}\b|rgba?\(/;
 const THEMED_FILES = [
+  'benchmark/BenchmarkPage.js',
+  'genai/InvestigationChat.js',
   'components/IndiaMap.js',
   'components/StatCard.js',
+  'compliance_portal/CompliancePortal.js',
   'network/NetworkOverview.js',
   'network/RegionalStatsPanel.js',
   'roi_dashboard/ROIDashboard.js',
