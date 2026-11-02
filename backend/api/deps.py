@@ -10,6 +10,7 @@ from cache.redis_client import RedisClient
 from core.config import get_settings
 from core.exceptions import ConflictError
 from detection.pipeline import DetectionPipeline
+from detection.rule_thresholds import RuleThresholds
 from fastapi import Query
 from graph_engine.persistence import PersistenceLayer
 from ingest.kafka_consumer import KAFKA_ENABLED, TransactionConsumer
@@ -101,6 +102,7 @@ def get_pipeline() -> DetectionPipeline:
         genai_service=get_genai_service(),
         model_version=settings.model_version,
         rule_version=settings.rule_version,
+        rule_thresholds=RuleThresholds.from_json(settings.rule_thresholds),
         device_profiler=get_device_profiler(),
     )
 

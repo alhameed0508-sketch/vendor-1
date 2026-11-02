@@ -84,6 +84,9 @@ class Settings(BaseSettings):
     smurf_flag_threshold: float = Field(0.55, alias="SMURF_FLAG_THRESHOLD")
     onboarding_risk_threshold: float = Field(0.50, alias="ONBOARDING_RISK_THRESHOLD")
 
+    # JSON object overriding rule thresholds, e.g. {"new_account_age_days": 14}. See detection/rule_thresholds.py.
+    rule_thresholds: str = Field("", alias="RULE_THRESHOLDS")
+
     # Behavioral signal thresholds (v2.0 - externalized from detection logic)
     passthrough_threshold_high: float = Field(0.90, alias="PASSTHROUGH_THRESHOLD_HIGH")
     passthrough_threshold_medium: float = Field(0.70, alias="PASSTHROUGH_THRESHOLD_MEDIUM")

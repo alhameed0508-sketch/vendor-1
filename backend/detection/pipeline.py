@@ -35,30 +35,8 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
-# ── Module-level constants (rule thresholds) ──────────────────────────────
-# These thresholds are used by the rule-engine helper functions.
-
-# R04: Structured transactions — amounts between these bounds trigger the rule
-STRUCTURED_AMOUNT_LOWER = 40000  # lower bound of "near ₹50k ceiling" band
-STRUCTURED_AMOUNT_UPPER = 50000  # upper bound (the ₹50k reporting threshold)
-STRUCTURED_MIN_TXNS = 3  # minimum outgoing txns to evaluate
-STRUCTURED_RATIO_THRESHOLD = 0.7  # fraction of txns near ceiling to flag
-
-# R14: Split transactions
-SPLIT_TXN_AMOUNT_UPPER = 10000  # individual txn ceiling (< ₹10k each)
-SPLIT_TXN_MIN_COUNT = 5  # minimum number of small txns
-SPLIT_TXN_TOTAL_THRESHOLD = 100000  # aggregate total must exceed ₹1L
-
-# R15: High-risk UPI handles
-UPI_DIGIT_RATIO_THRESHOLD = 0.6  # fraction of digits in UPI handle
-UPI_MIN_LENGTH = 10  # minimum UPI handle length
-
-# R20: 72-hour anomaly
-EARLY_ANOMALY_AGE_DAYS = 3  # account age threshold (days)
-EARLY_ANOMALY_MIN_TXNS = 5  # minimum outgoing txns
-EARLY_ANOMALY_MIN_AMOUNT = 100000  # minimum outgoing volume (₹1L)
-
 from detection.mule_classifier import classify_cluster  # noqa: E402
+from detection.rule_thresholds import RuleThresholds  # noqa: E402
 from explainability.explainer import explain_alert  # noqa: E402
 from explainability.narrative_generator import generate_narrative  # noqa: E402
 
@@ -189,75 +167,80 @@ class RuleEngine:
         # ── Original 4 rules ────────────────────────────────────────────
         (
             "R01",
-            "Account age < 7 days",
-            lambda a, txns: a.get("account_age_days", 999) < 7,
+            "New account",
+            lambda a, txns, th: a.get("account_age_days", th.missing_age_days) < th.new_account_age_days,
         ),
         (
             "R02",
-            "> 20 transactions in 24h",
-            lambda a, txns: _count_outgoing(a, txns) > 20,
+            "Burst of outgoing transactions",
+            lambda a, txns, th: _count_outgoing(a, txns) > th.burst_txn_count,
         ),
         (
             "R03",
             "KYC pending with high volume",
-            lambda a, txns: a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > 5,
+            lambda a, txns, th: a.get("kyc_status") == "PENDING" and _count_outgoing(a, txns) > th.kyc_pending_min_txns,
         ),
         (
             "R04",
-            "Amounts structured below ₹50k threshold",
-            lambda a, txns: _all_near_ceiling(a["account_id"], txns),
+            "Amounts structured just below the reporting ceiling",
+            lambda a, txns, th: _all_near_ceiling(a["account_id"], txns, th),
         ),
         # ── MuleHunter-aligned behavioral patterns ──────────────────────
         (
             "R05",
             "Dormant account suddenly activated",
-            lambda a, txns: (
-                a.get("account_age_days", 0) > 180 and a.get("avg_monthly_txn", 0) < 3 and _count_outgoing(a, txns) > 8
+            lambda a, txns, th: (
+                a.get("account_age_days", 0) > th.dormant_min_age_days
+                and a.get("avg_monthly_txn", 0) < th.dormant_max_monthly_txn
+                and _count_outgoing(a, txns) > th.dormant_min_outgoing
             ),
         ),
         (
             "R06",
             "Same-day credit-debit (pass-through)",
-            lambda a, txns: _same_day_credit_debit(a["account_id"], txns),
+            lambda a, txns, th: _same_day_credit_debit(a["account_id"], txns, th),
         ),
         (
             "R12",
             "Identical amounts to multiple recipients",
-            lambda a, txns: _identical_amounts(a["account_id"], txns),
+            lambda a, txns, th: _identical_amounts(a["account_id"], txns, th),
         ),
         (
             "R13",
             "Geographic anomaly — multi-city in 24h",
-            lambda a, txns: _geographic_anomaly(a["account_id"], txns),
+            lambda a, txns, th: _geographic_anomaly(a["account_id"], txns, th),
         ),
         (
             "R14",
-            "Split transaction pattern (< ₹10k each, > ₹1L total)",
-            lambda a, txns: _split_transactions(a["account_id"], txns),
+            "Split transaction pattern (many small payments, large total)",
+            lambda a, txns, th: _split_transactions(a["account_id"], txns, th),
         ),
-        ("R15", "High-risk UPI handle pattern", lambda a, txns: _high_risk_upi(a)),
+        ("R15", "High-risk UPI handle pattern", lambda a, txns, th: _high_risk_upi(a, th)),
         (
             "R17",
             "Velocity acceleration — txn rate doubling",
-            lambda a, txns: _velocity_acceleration(a["account_id"], txns),
+            lambda a, txns, th: _velocity_acceleration(a["account_id"], txns, th),
         ),
         (
             "R18",
             "Shared device across multiple accounts",
-            lambda a, txns: _shared_device(a["account_id"], txns),
+            lambda a, txns, th: _shared_device(a["account_id"], txns),
         ),
         # ── 72-hour early detection (BioCatch research) ──────────────
         (
             "R20",
-            "72-hour behavioral anomaly — high activity within 3 days of opening",
-            lambda a, txns: _seventy_two_hour_anomaly(a, txns),
+            "Early-life behavioral anomaly — high activity soon after opening",
+            lambda a, txns, th: _seventy_two_hour_anomaly(a, txns, th),
         ),
     ]
+
+    def __init__(self, thresholds: Optional[RuleThresholds] = None):
+        self.thresholds = thresholds or RuleThresholds()
 
     def evaluate(self, accounts: List[Dict], transactions: List[Dict]) -> Dict[str, List[str]]:
         results: Dict[str, List[str]] = {}
         for acc in accounts:
-            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, transactions)]
+            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, transactions, self.thresholds)]
             if hits:
                 results[acc["account_id"]] = hits
         return results
@@ -270,17 +253,17 @@ def _count_outgoing(a: Dict, txns: List[Dict]) -> int:
     return sum(1 for t in txns if t["from_account"] == a["account_id"])
 
 
-def _all_near_ceiling(account_id: str, transactions: List[Dict]) -> bool:
+def _all_near_ceiling(account_id: str, transactions: List[Dict], th: RuleThresholds) -> bool:
     amounts = [
         t["amount"]
         for t in transactions
-        if t["from_account"] == account_id and STRUCTURED_AMOUNT_LOWER <= float(t["amount"]) < STRUCTURED_AMOUNT_UPPER
+        if t["from_account"] == account_id and th.structured_lower <= float(t["amount"]) < th.structured_upper
     ]
     total = sum(1 for t in transactions if t["from_account"] == account_id)
-    return total > STRUCTURED_MIN_TXNS and len(amounts) / max(total, 1) > STRUCTURED_RATIO_THRESHOLD
+    return total > th.structured_min_txns and len(amounts) / max(total, 1) > th.structured_ratio
 
 
-def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
+def _same_day_credit_debit(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Detects accounts that receive and re-send within the same day."""
     incoming_days = set()
     outgoing_days = set()
@@ -291,7 +274,7 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
         if t["from_account"] == account_id:
             outgoing_days.add(day)
     overlap = incoming_days & outgoing_days
-    return len(overlap) >= 2
+    return len(overlap) >= th.same_day_overlap_days
 
 
 
@@ -304,7 +287,7 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict]) -> bool:
 
 
 
-def _identical_amounts(account_id: str, txns: List[Dict]) -> bool:
+def _identical_amounts(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Same exact amount sent to multiple different recipients."""
     amounts_by_recipient = {}
     for t in txns:
@@ -312,42 +295,41 @@ def _identical_amounts(account_id: str, txns: List[Dict]) -> bool:
             continue
         amt = round(float(t["amount"]), 2)
         amounts_by_recipient.setdefault(amt, set()).add(t["to_account"])
-    return any(len(recipients) >= 3 for recipients in amounts_by_recipient.values())
+    return any(len(recipients) >= th.identical_amount_recipients for recipients in amounts_by_recipient.values())
 
 
-def _geographic_anomaly(account_id: str, txns: List[Dict]) -> bool:
+def _geographic_anomaly(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Transactions from multiple cities in a short window."""
     cities = set()
     for t in txns:
         if t["from_account"] == account_id and t.get("city"):
             cities.add(t["city"])
-    return len(cities) >= 3
+    return len(cities) >= th.multi_city_count
 
 
-def _split_transactions(account_id: str, txns: List[Dict]) -> bool:
+def _split_transactions(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Many small transactions that aggregate to a large total."""
     outgoing = [float(t["amount"]) for t in txns if t["from_account"] == account_id]
-    small = [a for a in outgoing if a < SPLIT_TXN_AMOUNT_UPPER]
-    return len(small) >= SPLIT_TXN_MIN_COUNT and sum(small) >= SPLIT_TXN_TOTAL_THRESHOLD
+    small = [a for a in outgoing if a < th.split_amount_upper]
+    return len(small) >= th.split_min_count and sum(small) >= th.split_total
 
 
-def _high_risk_upi(a: Dict) -> bool:
+def _high_risk_upi(a: Dict, th: RuleThresholds) -> bool:
     """UPI handle associated with known fraud patterns."""
     upi = a.get("upi_id", "")
     # Random/disposable UPI handles with numeric-heavy patterns
     if not upi:
         return False
     digit_ratio = sum(1 for c in upi if c.isdigit()) / max(len(upi), 1)
-    return digit_ratio > UPI_DIGIT_RATIO_THRESHOLD and len(upi) > UPI_MIN_LENGTH
+    return digit_ratio > th.upi_digit_ratio and len(upi) > th.upi_min_length
 
 
 
 
-def _velocity_acceleration(account_id: str, txns: List[Dict]) -> bool:
+def _velocity_acceleration(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Transaction rate more than doubles compared to historical average."""
-    avg_monthly = 10  # default
     current_count = sum(1 for t in txns if t["from_account"] == account_id)
-    return current_count > avg_monthly * 2
+    return current_count > th.velocity_baseline_monthly * th.velocity_factor
 
 
 def _shared_device(account_id: str, txns: List[Dict]) -> bool:
@@ -366,19 +348,19 @@ def _shared_device(account_id: str, txns: List[Dict]) -> bool:
 
 
 
-def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict]) -> bool:
+def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict], th: RuleThresholds) -> bool:
     """
     BioCatch-inspired: 48% of mule accounts show behavioral inconsistencies
     within 72 hours of account opening. Flag accounts <3 days old with
     abnormally high outgoing activity.
     """
-    age_days = a.get("account_age_days", 999)
-    if age_days > EARLY_ANOMALY_AGE_DAYS:
+    age_days = a.get("account_age_days", th.missing_age_days)
+    if age_days > th.early_age_days:
         return False
     outgoing = sum(1 for t in txns if t["from_account"] == a["account_id"])
     outgoing_amount = sum(float(t["amount"]) for t in txns if t["from_account"] == a["account_id"])
     # Account <72h old with 5+ outgoing txns or >₹1L outgoing volume
-    return outgoing >= EARLY_ANOMALY_MIN_TXNS or outgoing_amount >= EARLY_ANOMALY_MIN_AMOUNT
+    return outgoing >= th.early_min_txns or outgoing_amount >= th.early_min_amount
 
 
 # ── GNN scorer (lazy import, optional) ───────────────────────────────────
@@ -500,10 +482,11 @@ class DetectionPipeline:
         genai_service=None,
         model_version: str = "unvalidated-dev",
         rule_version: str = "rules-2026.2",
+        rule_thresholds: Optional[RuleThresholds] = None,
         device_profiler: Optional[DeviceProfiler] = None,
         anomaly_scorer: Optional[UnsupervisedAccountScorer] = None,
     ):
-        self.rule_engine = RuleEngine()
+        self.rule_engine = RuleEngine(rule_thresholds)
         self.cluster_detector = LouvainClusterDetector()
         self._gnn_model_path = gnn_model_path
         self._gnn_scorer = _try_load_gnn_scorer(model_path=gnn_model_path)
