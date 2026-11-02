@@ -1,6 +1,6 @@
 # MuleCatch browser tests
 
-Playwright tests for the Fraud Complaint Desk. They live in their own folder so the frontend build is untouched.
+Playwright tests for the login page, the home page and the Fraud Complaint Desk. They live in their own folder so the frontend build is untouched.
 
 ## Run
 
@@ -24,6 +24,7 @@ npx playwright test
 
 | File | Covers | Safe on production |
 |---|---|---|
+| `tests/login.spec.js` | Login hero and form, wrong-login alert, forgot-password note, home page cards and filters, phone widths | Yes, read-only (one failed sign-in as a user that does not exist) |
 | `tests/complaints.spec.js` | Desk counts, case page, mule link, replay and scrubber, PDF pack, admin sign-in, phone width | Yes, read-only |
 | `tests/complaints-write.spec.js` | New case, partner evidence arriving live, evidence added in the form, supervisor decision | No |
 
