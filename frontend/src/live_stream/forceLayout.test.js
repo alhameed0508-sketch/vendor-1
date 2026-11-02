@@ -57,3 +57,15 @@ describe('forceLayout', () => {
     expect(() => forceLayout({ nodes: ['A'], links: [{ from: 'A', to: 'Z' }], ...box })).not.toThrow();
   });
 });
+
+test('lone account pairs are not crowded against the edges', () => {
+  const nodes = [];
+  const links = [];
+  for (let i = 0; i < 25; i += 1) {
+    nodes.push(`a${i}`, `b${i}`);
+    links.push({ from: `a${i}`, to: `b${i}` });
+  }
+  const pos = forceLayout({ nodes, links, width: 800, height: 520 });
+  const nearEdge = Object.values(pos).filter(({ x, y }) => x < 60 || x > 740 || y < 60 || y > 460);
+  expect(nearEdge.length / nodes.length).toBeLessThan(0.55);
+});

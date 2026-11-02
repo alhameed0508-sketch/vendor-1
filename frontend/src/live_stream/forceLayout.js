@@ -3,7 +3,8 @@
    each new payment nudges the picture instead of reshuffling it. */
 const MARGIN = 18;
 const DEFAULT_ITERATIONS = 120;
-const GRAVITY = 0.04;
+// Strong enough that lone account pairs (no links holding them) are not shoved to the box edge.
+const GRAVITY = 0.2;
 
 // FNV-1a: a stable [0, 1) value per string, so first positions never change between renders.
 export function hashUnit(text) {
@@ -44,6 +45,7 @@ export function forceLayout({ nodes, links, width, height, previous = {}, iterat
         const dx = a.x - b.x || 0.01;
         const dy = a.y - b.y || 0.01;
         const d = Math.max(Math.hypot(dx, dy), 0.01);
+        if (d > 4 * k) continue; // far nodes barely repel; skipping stops the push to the edges
         const f = (k * k) / d;
         disp[nodes[i]].x += (dx / d) * f;
         disp[nodes[i]].y += (dy / d) * f;
@@ -64,8 +66,8 @@ export function forceLayout({ nodes, links, width, height, previous = {}, iterat
     const limit = temperature;
     nodes.forEach((id) => {
       const p = pos[id];
-      const dx = disp[id].x + (cx - p.x) * GRAVITY * k * 0.05;
-      const dy = disp[id].y + (cy - p.y) * GRAVITY * k * 0.05;
+      const dx = disp[id].x + (cx - p.x) * GRAVITY;
+      const dy = disp[id].y + (cy - p.y) * GRAVITY;
       const d = Math.max(Math.hypot(dx, dy), 0.01);
       const move = Math.min(d, limit);
       pos[id] = {
