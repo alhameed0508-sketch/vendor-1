@@ -1,7 +1,6 @@
 import pytest
-from pydantic import ValidationError
-
 from api.v1.schemas.alerts import AlertUpdateRequest
+from pydantic import ValidationError
 
 
 def test_str_filed_accepted():
