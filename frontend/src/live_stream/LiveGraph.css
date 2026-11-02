@@ -35,3 +35,4 @@
 .live-log__seq { color: #5f6d67; }
 @media (max-width: 700px) { .live-log__line { grid-template-columns: 48px 1fr 80px; } .live-log__line > span:nth-child(n + 4) { display: none; } }
 @media (prefers-reduced-motion: reduce) { .live-graph__node, .live-graph__node circle, .live-graph__link { transition: none; } }
+@media (max-width: 700px) { .live-graph__details-head button { min-width: 44px; min-height: 44px; } }

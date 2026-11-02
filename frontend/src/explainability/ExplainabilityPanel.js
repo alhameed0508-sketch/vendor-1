@@ -116,7 +116,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
             key={tab.key}
             className="btn btn-ghost"
             style={{
-              fontSize: 11, padding: '5px 12px',
+              fontSize: 12, padding: '5px 12px',
               ...(activeTab === tab.key ? {
                 borderColor: 'var(--accent-gold)',
                 color: 'var(--accent-gold)',
@@ -129,7 +129,7 @@ export default function ExplainabilityPanel({ alertId, explanation: propExplanat
             {tab.label}
             {tab.key === 'cycles' && explanation.cycles?.length > 0 && (
               <span style={{
-                marginLeft: 4, fontSize: 9, background: 'var(--critical)',
+                marginLeft: 4, fontSize: 12, background: 'var(--critical)',
                 color: '#fff', padding: '1px 4px', borderRadius: 3,
               }}>
                 {explanation.cycles.length}
@@ -178,7 +178,7 @@ function SummaryTab({ explanation }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* AI Summary */}
       <GlassCard hover={false} style={{ borderLeft: '3px solid var(--accent-gold)', borderRadius: '0 var(--radius) var(--radius) 0' }}>
-        <p className="section-title" style={{ fontSize: 11, marginBottom: 8 }}>AI Summary</p>
+        <p className="section-title" style={{ fontSize: 12, marginBottom: 8 }}>AI Summary</p>
         <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)' }}>
           {explanation.summary}
         </p>
@@ -189,7 +189,7 @@ function SummaryTab({ explanation }) {
         borderLeft: `3px solid ${explanation.severity === 'CRITICAL' ? 'var(--critical)' : explanation.severity === 'HIGH' ? 'var(--high)' : 'var(--accent-cyan)'}`,
         borderRadius: '0 var(--radius) var(--radius) 0',
       }}>
-        <p className="section-title" style={{ fontSize: 11, marginBottom: 8 }}>Recommendation</p>
+        <p className="section-title" style={{ fontSize: 12, marginBottom: 8 }}>Recommendation</p>
         <p style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-primary)' }}>
           {explanation.recommendation}
         </p>
@@ -198,7 +198,7 @@ function SummaryTab({ explanation }) {
       {/* Confidence Factors */}
       {explanation.confidence_factors?.length > 0 && (
         <GlassCard hover={false}>
-          <p className="section-title" style={{ fontSize: 11, marginBottom: 10 }}>Confidence Factors</p>
+          <p className="section-title" style={{ fontSize: 12, marginBottom: 10 }}>Confidence Factors</p>
           {explanation.confidence_factors.map((f, i) => (
             <motion.div
               key={i}
@@ -234,7 +234,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
 
       {/* Waterfall bars */}
       <GlassCard hover={false}>
-        <p className="section-title" style={{ fontSize: 11, marginBottom: 14 }}>Feature Contributions</p>
+        <p className="section-title" style={{ fontSize: 12, marginBottom: 14 }}>Feature Contributions</p>
         {breakdown.map((item, i) => (
           <motion.div
             key={i}
@@ -278,7 +278,7 @@ function ScoreBreakdownTab({ breakdown, narrative }) {
                 transition={{ delay: 0.2 + i * 0.06, duration: 0.5, ease: 'easeOut' }}
               />
             </div>
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>
               {item.description}
             </p>
           </motion.div>
@@ -313,7 +313,7 @@ function FraudChainTab({ chain, narrative }) {
 
       {/* Chain steps */}
       <GlassCard hover={false}>
-        <p className="section-title" style={{ fontSize: 11, marginBottom: 14 }}>Money Flow Chain</p>
+        <p className="section-title" style={{ fontSize: 12, marginBottom: 14 }}>Money Flow Chain</p>
         <div style={{ position: 'relative', paddingLeft: 24 }}>
           {/* Vertical line */}
           <div style={{
@@ -357,7 +357,7 @@ function FraudChainTab({ chain, narrative }) {
                   {'\u20B9'}{step.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                 </span>
               </div>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.4 }}>
                 {step.description}
               </p>
             </motion.div>
@@ -406,7 +406,7 @@ function SHAPTab({ data, loading }) {
       {results.length > 0 && (
         <GlassCard hover={false}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Feature Importance (SHAP)</p>
+            <p className="section-title" style={{ fontSize: 12, margin: 0 }}>Feature Importance (SHAP)</p>
             <span style={{
               fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
               background: 'rgba(139,92,246,0.12)', color: '#8b5cf6',
@@ -451,7 +451,7 @@ function SHAPTab({ data, loading }) {
                   />
                 </div>
                 {item.description && (
-                  <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, lineHeight: 1.4 }}>
                     {item.description}
                   </p>
                 )}
@@ -465,7 +465,7 @@ function SHAPTab({ data, loading }) {
       {regulatory && (
         <GlassCard hover={false} style={{ borderLeft: '3px solid #8b5cf6', borderRadius: '0 var(--radius) var(--radius) 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <p className="section-title" style={{ fontSize: 11, margin: 0 }}>Regulatory Report</p>
+            <p className="section-title" style={{ fontSize: 12, margin: 0 }}>Regulatory Report</p>
             <span style={{
               fontSize: 12, fontFamily: 'var(--font-sans)', padding: '2px 6px', borderRadius: 3,
               background: 'rgba(16,185,129,0.12)', color: 'var(--accent-green)',
@@ -484,7 +484,7 @@ function SHAPTab({ data, loading }) {
                 Feature Descriptions
               </p>
               {Object.entries(regulatory.feature_descriptions).map(([feat, desc], i) => (
-                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 11 }}>
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 12 }}>
                   <span style={{ fontFamily: 'var(--font-sans)', color: 'var(--accent-cyan)', flexShrink: 0, minWidth: 120 }}>
                     {feat.replace(/_/g, ' ')}
                   </span>
@@ -572,14 +572,14 @@ function CyclesTab({ cycles, narrative }) {
                   }}>
                     ...{acc.slice(-6)}
                   </span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                     {j < cycle.accounts.length - 1 ? '\u2192' : '\u21BA'}
                   </span>
                 </React.Fragment>
               ))}
             </div>
 
-            <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.4 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.4 }}>
               {cycle.description}
             </p>
           </GlassCard>

@@ -9,7 +9,8 @@ import InvestigationChat from '../genai/InvestigationChat';
 import { apiFetch } from '../auth/api';
 import ApprovalDialog from '../alert_queue/ApprovalDialog';
 import { fileStr } from '../alert_queue/alertActions';
-import { AMOUNT_DIVISOR_LAKHS } from '../config';
+import { formatAmount } from '../utils/formatAmount';
+import { statusLabel } from '../utils/statusLabel';
 
 export default function AlertDetail() {
   const { alertId } = useParams();
@@ -129,13 +130,20 @@ export default function AlertDetail() {
   if (loading) return <div className="loading"><div className="spinner" /> Loading alert...</div>;
   if (!alert) return <div className="loading">Alert not found.</div>;
 
-  const riskPct = (alert.risk_score * 100).toFixed(1);
-  const confPct = (alert.confidence * 100).toFixed(1);
+  const percent = score => `${Math.round(score * 100)}%`;
+  const figures = [
+    ['Risk', percent(alert.risk_score)],
+    ['Confidence', percent(alert.confidence)],
+    ...(alert.gnn_score != null ? [['Model score', percent(alert.gnn_score)]] : []),
+    ['Accounts', alert.account_count],
+    ['Transfers', alert.txn_count],
+    ['Amount', formatAmount(alert.total_amount)],
+  ];
   const classification = alert.mule_classification;
   const triage = alert.genai_triage;
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="page">
       {/* Back + Header */}
       <button className="btn btn-ghost" style={{ marginBottom: 18, fontSize: 13 }} onClick={() => navigate('/')}>
         <ArrowLeft size={14} /> Back
@@ -145,15 +153,17 @@ export default function AlertDetail() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
             <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, fontFamily: 'var(--font-sans)' }}>{alert.alert_id}</h1>
-            <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
-            <span className={`badge badge-${status}`}>{status}</span>
+            <span className={`badge badge-${alert.severity}`}>{statusLabel(alert.severity)}</span>
+            <span className={`badge badge-${status}`}>{statusLabel(status)}</span>
           </div>
-          <p style={{ fontSize: 13, fontFamily: 'var(--font-sans)', color: 'var(--text-muted)', margin: 0 }}>
-            Risk {riskPct}% · Confidence {confPct}%
-            {alert.gnn_score != null && ` · GNN ${(alert.gnn_score * 100).toFixed(1)}%`}
-            {' · '}{alert.account_count} accounts · {alert.txn_count} txns
-            {' · ₹'}{(alert.total_amount / AMOUNT_DIVISOR_LAKHS).toFixed(2)}L
-          </p>
+          <dl className="graph-figures alert-figures">
+            {figures.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
           {/* Mule classification & GenAI triage */}
           <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
             {classification?.predicted_type && (
@@ -187,11 +197,8 @@ export default function AlertDetail() {
 
       {/* Main two-column layout */}
       <div className="grid-detail" style={{ marginBottom: 16 }}>
-        {/* Network Graph */}
+        {/* Network Graph: the verdict inside it is the heading */}
         <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
-            Network Graph
-          </div>
           <NetworkGraph nodes={alert.nodes} edges={alert.edges} timeRange={timeRange} />
           <TimelineSlider edges={alert.edges} onChange={setTimeRange} />
         </div>
@@ -242,7 +249,7 @@ export default function AlertDetail() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <span className="account-id">{n.account_id}</span>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{n.bank} · {n.city}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{n.bank}, {n.city}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span style={{

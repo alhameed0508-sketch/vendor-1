@@ -19,7 +19,6 @@ const ACTIONS = [
     id: 'synthetic',
     label: 'Synthetic',
     icon: Play,
-    color: '#6366F1',
     endpoint: '/api/v1/benchmark/synthetic',
     body: { num_clusters: 3, num_legit_accounts: 30 },
   },
@@ -27,7 +26,6 @@ const ACTIONS = [
     id: 'adversarial',
     label: 'Adversarial',
     icon: Zap,
-    color: '#F43F5E',
     endpoint: '/api/v1/benchmark/adversarial',
     body: { num_clusters: 3, num_legit: 30, num_adversarial: 20 },
   },
@@ -35,7 +33,6 @@ const ACTIONS = [
     id: 'cross_validation',
     label: 'Cross-Validation',
     icon: Layers,
-    color: '#FB923C',
     endpoint: '/api/v1/benchmark/cross-validation',
     body: { num_clusters: 3, num_legit: 30, num_folds: 5 },
   },
@@ -43,7 +40,6 @@ const ACTIONS = [
     id: 'comparison',
     label: 'Comparison',
     icon: BarChart2,
-    color: '#22D3EE',
     endpoint: '/api/v1/benchmark/comparison',
     body: { cluster_counts: [3, 5, 8] },
   },
@@ -51,16 +47,13 @@ const ACTIONS = [
     id: 'full_evaluation',
     label: 'Full Evaluation',
     icon: Target,
-    color: '#10B981',
     endpoint: '/api/v1/benchmark/full-evaluation',
   },
 ];
 
 const cardStyle = {
-  background: 'var(--bg-elevated)',
-  border: '1px solid var(--border)',
-  borderRadius: 10,
-  padding: 18,
+  borderTop: '1px solid var(--border)',
+  padding: '20px 0',
 };
 
 async function readResponse(response) {
@@ -119,33 +112,25 @@ export function summarizeBenchmark(result) {
   return result;
 }
 
-function MetricCard({ label, value, color, icon: Icon, detail }) {
+function MetricCard({ label, value, icon: Icon, detail }) {
   return (
     <div style={{ ...cardStyle, position: 'relative', overflow: 'hidden' }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: '0 0 auto',
-          height: 2,
-          background: `linear-gradient(90deg, ${color}, transparent)`,
-        }}
-      />
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span className="eyebrow">{label}</span>
-        <Icon size={14} color={color} />
+        <Icon size={14} color="var(--text-muted)" />
       </div>
       <div
         style={{
-          color,
+          color: 'var(--text-primary)',
           fontFamily: 'var(--font-display)',
           fontSize: 28,
-          fontWeight: 700,
+          fontWeight: 600,
           marginTop: 10,
         }}
       >
         {value}
       </div>
-      <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 4 }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>
         {detail}
       </div>
     </div>
@@ -281,7 +266,7 @@ export default function BenchmarkPage() {
     return (
       <div className="loading">
         <div className="spinner" />
-        <span>LOADING BENCHMARK PROGRAMS...</span>
+        <span>Loading benchmarks…</span>
       </div>
     );
   }
@@ -291,21 +276,21 @@ export default function BenchmarkPage() {
     Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : '—';
 
   return (
-    <div style={{ padding: '32px 36px', maxWidth: 1440, margin: '0 auto' }}>
+    <div className="page">
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         style={{ marginBottom: 28 }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h1 className="gradient-text" style={{ margin: 0 }}>
+          <h1 className="text-page-title" style={{ margin: 0 }}>
             Model Benchmarks
           </h1>
-          <span className="status-badge">EVALUATION</span>
+          <span className="status-badge">Evaluation</span>
         </div>
         <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
-          // executable detection benchmarks · precision/recall · adversarial testing
-          · deterministic cross-validation
+          Run detection benchmarks: precision and recall, adversarial tests and
+          repeatable cross-validation.
         </p>
       </motion.div>
 
@@ -314,12 +299,12 @@ export default function BenchmarkPage() {
           role="alert"
           style={{
             ...cardStyle,
-            borderColor: 'rgba(251,146,60,.45)',
+            borderColor: 'var(--high)',
             color: 'var(--text-secondary)',
             marginBottom: 18,
           }}
         >
-          <Shield size={15} color="#FB923C" style={{ marginRight: 8 }} />
+          <Shield size={15} color="var(--high)" style={{ marginRight: 8 }} />
           {capabilities?.restriction ||
             'Synthetic benchmarks are unavailable in this environment.'}
         </div>
@@ -342,9 +327,9 @@ export default function BenchmarkPage() {
                 alignItems: 'center',
                 gap: 7,
                 borderRadius: 8,
-                border: `1px solid ${action.color}45`,
-                background: `${action.color}12`,
-                color: action.color,
+                border: '1px solid var(--border)',
+                background: 'transparent',
+                color: 'var(--text-primary)',
                 cursor: executionEnabled && !running ? 'pointer' : 'not-allowed',
                 opacity: executionEnabled && (!running || isRunning) ? 1 : 0.5,
               }}
@@ -369,28 +354,24 @@ export default function BenchmarkPage() {
             <MetricCard
               label="Precision"
               value={percentage(summary.precision)}
-              color="#6366F1"
               icon={Target}
               detail="flagged accounts confirmed by labels"
             />
             <MetricCard
               label="Recall"
               value={percentage(summary.recall)}
-              color="#22D3EE"
               icon={Zap}
               detail="labelled mule accounts detected"
             />
             <MetricCard
               label="F1 score"
               value={percentage(summary.f1_score)}
-              color="#10B981"
               icon={CheckCircle}
               detail="precision/recall balance"
             />
             <MetricCard
               label="Accuracy"
               value={percentage(summary.accuracy)}
-              color="#FB923C"
               icon={Shield}
               detail="overall account classification"
             />
@@ -448,7 +429,7 @@ export default function BenchmarkPage() {
         style={{
           color: 'var(--text-muted)',
           fontFamily: 'var(--font-sans)',
-          fontSize: 10,
+          fontSize: 12,
           marginTop: 16,
         }}
       >

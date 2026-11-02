@@ -11,13 +11,9 @@ import { MAX_UPLOAD_SIZE_BYTES } from '../config';
 import StatCard from '../components/StatCard';
 
 const cardStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 12,
-  padding: '22px 24px',
+  borderTop: '1px solid var(--border)',
+  padding: '20px 0',
   position: 'relative',
-  overflow: 'hidden',
-  boxShadow: 'var(--shadow)',
 };
 
 function SeverityBadge({ severity, count }) {
@@ -145,7 +141,7 @@ export default function DataImportPage() {
   }, [handleUpload]);
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1200, margin: '0 auto' }}>
+    <div className="page">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -174,11 +170,10 @@ export default function DataImportPage() {
         transition={{ delay: 0.05, duration: 0.35 }}
         style={{ ...cardStyle, marginBottom: 24 }}
       >
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, var(--accent), transparent)', opacity: 0.7 }} />
 
         <div style={{
           fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-          letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
+          fontWeight: 700, marginBottom: 16,
         }}>
           Upload File
         </div>
@@ -285,17 +280,17 @@ export default function DataImportPage() {
               display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
               gap: 14, marginBottom: 24,
             }}>
-              <StatCard label="Accounts" value={uploadResult.accounts} color="var(--accent)" icon={Users} index={0} />
-              <StatCard label="Transactions" value={uploadResult.transactions} color="#8B5CF6" icon={Database} index={1} />
-              <StatCard label="Alerts Generated" value={uploadResult.alerts_generated} color="#F43F5E" icon={AlertTriangle} index={2} />
-              <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} color="#10B981" icon={BarChart2} index={3} />
+              <StatCard label="Accounts" value={uploadResult.accounts} icon={Users} index={0} />
+              <StatCard label="Transactions" value={uploadResult.transactions} icon={Database} index={1} />
+              <StatCard label="Alerts Generated" value={uploadResult.alerts_generated} icon={AlertTriangle} index={2} />
+              <StatCard label="Channels" value={Object.keys(uploadResult.channels || {}).length} icon={BarChart2} index={3} />
             </div>
 
             {uploadResult.data_quality && (
               <div style={{ ...cardStyle, marginBottom: 24 }}>
                 <div style={{
                   fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                  fontWeight: 700, marginBottom: 14,
                 }}>
                   Data Quality & Linkage
                 </div>
@@ -337,10 +332,9 @@ export default function DataImportPage() {
                 transition={{ delay: 0.3 }}
                 style={cardStyle}
               >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #10B981, transparent)', opacity: 0.7 }} />
                 <div style={{
                   fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                  fontWeight: 700, marginBottom: 14,
                 }}>
                   Channel Breakdown
                 </div>
@@ -361,10 +355,9 @@ export default function DataImportPage() {
                 transition={{ delay: 0.35 }}
                 style={cardStyle}
               >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #FB923C, transparent)', opacity: 0.7 }} />
                 <div style={{
                   fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                  fontWeight: 700, marginBottom: 14,
                 }}>
                   Anomaly Flags
                 </div>
@@ -401,10 +394,9 @@ export default function DataImportPage() {
               transition={{ delay: 0.4 }}
               style={{ ...cardStyle, marginBottom: 24 }}
             >
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #8B5CF6, transparent)', opacity: 0.7 }} />
               <div style={{
                 fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                fontWeight: 700, marginBottom: 14,
               }}>
                 Account Summaries
               </div>
@@ -416,9 +408,8 @@ export default function DataImportPage() {
                       {['Account', 'CIF', 'Age (days)', 'Balance', 'Debits', 'Credits', 'Avg Txn', 'KYC'].map(h => (
                         <th key={h} style={{
                           textAlign: 'left', padding: '8px 10px',
-                          color: 'var(--text-faint)', fontSize: 9, fontWeight: 700,
-                          letterSpacing: '0.8px', textTransform: 'uppercase',
-                        }}>{h}</th>
+                          color: 'var(--text-faint)', fontSize: 12, fontWeight: 700,
+                          }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -462,8 +453,7 @@ export default function DataImportPage() {
                         </td>
                         <td style={{ padding: '8px 10px' }}>
                           <span style={{
-                            fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
-                            padding: '2px 6px', borderRadius: 3,
+                            fontSize: 12, fontWeight: 700, padding: '2px 6px', borderRadius: 3,
                             background: acc.kyc_status === 'VERIFIED' ? 'rgba(16,185,129,0.1)' : 'rgba(251,146,60,0.1)',
                             color: acc.kyc_status === 'VERIFIED' ? '#10B981' : '#FB923C',
                             border: `1px solid ${acc.kyc_status === 'VERIFIED' ? 'rgba(16,185,129,0.2)' : 'rgba(251,146,60,0.2)'}`,
@@ -486,10 +476,9 @@ export default function DataImportPage() {
                 transition={{ delay: 0.5 }}
                 style={{ ...cardStyle, marginBottom: 24 }}
               >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #6366F1, transparent)', opacity: 0.7 }} />
                 <div style={{
                   fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 14,
+                  fontWeight: 700, marginBottom: 14,
                 }}>
                   Transaction Preview (first 50)
                 </div>
@@ -501,9 +490,8 @@ export default function DataImportPage() {
                         {['Txn ID', 'From', 'To', 'Amount', 'Type', 'Channel', 'Time'].map(h => (
                           <th key={h} style={{
                             textAlign: 'left', padding: '8px 10px',
-                            color: 'var(--text-faint)', fontSize: 9, fontWeight: 700,
-                            letterSpacing: '0.8px', textTransform: 'uppercase',
-                          }}>{h}</th>
+                            color: 'var(--text-faint)', fontSize: 12, fontWeight: 700,
+                            }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -516,7 +504,7 @@ export default function DataImportPage() {
                           <td style={{ padding: '6px 10px', color: 'var(--accent)', fontWeight: 600 }}>{txn.amount?.toLocaleString('en-IN')}</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{txn.txn_type}</td>
                           <td style={{ padding: '6px 10px', color: 'var(--text-muted)' }}>{txn.channel}</td>
-                          <td style={{ padding: '6px 10px', color: 'var(--text-faint)', fontSize: 10 }}>{txn.timestamp?.replace('T', ' ')}</td>
+                          <td style={{ padding: '6px 10px', color: 'var(--text-faint)', fontSize: 12 }}>{txn.timestamp?.replace('T', ' ')}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -533,10 +521,9 @@ export default function DataImportPage() {
                 transition={{ delay: 0.55 }}
                 style={{ ...cardStyle, marginBottom: 24 }}
               >
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #F43F5E, transparent)', opacity: 0.7 }} />
                 <div style={{
                   fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)',
-                  letterSpacing: '1.2px', textTransform: 'uppercase', fontWeight: 700, marginBottom: 16,
+                  fontWeight: 700, marginBottom: 16,
                 }}>
                   Detection Results
                 </div>
@@ -573,7 +560,7 @@ export default function DataImportPage() {
                     style={{ gap: 8, color: '#F43F5E', borderColor: 'rgba(244,63,94,0.25)' }}
                   >
                     <FileText size={14} />
-                    Triage Queue
+                    Triage
                     <ArrowRight size={12} />
                   </button>
                 </div>

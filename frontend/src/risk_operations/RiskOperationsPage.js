@@ -4,11 +4,8 @@ import { toast } from 'sonner';
 import { apiFetch } from '../auth/api';
 
 const card = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 12,
-  padding: 24,
-  boxShadow: 'var(--shadow)',
+  borderTop: '1px solid var(--border)',
+  padding: '20px 0',
 };
 
 async function post(path, payload) {
@@ -106,7 +103,7 @@ export default function RiskOperationsPage() {
   };
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
+    <div className="page">
       <div className="page-header">
         <h1>Customer Risk Operations</h1>
         <div className="page-meta">
@@ -116,13 +113,13 @@ export default function RiskOperationsPage() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
         <button
-          className={mode === 'onboarding' ? 'btn-primary' : 'btn-secondary'}
+          className={mode === 'onboarding' ? 'btn btn-primary' : 'btn btn-ghost'}
           onClick={() => { setMode('onboarding'); setResult(null); }}
         >
           <UserCheck size={14} /> Onboarding
         </button>
         <button
-          className={mode === 'screening' ? 'btn-primary' : 'btn-secondary'}
+          className={mode === 'screening' ? 'btn btn-primary' : 'btn btn-ghost'}
           onClick={() => { setMode('screening'); setResult(null); }}
         >
           <ShieldCheck size={14} /> Sanctions screening
@@ -188,7 +185,7 @@ export default function RiskOperationsPage() {
             </>
           )}
         </div>
-        <button className="btn-primary" type="submit" disabled={loading} style={{ marginTop: 18 }}>
+        <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop: 18 }}>
           {loading ? 'Processing…' : mode === 'onboarding' ? 'Assess risk' : 'Run screening'}
         </button>
       </form>

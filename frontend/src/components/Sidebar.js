@@ -1,34 +1,10 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  AlertTriangle, BarChart2,
-  Moon, Sun, Zap, FileCheck,
-  Network, Upload, UserCheck, Gauge
-} from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
+import { NAV_SECTIONS, isActivePath } from './navItems';
 import LogoutButton from './LogoutButton';
-
-const NAV_SECTIONS = [
-  {
-    label: 'Intelligence',
-    items: [
-      { path: '/',              label: 'Dashboard',      icon: AlertTriangle,  end: true },
-      { path: '/queue',         label: 'Triage Queue',   icon: Zap },
-      { path: '/network',       label: 'Network Graph',  icon: Network },
-    ],
-  },
-  {
-    label: 'Operations',
-    items: [
-      { path: '/analytics',     label: 'ROI Analytics',  icon: BarChart2 },
-      { path: '/compliance',    label: 'Compliance',     icon: FileCheck },
-      { path: '/risk-operations', label: 'Customer Risk', icon: UserCheck },
-      { path: '/data-import',  label: 'Data Import',   icon: Upload },
-      { path: '/benchmarks',   label: 'Model Benchmarks', icon: Gauge },
-    ],
-  },
-];
 
 // ── Animation constants ──────────────────────────────────────────────
 const SIDEBAR_SPRING = { type: 'spring', stiffness: 280, damping: 28 };
@@ -221,9 +197,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
               )}
             </AnimatePresence>
             {section.items.map(item => {
-              const isActive = item.end
-                ? location.pathname === item.path
-                : location.pathname.startsWith(item.path);
+              const isActive = isActivePath(item, location.pathname);
               const Icon = item.icon;
               const staggerDelay = 0.03 * itemIndex++;
 
@@ -292,10 +266,8 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
             }}>
               <div style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: 9,
+                fontSize: 12,
                 color: 'var(--text-faint)',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
                 marginBottom: 6,
                 fontWeight: 600,
               }}>Queue</div>
@@ -314,7 +286,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 }}>
                   <span style={{
                     fontFamily: 'var(--font-sans)',
-                    fontSize: 11,
+                    fontSize: 12,
                     color: 'var(--text-muted)',
                   }}>{s.label}</span>
                   <motion.span
@@ -324,7 +296,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                     style={{
                       fontFamily: 'var(--font-sans)',
-                      fontSize: 11,
+                      fontSize: 12,
                       color: s.color,
                       fontWeight: 600,
                     }}
@@ -364,7 +336,7 @@ export default function Sidebar({ stats, collapsed, onToggle }) {
                 animate={{ opacity: 1, width: 'auto', x: 0 }}
                 exit={{ opacity: 0, width: 0, x: -6 }}
                 transition={CONTENT_SPRING}
-                style={{ letterSpacing: '0.5px', overflow: 'hidden', whiteSpace: 'nowrap' }}
+                style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}
               >
                 {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
               </motion.span>

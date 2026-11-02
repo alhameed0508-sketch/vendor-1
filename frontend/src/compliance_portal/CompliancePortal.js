@@ -9,14 +9,15 @@ import {
   API_AUDIT_LIMIT,
   API_STR_LIMIT,
   RISK_FILTER_THRESHOLD,
-  AMOUNT_DIVISOR_LAKHS,
 } from '../config';
+import { formatAmount } from '../utils/formatAmount';
+import { statusLabel } from '../utils/statusLabel';
 
 const STATUS_COLORS = {
-  DRAFT: '#FB923C',
-  READY_FOR_SUBMISSION: '#22D3EE',
-  SUBMITTED: '#6366F1',
-  ACKNOWLEDGED: '#10B981',
+  DRAFT: 'var(--text-muted)',
+  READY_FOR_SUBMISSION: 'var(--text-secondary)',
+  SUBMITTED: 'var(--text-primary)',
+  ACKNOWLEDGED: 'var(--accent)',
 };
 
 const STATUS_LABELS = {
@@ -25,6 +26,10 @@ const STATUS_LABELS = {
   SUBMITTED: 'Submitted',
   ACKNOWLEDGED: 'Acknowledged',
 };
+
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+const tint = (colour, pct) => `color-mix(in srgb, ${colour} ${pct}%, transparent)`;
+const riskColour = score => (score > 0.8 ? 'var(--critical)' : score > 0.5 ? 'var(--high)' : 'var(--text-muted)');
 
 const NEXT_ACTION = {
   DRAFT: { label: 'Approve', endpoint: 'approve', body: (user) => ({ approved_by: user || 'demo_user' }) },
@@ -170,12 +175,12 @@ export default function CompliancePortal() {
   }, {});
 
   return (
-    <div style={{ padding: 24 }}>
+    <div className="page">
       <AnimateIn>
         <div style={{ marginBottom: 24 }}>
           <h1 className="text-page-title" style={{ fontSize: 22, marginBottom: 4 }}>Compliance Portal</h1>
           <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontSize: 12 }}>
-            Suspicious Transaction Report (STR) generation · FIU-IND format · RBI AML/CFT compliance
+            Build Suspicious Transaction Reports (STRs) in FIU-IND format for RBI AML/CFT filing.
           </p>
         </div>
       </AnimateIn>
@@ -184,11 +189,11 @@ export default function CompliancePortal() {
       <AnimateIn delay={0.05}>
         <GlassCard className="mb-5 p-5" hover={false} style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
           {[
-            { label: 'Reportable Alerts', value: alerts.length, color: 'var(--accent-amber)' },
-            { label: 'Selected for STR', value: selected.size, color: 'var(--accent-cyan)' },
-            { label: 'Total Amount', value: `₹${(totalSelected / AMOUNT_DIVISOR_LAKHS).toFixed(2)}L`, color: 'var(--accent-amber)' },
-            { label: 'STRs Filed', value: strReports.length, color: 'var(--accent-green)' },
-            { label: 'FIU Format', value: 'v2.1', color: 'var(--text-muted)' },
+            { label: 'Reportable Alerts', value: alerts.length },
+            { label: 'Selected for STR', value: selected.size },
+            { label: 'Total Amount', value: formatAmount(totalSelected) },
+            { label: 'STRs Filed', value: strReports.length },
+            { label: 'FIU Format', value: 'v2.1' },
           ].map((s, i, arr) => (
             <React.Fragment key={s.label}>
               <motion.div
@@ -197,15 +202,15 @@ export default function CompliancePortal() {
                 transition={{ delay: 0.1 + i * 0.05 }}
                 style={{ padding: '0 20px' }}
               >
-                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-sans)', color: s.color }}>
+                <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
                   {typeof s.value === 'number' ? (
-                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--font-sans)' }} />
+                    <AnimatedCounter end={s.value} style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
                   ) : s.value}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', }}>{s.label}</div>
               </motion.div>
               {i < arr.length - 1 && (
-                <div style={{ width: 1, height: 32, background: 'var(--border-bright)', flexShrink: 0 }} />
+                <div style={{ width: 1, height: 32, background: 'var(--border-strong)', flexShrink: 0 }} />
               )}
             </React.Fragment>
           ))}
@@ -234,10 +239,10 @@ export default function CompliancePortal() {
               <div key={status} style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 14px', borderRadius: 6,
-                background: `${color}10`, border: `1px solid ${color}30`,
+                background: 'transparent', border: '1px solid var(--border)',
               }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color }}>
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--text-secondary)' }}>
                   {STATUS_LABELS[status]}
                 </span>
                 <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-sans)', color }}>
@@ -287,10 +292,10 @@ export default function CompliancePortal() {
                           <motion.div
                             style={{
                               width: 16, height: 16, borderRadius: 3,
-                              border: `2px solid ${selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'var(--border-bright)'}`,
-                              background: selected.has(a.alert_id) ? 'var(--accent-cyan)' : 'transparent',
+                              border: `2px solid ${selected.has(a.alert_id) ? 'var(--accent)' : 'var(--border-strong)'}`,
+                              background: selected.has(a.alert_id) ? 'var(--accent)' : 'transparent',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 10, color: '#000',
+                              fontSize: 12, color: 'var(--bg-base)',
                             }}
                             whileTap={{ scale: 0.85 }}
                             animate={{ scale: selected.has(a.alert_id) ? [1, 1.15, 1] : 1 }}
@@ -299,8 +304,8 @@ export default function CompliancePortal() {
                             {selected.has(a.alert_id) ? '✓' : ''}
                           </motion.div>
                         </td>
-                        <td><span className="mono" style={{ color: 'var(--accent-cyan)', fontSize: 12 }}>{a.alert_id}</span></td>
-                        <td><span className={`badge badge-${a.severity}`}>{a.severity}</span></td>
+                        <td><span className="mono" style={{ color: 'var(--text-primary)', fontSize: 13, fontWeight: 500 }}>{a.alert_id}</span></td>
+                        <td><span className={`badge badge-${a.severity}`}>{statusLabel(a.severity)}</span></td>
                         <td>
                           <div className="risk-bar">
                             <div className="risk-track">
@@ -311,7 +316,7 @@ export default function CompliancePortal() {
                           </div>
                         </td>
                         <td><span className="mono">{a.account_count}</span></td>
-                        <td><span className="amount">{a.total_amount != null ? `₹${a.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—'}</span></td>
+                        <td><span className="amount">{a.total_amount != null ? formatAmount(a.total_amount) : '—'}</span></td>
                         <td className="text-xs font-mono text-[var(--text-secondary)]">
                           {a.reason_codes?.[0]?.split(':')[0] || '—'}
                         </td>
@@ -328,15 +333,15 @@ export default function CompliancePortal() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Exported STR list — shown first for prominence */}
           <AnimateIn delay={0.1} direction="left">
-            <GlassCard className="p-5" hover={false} style={{ borderLeft: `3px solid ${strReports.length > 0 ? 'var(--accent-green)' : 'var(--border)'}`, borderRadius: '0 8px 8px 0' }}>
+            <GlassCard className="p-5" hover={false} style={{ borderLeft: '2px solid var(--border)', borderRadius: '0 8px 8px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <p className="section-title" style={{ margin: 0 }}>
                   STR Reports {strReports.length > 0 ? `(${strReports.length})` : ''}
                 </p>
                 {strReports.length > 0 && (
                   <span style={{
-                    fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent-green)',
-                    background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 4,
+                    fontSize: 12, fontFamily: 'var(--font-sans)', color: 'var(--accent)',
+                    background: 'var(--accent-tint)', padding: '2px 8px', borderRadius: 4,
                   }}>
                     FIU-IND v2.1
                   </span>
@@ -353,7 +358,7 @@ export default function CompliancePortal() {
                   <AnimatePresence mode="popLayout">
                     {strReports.map((r, i) => {
                       const status = r.status || 'DRAFT';
-                      const statusColor = STATUS_COLORS[status] || '#10B981';
+                      const statusColor = STATUS_COLORS[status] || 'var(--text-muted)';
                       const alertId = r.alert_id || (r.alert_ids && r.alert_ids[0]) || '—';
                       const action = NEXT_ACTION[status];
                       const accountCount = r.accounts_involved?.length || r.account_ids?.length || 0;
@@ -365,7 +370,7 @@ export default function CompliancePortal() {
                           style={{
                             padding: '10px 12px', marginBottom: 8, borderRadius: 6,
                             background: 'var(--bg-elevated)',
-                            border: `1px solid ${statusColor}20`,
+                            border: '1px solid var(--border)',
                           }}
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -379,37 +384,31 @@ export default function CompliancePortal() {
                             </span>
                             <span style={{
                               fontSize: 12, fontFamily: 'var(--font-sans)', fontWeight: 700,
-                              background: `${statusColor}20`, color: statusColor,
-                              padding: '2px 8px', borderRadius: 4, letterSpacing: '0.5px',
-                              textTransform: 'uppercase',
-                            }}>
+                              background: tint(statusColor, 12), color: statusColor,
+                              padding: '2px 8px', borderRadius: 4, }}>
                               {STATUS_LABELS[status] || status}
                             </span>
                           </div>
 
                           {/* Alert + financial data */}
                           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                            <span style={{ color: 'var(--accent-cyan)' }}>{alertId}</span>
-                            {r.total_amount != null && (
-                              <span> · <span style={{ color: 'var(--accent-amber)' }}>₹{Number(r.total_amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></span>
-                            )}
-                            {r.transaction_count != null && (
-                              <span> · {r.transaction_count} txns</span>
-                            )}
-                            {accountCount > 0 && (
-                              <span> · {accountCount} accts</span>
-                            )}
+                            {[
+                              alertId,
+                              r.total_amount != null && formatAmount(r.total_amount),
+                              r.transaction_count != null && plural(r.transaction_count, 'transfer'),
+                              accountCount > 0 && plural(accountCount, 'account'),
+                            ].filter(Boolean).join(', ')}
                           </div>
 
                           {/* Risk + entity */}
                           <div style={{ fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
                             {r.risk_score != null && (
-                              <span style={{ color: r.risk_score > 0.8 ? '#EF4444' : r.risk_score > 0.5 ? '#FB923C' : 'var(--text-muted)' }}>
-                                Risk: {(r.risk_score * 100).toFixed(0)}%
+                              <span style={{ color: riskColour(r.risk_score) }}>
+                                Risk {(r.risk_score * 100).toFixed(0)}%
                               </span>
                             )}
-                            {r.reporting_entity && <span> · {r.reporting_entity}</span>}
-                            {r.fiu_reference && <span> · Ref: {r.fiu_reference}</span>}
+                            {r.reporting_entity && <span>, {r.reporting_entity}</span>}
+                            {r.fiu_reference && <span>, ref {r.fiu_reference}</span>}
                           </div>
 
                           {/* Action buttons */}
@@ -418,8 +417,8 @@ export default function CompliancePortal() {
                               <motion.button
                                 className="btn btn-ghost"
                                 style={{
-                                  fontSize: 10, padding: '3px 10px',
-                                  border: `1px solid ${statusColor}40`,
+                                  fontSize: 12, padding: '3px 10px',
+                                  border: `1px solid ${tint(statusColor, 30)}`,
                                   color: statusColor,
                                 }}
                                 onClick={(e) => { e.stopPropagation(); advanceStatus(r.str_id, action); }}
@@ -432,7 +431,7 @@ export default function CompliancePortal() {
                             )}
                             <motion.button
                               className="btn btn-ghost"
-                              style={{ fontSize: 10, padding: '3px 10px', color: 'var(--text-muted)' }}
+                              style={{ fontSize: 12, padding: '3px 10px', color: 'var(--text-muted)' }}
                               onClick={(e) => { e.stopPropagation(); downloadPdf(alertId); }}
                               whileHover={{ scale: 1.03 }}
                               whileTap={{ scale: 0.97 }}
@@ -440,7 +439,7 @@ export default function CompliancePortal() {
                               PDF
                             </motion.button>
                             {status === 'ACKNOWLEDGED' && (
-                              <span style={{ fontSize: 12, color: 'var(--accent-green)', fontFamily: 'var(--font-sans)', alignSelf: 'center', marginLeft: 'auto' }}>
+                              <span style={{ fontSize: 12, color: 'var(--accent)', fontFamily: 'var(--font-sans)', alignSelf: 'center', marginLeft: 'auto' }}>
                                 ✓ Complete
                               </span>
                             )}
@@ -479,7 +478,7 @@ export default function CompliancePortal() {
                   transition={{ delay: 0.3 + i * 0.05 }}
                 >
                   <motion.span
-                    style={{ color: c.done ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: 14, flexShrink: 0 }}
+                    style={{ color: c.done ? 'var(--accent)' : 'var(--text-muted)', fontSize: 14, flexShrink: 0 }}
                     animate={c.done ? { scale: [1, 1.2, 1] } : {}}
                     transition={{ duration: 0.3 }}
                   >
@@ -493,16 +492,16 @@ export default function CompliancePortal() {
 
           {/* Live Audit Log */}
           <AnimateIn delay={0.3} direction="left">
-            <GlassCard className="p-4" hover={false} style={{ borderLeft: '3px solid var(--accent-cyan)', borderRadius: '0 8px 8px 0' }}>
+            <GlassCard className="p-4" hover={false} style={{ borderLeft: '2px solid var(--border)', borderRadius: '0 8px 8px 0' }}>
               <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] mb-3">Audit Trail</p>
               {auditLog.length === 0 ? (
                 <p className="text-xs text-[var(--text-muted)] font-mono">No audit entries yet. Actions will be logged here.</p>
               ) : (
                 <div style={{ maxHeight: 200, overflowY: 'auto' }}>
                   {auditLog.slice(0, 15).map((entry, i) => {
-                    const actionColor = entry.action === 'ESCALATION_CREATED' ? 'var(--accent-amber)'
-                      : entry.action === 'FEEDBACK' ? 'var(--accent-green)'
-                      : 'var(--accent-cyan)';
+                    const actionColor = entry.action === 'ESCALATION_CREATED' ? 'var(--high)'
+                      : entry.action === 'FEEDBACK' ? 'var(--accent)'
+                      : 'var(--text-muted)';
                     return (
                       <div key={entry.log_id || i} style={{
                         padding: '6px 0 6px 10px', borderBottom: '1px solid var(--border)',
@@ -512,14 +511,14 @@ export default function CompliancePortal() {
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: actionColor }}>
-                            {entry.action}
+                            {statusLabel(entry.action || '')}
                           </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
                             {new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: 10 }}>
-                          {entry.user} {entry.alert_id ? `· ${entry.alert_id}` : ''} {entry.details ? `· ${entry.details}` : ''}
+                        <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                          {[entry.user, entry.alert_id, entry.details].filter(Boolean).join(', ')}
                         </div>
                       </div>
                     );

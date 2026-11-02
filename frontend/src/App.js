@@ -13,6 +13,7 @@ import RiskOperationsPage from './risk_operations/RiskOperationsPage';
 import BenchmarkPage from './benchmark/BenchmarkPage';
 import LiveStream from './live_stream/LiveStream';
 import Sidebar from './components/Sidebar';
+import MobileNav from './components/MobileNav';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ThemeProvider, useTheme } from './ThemeContext';
 import { AuthProvider } from './auth/AuthContext';
@@ -64,6 +65,7 @@ function AppContent() {
           onToggle={() => setSidebarCollapsed(prev => !prev)}
         />
       )}
+      {!isLoginPage && <MobileNav />}
 
       <div className="app-content">
         <main className="app-main">

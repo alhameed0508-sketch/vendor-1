@@ -53,4 +53,17 @@ describe('LogoutButton', () => {
     expect(screen.getByRole('button', { name: /log out/i })).toBeInTheDocument();
     expect(screen.queryByText('Log out')).not.toBeInTheDocument();
   });
+
+  it('renders a sheet-style button for the phone menu', async () => {
+    const logout = jest.fn();
+    render(
+      <MemoryRouter>
+        <AuthContext.Provider value={{ isAuthenticated: true, logout }}>
+          <LogoutButton variant="sheet" />
+        </AuthContext.Provider>
+      </MemoryRouter>
+    );
+    await userEvent.click(screen.getByRole('button', { name: /log out/i }));
+    expect(logout).toHaveBeenCalledTimes(1);
+  });
 });

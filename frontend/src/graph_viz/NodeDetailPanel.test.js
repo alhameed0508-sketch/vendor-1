@@ -21,8 +21,19 @@ describe('NodeDetailPanel', () => {
   it('shows account, role and risk label', () => {
     renderPanel({ node: { account_id: 'ACC_12345', role: 'MULE', smurf_score: 0.7 } });
     expect(screen.getByText('ACC_12345')).toBeInTheDocument();
-    expect(screen.getByText('MULE')).toBeInTheDocument();
+    expect(screen.getByText('Mule account')).toBeInTheDocument();
     expect(screen.getByText(/Critical/)).toBeInTheDocument();
+  });
+
+  it('lists the reasons the account was flagged', () => {
+    renderPanel({ node: { account_id: 'A', role: 'MULE' }, reasons: ['Account opened 12 days ago', 'KYC is pending'] });
+    expect(screen.getByRole('heading', { name: 'Why flagged' })).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
+  });
+
+  it('hides the reasons section when there are none', () => {
+    renderPanel({ node: { account_id: 'A', role: 'LEGITIMATE' } });
+    expect(screen.queryByRole('heading', { name: 'Why flagged' })).toBeNull();
   });
 
   it('links to the alert only when alert_id is present', () => {

@@ -6,10 +6,10 @@ import { toast } from 'sonner';
 import { RefreshCw, ArrowUp, ArrowDown, AlertTriangle, Activity, Shield, DollarSign, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { apiFetch } from '../auth/api';
-import { API_ALERTS_LIMIT, AMOUNT_DIVISOR_LAKHS, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
+import { API_ALERTS_LIMIT, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
+import { formatAmount } from '../utils/formatAmount';
 import StatCard from '../components/StatCard';
-
-const label = s => (s === 'STR_FILED' ? 'STR filed' : s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' '));
+import { statusLabel as label } from '../utils/statusLabel';
 
 /* ── Empty State ── */
 function EmptyState({ hasFilters }) {
@@ -36,7 +36,7 @@ function EmptyState({ hasFilters }) {
       </div>
       <div>
         <p style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-sans)',
           fontSize: 15,
           fontWeight: 600,
           color: 'var(--text-secondary)',
@@ -128,7 +128,7 @@ export default function Dashboard() {
     critical: alerts.filter(a => a.severity === 'CRITICAL').length,
     high:     alerts.filter(a => a.severity === 'HIGH').length,
     open:     alerts.filter(a => a.status === 'OPEN').length,
-    total:    (alerts.reduce((s, a) => s + a.total_amount, 0) / AMOUNT_DIVISOR_LAKHS).toFixed(1),
+    total:    alerts.reduce((s, a) => s + (a.total_amount || 0), 0),
   };
 
   const hasFilters = filter.severity !== 'ALL' || filter.status !== 'ALL';
@@ -141,7 +141,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1440, margin: '0 auto' }}>
+    <div className="page">
 
       {/* ── Page Header ── */}
       <div
@@ -154,20 +154,21 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-page-title" style={{ margin: '0 0 4px' }}>
-            Alert Queue
+            Alerts
           </h1>
           <p className="text-mono-sm" style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            fontSize: 12,
+            flexWrap: 'wrap',
+            gap: '4px 12px',
+            fontSize: 13,
           }}>
             <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block', flexShrink: 0 }} />
             {filtered.length} alerts
-            {stats.critical > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span></>}
-            {stats.high > 0     && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>{stats.high} high</span></>}
-            {stats.open > 0     && <><span style={{ color: 'var(--text-faint)' }}>·</span><span>{stats.open} open</span></>}
-            {parseFloat(stats.total) > 0 && <><span style={{ color: 'var(--text-faint)' }}>·</span><span style={{ color: 'var(--high)' }}>₹{stats.total}L</span></>}
+            {stats.critical > 0 && <span style={{ color: 'var(--critical)' }}>{stats.critical} critical</span>}
+            {stats.high > 0     && <span style={{ color: 'var(--high)' }}>{stats.high} high</span>}
+            {stats.open > 0     && <span>{stats.open} open</span>}
+            {stats.total > 0 && <span>{formatAmount(stats.total)} flagged</span>}
           </p>
         </div>
 
@@ -182,15 +183,15 @@ export default function Dashboard() {
       </div>
 
       {/* ── Metric Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
-        <StatCard label="Critical"      value={stats.critical} color="var(--critical)" icon={AlertTriangle} sub="active alerts" />
-        <StatCard label="High Severity" value={stats.high}     color="var(--high)"     icon={Activity}      sub="active alerts" />
-        <StatCard label="Open Cases"    value={stats.open}     color="var(--medium)"   icon={Shield}        sub="under review" />
-        <StatCard label="Total Flagged" value={`₹${stats.total}L`} color="var(--high)" icon={DollarSign}   sub="this cycle" />
+      <div className="stat-grid">
+        <StatCard label="Critical"      value={stats.critical} icon={AlertTriangle} sub="active alerts" />
+        <StatCard label="High severity" value={stats.high}     icon={Activity}      sub="active alerts" />
+        <StatCard label="Open cases"    value={stats.open}   icon={Shield}        sub="under review" />
+        <StatCard label="Total flagged" value={formatAmount(stats.total)} icon={DollarSign}   sub="this cycle" />
       </div>
 
       {/* ── Filter Bar ── */}
-      <div style={{
+      <div className="filter-bar filter-bar-attached" style={{
         display: 'flex',
         alignItems: 'center',
         gap: 0,
@@ -245,7 +246,7 @@ export default function Dashboard() {
               <EmptyState hasFilters={hasFilters} />
             ) : (
               <div className="table-container">
-                <table className="data-table" role="grid" aria-label="Fraud alerts">
+                <table className="data-table data-table-stack" role="grid" aria-label="Fraud alerts">
                   <thead>
                     <tr>
                       <th style={{ width: 40, paddingLeft: 16 }}>#</th>
@@ -271,10 +272,10 @@ export default function Dashboard() {
                         role="row"
                         onKeyDown={e => { if (e.key === 'Enter') navigate(alertPath(alert.alert_id)); }}
                       >
-                        <td style={{ color: 'var(--text-faint)', fontSize: 12, fontFamily: 'var(--font-sans)', paddingLeft: 16 }}>
+                        <td className="col-idx" style={{ color: 'var(--text-faint)', fontSize: 12, fontFamily: 'var(--font-sans)', paddingLeft: 16 }}>
                           {idx + 1}
                         </td>
-                        <td>
+                        <td className="col-id">
                           <span style={{
                             fontFamily: 'var(--font-sans)',
                             fontSize: 13,
@@ -282,10 +283,10 @@ export default function Dashboard() {
                             color: 'var(--text-primary)',
                           }}>{alert.alert_id}</span>
                         </td>
-                        <td>
+                        <td className="col-sev">
                           <span className={`badge badge-${alert.severity}`}>{alert.severity}</span>
                         </td>
-                        <td>
+                        <td className="col-risk">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ width: 36, height: 3, background: 'var(--border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
                               <div style={{
@@ -305,29 +306,29 @@ export default function Dashboard() {
                             </span>
                           </div>
                         </td>
-                        <td>
+                        <td className="col-acc">
                           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
                             {alert.account_count}
                           </span>
                         </td>
-                        <td>
+                        <td className="col-amt">
                           <span style={{
                             fontFamily: 'var(--font-sans)',
                             fontSize: 13,
-                            color: 'var(--high)',
+                            color: 'var(--text-primary)',
                             fontWeight: 600,
                           }}>
                             ₹{alert.total_amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                           </span>
                         </td>
-                        <td>
+                        <td className="col-txn">
                           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13 }}>
                             {alert.txn_count}
                           </span>
                         </td>
-                        <td style={{ maxWidth: 180 }}>
+                        <td className="col-sig" style={{ maxWidth: 180 }}>
                           <span style={{
-                            fontSize: 11,
+                            fontSize: 12,
                             fontFamily: 'var(--font-sans)',
                             color: 'var(--text-secondary)',
                             letterSpacing: '0.2px',
@@ -335,15 +336,15 @@ export default function Dashboard() {
                             {alert.reason_codes?.[0]?.split(':')[0] || '—'}
                           </span>
                         </td>
-                        <td>
+                        <td className="col-status">
                           <span className={`badge badge-${alert.status}`}>
                             {alert.status.replace(/_/g, ' ')}
                           </span>
                         </td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
+                        <td className="col-created" style={{ color: 'var(--text-muted)', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
                           {formatDistanceToNow(new Date(alert.created_at), { addSuffix: true })}
                         </td>
-                        <td style={{ paddingRight: 16 }}>
+                        <td className="col-go" style={{ paddingRight: 16 }}>
                           <ChevronRight size={13} color="var(--text-faint)" />
                         </td>
                       </tr>
@@ -360,10 +361,9 @@ export default function Dashboard() {
             display: 'flex',
             gap: 16,
             fontFamily: 'var(--font-sans)',
-            fontSize: 10,
+            fontSize: 12,
             color: 'var(--text-faint)',
-            letterSpacing: '0.5px',
-          }}>
+            }}>
             {[['j/k', 'navigate'], ['Enter', 'open alert'], ['click header', 'sort']].map(([k, v]) => (
               <span key={k}>
                 <span style={{
