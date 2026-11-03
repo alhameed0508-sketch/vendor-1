@@ -10,7 +10,14 @@
 **/coverage/
 .tmp*/
 .tmp-*
-frontend/
+# railway/Dockerfile builds the React app from this context, so only the
+# generated frontend folders are excluded, not the source.
+frontend/node_modules/
+frontend/build/
+frontend/coverage/
+frontend/.env
+frontend/.env.*
+e2e/
 docs/
 design-system/
 scripts/
