@@ -34,6 +34,22 @@ function decodeJwtPayload(token) {
   }
 }
 
+/**
+ * The signed-in user as the access token describes it, the same claims /auth/me returns.
+ * Login responses carry no user object, so without this the role stays unknown until a
+ * page reload, and role-gated controls (evidence pack, supervisor decision) stay hidden.
+ */
+function userFromToken(token, fallbackUser) {
+  const claims = decodeJwtPayload(token) || {};
+  const username = claims.sub || fallbackUser?.username;
+  return {
+    ...fallbackUser,
+    user_id: username,
+    username,
+    ...(claims.role ? { role: claims.role } : {}),
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -101,7 +117,7 @@ export function AuthProvider({ children }) {
     if (data.refresh_token) {
       setRefreshToken(data.refresh_token);
     }
-    setUser(data.user || fallbackUser);
+    setUser(data.user || userFromToken(data.access_token, fallbackUser));
     setIsAuthenticated(true);
     setAuthError(null);
     scheduleRefresh(data.access_token);
