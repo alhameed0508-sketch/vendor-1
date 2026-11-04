@@ -5,7 +5,8 @@ import ROIDashboard from './ROIDashboard';
 jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
 
 const KPI = {
-  fraud_prevented_inr: 25000000, fraud_prevented_crore: 2.5, total_alerts: 9,
+  fraud_prevented_inr: 25000000, fraud_flagged_inr: 25000000, fraud_prevented_verified_inr: 10000000,
+  fraud_prevented_crore: 2.5, total_alerts: 9,
   hours_saved: 27, manpower_saved_lakh: 0, false_positive_reduction_pct: null,
   roi_assumptions: { analyst_hourly_cost_inr: 0 },
 };
@@ -53,15 +54,19 @@ describe('ROIDashboard', () => {
 
   it('puts the KPI tiles in the shared grid that folds to two columns on phones', async () => {
     render(<ROIDashboard />);
-    await screen.findByText('Fraud Prevented');
-    expect(tile('Fraud Prevented').closest('.stat-grid')).not.toBeNull();
+    await screen.findByText('Fraud Flagged');
+    expect(tile('Fraud Flagged').closest('.stat-grid')).not.toBeNull();
     expect(tile('Manpower Saved').closest('.stat-grid')).not.toBeNull();
   });
 
-  it('shows fraud prevented in the shared rupee format', async () => {
+  it('separates flagged rupees from the investigator-verified prevented figure', async () => {
     render(<ROIDashboard />);
-    await screen.findByText('Fraud Prevented');
-    expect(tile('Fraud Prevented')).toHaveTextContent('₹2.5Cr');
+    await screen.findByText('Fraud Flagged');
+    expect(tile('Fraud Flagged')).toHaveTextContent('₹2.5Cr');
+    expect(tile('Fraud Flagged')).toHaveTextContent('Not verified');
+    expect(tile('Fraud Prevented (verified)')).toHaveTextContent('₹1Cr');
+    expect(tile('Fraud Prevented (verified)')).toHaveTextContent('Confirmed by investigators');
+    expect(screen.queryByText('Fraud Prevented')).toBeNull();
   });
 
   it('says a figure is not measured instead of showing a made-up percentage', async () => {
