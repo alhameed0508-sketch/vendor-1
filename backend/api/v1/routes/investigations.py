@@ -1,8 +1,13 @@
 """
 Investigation routes — /api/v1/investigations/*
+
+Every read and write goes through the access guard: institution, office and assignment decide
+what a caller sees and changes. See access/policy.py.
 """
 
-from api.deps import get_audit_service, get_investigation_service
+from access.directory import AccessDirectory
+from access.guard import AccessGuard, action_for_transition
+from api.deps import get_access_directory, get_audit_service, get_investigation_service
 from api.v1.schemas.investigations import (
     AssignRequest,
     InterventionRequest,
@@ -24,6 +29,10 @@ def _who(user: dict) -> str:
     return user.get("sub", "investigator")
 
 
+def get_guard(directory: AccessDirectory = Depends(get_access_directory)) -> AccessGuard:
+    return AccessGuard(directory)
+
+
 def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
     """Register investigation routes on the given router."""
 
@@ -34,8 +43,20 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         req: OpenInvestigationRequest,
         user: dict = Depends(require_permission("alerts:write")),
         svc: InvestigationService = Depends(get_investigation_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
-        return success_response(svc.open(req.source, req.source_id, _who(user)))
+        ctx = guard.opener(user)
+        assignee = ctx.user_id if ctx.role == "INVESTIGATOR" else None
+        return success_response(
+            svc.open(
+                req.source,
+                req.source_id,
+                _who(user),
+                institution_id=ctx.institution_id,
+                office_id=ctx.office_id,
+                assignee=assignee,
+            )
+        )
 
     @r.get("")
     @limiter.limit("100/minute")
@@ -43,8 +64,9 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         request: Request,
         user: dict = Depends(require_permission("alerts:read")),
         svc: InvestigationService = Depends(get_investigation_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
-        return success_response({"investigations": svc.list_all()})
+        return success_response({"investigations": guard.visible(user, svc.list_all())})
 
     @r.get("/{investigation_id}")
     @limiter.limit("100/minute")
@@ -53,8 +75,11 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         investigation_id: str,
         user: dict = Depends(require_permission("alerts:read")),
         svc: InvestigationService = Depends(get_investigation_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
-        return success_response(svc.get(investigation_id))
+        investigation = svc.get(investigation_id)
+        guard.require(user, "read", investigation)
+        return success_response(investigation)
 
     @r.post("/{investigation_id}/transition")
     @limiter.limit("50/minute")
@@ -64,7 +89,9 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         req: TransitionRequest,
         user: dict = Depends(require_permission("alerts:write")),
         svc: InvestigationService = Depends(get_investigation_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
+        guard.require(user, action_for_transition(req.to), svc.get(investigation_id))
         return success_response(
             svc.transition(investigation_id, req.to, _who(user), outcome=req.outcome, note=req.note)
         )
@@ -77,7 +104,9 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         req: AssignRequest,
         user: dict = Depends(require_permission("alerts:write")),
         svc: InvestigationService = Depends(get_investigation_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
+        guard.require(user, "assign", svc.get(investigation_id))
         return success_response(svc.assign(investigation_id, req.assignee, _who(user)))
 
     @r.post("/{investigation_id}/intervention")
@@ -89,6 +118,8 @@ def register_investigation_routes(r: APIRouter, limiter: Limiter) -> None:
         user: dict = Depends(require_permission("alerts:write")),
         svc: InvestigationService = Depends(get_investigation_service),
         audit: AuditService = Depends(get_audit_service),
+        guard: AccessGuard = Depends(get_guard),
     ):
         investigation = svc.get(investigation_id)
+        guard.require(user, "write", investigation)
         return success_response(request_intervention(audit, req.kind, req.account_id, investigation, _who(user)))

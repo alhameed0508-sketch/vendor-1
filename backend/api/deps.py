@@ -472,6 +472,13 @@ def get_str_service():
 
 
 @lru_cache(maxsize=1)
+def get_access_directory():
+    from access.seed import demo_directory
+
+    return demo_directory()
+
+
+@lru_cache(maxsize=1)
 def get_investigation_service():
     from core.exceptions import NotFoundError
     from repositories.investigation_repository import InvestigationRepository

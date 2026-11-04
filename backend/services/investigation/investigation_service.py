@@ -53,20 +53,30 @@ class InvestigationService:
         self._audit = audit
         self._resolvers = resolvers
 
-    def open(self, source: str, source_id: str, user: str) -> Dict:
+    def open(
+        self,
+        source: str,
+        source_id: str,
+        user: str,
+        institution_id: Optional[str] = None,
+        office_id: Optional[str] = None,
+        assignee: Optional[str] = None,
+    ) -> Dict:
         resolver = self._resolvers.get(source)
         if resolver is None:
             raise ValidationError(f"Unknown case source '{source}'. Use one of: {', '.join(sorted(self._resolvers))}")
         if not resolver(source_id):
             raise NotFoundError(f"{source.capitalize()} case", source_id)
-        if self._repo.find_by_source(source, source_id):
+        if self._repo.find_by_source(source, source_id, institution_id):
             raise ConflictError(f"An investigation is already open for {source} {source_id}")
         investigation = {
             "investigation_id": f"INV_{uuid.uuid4().hex[:8].upper()}",
             "source": source,
             "source_id": source_id,
             "status": NEW,
-            "assignee": None,
+            "institution_id": institution_id,
+            "office_id": office_id,
+            "assignee": assignee,
             "outcome": None,
             "opened_at": _now(),
             "history": [_entry(NEW, user, "")],

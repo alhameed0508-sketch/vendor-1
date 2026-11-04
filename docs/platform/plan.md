@@ -39,7 +39,8 @@
 
 - Phase 1 done (`platform/audit`).
 - Phase 2 done (`platform/shell`): registry, `/api/v1/modules`, `/api/v1/command-center`, Command center and Detection modules pages, a Platform nav section.
-- **Phase 3 deferred by the owner** ("ignore the banks for now"). Institution isolation and the office hierarchy are not built. Existing global roles stay in force. Later phases do not depend on it, except scoped Mule Chat in Phase 7, which will use the existing role checks until Phase 3 exists.
+- Phase 3 built later on `platform/access` after the owner asked for it (see the Phase 3 entries below). It was deferred first ("ignore the banks for now").
+- ~~Phase 3 deferred by the owner~~ **(superseded)** ("ignore the banks for now"). Institution isolation and the office hierarchy are not built. Existing global roles stay in force. Later phases do not depend on it, except scoped Mule Chat in Phase 7, which will use the existing role checks until Phase 3 exists.
 - Ruling: a module's status is derived from its capabilities, so it cannot claim more than its capabilities list.
 - Ruling: Loan is Planned. Its only existing building block (the screening service) is not wired to loan applications, so that row is Planned too.
 - Ruling: `/` stays the alert dashboard until Phase 4 moves it into the mule workspace. The new pages live at `/command-center` and `/modules`.
@@ -60,6 +61,11 @@
 - Ruling: `E2E_API_URL` added to the e2e helpers so tests can run against a local stack on other ports. Default behaviour is unchanged.
 - Phase 4 (`platform/mule-module`): `/modules/:moduleId` workspace page; the mule module's `workspace_path` is now `/modules/mule`, and its page links to Alerts, Triage, Network and Live stream.
 - Ruling: the old mule routes (`/`, `/queue`, `/network`, `/live`) stay where they are and no redirects were added. Moving them would break bookmarks and 13 test files for no gain in capability. Cost: the mule pages still sit at the top level of the router, so the URL tree does not mirror the module tree.
+- Phase 3 (`platform/access`): `backend/access/` (models, pure `policy.can`, in-memory `AccessDirectory`, seed with two Synthetic banks, `AccessGuard`). Investigations are scoped by institution, office subtree and assignment. A case the caller may not read returns the same 404 as a missing one; a readable case they may not change returns 403. Opening a case records the opener's institution and office; an investigator is assigned their own case; only a supervisor assigns or closes. The duplicate-case check is per institution, so one bank never learns that another has the same case.
+- Ruling: the directory is in memory. Employee, office and institution tables are a schema change and wait for the owner. Demo logins map to seeded employees: `investigator` at A-BR1, `supervisor` at A-HO; `admin` is a platform administrator with no institution; any other login (including guests) is outside the directory and sees an empty list.
+- Ruling: only investigations are scoped. Alerts, escalations and Mule Chat still show everything to anyone with `alerts:read`, because alerts carry no institution (the dataset has a free-text `bank` per node, not an institution id). Cost: a staff user of one bank can still read every alert. Closing this needs alerts tagged with an institution at ingest.
+- Ruling: the token's role wins over the directory's role, so a downgraded token cannot act as the seeded role.
+- Ruling: the investigations page still shows buttons the caller may not use (for example Closed for an investigator). The server refuses with 403 and the page shows the message.
 - Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
 
 ## Phase map

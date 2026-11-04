@@ -22,9 +22,14 @@ class InvestigationRepository:
         item = self._items.get(investigation_id)
         return dict(item) if item else None
 
-    def find_by_source(self, source: str, source_id: str) -> Optional[Dict]:
+    def find_by_source(self, source: str, source_id: str, institution_id: Optional[str] = None) -> Optional[Dict]:
+        """The investigation for a case inside one institution, so banks never see each other's duplicates."""
         for item in self._items.values():
-            if item["source"] == source and item["source_id"] == source_id:
+            if (
+                item["source"] == source
+                and item["source_id"] == source_id
+                and item.get("institution_id") == institution_id
+            ):
                 return dict(item)
         return None
 
