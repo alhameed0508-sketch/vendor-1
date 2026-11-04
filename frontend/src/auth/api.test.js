@@ -74,6 +74,11 @@ describe('apiFetch', () => {
 
     expect(result.status).toBe(200);
     expect(getToken()).toBe('new-token');
+    // The body must match RefreshRequest in backend/api/v1/schemas/auth.py, which takes { token }.
+    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/v1/auth/refresh', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ token: 'valid-refresh' }),
+    }));
   });
 
   it('clears tokens and redirects on failed refresh', async () => {
