@@ -41,7 +41,7 @@ def test_registry_has_the_core_modules_with_unique_ids():
 
 
 def test_mule_module_is_the_only_one_with_a_workspace_today():
-    assert get_module("mule").workspace_path == "/"
+    assert get_module("mule").workspace_path == "/modules/mule"
     assert all(m.workspace_path is None for m in MODULES if m.module_id != "mule")
 
 

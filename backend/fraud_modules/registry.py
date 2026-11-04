@@ -63,7 +63,7 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap("Risk scoring with explanations", DONE),
         ),
         ("transactions: from_account, to_account, amount, timestamp",),
-        workspace_path="/",
+        workspace_path="/modules/mule",
     ),
     ModuleSpec(
         "upi",

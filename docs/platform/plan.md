@@ -58,6 +58,8 @@
 - Ruling: investigation routes use `alerts:read` and `alerts:write`. Closing a case is not limited to supervisors yet. Cost: an investigator can close their own case.
 - Ruling: Mule Chat already requires `alerts:read`, so no new scoping was added. It does not filter by case ownership; that waits for Phase 3.
 - Ruling: `E2E_API_URL` added to the e2e helpers so tests can run against a local stack on other ports. Default behaviour is unchanged.
+- Phase 4 (`platform/mule-module`): `/modules/:moduleId` workspace page; the mule module's `workspace_path` is now `/modules/mule`, and its page links to Alerts, Triage, Network and Live stream.
+- Ruling: the old mule routes (`/`, `/queue`, `/network`, `/live`) stay where they are and no redirects were added. Moving them would break bookmarks and 13 test files for no gain in capability. Cost: the mule pages still sit at the top level of the router, so the URL tree does not mirror the module tree.
 - Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
 
 ## Phase map

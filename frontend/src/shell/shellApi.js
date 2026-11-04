@@ -25,3 +25,9 @@ export const openInvestigation = (source, sourceId) => send('/api/v1/investigati
 export const moveInvestigation = (id, to, outcome) => send(`/api/v1/investigations/${id}/transition`, { to, outcome });
 export const requestIntervention = (id, kind, accountId) =>
   send(`/api/v1/investigations/${id}/intervention`, { kind, account_id: accountId });
+
+export const fetchModule = async id => {
+  const res = await apiFetch(`/api/v1/modules/${encodeURIComponent(id)}`);
+  if (!res.ok) throw new Error('Module not found');
+  return (await res.json()).data;
+};

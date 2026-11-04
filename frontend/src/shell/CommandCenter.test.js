@@ -7,7 +7,7 @@ import { apiFetch } from '../auth/api';
 jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
 
 const MODULES = [
-  { module_id: 'mule', name: 'Mule account detection', status: 'IMPLEMENTED', workspace_path: '/', findings: 4 },
+  { module_id: 'mule', name: 'Mule account detection', status: 'IMPLEMENTED', workspace_path: '/modules/mule', findings: 4 },
   { module_id: 'upi', name: 'UPI and digital payments', status: 'PARTIAL', workspace_path: null, findings: 0, skipped_signals: [{ rule_code: 'R18', reason: "no transaction in this data carries 'device_id'" }] },
   { module_id: 'loan', name: 'Loan and lending fraud', status: 'PLANNED', workspace_path: null, findings: null },
 ];
@@ -47,7 +47,7 @@ test('only a module that has a workspace is a link', async () => {
   serve(payload());
   renderPage();
   const mule = (await screen.findByText('Mule account detection')).closest('article');
-  expect(within(mule).getByRole('link', { name: /open workspace/i })).toHaveAttribute('href', '/');
+  expect(within(mule).getByRole('link', { name: /open workspace/i })).toHaveAttribute('href', '/modules/mule');
   const upi = screen.getByText('UPI and digital payments').closest('article');
   expect(within(upi).queryByRole('link')).not.toBeInTheDocument();
 });

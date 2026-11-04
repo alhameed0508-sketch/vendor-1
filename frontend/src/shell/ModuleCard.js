@@ -18,7 +18,7 @@ function SkippedSignals({ signals }) {
   );
 }
 
-function Capabilities({ capabilities }) {
+export function Capabilities({ capabilities }) {
   return (
     <ul className="shell-caps">
       {capabilities.map(c => (
