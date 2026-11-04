@@ -71,8 +71,9 @@ def test_transaction_aml_matches_the_engine_restricted_to_its_rules():
     ds = build_adversarial_dataset(num_clusters=3, num_legit_accounts=60, num_adversarial=20)
     run = TRANSACTION_AML.run(ds["accounts"], ds["transactions"])
     expected = RuleEngine().evaluate(ds["accounts"], ds["transactions"], rule_codes={"R06", "R12", "R14"})
-    assert {f.account_id for f in run.findings} == set(expected)
-    assert {f.rule_code for f in run.findings} <= {"R06", "R12", "R14"}
+    rule_findings = [f for f in run.findings if f.rule_code != "CF01"]  # CF01 is the cycle detector, not a rule
+    assert {f.account_id for f in rule_findings} == set(expected)
+    assert {f.rule_code for f in run.findings} <= {"R06", "R12", "R14", "CF01"}
     assert run.findings, "the adversarial dataset should trip at least one AML rule"
 
 

@@ -5,9 +5,11 @@ its signals could not run because the data does not carry the field they need.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from detection.pipeline import RuleEngine
+from fraud_modules.cycles import CODE as CYCLE_CODE
+from fraud_modules.cycles import cycle_hits
 
 ACCOUNT, TRANSACTION = "account", "transaction"
 
@@ -44,6 +46,8 @@ class RuleModule:
     channel: Optional[str] = None
     # rule code -> (where the field lives, field name); a rule listed here needs that field populated
     requires: Tuple[Tuple[str, str, str], ...] = ()
+    # signals that are not RuleEngine rules: (code, detector over the module's rows -> [(account_id, text)])
+    detectors: Tuple[Tuple[str, Callable[[tuple], List[Tuple[str, str]]]], ...] = ()
 
     def run(self, accounts, transactions) -> ModuleRun:
         rows = tuple(t for t in transactions if self.channel is None or t.get("channel") == self.channel)
@@ -64,10 +68,15 @@ class RuleModule:
             for account_id, account_hits in hits.items()
             for hit in account_hits
         )
+        extra = tuple(
+            Finding(self.module_id, account_id, code, text)
+            for code, detect in self.detectors
+            for account_id, text in detect(rows)
+        )
         return ModuleRun(
             self.module_id,
-            findings,
-            tuple(c for c in self.rule_codes if c in runnable),
+            findings + extra,
+            tuple(c for c in self.rule_codes if c in runnable) + tuple(code for code, _ in self.detectors),
             skipped,
             len(rows),
         )
@@ -80,7 +89,7 @@ UPI = RuleModule(
     requires=(("R15", ACCOUNT, "upi_id"), ("R18", TRANSACTION, "device_id")),
 )
 
-TRANSACTION_AML = RuleModule("transaction_aml", ("R06", "R12", "R14"))
+TRANSACTION_AML = RuleModule("transaction_aml", ("R06", "R12", "R14"), detectors=((CYCLE_CODE, cycle_hits),))
 
 # Duplicate-identity matching works on onboarding applications, not on the account dataset, so it
 # stays behind /onboarding. Only the early-life signal can be read from accounts and transactions.

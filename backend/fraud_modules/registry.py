@@ -74,15 +74,23 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap("High-risk UPI handle pattern", PART, "Needs a upi_id on each account; the AMLworld sample has none."),
             _cap(
                 "Shared device across accounts",
-                PART,
-                "Needs a device_id on each transaction; the AMLworld sample has none.",
+                DONE,
+                "Real-time path (/api/v1/risk, SD02): from the device_id each payment carries. Batch files "
+                "without device ids, such as the AMLworld sample, still skip R18.",
             ),
             _cap(
                 "New-beneficiary checks",
-                PART,
-                "A scam-victim detector exists in models/scam but is not on the detection path.",
+                DONE,
+                "Real-time path (/api/v1/risk, BI05-BI08): payee age, minutes since the payee was added, and the "
+                "scam-victim detector (call, coaching, scam phrases).",
             ),
-            _cap("Session and IP anomalies", PLAN, "No session or IP fields in any data source."),
+            _cap(
+                "Session and IP anomalies",
+                DONE,
+                "Real-time path (/api/v1/risk, SD01-SD10): new or shared device, takeover sequence, impossible "
+                "travel, remote access, Tor exit list and Spamhaus DROP (downloaded every 6 h). Needs session "
+                "data with each payment; the demo traffic is synthetic.",
+            ),
         ),
         ("transactions with channel = UPI", "upi_id per account", "device_id per transaction"),
     ),
@@ -94,7 +102,11 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap("Structuring and split payments", DONE),
             _cap("Same-day pass-through layering", DONE),
             _cap("Identical-amount fan-out", DONE),
-            _cap("Circular fund flow", PLAN, "The pipeline has no cycle detection on payments."),
+            _cap(
+                "Circular fund flow",
+                DONE,
+                "CF01: loops of 3-6 accounts, hops in time order within 7 days, at least half the money preserved.",
+            ),
             _cap("STR filing", PART, "The workflow and PDF are real; submission to the regulator is simulated."),
         ),
         ("transactions: from_account, to_account, amount, timestamp",),
