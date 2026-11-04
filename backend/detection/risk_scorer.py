@@ -192,23 +192,3 @@ def assess_account_risk(account_features: Dict) -> RiskAssessment:
         anomaly_count=len(anomaly_signals),
         reason=reason,
     )
-
-
-def get_signal_descriptions() -> Dict[str, str]:
-    """
-    Get human-readable descriptions of all detection signals.
-
-    Useful for reporting and explainability.
-    """
-    return {
-        # Behavioral signals
-        "high_passthrough": "High pass-through ratio (>90%) - funds received and immediately sent out",
-        "round_amounts": "High share of round amounts (>70%) - indicates structured transactions",
-        "velocity_spike": "Transaction velocity spike - unusual burst of activity",
-        "negative_balance": "Frequent negative balance - overdraft abuse pattern",
-        "high_volume": "High transaction volume (>500 txns) - possible mule hub account",
-        # Anomaly signals
-        "dbscan_outlier": "DBSCAN density-based outlier detection",
-        "iso_forest": "Isolation Forest anomaly detection",
-        "kmeans_high_risk_cluster": "K-Means clustering assigned to high-risk cluster",
-    }

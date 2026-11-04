@@ -405,7 +405,8 @@ class TestMuleCSVAdapterRealData:
 
     @pytest.fixture
     def real_csv_content(self):
-        csv_path = r"C:\Users\HP\Downloads\Sample Mule account data.csv"
+        # The bank sample is never committed; point MULECATCH_REAL_CSV at a local copy to run these tests.
+        csv_path = os.environ.get("MULECATCH_REAL_CSV", r"C:\Users\HP\Downloads\Sample Mule account data.csv")
         if not os.path.exists(csv_path):
             pytest.skip("Real CSV file not available")
         with open(csv_path, "r", encoding="utf-8") as f:

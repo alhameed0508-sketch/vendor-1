@@ -15,7 +15,3 @@ class ScreenAccountRequest(BaseModel):
 
 class BatchScreenRequest(BaseModel):
     accounts: List[ScreenAccountRequest] = Field(..., min_length=1, max_length=100)
-
-
-class WatchlistImportRequest(BaseModel):
-    source: str = Field("CUSTOM", min_length=1, max_length=50)
