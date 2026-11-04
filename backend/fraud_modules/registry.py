@@ -105,7 +105,8 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap(
                 "Circular fund flow",
                 DONE,
-                "CF01: loops of 3-6 accounts, hops in time order within 7 days, at least half the money preserved.",
+                "CF01: loops of 3-6 accounts, hops in time order within 7 days, each hop 0.85-1.15x the previous one "
+                "(the same money moving on).",
             ),
             _cap("STR filing", PART, "The workflow and PDF are real; submission to the regulator is simulated."),
         ),

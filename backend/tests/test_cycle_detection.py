@@ -97,3 +97,11 @@ def test_registry_reflects_what_is_now_implemented():
     assert upi["Session and IP anomalies"] == Status.IMPLEMENTED
     assert upi["High-risk UPI handle pattern"] == Status.PARTIAL  # still needs upi_id data
     assert get_module("loan").status == Status.PLANNED  # nothing built for loans yet
+
+
+def test_the_registry_note_states_the_rule_the_code_applies():
+    from fraud_modules.cycles import HOP_RATIO_BAND, MAX_LENGTH, MIN_LENGTH, WINDOW
+
+    note = next(c.note for c in get_module("transaction_aml").capabilities if c.name == "Circular fund flow")
+    low, high = HOP_RATIO_BAND
+    assert f"{low}-{high}x" in note and f"{MIN_LENGTH}-{MAX_LENGTH} accounts" in note and f"{WINDOW.days} days" in note
