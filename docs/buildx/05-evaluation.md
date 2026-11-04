@@ -114,34 +114,57 @@ time saved.
 
 ## 7.5 Latency and throughput (single process, audit laptop)
 
-| Accounts | Transactions | Pipeline time | Throughput |
-|---|---|---|---|
-| 254 | 2,085 | 1.3 s | 1,605 txn/s |
-| 605 | 4,661 | 7.6 s | 617 txn/s |
-| 1,407 | 10,170 | 98.7 s | 103 txn/s |
-| ≈ 3,000 | ≈ 20,000 | stopped after > 8 min | — |
+Re-measured 2026-11-04 after indexing transactions per account in the rule engine
+(`RuleEngine.evaluate`) and sampling betweenness above 400 nodes. "Unmodified master"
+was measured on the same inputs the same day.
 
-Time grows much faster than linearly, because each rule scans the full
-transaction list for every account. The pipeline's own docstring target
-("< 60 s for 10k transactions") is **not met**. The B method alone is about
-15× faster at the 2k size. Fix: index transactions by account once (backlog
-#5) and evaluate in sliding windows for "real-time" micro-batches.
+| Accounts | Transactions | Earlier figure (2026-10-12) | Unmodified master | With this change |
+|---|---|---|---|---|
+| 254 | 2,085 | 1.3 s | not re-run | 0.47 s |
+| 605 | 4,661 | 7.6 s | not re-run | 1.3 s |
+| 1,407 | 10,170 | 98.7 s | 69.2 s | 7-9 s (two runs) |
+| 3,311 | 23,059 | stopped after > 8 min | stopped at the 240 s cap | 48 s |
+
+The pipeline's own docstring target ("< 60 s for 10k transactions") is met with this
+change and was not met before. The old curve came from each rule scanning the full
+transaction list for every account, and R18 (shared device) rescanning it per device.
+What remains is graph work (betweenness, Louvain), which still grows faster than
+linearly. Betweenness above 400 nodes is a fixed-seed pivot sample, so centrality
+boosts on large graphs are approximate. This is **batch** throughput.
+
+Per-payment scoring is `POST /api/v1/score` (`realtime_scorer.py`). Measured with
+`scripts/evaluation/realtime_latency.py` (25 random probes per point, `commit=False`),
+output in `realtime_latency_results.json`:
+
+| Window (transactions) | Median | p95 |
+|---|---|---|
+| 500 | 49 ms | 61 ms |
+| 1,000 | 111 ms | 128 ms |
+| 2,000 | 369 ms | 395 ms |
+| 5,000 (the default window) | **2,357 ms** | 2,478 ms |
+
+At the default window a payment takes over two seconds, so this is **not real time**.
+This differs from the p50 of 68 ms in 7.6e, which was measured on windows of a few
+hundred payments. Latency grows with the window because each payment re-scores it.
 
 ## 7.6 Reliability on malformed input (pipeline called directly)
 
-| Input defect | Result |
-|---|---|
-| Empty batch / no account master | Handled |
-| Self-transfer, unknown counterparty, duplicate txn IDs | Handled (duplicates **silently double-counted**) |
-| Negative amount | Handled (**silently accepted**) |
-| Non-numeric amount | **Crash** (`ValueError`) |
-| Missing amount / timestamp / to_account | **Crash** (`KeyError`) |
-| Unparseable timestamp | **Crash** (`ValueError`) |
+`DetectionPipeline.run()` validates every row first (`backend/detection/validation.py`).
+A bad row is rejected with a reason in `pipeline.last_rejections` and the rest of the
+batch is scored. Before 2026-11-04 the same inputs behaved as in the Before column.
 
-The CSV upload adapter validates files before they reach this point, and its
-tests pass. These crashes matter for any other ingestion path (API
-micro-batch, Kafka). Acceptance criterion T3 requires row-level rejection
-with reasons.
+| Input defect | Before | After |
+|---|---|---|
+| Empty batch / no account master | Handled | Handled |
+| Self-transfer, unknown counterparty | Handled | Handled (still scored) |
+| Duplicate txn IDs | Handled, **silently double-counted** | First kept, later ones rejected |
+| Negative amount | Handled, **silently accepted** | Rejected |
+| Non-numeric amount | **Crash** (`ValueError`) | Rejected |
+| Missing amount / timestamp / to_account | **Crash** (`KeyError`) | Rejected |
+| Unparseable timestamp | **Crash** (`ValueError`) | Rejected |
+
+Covered by `backend/tests/test_pipeline_hardening.py` and `robustness_scale_results.json`.
+The API layer does not yet return `last_rejections` to the caller.
 
 ## 7.6b Per-payment real-time scorer
 

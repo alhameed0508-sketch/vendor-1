@@ -90,6 +90,7 @@ LARGE_GROUP_REASON_CODE_SIZE = 6
 
 # Stable graph partitioning for reproducible alerts and audit evidence.
 LOUVAIN_RANDOM_STATE = 42
+BETWEENNESS_EXACT_MAX_NODES = 400  # graphs larger than this use sampled betweenness
 
 # -- CBS behavioral feature scoring constants ---------------------------------
 # CBS pass-through ratio scoring
@@ -154,7 +155,12 @@ class LouvainClusterDetector:
         if G is None or len(G.nodes) == 0:
             return {}
 
-        betweenness = nx.betweenness_centrality(G, weight="weight", normalized=True)
+        # shortcut: above BETWEENNESS_EXACT_MAX_NODES betweenness uses a fixed-seed pivot
+        # sample (exact is O(V x E)); raise the cap or sample more pivots if ranks drift.
+        pivots = None if len(G.nodes) <= BETWEENNESS_EXACT_MAX_NODES else BETWEENNESS_EXACT_MAX_NODES
+        betweenness = nx.betweenness_centrality(
+            G, k=pivots, weight="weight", normalized=True, seed=LOUVAIN_RANDOM_STATE
+        )
         pagerank = nx.pagerank(G, weight="weight", max_iter=100)
 
         result: Dict[str, Dict[str, float]] = {}

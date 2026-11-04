@@ -26,6 +26,7 @@ import logging
 import os
 import sys
 import uuid
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
@@ -43,6 +44,7 @@ from detection.ring_decision import (  # noqa: E402
     with_ring_evidence,
 )
 from detection.rule_thresholds import RuleThresholds  # noqa: E402
+from detection.validation import RowRejection, validate_transactions  # noqa: E402
 from explainability.explainer import explain_alert  # noqa: E402
 from explainability.narrative_generator import generate_narrative  # noqa: E402
 
@@ -244,12 +246,41 @@ class RuleEngine:
         self.thresholds = thresholds or RuleThresholds()
 
     def evaluate(self, accounts: List[Dict], transactions: List[Dict]) -> Dict[str, List[str]]:
+        # Every rule filters on the account's own id, so each account only needs
+        # its own rows plus (for R18) rows from other accounts on its devices.
+        # Indexing once makes this linear in transactions, not accounts x transactions.
+        own_rows: Dict[str, List[Dict]] = defaultdict(list)
+        device_rows: Dict[str, List[Dict]] = defaultdict(list)
+        for t in transactions:
+            own_rows[t["from_account"]].append(t)
+            if t["to_account"] != t["from_account"]:
+                own_rows[t["to_account"]].append(t)
+            if t.get("device_id"):
+                device_rows[t["device_id"]].append(t)
+
         results: Dict[str, List[str]] = {}
         for acc in accounts:
-            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, transactions, self.thresholds)]
+            view = self._account_view(acc["account_id"], own_rows, device_rows)
+            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, view, self.thresholds)]
             if hits:
                 results[acc["account_id"]] = hits
         return results
+
+    @staticmethod
+    def _account_view(
+        account_id: str,
+        own_rows: Dict[str, List[Dict]],
+        device_rows: Dict[str, List[Dict]],
+    ) -> List[Dict]:
+        own = own_rows.get(account_id, [])
+        devices = {t["device_id"] for t in own if t["from_account"] == account_id and t.get("device_id")}
+        others = [
+            t
+            for dev in devices
+            for t in device_rows[dev]
+            if t["from_account"] != account_id and t["to_account"] != account_id
+        ]
+        return own + others if others else own
 
 
 # ── Rule helper functions ─────────────────────────────────────────────────
@@ -497,12 +528,25 @@ class DetectionPipeline:
         self._smurf_threshold = smurf_threshold
         self._suspicion_threshold = suspicion_threshold
 
+        # Rows rejected by the most recent run(), as RowRejection records
+        self.last_rejections: Tuple[RowRejection, ...] = ()
+
     def run(
         self,
         transactions: List[Dict],
         accounts: List[Dict],
     ) -> List[Alert]:
         start = datetime.now(timezone.utc)
+
+        # Layer 0: reject malformed rows individually instead of crashing the batch
+        transactions, self.last_rejections = validate_transactions(transactions)
+        if self.last_rejections:
+            logger.warning(
+                "Rejected %d of %d transactions (first: %s)",
+                len(self.last_rejections),
+                len(transactions) + len(self.last_rejections),
+                self.last_rejections[0].reason,
+            )
 
         # Layer 1: rules
         rule_hits = self.rule_engine.evaluate(accounts, transactions)
