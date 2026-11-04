@@ -10,6 +10,7 @@ export const initialState = {
   status: 'idle', // idle | live | ended | error
   events: 0,
   counters: { payments: 0, flagged: 0, mule_payments_flagged: 0, genuine_accounts_flagged: 0 },
+  amounts: { scored: 0, held: 0 }, // rupees: every payment scored, and the part flagged for review
   edges: [],
   rings: {},
   flaggedAccounts: [],
@@ -26,6 +27,10 @@ export function p95(values) {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
 }
+
+/** Rupees in rings a reviewer has confirmed: the only money counted as prevented. */
+export const confirmedAmount = (state) =>
+  Object.values(state.rings).reduce((sum, r) => (state.reviews[r.caseId] === 'confirmed' ? sum + r.held : sum), 0);
 
 const EMPTY_STATS = { inCount: 0, inAmount: 0, outCount: 0, outAmount: 0 };
 
@@ -52,6 +57,7 @@ function applyEvent(state, event) {
           reasons: event.reasons,
           risk: event.risk_score,
           openedAt: previous ? previous.openedAt : state.events + 1,
+          held: (previous ? previous.held : 0) + (Number(payment.amount) || 0),
           payments: [
             ...(previous ? previous.payments : []),
             { id: payment.txn_id, from: payment.from_account, to: payment.to_account, amount: payment.amount, risk: event.risk_score },
@@ -59,10 +65,12 @@ function applyEvent(state, event) {
         },
       }
     : state.rings;
+  const amount = Number(payment.amount) || 0;
   return {
     ...state,
     status: 'live',
     events: state.events + 1,
+    amounts: { scored: state.amounts.scored + amount, held: state.amounts.held + (isFlag ? amount : 0) },
     counters: { ...state.counters, ...event.counters },
     edges: [...state.edges, edge].slice(-MAX_EDGES),
     rings,

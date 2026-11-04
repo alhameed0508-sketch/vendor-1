@@ -91,7 +91,7 @@ export default function LoginPage() {
   const [focused, setFocused] = useState(null);
 
   if (isAuthenticated) {
-    navigate('/', { replace: true });
+    navigate('/command-center', { replace: true });
     return null;
   }
 
@@ -102,7 +102,7 @@ export default function LoginPage() {
 
     try {
       await login(username, password);
-      navigate('/', { replace: true });
+      navigate('/command-center', { replace: true });
     } catch (err) {
       const message = err.message || 'Login failed';
       if (message.toLowerCase().includes('lock')) {
@@ -120,7 +120,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await loginAsGuest();
-      navigate('/', { replace: true });
+      navigate('/command-center', { replace: true });
     } catch (err) {
       setError(err.message || 'Guest access failed');
       setLoading(false);

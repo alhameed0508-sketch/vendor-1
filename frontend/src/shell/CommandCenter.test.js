@@ -5,6 +5,7 @@ import CommandCenter from './CommandCenter';
 import { apiFetch } from '../auth/api';
 
 jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
+jest.mock('./LivePrevention', () => () => <div data-testid="live-prevention" />);
 
 const MODULES = [
   { module_id: 'mule', name: 'Mule account detection', status: 'IMPLEMENTED', workspace_path: '/modules/mule', findings: 4 },
@@ -92,4 +93,13 @@ test('shows no synthetic notice for data that was loaded', async () => {
   renderPage();
   await screen.findByText('Mule account detection');
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
+});
+
+test('opens on the live money panel, ahead of the counts and with no explanatory paragraph', async () => {
+  serve(payload());
+  renderPage();
+  await screen.findByText('Mule account detection');
+  const live = screen.getByTestId('live-prevention');
+  expect(live.compareDocumentPosition(screen.getByText('Alerts', { selector: '.meta-label' }))).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(screen.queryByText(/counts come from the dataset/i)).not.toBeInTheDocument();
 });

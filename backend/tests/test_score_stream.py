@@ -49,6 +49,16 @@ def test_replay_flags_some_rings_and_few_genuine():
     assert last["genuine_accounts_flagged"] == 0
 
 
+def test_money_counters_split_flagged_rupees_into_true_mule_and_genuine():
+    events = list(DemoReplay(seed=7).events(limit=150))
+    last = events[-1]["counters"]
+    flagged_total = sum(e["payment"]["amount"] for e in events if e["decision"] == "FLAG")
+    assert last["mule_amount_flagged"] > 0
+    assert last["mule_amount_flagged"] + last["genuine_amount_flagged"] <= flagged_total + 1e-6
+    mule_series = [e["counters"]["mule_amount_flagged"] for e in events]
+    assert mule_series == sorted(mule_series)
+
+
 @pytest.fixture()
 def stream_app(monkeypatch):
     monkeypatch.setenv("ENV", "development")

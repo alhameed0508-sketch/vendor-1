@@ -30,6 +30,7 @@ export default function ModuleWorkspace() {
   const pages = module?.workspace_path ? PAGES[moduleId] || [] : [];
   return (
     <div className="page">
+      <Link className="shell-back" to="/command-center">← Command center</Link>
       {failed && <div role="alert" className="shell-error">Could not find this module.</div>}
       {module && (
         <>
@@ -43,14 +44,16 @@ export default function ModuleWorkspace() {
               {pages.map(p => <Link key={p.path} className="premium-card shell-module__link" to={p.path}>{p.label}</Link>)}
             </nav>
           )}
-          <h2>What it can do</h2>
-          <Capabilities capabilities={module.capabilities} />
-          {module.data_requirements?.length > 0 && (
-            <div className="shell-module__needs">
-              <div className="meta-label">Data it needs</div>
-              <ul>{module.data_requirements.map(n => <li key={n}>{n}</li>)}</ul>
-            </div>
-          )}
+          <details className="shell-details" open={pages.length === 0}>
+            <summary>What it can do</summary>
+            <Capabilities capabilities={module.capabilities} />
+            {module.data_requirements?.length > 0 && (
+              <div className="shell-module__needs">
+                <div className="meta-label">Data it needs</div>
+                <ul>{module.data_requirements.map(n => <li key={n}>{n}</li>)}</ul>
+              </div>
+            )}
+          </details>
         </>
       )}
     </div>

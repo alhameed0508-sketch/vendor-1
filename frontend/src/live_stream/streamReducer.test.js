@@ -1,4 +1,4 @@
-import { streamReducer, initialState, p95, MAX_EDGES, MAX_RING_PAYMENTS, MAX_LOG } from './streamReducer';
+import { streamReducer, initialState, p95, confirmedAmount, MAX_EDGES, MAX_RING_PAYMENTS, MAX_LOG } from './streamReducer';
 
 const event = (n, over = {}) => ({
   payment: { txn_id: `T${n}`, from_account: `A${n}`, to_account: `B${n}`, amount: 1000 },
@@ -23,6 +23,21 @@ const flagEvent = (n) =>
   });
 
 describe('streamReducer', () => {
+  it('keeps running rupee totals: all payments scored, and the part held for review', () => {
+    const after = [event(1), flagEvent(2), event(3)].reduce(
+      (s, e) => streamReducer(s, { type: 'event', event: e }),
+      initialState
+    );
+    expect(after.amounts).toEqual({ scored: 3000, held: 1000 });
+  });
+
+  it('counts a ring as prevented money only once a reviewer confirms it', () => {
+    const live = streamReducer(initialState, { type: 'event', event: flagEvent(1) });
+    expect(confirmedAmount(live)).toBe(0);
+    expect(confirmedAmount(streamReducer(live, { type: 'review', caseId: 'CASE-1', decision: 'dismissed' }))).toBe(0);
+    expect(confirmedAmount(streamReducer(live, { type: 'review', caseId: 'CASE-1', decision: 'confirmed' }))).toBe(1000);
+  });
+
   it('starts idle and goes live on open', () => {
     expect(initialState.status).toBe('idle');
     expect(streamReducer(initialState, { type: 'open' }).status).toBe('live');
