@@ -1,0 +1,30 @@
+{
+  "features": [
+    "mule_network",
+    "session_device",
+    "beneficiary_intent",
+    "behaviour",
+    "familiarity",
+    "corroboration",
+    "new_payee",
+    "new_device",
+    "amount_log_ratio",
+    "confidence"
+  ],
+  "intercept": 3.00171,
+  "trained_on": "synthetic journey simulator, seed 101, days 45-51 (4975 payments, 870 fraud)",
+  "trained_rows": 4975,
+  "version": "lr-synthetic-s101-20261104",
+  "weights": {
+    "amount_log_ratio": -0.31948,
+    "behaviour": -1.10113,
+    "beneficiary_intent": -0.20693,
+    "confidence": -6.66714,
+    "corroboration": 5.65644,
+    "familiarity": -2.89931,
+    "mule_network": 0.71654,
+    "new_device": 0.74953,
+    "new_payee": -2.56907,
+    "session_device": 4.52323
+  }
+}

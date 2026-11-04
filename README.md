@@ -56,6 +56,31 @@ Runtime services:
 - Kafka transaction ingestion
 - Prometheus and Grafana monitoring
 
+## Unified real-time risk engine
+
+Every payment gets one 0–100 score and a band (APPROVE · STEP_UP · REVIEW) with plain-language reasons. Mule
+detection stays at the centre: its ring map is one of four engines, and its alert queue and complaint register
+feed the other three.
+
+| Engine | Looks at |
+|---|---|
+| Mule network (core) | ring membership and smurf evidence from the existing detector, read in O(1) from a ring map rebuilt every 2 s |
+| Session & device trust | new or shared devices, takeover sequences, remote access, Tor exit nodes and Spamhaus DROP networks |
+| Payment intent & payee | known-fraud and mule-linked payees, payees added minutes ago, coached payments and scam notes, UN sanctions |
+| Behaviour & false-positive control | the customer's own baseline; familiar payees, phones and hours calm the other engines |
+
+One unusual thing never interrupts a customer. Holding a payment needs fraud evidence and two engines in
+agreement, or a confirmed fact. Accounts that only paid into a ring (victims) are never treated as ring
+members.
+
+- Page: **Risk engine** (`/risk-engine`): live decision feed (synthetic demo, or real public Bitcoin payments),
+  the four engines, an explanation for every decision, analyst feedback, worked scenarios, model performance
+  and data-source provenance.
+- API: [docs/API_RISK_ENGINE.md](docs/API_RISK_ENGINE.md) · Design: [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)
+  · Evaluation (synthetic, time-separated, targets kept apart from results):
+  [docs/RISK_ENGINE_EVALUATION.md](docs/RISK_ENGINE_EVALUATION.md).
+- Re-run the evaluation: `python scripts/evaluation/evaluate_unified.py` (about 8 minutes; `--quick` for a smoke run).
+
 ## Implemented controls
 
 - Onboarding mule-risk assessment

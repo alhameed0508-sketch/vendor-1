@@ -1,0 +1,199 @@
+{
+  "generated": "2026-11-04",
+  "measured": {
+    "upi_national_per_month_sep2026": 24070000000.0,
+    "iob_remitter_per_month_may2025": 298900000.0,
+    "upi_yoy_growth": 0.28,
+    "existing_scorer_p50_ms": 165.0,
+    "existing_scorer_p95_ms": 264.0,
+    "existing_partition_every_n_payments": 10,
+    "demo_max_payments_per_s": 20,
+    "existing_scorer_cached_p50_ms_here": 46.41,
+    "existing_scorer_rebuild_p50_ms_here": 108.45,
+    "existing_scorer_blended_mean_ms_here": 52.89,
+    "decision_log_bytes_per_row_measured": 890,
+    "durable_appends_per_s_sqlite": 88889
+  },
+  "sources": {
+    "upi_national_per_month_sep2026": "https://startuptalky.com/india-upi-transactions-september-2026/",
+    "iob_remitter_per_month_may2025": "https://hellobanker.in/top-banks-in-upi-payments-for-may-2025-check-sbi-pnb-bob-hdfc-icici-rank/",
+    "upi_yoy_growth": "https://entrackr.com/news/upi-sets-new-monthly-record-with-217-bn-transactions-in-january-11063663",
+    "existing_scorer_p50_ms": "docs/buildx/05-evaluation.md section 7.6b"
+  },
+  "assumptions": {
+    "days_per_month": 30.4,
+    "pilot_share": 0.05,
+    "growth_years_since_may2025": 1.4,
+    "busiest_day_factor": 1.4,
+    "peak_hour_share_of_day": 0.075,
+    "burst_factor_within_hour": 1.5,
+    "cpu_ms_per_decision_target": 20,
+    "target_cpu_utilisation": 0.6,
+    "non_approve_share": 0.03,
+    "event_bytes": 900,
+    "response_time_s": 0.05,
+    "staff_hours_per_day": 9,
+    "fraud_prevalence": 0.001,
+    "target_recall": 0.95,
+    "target_precision": 0.9,
+    "target_fpr": 0.005
+  },
+  "staff": {
+    "Pilot": {
+      "Investigator": 6,
+      "Supervisor": 2,
+      "Admin": 2
+    },
+    "Whole bank": {
+      "Investigator": 40,
+      "Supervisor": 8,
+      "Admin": 4
+    },
+    "Larger bank (3x)": {
+      "Investigator": 120,
+      "Supervisor": 20,
+      "Admin": 8
+    }
+  },
+  "staff_mix": {
+    "Investigator": {
+      "GET /alerts": 40,
+      "GET /alerts/:id": 60,
+      "GET /alerts/:id/subgraph": 40,
+      "GET /risk/decisions": 60,
+      "GET /risk/decisions/:id": 40,
+      "POST /risk/decisions/:id/feedback": 15,
+      "POST /genai/chat": 5
+    },
+    "Supervisor": {
+      "GET /alerts": 30,
+      "GET /alerts/:id": 40,
+      "GET /alerts/:id/subgraph": 20,
+      "GET /risk/decisions": 40,
+      "GET /risk/decisions/:id": 30,
+      "POST /risk/decisions/:id/feedback": 15,
+      "POST /genai/chat": 5
+    },
+    "Admin": {
+      "GET /risk/metrics": 20,
+      "GET /risk/decisions": 20,
+      "GET /risk/feeds": 10,
+      "GET /alerts": 10
+    }
+  },
+  "staff_reads": {
+    "Investigator": 260,
+    "Supervisor": 180,
+    "Admin": 60
+  },
+  "scenarios": [
+    {
+      "scenario": "Pilot",
+      "bank_payments_per_month_m": 422.3,
+      "payments_per_day": 694570,
+      "avg_payments_per_s": 8.0,
+      "ms_between_payments": 124.4,
+      "busy_hour_per_s": 20.3,
+      "busiest_minute_per_s": 30.4,
+      "in_flight_at_peak": 1.5,
+      "cpu_cores_at_target": 1.01,
+      "cpu_cores_with_existing_scorer": 8.4,
+      "cpu_cores_existing_measured_here": 2.7,
+      "non_approve_per_day": 20837,
+      "decision_log_gb_per_year": 225.6,
+      "decision_log_tb_10y": 2.26,
+      "non_approved_log_gb_per_year": 6.8,
+      "ingress_mb_per_s_at_peak": 0.03,
+      "staff": 10,
+      "staff_requests_per_day": 2040,
+      "staff_busiest_minute_per_s": 0.42,
+      "per_endpoint_per_day": {
+        "POST /risk/assess": 694570,
+        "GET /alerts": 320,
+        "GET /alerts/:id": 440,
+        "GET /alerts/:id/subgraph": 280,
+        "GET /risk/decisions": 480,
+        "GET /risk/decisions/:id": 300,
+        "POST /risk/decisions/:id/feedback": 120,
+        "POST /genai/chat": 40,
+        "GET /risk/metrics": 40,
+        "GET /risk/feeds": 20
+      }
+    },
+    {
+      "scenario": "Whole bank",
+      "bank_payments_per_month_m": 422.3,
+      "payments_per_day": 13891409,
+      "avg_payments_per_s": 160.8,
+      "ms_between_payments": 6.2,
+      "busy_hour_per_s": 405.2,
+      "busiest_minute_per_s": 607.7,
+      "in_flight_at_peak": 30.4,
+      "cpu_cores_at_target": 20.26,
+      "cpu_cores_with_existing_scorer": 167.1,
+      "cpu_cores_existing_measured_here": 53.6,
+      "non_approve_per_day": 416742,
+      "decision_log_gb_per_year": 4512.6,
+      "decision_log_tb_10y": 45.13,
+      "non_approved_log_gb_per_year": 135.4,
+      "ingress_mb_per_s_at_peak": 0.55,
+      "staff": 52,
+      "staff_requests_per_day": 12080,
+      "staff_busiest_minute_per_s": 2.52,
+      "per_endpoint_per_day": {
+        "POST /risk/assess": 13891409,
+        "GET /alerts": 1880,
+        "GET /alerts/:id": 2720,
+        "GET /alerts/:id/subgraph": 1760,
+        "GET /risk/decisions": 2800,
+        "GET /risk/decisions/:id": 1840,
+        "POST /risk/decisions/:id/feedback": 720,
+        "POST /genai/chat": 240,
+        "GET /risk/metrics": 80,
+        "GET /risk/feeds": 40
+      }
+    },
+    {
+      "scenario": "Larger bank (3x)",
+      "bank_payments_per_month_m": 1266.9,
+      "payments_per_day": 41674226,
+      "avg_payments_per_s": 482.3,
+      "ms_between_payments": 2.1,
+      "busy_hour_per_s": 1215.5,
+      "busiest_minute_per_s": 1823.2,
+      "in_flight_at_peak": 91.2,
+      "cpu_cores_at_target": 60.77,
+      "cpu_cores_with_existing_scorer": 501.4,
+      "cpu_cores_existing_measured_here": 160.7,
+      "non_approve_per_day": 1250227,
+      "decision_log_gb_per_year": 13537.9,
+      "decision_log_tb_10y": 135.38,
+      "non_approved_log_gb_per_year": 406.1,
+      "ingress_mb_per_s_at_peak": 1.64,
+      "staff": 148,
+      "staff_requests_per_day": 35280,
+      "staff_busiest_minute_per_s": 7.35,
+      "per_endpoint_per_day": {
+        "POST /risk/assess": 41674226,
+        "GET /alerts": 5480,
+        "GET /alerts/:id": 8000,
+        "GET /alerts/:id/subgraph": 5200,
+        "GET /risk/decisions": 8160,
+        "GET /risk/decisions/:id": 5400,
+        "POST /risk/decisions/:id/feedback": 2100,
+        "POST /genai/chat": 700,
+        "GET /risk/metrics": 160,
+        "GET /risk/feeds": 80
+      }
+    }
+  ],
+  "base_rate": {
+    "precision_if_fpr_is_0_5pct": 0.16,
+    "fpr_needed_for_90pct_precision": 0.000106,
+    "pilot_fraud_per_day": 695,
+    "pilot_genuine_flagged_per_day_at_0_5pct": 3469,
+    "pilot_genuine_flagged_per_day_at_needed_fpr": 73
+  },
+  "national_upi_per_day": 791776316,
+  "national_upi_avg_per_s": 9164
+}

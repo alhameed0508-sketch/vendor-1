@@ -22,6 +22,7 @@ from api.v1.routes.kpi import register_kpi_routes
 from api.v1.routes.modules import register_module_routes
 from api.v1.routes.onboarding import register_onboarding_routes
 from api.v1.routes.returns import register_return_routes
+from api.v1.routes.risk import register_risk_routes
 from api.v1.routes.roi import register_roi_routes
 from api.v1.routes.score import register_score_routes
 from api.v1.routes.screening import register_screening_routes
@@ -94,6 +95,10 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     score_router = APIRouter(prefix="/score", tags=["score"])
     register_score_routes(score_router, limiter)
     v1.include_router(score_router)
+
+    risk_router = APIRouter(prefix="/risk", tags=["risk"])
+    register_risk_routes(risk_router, limiter)
+    v1.include_router(risk_router)
 
     benchmark_router = APIRouter(prefix="/benchmark", tags=["benchmark"])
     register_benchmark_routes(benchmark_router, limiter)

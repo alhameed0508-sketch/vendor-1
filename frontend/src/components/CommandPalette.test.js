@@ -173,7 +173,7 @@ describe('CommandPalette Component', () => {
       await user.keyboard('{Control>}k{/Control}');
 
       await waitFor(() => {
-        ['Alerts', 'Triage', 'Network', 'Live stream', 'ROI analytics', 'Compliance', 'Customer risk', 'Data import', 'Model benchmarks']
+        ['Alerts', 'Triage', 'Network', 'Risk engine', 'Live stream', 'ROI analytics', 'Compliance', 'Customer risk', 'Data import', 'Model benchmarks']
           .forEach(name => expect(screen.getByText(name)).toBeInTheDocument());
         expect(screen.queryByText('Judge View')).not.toBeInTheDocument();
         expect(screen.queryByText('Onboarding Risk')).not.toBeInTheDocument();

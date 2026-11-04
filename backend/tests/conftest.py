@@ -16,6 +16,9 @@ os.environ["POSTGRES_URL"] = ""
 os.environ["REDIS_URL"] = "redis://127.0.0.1:6399/15"
 os.environ["NEO4J_URI"] = "bolt://127.0.0.1:7699"
 os.environ["JWT_SECRET"] = "test-only-jwt-secret-with-at-least-32-bytes"
+# Unified risk engine: no network fetches or background demo traffic in tests (each test opts in explicitly).
+os.environ["THREAT_FEEDS_ENABLED"] = "false"
+os.environ["RISK_DEMO_TRAFFIC"] = "false"
 
 import pytest
 from detection.pipeline import DetectionPipeline

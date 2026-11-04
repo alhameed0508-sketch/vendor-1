@@ -1,5 +1,6 @@
 import {
-  AlertTriangle, BarChart2, Boxes, ClipboardList, FileCheck, Gauge, LayoutDashboard, Network, Radio, Scale, Undo2, Upload, UserCheck, Zap,
+  Activity, AlertTriangle, BarChart2, Boxes, ClipboardList, FileCheck, Gauge, LayoutDashboard, Network, Radio, Scale, Undo2,
+  Upload, UserCheck, Zap,
 } from 'lucide-react';
 
 import { EXTRA_PATHS, EXTRA_PAGES_ENABLED } from '../config/features';
@@ -20,6 +21,7 @@ const ALL_SECTIONS = [
       { path: '/',        label: 'Alerts',  icon: AlertTriangle, end: true },
       { path: '/queue',   label: 'Triage',  icon: Zap },
       { path: '/network', label: 'Network', icon: Network },
+      { path: '/risk-engine', label: 'Risk engine', icon: Activity },
     ],
   },
   {

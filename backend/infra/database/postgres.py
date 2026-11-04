@@ -9,6 +9,7 @@ import logging
 from functools import lru_cache
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
@@ -155,6 +156,36 @@ alerts_table = Table(
 )
 Index("idx_alerts_severity", alerts_table.c.severity)
 Index("idx_alerts_status", alerts_table.c.status)
+
+# Unified risk engine: non-approved decisions and their outcomes (docs/SYSTEM_DESIGN.md 6.7, D02).
+# Approved decisions are counted, not stored. JSON is JSONB on PostgreSQL and plain JSON elsewhere.
+_JSON = JSON().with_variant(JSONB, "postgresql")
+risk_decisions_table = Table(
+    "risk_decisions",
+    metadata,
+    Column("decision_id", Text, primary_key=True),
+    # Not unique: a staff what-if, the committed decision and scenario replays can share a txn_id.
+    Column("txn_id", Text, nullable=False),
+    Column("customer_id", Text, nullable=False),
+    Column("beneficiary_id", Text, nullable=False),
+    Column("amount", Float, nullable=False),
+    Column("score", Integer, nullable=False),
+    Column("band", Text, nullable=False),
+    Column("confidence", Float),
+    Column("engines", _JSON, nullable=False),
+    Column("reasons", _JSON, nullable=False),
+    Column("explanation", _JSON),
+    Column("source", Text, nullable=False),
+    Column("model_version", Text, nullable=False),
+    Column("event_time", Text, nullable=False),
+    Column("decided_at", DateTime(timezone=True), nullable=False),
+    Column("outcome", Text),
+    Column("outcome_note", Text),
+    Column("outcome_by", Text),
+)
+Index("idx_risk_decisions_time", risk_decisions_table.c.decided_at)
+Index("idx_risk_decisions_txn", risk_decisions_table.c.txn_id)
+Index("idx_risk_decisions_customer", risk_decisions_table.c.customer_id, risk_decisions_table.c.decided_at)
 
 uploaded_datasets = Table(
     "uploaded_datasets",

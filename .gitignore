@@ -75,3 +75,7 @@ data/external/
 
 # pytest scratch dirs
 .tmp-pytest-*/
+
+# Threat-feed cache written by the risk engine at runtime
+data/threat_feeds_cache.json
+data/threat_feeds_cache.tmp

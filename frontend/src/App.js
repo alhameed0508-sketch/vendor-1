@@ -7,6 +7,7 @@ import ROIDashboard from './roi_dashboard/ROIDashboard';
 import LoginPage from './login/LoginPage';
 import CompliancePortal from './compliance_portal/CompliancePortal';
 import NetworkOverview from './network/NetworkOverview';
+import RiskEnginePage from './risk_engine/RiskEnginePage';
 import AlertQueue from './alert_queue/AlertQueue';
 import DataImportPage from './data_import/DataImportPage';
 import RiskOperationsPage from './risk_operations/RiskOperationsPage';
@@ -94,6 +95,7 @@ function AppContent() {
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
+              <Route path="/risk-engine" element={<ProtectedRoute><RiskEnginePage /></ProtectedRoute>} />
               <Route path="/benchmarks" element={<ProtectedRoute><BenchmarkPage /></ProtectedRoute>} />
               <Route path="/live" element={<ProtectedRoute><LiveStream /></ProtectedRoute>} />
               {EXTRA_PAGES_ENABLED && (

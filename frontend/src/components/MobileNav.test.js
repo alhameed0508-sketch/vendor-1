@@ -6,6 +6,7 @@ import MobileNav from './MobileNav';
 import { ThemeProvider } from '../ThemeContext';
 
 jest.mock('lucide-react', () => ({
+  Activity: () => <span />,
   AlertTriangle: () => <span />,
   BarChart2: () => <span />,
   Boxes: () => <span />,

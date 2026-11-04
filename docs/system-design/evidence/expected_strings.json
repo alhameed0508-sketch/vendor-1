@@ -1,0 +1,15 @@
+{
+  "pilot payments/day": "694,570",
+  "pilot busiest minute": "30.4",
+  "pilot cores": "1.01",
+  "bank payments/day": "13,891,409",
+  "bank busiest minute": "607.7",
+  "bank cores target": "20.26",
+  "bank cores existing": "167.1",
+  "bank log GB/yr": "4,512.6",
+  "pilot log GB/yr": "225.6",
+  "bank cores measured here": "53.6",
+  "larger busiest minute": "1,823.2",
+  "precision at 0.5% fpr": "16%",
+  "genuine flagged at 0.5%": "3,469"
+}

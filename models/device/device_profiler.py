@@ -82,6 +82,10 @@ class DeviceProfiler:
         if is_flagged:
             self._flagged_accounts.add(account_id)
 
+    def accounts_on_device(self, device_id: str) -> frozenset:
+        """Every account that has used this device (read-only view for the session engine)."""
+        return frozenset(self._device_accounts.get(device_id, ()))
+
     def compute_trust(self, account_id: str) -> DeviceTrustResult:
         """Compute device trust score for an account."""
         events = self._account_devices.get(account_id, [])

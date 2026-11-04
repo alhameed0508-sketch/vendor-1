@@ -123,6 +123,17 @@ class Settings(BaseSettings):
     # Live payment feed (public Bitcoin mempool). Always on in demo mode; opt-in elsewhere.
     live_feed_enabled: bool = Field(False, alias="LIVE_FEED_ENABLED")
 
+    # Unified risk engine (backend/intelligence; docs/SYSTEM_DESIGN.md). Bands: APPROVE < step-up <= STEP_UP < review.
+    risk_step_up_at: int = Field(40, ge=1, le=98, alias="RISK_STEP_UP_AT")
+    risk_review_at: int = Field(70, ge=2, le=99, alias="RISK_REVIEW_AT")
+    risk_model_path: str = Field("", alias="RISK_MODEL_PATH")
+    # Synthetic background traffic for the risk dashboard (demo mode only; pauses with no viewers).
+    risk_demo_traffic: bool = Field(True, alias="RISK_DEMO_TRAFFIC")
+    risk_demo_rate: float = Field(2.0, gt=0, le=50, alias="RISK_DEMO_RATE")
+    # Public threat feeds (Tor exit list, Spamhaus DROP), refreshed every 6 h with a last-good disk cache.
+    threat_feeds_enabled: bool = Field(True, alias="THREAT_FEEDS_ENABLED")
+    threat_feeds_cache: str = Field("data/threat_feeds_cache.json", alias="THREAT_FEEDS_CACHE")
+
     # Return-claim webhooks: HMAC secret shared with the carrier and bank systems (required in production)
     returns_webhook_secret: str = Field("", alias="RETURNS_WEBHOOK_SECRET")
 

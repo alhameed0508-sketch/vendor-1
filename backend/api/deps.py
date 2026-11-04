@@ -604,3 +604,88 @@ def get_device_profiler():
 
 
 # ── Scam detection singletons ─────────────────────────────────────────
+
+
+# ── Unified risk engine (backend/intelligence) ─────────────────────────────
+
+
+def open_alert_members(alert_service) -> frozenset:
+    """Accounts in open or under-review mule alerts (the existing alert queue feeds the mule engine)."""
+    members = set()
+    for status in ("OPEN", "UNDER_REVIEW"):
+        for alert in alert_service.list_alerts(status=status, limit=500).get("alerts", []):
+            for node in alert.get("nodes") or ():
+                account = node.get("account_id") if isinstance(node, dict) else getattr(node, "account_id", None)
+                if account:
+                    members.add(str(account))
+    return frozenset(members)
+
+
+@lru_cache(maxsize=1)
+def get_threat_feeds():
+    from pathlib import Path
+
+    from intelligence.threat_feeds import ThreatFeeds
+
+    settings = get_settings()
+    feeds = ThreatFeeds(cache_path=Path(settings.threat_feeds_cache), enabled=settings.threat_feeds_enabled)
+    feeds.start()
+    return feeds
+
+
+@lru_cache(maxsize=1)
+def get_risk_engine():
+    """The shared unified engine. Trusted commits come from POST /risk/events (and demo traffic in demo mode)."""
+    from pathlib import Path
+
+    from intelligence.beneficiary_engine import (
+        BeneficiaryIntelligenceEngine,
+        KnownFraudRegistry,
+        complaint_beneficiaries,
+    )
+    from intelligence.decision_store import DecisionStore, PgDecisionSink
+    from intelligence.engine import EngineConfig, UnifiedRiskEngine
+    from intelligence.model import RiskModel
+    from intelligence.mule_network import MuleNetworkIntel
+    from intelligence.session_engine import SessionIntegrityEngine
+
+    from models.device.device_profiler import DeviceProfiler
+
+    settings = get_settings()
+
+    def _alert_members():
+        return open_alert_members(get_alert_service())
+
+    def _complaints():
+        return complaint_beneficiaries(get_complaint_service())
+
+    def _sanctions(name: str):
+        return get_screening_repository().search_by_name(name)
+
+    mule = MuleNetworkIntel(background=True, alert_members=_alert_members)
+    known_fraud = KnownFraudRegistry(complaint_source=_complaints)
+    pg = _get_pg_engine()
+    store = DecisionStore(sink=PgDecisionSink(pg) if pg is not None else None)
+    config = EngineConfig(
+        step_up_at=settings.risk_step_up_at, review_at=max(settings.risk_review_at, settings.risk_step_up_at + 1)
+    )
+    return UnifiedRiskEngine(
+        mule=mule,
+        session_engine=SessionIntegrityEngine(DeviceProfiler(), get_threat_feeds()),
+        beneficiary_engine=BeneficiaryIntelligenceEngine(mule, known_fraud, sanctions_search=_sanctions),
+        model=RiskModel.load(Path(settings.risk_model_path) if settings.risk_model_path else None),
+        store=store,
+        config=config,
+        known_fraud=known_fraud,
+    )
+
+
+@lru_cache(maxsize=1)
+def get_risk_demo_traffic():
+    """Synthetic background traffic for the shared engine: demo mode only (None elsewhere)."""
+    settings = get_settings()
+    if not (settings.demo_mode and settings.risk_demo_traffic):
+        return None
+    from intelligence.runtime import DemoTraffic
+
+    return DemoTraffic(get_risk_engine(), rate=settings.risk_demo_rate)
