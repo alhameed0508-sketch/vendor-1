@@ -86,32 +86,6 @@ class BenchmarkService:
             )
         return result
 
-    def run_paysim(
-        self,
-        csv_path: str,
-        max_rows: int = 50000,
-        *,
-        persist: bool = True,
-    ) -> BenchmarkResult:
-        """Run benchmark on PaySim dataset."""
-        from data.adapters.paysim_adapter import PaySimAdapter
-
-        adapter = PaySimAdapter()
-        transactions, accounts = adapter.load(csv_path, max_rows=max_rows)
-
-        result = self._runner.run(
-            transactions=transactions,
-            accounts=accounts,
-            dataset_name="paysim",
-        )
-        if persist:
-            self._save_payload(
-                "paysim",
-                result.to_dict(),
-                {"max_rows": max_rows},
-            )
-        return result
-
     def run_adversarial(
         self,
         num_clusters: int = 3,

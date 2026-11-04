@@ -16,10 +16,3 @@ class RefreshRequest(BaseModel):
 
 class LogoutRequest(BaseModel):
     token: str = Field(..., min_length=1)
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-    auth_enabled: bool = True

@@ -109,13 +109,6 @@ class Neo4jClient:
         )
         return result[0] if result else {}
 
-    def get_account(self, account_id: str) -> Optional[Dict]:
-        result = self.run(
-            "MATCH (a:Account {account_id: $id}) RETURN properties(a) AS props",
-            id=account_id,
-        )
-        return result[0]["props"] if result else None
-
     # ── Transaction CRUD ──────────────────────────────────────────────────────
 
     def create_transaction(self, txn: Dict) -> Dict:

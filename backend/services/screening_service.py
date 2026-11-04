@@ -63,23 +63,6 @@ class ScreeningService:
         logger.info("UNSC watchlist refreshed: %d entries imported", count)
         return {"source": "UNSC", "entries_imported": count}
 
-    def import_csv(self, rows: List[Dict], source: str) -> Dict:
-        """Import watchlist entries from parsed CSV rows."""
-        entries = []
-        for row in rows:
-            entry = {
-                "entry_id": row.get("entry_id", f"CSV-{uuid.uuid4().hex[:8].upper()}"),
-                "name": row.get("name", ""),
-                "aliases": [a.strip() for a in row.get("aliases", "").split(";") if a.strip()],
-                "identifiers": [i.strip() for i in row.get("identifiers", "").split(";") if i.strip()],
-                "entity_type": row.get("entity_type", "INDIVIDUAL"),
-                "countries": [c.strip() for c in row.get("countries", "").split(";") if c.strip()],
-                "risk_category": row.get("risk_category", "SANCTIONS"),
-            }
-            entries.append(entry)
-        count = self._repo.bulk_import_entries(entries, source=source)
-        return {"source": source, "entries_imported": count}
-
     def get_stats(self) -> Dict:
         return self._repo.get_stats()
 
