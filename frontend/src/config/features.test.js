@@ -22,12 +22,12 @@ describe('extra pages flag', () => {
   });
 
   it('shows only the core pages when off', () => {
-    expect(paths(load(undefined).nav)).toEqual(['/command-center', '/modules', '/', '/queue', '/network', '/live', '/benchmarks']);
+    expect(paths(load(undefined).nav)).toEqual(['/command-center', '/modules', '/investigations', '/', '/queue', '/network', '/live', '/benchmarks']);
   });
 
   it('shows every page when on', () => {
     expect(paths(load('true').nav)).toEqual([
-      '/command-center', '/modules', '/', '/queue', '/network', '/live', '/complaints', '/returns', '/analytics', '/compliance',
+      '/command-center', '/modules', '/investigations', '/', '/queue', '/network', '/live', '/complaints', '/returns', '/analytics', '/compliance',
       '/risk-operations', '/data-import', '/benchmarks',
     ]);
   });

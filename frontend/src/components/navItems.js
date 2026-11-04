@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, BarChart2, Boxes, FileCheck, Gauge, LayoutDashboard, Network, Radio, Scale, Undo2, Upload, UserCheck, Zap,
+  AlertTriangle, BarChart2, Boxes, ClipboardList, FileCheck, Gauge, LayoutDashboard, Network, Radio, Scale, Undo2, Upload, UserCheck, Zap,
 } from 'lucide-react';
 
 import { EXTRA_PATHS, EXTRA_PAGES_ENABLED } from '../config/features';
@@ -11,6 +11,7 @@ const ALL_SECTIONS = [
     items: [
       { path: '/command-center', label: 'Command center',    icon: LayoutDashboard },
       { path: '/modules',        label: 'Detection modules', icon: Boxes },
+      { path: '/investigations', label: 'Investigations',    icon: ClipboardList },
     ],
   },
   {

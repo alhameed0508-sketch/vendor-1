@@ -20,6 +20,7 @@ import CapturePage from './returns/CapturePage';
 import CommandCenter from './shell/CommandCenter';
 import ModulesPage from './shell/ModulesPage';
 import EntityView from './shell/EntityView';
+import InvestigationsPage from './shell/InvestigationsPage';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import GuestBanner from './components/GuestBanner';
@@ -86,6 +87,7 @@ function AppContent() {
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/command-center" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
               <Route path="/modules" element={<ProtectedRoute><ModulesPage /></ProtectedRoute>} />
+              <Route path="/investigations" element={<ProtectedRoute><InvestigationsPage /></ProtectedRoute>} />
               <Route path="/entities/:entityId" element={<ProtectedRoute><EntityView /></ProtectedRoute>} />
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />

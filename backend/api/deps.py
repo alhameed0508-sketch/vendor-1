@@ -468,6 +468,29 @@ def get_str_service():
     return STRService(get_str_repository())
 
 
+# ── Investigation singletons ────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_investigation_service():
+    from core.exceptions import NotFoundError
+    from repositories.investigation_repository import InvestigationRepository
+    from services.investigation.investigation_service import InvestigationService
+
+    def complaint_exists(complaint_id: str) -> bool:
+        try:
+            get_complaint_service().get_case(complaint_id)
+        except NotFoundError:
+            return False
+        return True
+
+    resolvers = {
+        "alert": lambda alert_id: get_alert_repo().find_by_id(alert_id) is not None,
+        "complaint": complaint_exists,
+    }
+    return InvestigationService(InvestigationRepository(), get_audit_service(), resolvers)
+
+
 # ── GenAI singletons ──────────────────────────────────────────────────────
 
 

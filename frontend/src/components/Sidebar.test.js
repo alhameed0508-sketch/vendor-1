@@ -9,6 +9,7 @@ import { ThemeProvider } from '../ThemeContext';
 jest.mock('lucide-react', () => ({
   AlertTriangle: () => <div data-testid="icon-alert-triangle" />,
   Boxes: () => <div data-testid="icon-boxes" />,
+  ClipboardList: () => <div data-testid="icon-clipboard-list" />,
   LayoutDashboard: () => <div data-testid="icon-layout-dashboard" />,
   BarChart2: () => <div data-testid="icon-bar-chart" />,
   Moon: () => <div data-testid="icon-moon" />,
@@ -437,7 +438,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(13); // 13 nav items
+      expect(links).toHaveLength(14); // 14 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -455,7 +456,7 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Command center', 'Detection modules', 'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints', 'Return fraud',
+        'Command center', 'Detection modules', 'Investigations', 'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints', 'Return fraud',
         'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
         'Model benchmarks',
       ];

@@ -9,6 +9,7 @@ jest.mock('lucide-react', () => ({
   AlertTriangle: () => <span />,
   BarChart2: () => <span />,
   Boxes: () => <span />,
+  ClipboardList: () => <span />,
   FileCheck: () => <span />,
   Gauge: () => <span />,
   LayoutDashboard: () => <span />,
