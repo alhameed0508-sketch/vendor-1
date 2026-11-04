@@ -17,6 +17,7 @@ from api.v1.routes.genai import register_genai_routes
 from api.v1.routes.graph import register_graph_routes
 from api.v1.routes.ingest import register_ingest_routes
 from api.v1.routes.kpi import register_kpi_routes
+from api.v1.routes.modules import register_module_routes
 from api.v1.routes.onboarding import register_onboarding_routes
 from api.v1.routes.returns import register_return_routes
 from api.v1.routes.roi import register_roi_routes
@@ -98,6 +99,7 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
 
     # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)
+    register_module_routes(v1, limiter)
     register_kpi_routes(v1, limiter)
     register_audit_routes(v1, limiter)
     register_genai_routes(v1, limiter)

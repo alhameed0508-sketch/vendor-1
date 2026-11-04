@@ -8,8 +8,10 @@ import { ThemeProvider } from '../ThemeContext';
 jest.mock('lucide-react', () => ({
   AlertTriangle: () => <span />,
   BarChart2: () => <span />,
+  Boxes: () => <span />,
   FileCheck: () => <span />,
   Gauge: () => <span />,
+  LayoutDashboard: () => <span />,
   MoreHorizontal: () => <span />,
   Moon: () => <span />,
   Network: () => <span />,

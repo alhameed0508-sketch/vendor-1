@@ -8,6 +8,8 @@ import { ThemeProvider } from '../ThemeContext';
 // Mock lucide-react icons to avoid rendering issues in tests
 jest.mock('lucide-react', () => ({
   AlertTriangle: () => <div data-testid="icon-alert-triangle" />,
+  Boxes: () => <div data-testid="icon-boxes" />,
+  LayoutDashboard: () => <div data-testid="icon-layout-dashboard" />,
   BarChart2: () => <div data-testid="icon-bar-chart" />,
   Moon: () => <div data-testid="icon-moon" />,
   Sun: () => <div data-testid="icon-sun" />,
@@ -435,7 +437,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(11); // 11 nav items
+      expect(links).toHaveLength(13); // 13 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -453,7 +455,7 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints', 'Return fraud',
+        'Command center', 'Detection modules', 'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints', 'Return fraud',
         'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
         'Model benchmarks',
       ];

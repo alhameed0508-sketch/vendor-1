@@ -17,6 +17,8 @@ import CaseView from './complaints/CaseView';
 import ReturnsPage from './returns/ReturnsPage';
 import ClaimView from './returns/ClaimView';
 import CapturePage from './returns/CapturePage';
+import CommandCenter from './shell/CommandCenter';
+import ModulesPage from './shell/ModulesPage';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import GuestBanner from './components/GuestBanner';
@@ -81,6 +83,8 @@ function AppContent() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/command-center" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
+              <Route path="/modules" element={<ProtectedRoute><ModulesPage /></ProtectedRoute>} />
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />

@@ -35,6 +35,17 @@
 4. Two accounts with similar names but no shared verified identifier: they are linked as POSSIBLE at most and never merged into one entity.
 5. The AMLworld demo yields zero alerts: Command Center shows zeros and a "no data from this module" note and does not crash or hide the tile.
 
+## Progress and rulings
+
+- Phase 1 done (`platform/audit`).
+- Phase 2 done (`platform/shell`): registry, `/api/v1/modules`, `/api/v1/command-center`, Command center and Detection modules pages, a Platform nav section.
+- **Phase 3 deferred by the owner** ("ignore the banks for now"). Institution isolation and the office hierarchy are not built. Existing global roles stay in force. Later phases do not depend on it, except scoped Mule Chat in Phase 7, which will use the existing role checks until Phase 3 exists.
+- Ruling: a module's status is derived from its capabilities, so it cannot claim more than its capabilities list.
+- Ruling: Loan is Planned. Its only existing building block (the screening service) is not wired to loan applications, so that row is Planned too.
+- Ruling: `/` stays the alert dashboard until Phase 4 moves it into the mule workspace. The new pages live at `/command-center` and `/modules`.
+- Ruling: the Command center reports `data_source` ("synthetic", "loaded" or "none") so synthetic demo data is labelled. `DetectionService` now marks the datasets it generates.
+- Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
+
 ## Phase map
 
 | Phase | Branch | Delivers | Model |
