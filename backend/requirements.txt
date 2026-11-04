@@ -46,6 +46,9 @@ slowapi==0.1.9
 # ── Compliance / Reporting ───────────────────────────────────
 shap==0.44.1
 fpdf2==2.8.8
+pypdf==6.21.4
+ImageHash==4.3.2
+PyWavelets==1.6.0  # newer releases need numpy>=1.26.4; numpy is pinned to 1.26.3
 
 # ── Scheduling ───────────────────────────────────────────────
 apscheduler==3.10.4

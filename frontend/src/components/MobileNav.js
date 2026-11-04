@@ -5,7 +5,10 @@ import { useTheme } from '../ThemeContext';
 import { NAV_SECTIONS, isActivePath } from './navItems';
 import LogoutButton from './LogoutButton';
 
-const [CORE, OTHER] = NAV_SECTIONS.map(section => section.items);
+const [PLATFORM, INTELLIGENCE, OPERATIONS] = NAV_SECTIONS.map(section => section.items);
+// Phone tab bar: Command center plus the intelligence pages. Everything else goes in the "More" sheet.
+const CORE = [PLATFORM[0], ...INTELLIGENCE];
+const OTHER = [...PLATFORM.slice(1), ...OPERATIONS];
 
 /** Phone navigation: core pages in a bottom tab bar, the rest in a "More" sheet. */
 export default function MobileNav() {

@@ -343,6 +343,9 @@ export default function BenchmarkPage() {
 
       {summary ? (
         <>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
+            These figures come from the easiest test. The adversarial and cross-validation rows below are the fairer measure.
+          </p>
           <div
             style={{
               display: 'grid',

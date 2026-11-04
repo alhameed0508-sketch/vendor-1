@@ -14,6 +14,14 @@ import BenchmarkPage from './benchmark/BenchmarkPage';
 import LiveStream from './live_stream/LiveStream';
 import ComplaintsPage from './complaints/ComplaintsPage';
 import CaseView from './complaints/CaseView';
+import ReturnsPage from './returns/ReturnsPage';
+import ClaimView from './returns/ClaimView';
+import CapturePage from './returns/CapturePage';
+import CommandCenter from './shell/CommandCenter';
+import ModulesPage from './shell/ModulesPage';
+import EntityView from './shell/EntityView';
+import ModuleWorkspace from './shell/ModuleWorkspace';
+import InvestigationsPage from './shell/InvestigationsPage';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import GuestBanner from './components/GuestBanner';
@@ -78,6 +86,11 @@ function AppContent() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/command-center" element={<ProtectedRoute><CommandCenter /></ProtectedRoute>} />
+              <Route path="/modules" element={<ProtectedRoute><ModulesPage /></ProtectedRoute>} />
+              <Route path="/modules/:moduleId" element={<ProtectedRoute><ModuleWorkspace /></ProtectedRoute>} />
+              <Route path="/investigations" element={<ProtectedRoute><InvestigationsPage /></ProtectedRoute>} />
+              <Route path="/entities/:entityId" element={<ProtectedRoute><EntityView /></ProtectedRoute>} />
               <Route path="/queue" element={<ProtectedRoute><AlertQueue /></ProtectedRoute>} />
               <Route path="/alert/:alertId" element={<ProtectedRoute><AlertDetail /></ProtectedRoute>} />
               <Route path="/network" element={<ProtectedRoute><NetworkOverview /></ProtectedRoute>} />
@@ -88,6 +101,9 @@ function AppContent() {
                   <Route path="/analytics" element={<ProtectedRoute><ROIDashboard /></ProtectedRoute>} />
                   <Route path="/complaints" element={<ProtectedRoute><ComplaintsPage /></ProtectedRoute>} />
                   <Route path="/complaints/:complaintId" element={<ProtectedRoute><CaseView /></ProtectedRoute>} />
+                  <Route path="/returns" element={<ProtectedRoute><ReturnsPage /></ProtectedRoute>} />
+                  <Route path="/returns/capture" element={<ProtectedRoute><CapturePage /></ProtectedRoute>} />
+                  <Route path="/returns/:claimId" element={<ProtectedRoute><ClaimView /></ProtectedRoute>} />
                   <Route path="/compliance" element={<ProtectedRoute><CompliancePortal /></ProtectedRoute>} />
                   <Route path="/data-import" element={<ProtectedRoute><DataImportPage /></ProtectedRoute>} />
                   <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />

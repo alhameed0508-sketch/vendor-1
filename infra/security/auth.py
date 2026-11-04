@@ -88,6 +88,10 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "complaints:write",
         "complaints:decide",
         "complaints:export",
+        "returns:read",
+        "returns:write",
+        "returns:decide",
+        "returns:export",
     ],
     "SUPERVISOR": [
         "alerts:read",
@@ -104,6 +108,10 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "complaints:write",
         "complaints:decide",
         "complaints:export",
+        "returns:read",
+        "returns:write",
+        "returns:decide",
+        "returns:export",
     ],
     "INVESTIGATOR": [
         "alerts:read",
@@ -117,6 +125,9 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "complaints:read",
         "complaints:write",
         "complaints:export",
+        "returns:read",
+        "returns:write",
+        "returns:export",
     ],
     "READONLY": [
         "alerts:read",
@@ -131,6 +142,8 @@ ROLE_PERMISSIONS: Dict[str, List[str]] = {
         "screening:read",
         "onboarding:read",
         "complaints:read",
+        "returns:read",
+        "returns:export",  # synthetic demo data only
     ],
 }
 

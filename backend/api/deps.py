@@ -468,6 +468,36 @@ def get_str_service():
     return STRService(get_str_repository())
 
 
+# ── Investigation singletons ────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_access_directory():
+    from access.seed import demo_directory
+
+    return demo_directory()
+
+
+@lru_cache(maxsize=1)
+def get_investigation_service():
+    from core.exceptions import NotFoundError
+    from repositories.investigation_repository import InvestigationRepository
+    from services.investigation.investigation_service import InvestigationService
+
+    def complaint_exists(complaint_id: str) -> bool:
+        try:
+            get_complaint_service().get_case(complaint_id)
+        except NotFoundError:
+            return False
+        return True
+
+    resolvers = {
+        "alert": lambda alert_id: get_alert_repo().find_by_id(alert_id) is not None,
+        "complaint": complaint_exists,
+    }
+    return InvestigationService(InvestigationRepository(), get_audit_service(), resolvers)
+
+
 # ── GenAI singletons ──────────────────────────────────────────────────────
 
 
@@ -511,6 +541,30 @@ def get_complaint_service():
             get_detection_service().ensure_alerts()  # so the SIM-swap demo case can point at a real mule
         except Exception as exc:
             _deps_logger.warning("Demo complaints seeded without mule alerts: %s", exc)
+        service.seed_demo()
+    return service
+
+
+# ── Return-claim singletons ─────────────────────────────────────────────
+
+
+@lru_cache(maxsize=1)
+def get_return_claim_service():
+    from datetime import datetime
+
+    from complaints.rules import IST
+    from repositories.return_claim_repository import ReturnClaimRepository
+    from services.return_claim_service import ReturnClaimService
+
+    settings = get_settings()
+    service = ReturnClaimService(
+        repo=ReturnClaimRepository(),
+        audit=get_audit_service(),
+        provider=get_llm_provider(),
+        now_fn=lambda: datetime.now(IST),
+        webhook_secret=settings.returns_webhook_secret,
+    )
+    if settings.demo_mode:
         service.seed_demo()
     return service
 

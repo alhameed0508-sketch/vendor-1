@@ -18,6 +18,7 @@ npx playwright test
 | `E2E_BASE_URL` | App to test. Default `http://localhost:3000` |
 | `E2E_INVESTIGATOR_PASSWORD`, `E2E_SUPERVISOR_PASSWORD`, `E2E_ADMIN_PASSWORD` | Demo logins. Read from the environment only, never stored in the repo |
 | `E2E_ALLOW_WRITES` | Set to `1` to run the lifecycle test, which creates a case. Never set it against production |
+| `E2E_API_URL` | Backend origin for the tests' own API calls, when it is not the page's origin (a local stack on other ports) |
 | `E2E_CHROMIUM` | Path of an installed Chromium |
 
 ## Tests
@@ -27,6 +28,7 @@ npx playwright test
 | `tests/login.spec.js` | Login hero and form, wrong-login alert, forgot-password note, home page cards and filters, phone widths | Yes, read-only (one failed sign-in as a user that does not exist) |
 | `tests/complaints.spec.js` | Desk counts, case page, mule link, replay and scrubber, PDF pack, admin sign-in, phone width | Yes, read-only |
 | `tests/complaints-write.spec.js` | New case, partner evidence arriving live, evidence added in the form, supervisor decision | No |
+| `tests/investigations-write.spec.js` | Alert to investigation, outcome, simulated hold, audit trail and hash chain | No |
 
 ## Local app
 

@@ -8,6 +8,9 @@ import { ThemeProvider } from '../ThemeContext';
 // Mock lucide-react icons to avoid rendering issues in tests
 jest.mock('lucide-react', () => ({
   AlertTriangle: () => <div data-testid="icon-alert-triangle" />,
+  Boxes: () => <div data-testid="icon-boxes" />,
+  ClipboardList: () => <div data-testid="icon-clipboard-list" />,
+  LayoutDashboard: () => <div data-testid="icon-layout-dashboard" />,
   BarChart2: () => <div data-testid="icon-bar-chart" />,
   Moon: () => <div data-testid="icon-moon" />,
   Sun: () => <div data-testid="icon-sun" />,
@@ -19,6 +22,7 @@ jest.mock('lucide-react', () => ({
   UserCheck: () => <div data-testid="icon-user-check" />,
   Gauge: () => <div data-testid="icon-gauge" />,
   Scale: () => <div data-testid="icon-scale" />,
+  Undo2: () => <div data-testid="icon-undo" />,
 }));
 
 // Helper to render Sidebar with all required providers
@@ -434,7 +438,7 @@ describe('Sidebar Component', () => {
       renderSidebar();
 
       const links = screen.getAllByRole('link');
-      expect(links).toHaveLength(10); // 10 nav items
+      expect(links).toHaveLength(14); // 14 nav items
     });
 
     test('all interactive buttons have aria-labels', () => {
@@ -452,7 +456,7 @@ describe('Sidebar Component', () => {
 
       const links = screen.getAllByRole('link');
       const expectedTitles = [
-        'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints',
+        'Command center', 'Detection modules', 'Investigations', 'Alerts', 'Triage', 'Network', 'Live stream', 'Fraud complaints', 'Return fraud',
         'ROI analytics', 'Compliance', 'Customer risk', 'Data import',
         'Model benchmarks',
       ];

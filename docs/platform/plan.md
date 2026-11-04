@@ -1,0 +1,172 @@
+# MuleCatch Platform Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans, in the main session. The owner's standing rule forbids subagents. Each phase below gets its own task-level plan (written with superpowers:writing-plans) at the start of that phase, because later phases depend on the interfaces the earlier ones settle. Steps use checkbox syntax.
+
+**Goal:** Turn MuleCatch from a mule-detection app into a unified fraud-intelligence platform with a module registry, institution-scoped access, cross-module entity links and one investigation workflow.
+
+**Architecture:** One shell and a module registry in which every module declares an honest status (Implemented, Partial or Planned). A pure permission policy sits in front of every alert, case and chat query. Shared entity and risk records link module findings without merging their scores. One investigation facade fronts the existing alert and complaint case flows.
+
+**Tech Stack:** FastAPI, Python 3, pytest, ruff, React 18 (CRA and craco), Playwright for e2e. No new dependencies.
+
+**Spec:** the three architecture diagrams supplied by the owner (ten-layer architecture, institution hierarchy and permission evaluation, event-to-explanation sequence), the transformation brief, and `docs/platform/gap-analysis.md`. No separate design document was written; this plan states the decisions.
+
+## Global Constraints
+
+- Push only to `https://github.com/alhameed0508-sketch/buildx`. Run `git remote get-url <remote>` and confirm that exact URL before every push. Never push to or open a PR on `muhammedsayeedurrahman/mulecatch`.
+- One phase is one branch from buildx master. A phase is never mixed with another and never merged to master without the owner's word.
+- No subagents or workflows.
+- Baseline that must stay green: `pytest backend/tests` (excluding `test_focal_loss.py` and `test_gnn_directed.py`) at 787 passed and 5 skipped or more; `ruff check backend models` and `ruff format --check backend models` clean.
+- Stop and ask before: deleting files, adding a dependency, changing the database schema, pushing, deploying.
+- Module status comes from one registry. UI and docs read it and never hard-code a claim.
+- Demo data is the real IBM AMLworld sample (`~/Documents/mulecatch/data/ibm-amlworld-hi-small-sample.csv`). Anything generated is labelled "Synthetic" in the UI. The detector's AMLworld result is shown as it is: zero alerts.
+- Scores from different modules are never averaged. A consolidated view lists each module's score, evidence and uncertainty side by side.
+- Fuzzy matches carry a confidence label and are never merged silently. Verified identifiers are account id, CIF_ID, TRAN_ID and device id.
+- Nothing is called "fraudulent" from a model output alone. Use "suspected" and keep the human decision separate.
+- No customer-facing app. Payee-risk is not reintroduced.
+- Fonts are IBM Plex Sans (UI and body) and IBM Plex Serif (editorial only). Keep the existing light and dark theme tokens and the colour-blind-safe risk colours. Show a design preview before building screens.
+- Files stay under 400 lines. Create new objects instead of mutating existing ones.
+- New code never goes in a package named `platform`. Use `backend/fraud_modules/`, `backend/access/` and `frontend/src/shell/`.
+
+## Review Focus
+
+1. A user with no assignment asks for the alert list: they get an empty list, never a 403 that reveals other cases exist.
+2. A user in bank A asks for a case id that belongs to bank B: the response is identical to "not found".
+3. A Planned module is called through its API: it returns its status and no data, never sample or invented findings.
+4. Two accounts with similar names but no shared verified identifier: they are linked as POSSIBLE at most and never merged into one entity.
+5. The AMLworld demo yields zero alerts: Command Center shows zeros and a "no data from this module" note and does not crash or hide the tile.
+
+## Progress and rulings
+
+- Phase 1 done (`platform/audit`).
+- Phase 2 done (`platform/shell`): registry, `/api/v1/modules`, `/api/v1/command-center`, Command center and Detection modules pages, a Platform nav section.
+- Phase 3 built later on `platform/access` after the owner asked for it (see the Phase 3 entries below). It was deferred first ("ignore the banks for now").
+- ~~Phase 3 deferred by the owner~~ **(superseded)** ("ignore the banks for now"). Institution isolation and the office hierarchy are not built. Existing global roles stay in force. Later phases do not depend on it, except scoped Mule Chat in Phase 7, which will use the existing role checks until Phase 3 exists.
+- Ruling: a module's status is derived from its capabilities, so it cannot claim more than its capabilities list.
+- Ruling: Loan is Planned. Its only existing building block (the screening service) is not wired to loan applications, so that row is Planned too.
+- Ruling: `/` stays the alert dashboard until Phase 4 moves it into the mule workspace. The new pages live at `/command-center` and `/modules`.
+- Ruling: the Command center reports `data_source` ("synthetic", "loaded" or "none") so synthetic demo data is labelled. `DetectionService` now marks the datasets it generates.
+- Phase 5 (`platform/modules`): `RuleEngine.evaluate` takes an optional `rule_codes` filter (additive; default runs every rule). `backend/fraud_modules/rule_modules.py` gives UPI (R14, R15, R17, R18, UPI-channel rows only), Transaction and AML (R06, R12, R14) and Identity (R20) their own rule subset. Each run reports `signals_skipped` when the data lacks the field a signal needs (R15 needs `upi_id`, R18 needs `device_id`, R20 needs `account_age_days`). The AMLworld sample has neither handle nor device, so UPI reports those two as not run.
+- Ruling: UPI looks only at accounts that appear in UPI-channel rows, so a handle on an account with no UPI traffic is not flagged. Costs a missed R15 hit if the channel field is wrong in the source data.
+- Ruling: Identity findings come from R20 only. Duplicate-identity matching works on onboarding applications, not the account dataset, so it stays behind `/onboarding` and is not counted in the Command Center.
+- Ruling: the STR service linkage and the circular-flow signal listed for Transaction and AML are not wired; circular flow stays Planned in the registry.
+- Phase 6 (`platform/intelligence`): `backend/fraud_modules/intelligence/` (entities, correlate, collect), `GET /api/v1/intelligence/entities/{entity_id}`, and an `/entities/:entityId` page. The response lists each module's score and evidence side by side and has no combined score.
+- Ruling: links are VERIFIED only for a shared CIF_ID or device id. A holder-name match (ratio 0.9 or more, field `holder_name`) is POSSIBLE and never merges entities. PROBABLE is in the vocabulary but nothing produces it yet. Costs: the AMLworld sample has no names, so it shows VERIFIED links at most.
+- Ruling: the CRITICAL consolidated level from the Phase 6 plan is not built. Without a combined score there is nothing to grade, and adding one would break the no-averaging rule.
+- Ruling: `Finding` gained an optional `score`. Mule findings carry the alert's risk score; rule hits carry none and show "no score".
+- Phase 7 (`platform/investigation`): `InvestigationService` (NEW, UNDER_REVIEW, INVESTIGATING, ESCALATED, RESOLVED, CLOSED; outcomes CONFIRMED, FALSE_POSITIVE, UNRESOLVED), `/api/v1/investigations`, simulated intervention gateway (`SIMULATED: no bank system connected`, recorded in the audit chain), an Investigations page, and `e2e/tests/investigations-write.spec.js` (passed against a local stack with auth on).
+- Ruling: investigation state is kept in memory (a new `InvestigationRepository`, same pattern as escalations) because a Postgres table is a schema change that needs the owner's word. It resets on restart. The audit chain keeps the record of every move.
+- Ruling: the facade holds its own workflow state and points at the alert or complaint by id. It does not edit the alert or the complaint, so the old alert statuses and the complaint decision flow are unchanged. Cost: two status fields can disagree until they are merged in a later phase.
+- Ruling: investigation routes use `alerts:read` and `alerts:write`. Closing a case is not limited to supervisors yet. Cost: an investigator can close their own case.
+- Ruling: Mule Chat already requires `alerts:read`, so no new scoping was added. It does not filter by case ownership; that waits for Phase 3.
+- Ruling: `E2E_API_URL` added to the e2e helpers so tests can run against a local stack on other ports. Default behaviour is unchanged.
+- Phase 4 (`platform/mule-module`): `/modules/:moduleId` workspace page; the mule module's `workspace_path` is now `/modules/mule`, and its page links to Alerts, Triage, Network and Live stream.
+- Ruling: the old mule routes (`/`, `/queue`, `/network`, `/live`) stay where they are and no redirects were added. Moving them would break bookmarks and 13 test files for no gain in capability. Cost: the mule pages still sit at the top level of the router, so the URL tree does not mirror the module tree.
+- Phase 3 (`platform/access`): `backend/access/` (models, pure `policy.can`, in-memory `AccessDirectory`, seed with two Synthetic banks, `AccessGuard`). Investigations are scoped by institution, office subtree and assignment. A case the caller may not read returns the same 404 as a missing one; a readable case they may not change returns 403. Opening a case records the opener's institution and office; an investigator is assigned their own case; only a supervisor assigns or closes. The duplicate-case check is per institution, so one bank never learns that another has the same case.
+- Ruling: the directory is in memory. Employee, office and institution tables are a schema change and wait for the owner. Demo logins map to seeded employees: `investigator` at A-BR1, `supervisor` at A-HO; `admin` is a platform administrator with no institution; any other login (including guests) is outside the directory and sees an empty list.
+- Ruling: only investigations are scoped. Alerts, escalations and Mule Chat still show everything to anyone with `alerts:read`, because alerts carry no institution (the dataset has a free-text `bank` per node, not an institution id). Cost: a staff user of one bank can still read every alert. Closing this needs alerts tagged with an institution at ingest.
+- Ruling: the token's role wins over the directory's role, so a downgraded token cannot act as the seeded role.
+- Ruling: the investigations page still shows buttons the caller may not use (for example Closed for an investigator). The server refuses with 403 and the page shows the message.
+- Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
+
+## Phase map
+
+| Phase | Branch | Delivers | Model |
+|---|---|---|---|
+| 1 | `platform/audit` | This plan and the gap analysis. No code. | Opus |
+| 2 | `platform/shell` | Module registry, navigation, Command Center | Sonnet |
+| 3 | `platform/access` | Institution hierarchy and the permission policy (Diagram 2) | Sonnet |
+| 4 | `platform/mule-module` | Mule detection moved into the shell as Module 1 | Sonnet |
+| 5 | `platform/modules` | UPI, Transaction and AML, Identity (Partial); Loan (Planned shell) | Sonnet |
+| 6 | `platform/intelligence` | Entity links, cross-module correlation, separate scores | Sonnet |
+| 7 | `platform/investigation` | One case workflow, simulated intervention gateway, scoped Mule Chat, e2e | Sonnet |
+
+Phase 3 is new relative to the first draft. Diagram 2 makes access control a prerequisite for every later screen, so it comes before the modules move.
+
+## Phase 2: shell, registry, Command Center
+
+**Files**
+- Create `backend/fraud_modules/registry.py`: frozen `ModuleSpec(module_id, name, status, purpose, data_requirements, capabilities)`, `STATUS = ("IMPLEMENTED", "PARTIAL", "PLANNED")`, `MODULES: tuple[ModuleSpec, ...]`, `get_module(module_id) -> ModuleSpec`.
+- Create `backend/api/v1/routes/modules.py`: `GET /api/v1/modules` and `GET /api/v1/modules/{module_id}`, registered in `api/v1/router.py`.
+- Create `backend/api/v1/routes/command_center.py`: `GET /api/v1/command-center` returning counts from existing services (alerts by risk level, open escalations, graph stats) and `module_statuses`.
+- Create `frontend/src/shell/` with `ModuleCard.js`, `CommandCenter.js`, `shellApi.js`, tests beside them.
+- Modify `frontend/src/components/navItems.js`, `frontend/src/App.js`.
+
+**Tests first**
+- `test_registry_every_module_has_valid_status`, `test_planned_module_lists_no_capabilities_as_implemented`.
+- `test_command_center_counts_match_alert_service` against a seeded in-memory repository.
+- `test_command_center_with_zero_alerts_returns_zeros_not_error`.
+- Frontend: tiles link to real routes; a Planned module card shows a "Planned" badge and no metrics.
+
+**Done when:** all tests pass, navigation works at 375 px and 1440 px, every Command Center tile links to a page that exists.
+
+**Risks:** the sidebar and phone tabs share `navItems.js`, so one change reaches both. Keep the old routes reachable until Phase 4.
+
+## Phase 3: access control (Diagram 2)
+
+**Needs your approval before starting:** adding institution, office, branch, employee and assignment tables is a schema change.
+
+**Files**
+- Create `backend/access/models.py`: frozen dataclasses `Institution(institution_id, kind)`, `Office(office_id, institution_id, parent_id, level)`, `Employee(user_id, institution_id, office_id, role)`, `CaseAssignment(case_id, user_id)`.
+- Create `backend/access/policy.py`: `can(user: UserContext, action: str, case: CaseContext) -> Decision` where `Decision(allowed: bool, reason: str)`. Pure function, no I/O.
+- Create `backend/access/repository.py`: in-memory first, Postgres variant behind the existing repository pattern after approval.
+- Create `backend/access/seed.py`: two demo banks (one public-sector, one private-sector) labelled Synthetic.
+- Modify alert, escalation and genai routes to filter by `can`.
+
+**Tests first**
+- A matrix test over role (INVESTIGATOR, SUPERVISOR, READONLY, ADMIN) × office scope (same office, child office, other office, other institution) × assignment (assigned, not assigned) for `read`, `write` and `escalate`.
+- The two review-focus access cases above.
+
+**Done when:** the matrix passes, existing 787 tests still pass with the default demo user mapped to a seeded employee, and no route returns data outside the caller's scope.
+
+**Risks:** auth currently returns a demo ADMIN when `AUTH_ENABLED=false`. That path must map to a seeded bank-admin context and not bypass the policy.
+
+## Phase 4: mule detection as Module 1
+
+**Files:** create `frontend/src/shell/ModuleWorkspace.js` (shared template: purpose, metrics, alerts, analysis, link to investigation); modify `App.js` so `/modules/mule` hosts the existing dashboard, queue, network and live pages; keep old paths as redirects.
+
+**Tests first:** a redirect test per old path; the existing frontend tests unchanged.
+
+**Done when:** no mule capability is lost, old links still work, and all 787 backend tests pass.
+
+## Phase 5: other modules
+
+**Files**
+- `backend/fraud_modules/upi.py`: runs R14, R15, R17, R18 and the real-time scorer on rows where `channel == "UPI"`. Status Partial. Signals that need `upi_id`, device or IP are listed as "needs data".
+- `backend/fraud_modules/transaction_aml.py`: wraps R06, R12, R14 and the pass-through and circular-flow signals plus the STR service. Status Partial.
+- `backend/fraud_modules/identity.py`: wraps `EntityResolutionService` and `OnboardingService`. Status Partial; evidence of verification is stored apart from inferred risk.
+- `backend/fraud_modules/loan.py`: registry entry and a `ScreeningService` call for borrower sanction checks only. Status Planned, with required data fields listed.
+
+**Tests first:** each module returns its status; Loan returns no findings for any input except a sanction-screening call; UPI on the AMLworld sample reports which signals could not run.
+
+**Done when:** every alert from these modules has an explanation, and no Planned module shows data.
+
+## Phase 6: unified intelligence
+
+**Files**
+- `backend/fraud_modules/intelligence/entities.py`: frozen `EntityRef(kind, entity_id)`; `Link(a, b, basis, confidence)` with `confidence` in `("VERIFIED", "PROBABLE", "POSSIBLE")`.
+- `backend/fraud_modules/intelligence/correlate.py`: `correlate(findings) -> tuple[CorrelatedFinding, ...]`, each holding the original per-module findings unchanged.
+- `GET /api/v1/intelligence/entities/{entity_id}` and a `frontend/src/shell/EntityView.js`.
+- Add a CRITICAL level to the platform risk vocabulary only in the consolidated view, with documented criteria, since the module classifier has three levels.
+
+**Tests first:** an account flagged by Mule and by UPI resolves to one entity with both findings; shared verified id gives VERIFIED; similar name only gives POSSIBLE; module scores are returned side by side and never combined.
+
+## Phase 7: investigation, gateway, Mule Chat, e2e
+
+**Files**
+- `backend/services/investigation/investigation_service.py`: facade over alert cases and complaint cases. Statuses New, Under Review, Investigating, Escalated, Resolved, Closed; outcomes Confirmed, False positive, Unresolved; assignment; every transition writes an audit entry.
+- `backend/fraud_modules/intervention.py`: simulated gateway. It records a hold or verification request in the audit chain and returns "SIMULATED: no bank system connected". The UI shows that label.
+- Extend `AuditService` so the investigation workflow is chained.
+- Mule Chat retrieval filtered through `access.policy.can`.
+- `e2e/` Playwright test of: alert, case, evidence, outcome, report.
+
+**Tests first:** invalid transitions are rejected; a hold request appears in the audit chain and `verify_integrity` still passes; chat never returns a case the caller cannot read.
+
+**Done when:** the e2e journey passes and the full baseline is green.
+
+## Not built, on purpose
+
+Feature store, analytical warehouse, durable event store, bank-specific connectors for loan, UPI switch, KYC and I4C, SSO and MFA, and live STR submission. They stay Planned in the registry. The event bus remains the optional Kafka adapter that exists today.
+
+## Open decision
+
+**Tenancy depth.** Default: put an institution id on every new record and seed one public-sector and one private-sector demo bank, labelled Synthetic, with full office and branch hierarchy. The alternative is a single demo bank, which is faster but cannot show Diagram 2's institution isolation.

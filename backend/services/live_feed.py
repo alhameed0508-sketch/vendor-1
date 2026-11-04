@@ -39,7 +39,8 @@ class LiveFeed:
         self._max_seconds = max_seconds
         self._sleep = sleep
         self._clock = clock
-        self._scorer = RealtimeScorer([], [])
+        # Real traffic has no ground truth to replay deterministically, so latency wins: rebuild off the hot path.
+        self._scorer = RealtimeScorer([], [], background_refresh=True)
 
     def events(self, limit: Optional[int] = None, rate: float = 0.0) -> Iterator[dict]:
         """Yield one event per scored payment until ``limit`` payments or the time budget. ``rate`` is ignored: real time sets the pace."""

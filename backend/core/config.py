@@ -123,6 +123,9 @@ class Settings(BaseSettings):
     # Live payment feed (public Bitcoin mempool). Always on in demo mode; opt-in elsewhere.
     live_feed_enabled: bool = Field(False, alias="LIVE_FEED_ENABLED")
 
+    # Return-claim webhooks: HMAC secret shared with the carrier and bank systems (required in production)
+    returns_webhook_secret: str = Field("", alias="RETURNS_WEBHOOK_SECRET")
+
     # GenAI / LLM
     genai_enabled: bool = Field(False, alias="GENAI_ENABLED")
     genai_provider: str = Field("gemini", alias="GENAI_PROVIDER")

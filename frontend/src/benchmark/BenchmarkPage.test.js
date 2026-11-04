@@ -84,6 +84,7 @@ describe('BenchmarkPage', () => {
     });
     expect(await screen.findByText('80.0%')).toBeInTheDocument();
     expect(screen.getByText('90.0%')).toBeInTheDocument();
+    expect(screen.getByText(/easiest test.*adversarial and cross-validation/i)).toBeInTheDocument();
   });
 
   test('disables synthetic execution when backend reports production mode', async () => {

@@ -58,5 +58,9 @@ def test_coinbase_and_addressless_outputs_yield_nothing():
 
 
 def test_payment_count_is_capped():
-    big = {**TX, "vin": [_vin(f"S{i}", 10_000_000) for i in range(20)], "vout": [_vout(f"R{i}", 10_000_000) for i in range(20)]}
+    big = {
+        **TX,
+        "vin": [_vin(f"S{i}", 10_000_000) for i in range(20)],
+        "vout": [_vout(f"R{i}", 10_000_000) for i in range(20)],
+    }
     assert len(tx_to_payments(big, INR_PER_BTC, NOW)) == MAX_PAYMENTS_PER_TX

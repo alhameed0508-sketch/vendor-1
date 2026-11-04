@@ -2,34 +2,34 @@
   "robustness": {
     "empty_batch": "handled (0 alerts)",
     "no_accounts": "handled (0 alerts)",
-    "amount_non_numeric": "RAISED ValueError: could not convert string to float: 'abc'",
-    "amount_negative": "handled (4 alerts)",
-    "amount_missing": "RAISED KeyError: 'amount'",
-    "timestamp_missing": "RAISED KeyError: 'timestamp'",
-    "timestamp_unparseable": "RAISED ValueError: Invalid isoformat string: 'yesterday'",
-    "to_account_missing": "RAISED KeyError: 'to_account'",
-    "self_transfer": "handled (4 alerts)",
-    "unknown_counterparty": "handled (4 alerts)",
-    "duplicate_txn_ids": "handled (4 alerts)"
+    "amount_non_numeric": "handled (3 alerts)",
+    "amount_negative": "handled (3 alerts)",
+    "amount_missing": "handled (3 alerts)",
+    "timestamp_missing": "handled (3 alerts)",
+    "timestamp_unparseable": "handled (3 alerts)",
+    "to_account_missing": "handled (3 alerts)",
+    "self_transfer": "handled (3 alerts)",
+    "unknown_counterparty": "handled (3 alerts)",
+    "duplicate_txn_ids": "handled (3 alerts)"
   },
   "scaling": [
     {
       "accounts": 254,
       "transactions": 2085,
-      "seconds": 1.3,
-      "txns_per_second": 1605.0
+      "seconds": 0.47,
+      "txns_per_second": 4453.9
     },
     {
       "accounts": 605,
       "transactions": 4661,
-      "seconds": 7.56,
-      "txns_per_second": 616.7
+      "seconds": 1.27,
+      "txns_per_second": 3664.0
     },
     {
       "accounts": 1407,
       "transactions": 10170,
-      "seconds": 98.67,
-      "txns_per_second": 103.1
+      "seconds": 7.13,
+      "txns_per_second": 1425.5
     }
   ]
 }

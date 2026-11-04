@@ -50,10 +50,16 @@ def test_events_have_the_replay_shape_and_a_live_source():
     events = list(_feed(client).events(limit=2))
     assert len(events) == 2
     first = events[0]
-    assert {"payment", "decision", "case_id", "ring_members", "risk_score", "latency_ms", "reasons", "counters"} <= set(first)
+    assert {"payment", "decision", "case_id", "ring_members", "risk_score", "latency_ms", "reasons", "counters"} <= set(
+        first
+    )
     assert first["source"] == "live"
     assert events[1]["counters"]["payments"] == 2
     assert events[1]["counters"]["accounts"] == 4
+
+
+def test_partition_rebuilds_off_the_hot_path():
+    assert LiveFeed(client=object())._scorer._background is True
 
 
 def test_a_transaction_seen_twice_is_scored_once():
@@ -65,7 +71,9 @@ def test_a_transaction_seen_twice_is_scored_once():
 
 def test_stops_at_the_time_budget():
     ticks = iter(range(0, 1000, 100))
-    feed = LiveFeed(FakeClient([[]] * 50), poll_interval=0, sleep=lambda s: None, clock=lambda: next(ticks), max_seconds=250)
+    feed = LiveFeed(
+        FakeClient([[]] * 50), poll_interval=0, sleep=lambda s: None, clock=lambda: next(ticks), max_seconds=250
+    )
     assert list(feed.events()) == []
 
 

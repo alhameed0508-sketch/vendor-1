@@ -26,34 +26,28 @@ import time
 from dataclasses import dataclass, replace
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+from detection.ring_decision import (
+    DEFAULT_FLAG_THRESHOLD,
+    ENDPOINT_EVIDENCE_MIN,
+    MERCHANT_TYPE,
+    MIN_RING_SIZE,
+    multi_scale_evidence,
+    ring_is_pure,
+    with_ring_evidence,
+)
+
 from models.community_detection.louvain_detector import Community, LouvainClusterDetector
-from models.temporal_weighting.smurf_weighting import SMURF_FLOOR, SmurfWeightingEngine, score_transaction_batch
+from models.temporal_weighting.smurf_weighting import SMURF_FLOOR
 
 REQUIRED_FIELDS = ("txn_id", "from_account", "to_account", "amount", "timestamp")
 DEFAULT_MAX_WINDOW = 5000
-DEFAULT_FLAG_THRESHOLD = 0.50
 # Louvain dominates scoring time, so the partition is rebuilt every N committed payments.
 # A ring formed within the last N payments can therefore be recognised up to N payments late.
 DEFAULT_COMMUNITY_REFRESH_EVERY = 10
-MIN_RING_SIZE = 3
-# Calibrated on seeded synthetic data: 78% of mule accounts vs 1.9% of genuine accounts reach it.
-ENDPOINT_EVIDENCE_MIN = 0.30
-# Share of ring members that must carry their own evidence ("no innocent bystanders").
-MIN_RING_PURITY = 0.30
-MERCHANT_TYPE = "MERCHANT"  # account_type whose own activity is not evidence (legitimate hubs)
 # A payment is evidence when it, or the combined value of its account pair in the window,
 # reaches this amount. One-off small decoys to genuine accounts are ignored (they would
 # otherwise dilute a ring, see 05-evaluation.md 7.6c); repeated small payments still count.
 MATERIAL_MIN_AMOUNT = SMURF_FLOOR
-# Evidence is scored at the default windows and at a slow scale (6x), keeping the stronger
-# score per account, so stretching the timeline does not hide a ring.
-SLOW_SCALE = SmurfWeightingEngine(velocity_minutes=360, consolidation_hours=36)
-# A ring is also judged on payments between its own members, with a third scale that waits up to
-# 6 days for the forward (consolidation), so decoys sent to outsiders or a very slow timeline cannot
-# dilute the evidence. The velocity window stays at 6 h: a window of 12 h or more made genuine
-# communities look like bursts (48 of 97 genuine payments flagged in the small test set).
-LONG_FORWARD_SCALE = SmurfWeightingEngine(velocity_minutes=360, consolidation_hours=144)
-RING_SCALES = (None, SLOW_SCALE, LONG_FORWARD_SCALE)
 MAX_REASONS = 6
 CASE_ID_PREFIX = "CASE-"
 CASE_ID_HEX_LEN = 8
@@ -86,26 +80,6 @@ def _content(txn: Mapping) -> tuple:
     return (txn["from_account"], txn["to_account"], float(txn["amount"]), str(txn["timestamp"]))
 
 
-def _multi_scale_evidence(window: Sequence[Mapping]) -> Dict:
-    fast, slow = score_transaction_batch(list(window)), score_transaction_batch(list(window), SLOW_SCALE)
-    return {acc: max(fast[acc], slow[acc], key=lambda s: s.smurf_score) for acc in fast}
-
-
-def _with_ring_evidence(smurf: Dict, ring: Optional[Community], window: Sequence[Mapping]) -> Dict:
-    """Keep the stronger of an account's overall evidence and its evidence from ring-internal payments."""
-    if ring is None or ring.size < MIN_RING_SIZE:
-        return smurf
-    internal = [t for t in window if t["from_account"] in ring.accounts and t["to_account"] in ring.accounts]
-    if not internal:
-        return smurf
-    merged = dict(smurf)
-    for engine in RING_SCALES:
-        for acc, score in score_transaction_batch(internal, engine).items():
-            if acc not in merged or score.smurf_score > merged[acc].smurf_score:
-                merged[acc] = score
-    return merged
-
-
 def _pair_is_material(window: Sequence[Mapping], txn: Mapping) -> bool:
     """Same rule as ``_material_window``: the pair's total in the window, not this payment alone."""
     pair = (txn["from_account"], txn["to_account"])
@@ -135,6 +109,7 @@ class RealtimeScorer:
         max_window: int = DEFAULT_MAX_WINDOW,
         flag_threshold: float = DEFAULT_FLAG_THRESHOLD,
         community_refresh_every: int = DEFAULT_COMMUNITY_REFRESH_EVERY,
+        background_refresh: bool = False,
     ):
         if community_refresh_every < 1:
             raise ValueError("community_refresh_every must be at least 1")
@@ -148,6 +123,11 @@ class RealtimeScorer:
             None  # (commits, partition, accounts seen)
         )
         self._lock = threading.Lock()
+        # shortcut: with background_refresh a ring that formed since the last partition is recognised
+        # when the rebuild lands, not on the payment that formed it; upgrade by running Louvain in a
+        # separate process if the GIL makes the rebuild slow the hot path.
+        self._background = background_refresh
+        self._worker: Optional[threading.Thread] = None
 
     @property
     def history_size(self) -> int:
@@ -185,16 +165,48 @@ class RealtimeScorer:
         reuse = young and (not unseen or newcomer_ok)
         communities = cached[1] if reuse else None
         material = _material_window(window)
+        known = self._with_known_accounts(accounts, material)
+        if communities is None and self._background and cached is not None:
+            communities = cached[1]  # serve the last partition; the rebuild lands off the hot path
+            if commit:
+                self._start_refresh(material, known, commits)
         return self._score(
             txn,
             material,
-            self._with_known_accounts(accounts, material),
+            known,
             started,
             communities,
             commits,
             commit,
             unseen if newcomer_ok else frozenset(),
         )
+
+    def refresh_pending(self) -> bool:
+        worker = self._worker
+        return worker is not None and worker.is_alive()
+
+    def wait_for_refresh(self, timeout: Optional[float] = None) -> None:
+        worker = self._worker
+        if worker is not None:
+            worker.join(timeout)
+
+    def _start_refresh(self, window: List[Dict], accounts: List[Dict], commits: int) -> None:
+        with self._lock:
+            if self.refresh_pending():
+                return
+            self._worker = threading.Thread(target=self._partition, args=(window, accounts, commits), daemon=True)
+            self._worker.start()
+
+    def _partition(
+        self, window: List[Dict], accounts: List[Dict], commits: int, trusted: bool = True
+    ) -> Tuple[Community, ...]:
+        communities = tuple(LouvainClusterDetector().detect_clusters(window, accounts))
+        if trusted:  # an uncommitted payment must never shape the shared partition
+            seen = frozenset(acc for t in window for acc in (t["from_account"], t["to_account"]))
+            with self._lock:
+                if self._cached is None or commits >= self._cached[0]:
+                    self._cached = (commits, communities, seen)
+        return communities
 
     @staticmethod
     def _with_known_accounts(accounts: Tuple[Dict, ...], window: Sequence[Mapping]) -> List[Dict]:
@@ -216,16 +228,11 @@ class RealtimeScorer:
         newcomers: frozenset = frozenset(),
     ) -> PaymentScore:
         sender, receiver = txn["from_account"], txn["to_account"]
-        smurf = _multi_scale_evidence(window)
+        smurf = multi_scale_evidence(window)
         if communities is None:
-            communities = tuple(LouvainClusterDetector().detect_clusters(window, accounts))
-            if trusted:  # an uncommitted payment must never shape the shared partition
-                seen = frozenset(acc for t in window for acc in (t["from_account"], t["to_account"]))
-                with self._lock:
-                    if self._cached is None or commits >= self._cached[0]:
-                        self._cached = (commits, communities, seen)
+            communities = self._partition(window, accounts, commits, trusted)
         ring = self._ring_for(communities, (sender, receiver), newcomers)
-        smurf = _with_ring_evidence(smurf, ring, window)
+        smurf = with_ring_evidence(smurf, ring, window)
 
         merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
         endpoint_scores = []
@@ -237,7 +244,7 @@ class RealtimeScorer:
                 reasons.extend(f"{acc}: {code}" for code in score.reason_codes)
 
         evidence = max(endpoint_scores, default=0.0)
-        has_evidence = evidence >= ENDPOINT_EVIDENCE_MIN and self._ring_is_pure(ring, smurf, merchants)
+        has_evidence = evidence >= ENDPOINT_EVIDENCE_MIN and ring_is_pure(ring, smurf, merchants)
         ring_support = ring.suspicion_score if ring is not None and has_evidence else 0.0
         if ring_support:
             reasons = [*ring.reason_codes, *reasons]
@@ -255,17 +262,6 @@ class RealtimeScorer:
             reasons=tuple(reasons[:MAX_REASONS]) if flagged else (),
             latency_ms=round((time.perf_counter() - started) * 1000, 2),
         )
-
-    @staticmethod
-    def _ring_is_pure(ring: Optional[Community], smurf: Mapping, merchants: frozenset = frozenset()) -> bool:
-        if ring is None or not ring.accounts:
-            return False
-        with_evidence = sum(
-            1
-            for a in ring.accounts
-            if a not in merchants and a in smurf and smurf[a].smurf_score >= ENDPOINT_EVIDENCE_MIN
-        )
-        return with_evidence / len(ring.accounts) >= MIN_RING_PURITY
 
     @staticmethod
     def _ring_for(

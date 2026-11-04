@@ -4,7 +4,7 @@ import {
 } from './graphModel';
 import { edgeStyle, nodeRadius, ringWidth, roleStyle, shapePath } from './graphStyle';
 import { formatAmount } from '../utils/formatAmount';
-import { computeHullPath, curvedEdgePath, pointOnEdge } from './graphGeometry';
+import { computeHullPath, curvedEdgePath, hubTargets, pointOnEdge } from './graphGeometry';
 
 const HOP_MS = 1100;
 const DOT_MS = 850;
@@ -67,12 +67,12 @@ function seedPositions(clusters, nodeMap, width, height) {
 
 function addMarkers(svg, uid) {
   const defs = svg.append('defs');
-  [['flagged', true], ['other', false]].forEach(([name, flagged]) => {
+  [['flagged', true, 5], ['other', false, 5], ['flagged-hub', true, 3], ['other-hub', false, 3]].forEach(([name, flagged, size]) => {
     defs.append('marker')
       .attr('id', `${uid}-${name}`)
       .attr('viewBox', '0 -4 8 8')
       .attr('refX', 8).attr('refY', 0)
-      .attr('markerWidth', 5).attr('markerHeight', 5)
+      .attr('markerWidth', size).attr('markerHeight', size)
       .attr('orient', 'auto')
       .append('path')
       .attr('d', 'M0,-4L8,0L0,4')
@@ -171,12 +171,13 @@ function drawClusters(g, clusters) {
 function drawEdges(g, graphLinks, uid) {
   const maxAmount = Math.max(1, ...graphLinks.map(l => l.amount));
   const width = d3.scaleSqrt().domain([0, maxAmount]).range([1, 3]);
+  const hubs = hubTargets(graphLinks);
   return g.append('g').selectAll('path').data(graphLinks).enter().append('path')
     .attr('fill', 'none')
     .attr('stroke', l => edgeStyle(l.flagged).stroke)
     .attr('stroke-dasharray', l => edgeStyle(l.flagged).dash)
     .attr('stroke-width', l => width(l.amount))
-    .attr('marker-end', l => `url(#${uid}-${l.flagged ? 'flagged' : 'other'})`);
+    .attr('marker-end', l => `url(#${uid}-${l.flagged ? 'flagged' : 'other'}${hubs.has(l.target.id) ? '-hub' : ''})`);
 }
 
 /**

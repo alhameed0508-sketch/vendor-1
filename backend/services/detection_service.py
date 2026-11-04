@@ -82,9 +82,14 @@ class DetectionService:
                 return {"transactions": [], "accounts": []}
             from data.synthetic.generator import build_full_dataset
 
-            ds = build_full_dataset(num_clusters=8, num_legit_accounts=60)
+            ds = {**build_full_dataset(num_clusters=8, num_legit_accounts=60), "source": "synthetic"}
             self._dataset_repo.set(ds)
         return ds
+
+    def data_source(self) -> str:
+        """ "synthetic" for generated demo data, "loaded" for anything brought in, "none" if empty."""
+        ds = self._dataset_repo.get()
+        return "none" if ds is None else ds.get("source", "loaded")
 
     def ensure_alerts(self, skip_demo_statuses: bool = False) -> List[Dict]:
         """Lazy-init: return existing alerts or run detection pipeline.

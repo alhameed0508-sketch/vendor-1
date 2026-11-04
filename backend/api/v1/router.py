@@ -16,8 +16,12 @@ from api.v1.routes.feedback import register_feedback_routes
 from api.v1.routes.genai import register_genai_routes
 from api.v1.routes.graph import register_graph_routes
 from api.v1.routes.ingest import register_ingest_routes
+from api.v1.routes.intelligence import register_intelligence_routes
+from api.v1.routes.investigations import register_investigation_routes
 from api.v1.routes.kpi import register_kpi_routes
+from api.v1.routes.modules import register_module_routes
 from api.v1.routes.onboarding import register_onboarding_routes
+from api.v1.routes.returns import register_return_routes
 from api.v1.routes.roi import register_roi_routes
 from api.v1.routes.score import register_score_routes
 from api.v1.routes.screening import register_screening_routes
@@ -59,6 +63,10 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
     register_complaint_routes(complaints_router, limiter)
     v1.include_router(complaints_router)
 
+    returns_router = APIRouter(prefix="/returns", tags=["returns"])
+    register_return_routes(returns_router, limiter)
+    v1.include_router(returns_router)
+
     graph_router = APIRouter(prefix="/graph", tags=["graph"])
     register_graph_routes(graph_router, limiter)
     v1.include_router(graph_router)
@@ -93,6 +101,11 @@ def create_v1_router(limiter: Limiter) -> APIRouter:
 
     # --- Modules that include full prefix in route paths — mount on v1 ---
     register_detection_routes(v1, limiter)
+    register_module_routes(v1, limiter)
+    register_intelligence_routes(v1, limiter)
+    investigations_router = APIRouter(prefix="/investigations", tags=["investigations"])
+    register_investigation_routes(investigations_router, limiter)
+    v1.include_router(investigations_router)
     register_kpi_routes(v1, limiter)
     register_audit_routes(v1, limiter)
     register_genai_routes(v1, limiter)

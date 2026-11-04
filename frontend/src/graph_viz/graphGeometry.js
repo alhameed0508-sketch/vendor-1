@@ -3,6 +3,19 @@ import * as d3 from 'd3';
 // Arrowheads stop clear of the node and its risk ring.
 const TARGET_GAP = 10;
 
+// An account with this many incoming edges is a hub: full-size arrowheads would pile up on it.
+const HUB_IN_DEGREE = 6;
+
+/** Ids of accounts receiving from HUB_IN_DEGREE or more others (links may or may not be resolved to nodes). */
+export function hubTargets(links) {
+  const incoming = new Map();
+  links.forEach(l => {
+    const id = l.target.id ?? l.target;
+    incoming.set(id, (incoming.get(id) || 0) + 1);
+  });
+  return new Set([...incoming].filter(([, n]) => n >= HUB_IN_DEGREE).map(([id]) => id));
+}
+
 /** Expand convex hull outward from centroid */
 function expandHull(hull, padding) {
   const cx = d3.mean(hull, p => p[0]);

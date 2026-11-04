@@ -63,7 +63,7 @@ const STATUS_CONFIG = {
 };
 
 const BREAKDOWN_LABELS = {
-  risk_score:          'Risk',
+  risk_score:          'Weighted risk',
   amount_factor:       'Amount',
   network_centrality:  'Network',
   evidence_diversity:  'Evidence',

@@ -81,9 +81,22 @@ describe('filters', () => {
     expect(group('Severity').getByRole('button', { name: 'HIGH' })).toHaveAttribute('aria-pressed', 'true');
     expect(group('Severity').getByRole('button', { name: 'ALL' })).toHaveAttribute('aria-pressed', 'false');
 
-    await userEvent.click(group('Status').getByRole('button', { name: 'RESOLVED' }));
+    await userEvent.click(group('Status').getByRole('button', { name: 'Resolved' }));
     expect(screen.queryByText('A2')).not.toBeInTheDocument();
     expect(screen.getByText('A3')).toBeInTheDocument();
+  });
+
+  it('offer every disposition status, not just three', async () => {
+    serve([alert('A1', 1000), alert('A4', 1000, { status: 'NO_FURTHER_ACTION' })]);
+    renderDashboard();
+    await screen.findByText('A1');
+    const names = group('Status').getAllByRole('button').map(b => b.textContent);
+    expect(names).toEqual(['All', 'Open', 'Under review', 'Resolved', 'False positive',
+      'No further action', 'Suspicion confirmed, escalated', 'STR filed']);
+
+    await userEvent.click(group('Status').getByRole('button', { name: 'No further action' }));
+    expect(screen.queryByText('A1')).not.toBeInTheDocument();
+    expect(screen.getByText('A4')).toBeInTheDocument();
   });
 
   it('say so when they hide every alert', async () => {
@@ -95,6 +108,14 @@ describe('filters', () => {
 });
 
 describe('the table', () => {
+  it('shows the top signal in words and the full status label', async () => {
+    serve([alert('A5', 1000, { status: 'SUSPICION_CONFIRMED_ESCALATED', reason_codes: ['CC01: Dense transaction cluster'] })]);
+    renderDashboard();
+    const row = (await screen.findByText('A5')).closest('tr');
+    expect(within(row).getByText('Dense transaction cluster')).toBeInTheDocument();
+    expect(within(row).getByText('Suspicion confirmed, escalated')).toBeInTheDocument();
+  });
+
   it('says the queue is clear when there are no alerts', async () => {
     serve([]);
     renderDashboard();

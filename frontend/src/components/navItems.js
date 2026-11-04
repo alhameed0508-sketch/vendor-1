@@ -1,11 +1,19 @@
 import {
-  AlertTriangle, BarChart2, FileCheck, Gauge, Network, Radio, Scale, Upload, UserCheck, Zap,
+  AlertTriangle, BarChart2, Boxes, ClipboardList, FileCheck, Gauge, LayoutDashboard, Network, Radio, Scale, Undo2, Upload, UserCheck, Zap,
 } from 'lucide-react';
 
 import { EXTRA_PATHS, EXTRA_PAGES_ENABLED } from '../config/features';
 
 // One name per page: the same label appears in the sidebar, the phone tabs and the page title.
 const ALL_SECTIONS = [
+  {
+    label: 'Platform',
+    items: [
+      { path: '/command-center', label: 'Command center',    icon: LayoutDashboard },
+      { path: '/modules',        label: 'Detection modules', icon: Boxes },
+      { path: '/investigations', label: 'Investigations',    icon: ClipboardList },
+    ],
+  },
   {
     label: 'Intelligence',
     items: [
@@ -19,6 +27,7 @@ const ALL_SECTIONS = [
     items: [
       { path: '/live',           label: 'Live stream',      icon: Radio },
       { path: '/complaints',      label: 'Fraud complaints', icon: Scale },
+      { path: '/returns',        label: 'Return fraud',     icon: Undo2 },
       { path: '/analytics',       label: 'ROI analytics',    icon: BarChart2 },
       { path: '/compliance',      label: 'Compliance',       icon: FileCheck },
       { path: '/risk-operations', label: 'Customer risk',    icon: UserCheck },

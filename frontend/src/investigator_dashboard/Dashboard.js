@@ -8,6 +8,7 @@ import { apiFetch } from '../auth/api';
 import { alertPath } from '../utils/safeNavigation';
 import { API_ALERTS_LIMIT, RISK_CRITICAL_THRESHOLD, RISK_HIGH_THRESHOLD } from '../config';
 import { formatAmount } from '../utils/formatAmount';
+import { statusLabel } from '../utils/statusLabel';
 
 /* ── Metric Stat Card ── */
 function StatCard({ label, value, color, icon: Icon, sub, index }) {
@@ -102,6 +103,12 @@ function EmptyState({ hasFilters }) {
 }
 
 /* ── Main Dashboard ── */
+const STATUSES = ['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'FALSE_POSITIVE',
+  'NO_FURTHER_ACTION', 'SUSPICION_CONFIRMED_ESCALATED', 'STR_FILED'];
+
+/** 'CC01: Dense transaction cluster (…)' -> the words, not the code. */
+const topSignal = codes => (codes?.[0] ? codes[0].replace(/^[A-Z]+\d+:\s*/, '') : '—');
+
 export default function Dashboard() {
   const [alerts, setAlerts]           = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -269,13 +276,13 @@ export default function Dashboard() {
         </div>
         <div className="segmented-control" role="group" aria-label="Status">
           <span className="meta-label" style={{ padding: '0 var(--space-2)' }}>Status</span>
-          {['ALL', 'OPEN', 'UNDER_REVIEW', 'RESOLVED'].map(s => (
+          {STATUSES.map(s => (
             <button
               key={`sta-${s}`}
               className={`segmented-btn ${filter.status === s ? 'active' : ''}`}
               aria-pressed={filter.status === s}
               onClick={() => setFilter(f => ({ ...f, status: s }))}
-            >{s.replace('_', ' ')}</button>
+            >{statusLabel(s)}</button>
           ))}
         </div>
       </div>
@@ -381,19 +388,21 @@ export default function Dashboard() {
                               {alert.txn_count}
                             </span>
                           </td>
-                          <td style={{ maxWidth: 180 }}>
-                            <span style={{
-                              fontSize: 11,
-                              fontFamily: 'var(--font-mono)',
+                          <td style={{ maxWidth: 220 }}>
+                            <span title={topSignal(alert.reason_codes)} style={{
+                              display: 'block',
+                              fontSize: 12,
                               color: 'var(--text-secondary)',
-                              letterSpacing: '0.2px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
                             }}>
-                              {alert.reason_codes?.[0]?.split(':')[0] || '—'}
+                              {topSignal(alert.reason_codes)}
                             </span>
                           </td>
                           <td>
                             <span className={`badge badge-${alert.status}`}>
-                              {alert.status.replace('_', ' ')}
+                              {statusLabel(alert.status)}
                             </span>
                           </td>
                           <td style={{ color: 'var(--text-muted)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
