@@ -56,6 +56,31 @@ describe('AuthProvider sign-in', () => {
     expect(meCalls).toBe(1);
   });
 
+  it('keeps the session when the access token has expired, by refreshing it', async () => {
+    const fresh = accessToken('investigator', 'INVESTIGATOR');
+    localStorage.setItem('mulecatch_access_token', 'expired-access-token');
+    localStorage.setItem('mulecatch_refresh_token', 'refresh-1');
+    // Behaves like the backend: RefreshRequest takes { token } and rejects anything else with 422.
+    global.fetch = jest.fn((url, options = {}) => {
+      if (url.endsWith('/api/v1/auth/me')) {
+        const auth = options.headers?.Authorization;
+        return auth === `Bearer ${fresh}`
+          ? reply(200, { user_id: 'investigator', username: 'investigator', role: 'INVESTIGATOR' })
+          : reply(401, null);
+      }
+      if (url.endsWith('/api/v1/auth/refresh')) {
+        const sent = JSON.parse(options.body || '{}');
+        return sent.token === 'refresh-1' ? reply(200, { access_token: fresh }) : reply(422, null);
+      }
+      return reply(404, null);
+    });
+
+    render(<AuthProvider><Probe /></AuthProvider>);
+
+    await waitFor(() => expect(screen.getByTestId('user')).toHaveTextContent('investigator:INVESTIGATOR'));
+    expect(localStorage.getItem('mulecatch_access_token')).toBe(fresh);
+  });
+
   it('marks a guest session as a guest with the GUEST role', async () => {
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(meCalls).toBe(1));
