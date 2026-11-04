@@ -6,6 +6,7 @@
 .shell-module__purpose { margin: 0; color: var(--text-muted); font-size: 13px; }
 .shell-module__findings { color: var(--text-muted); font-size: 13px; }
 .shell-module__link { color: var(--accent-primary); font-size: 13px; margin-top: auto; }
+.shell-module__skipped ul,
 .shell-module__needs ul { margin: var(--space-1) 0 0; padding-left: 18px; font-size: 13px; color: var(--text-muted); }
 .shell-caps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: 13px; }
 .shell-caps__note { color: var(--text-muted); margin-top: 2px; }

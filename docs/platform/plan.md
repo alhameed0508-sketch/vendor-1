@@ -44,6 +44,10 @@
 - Ruling: Loan is Planned. Its only existing building block (the screening service) is not wired to loan applications, so that row is Planned too.
 - Ruling: `/` stays the alert dashboard until Phase 4 moves it into the mule workspace. The new pages live at `/command-center` and `/modules`.
 - Ruling: the Command center reports `data_source` ("synthetic", "loaded" or "none") so synthetic demo data is labelled. `DetectionService` now marks the datasets it generates.
+- Phase 5 (`platform/modules`): `RuleEngine.evaluate` takes an optional `rule_codes` filter (additive; default runs every rule). `backend/fraud_modules/rule_modules.py` gives UPI (R14, R15, R17, R18, UPI-channel rows only), Transaction and AML (R06, R12, R14) and Identity (R20) their own rule subset. Each run reports `signals_skipped` when the data lacks the field a signal needs (R15 needs `upi_id`, R18 needs `device_id`, R20 needs `account_age_days`). The AMLworld sample has neither handle nor device, so UPI reports those two as not run.
+- Ruling: UPI looks only at accounts that appear in UPI-channel rows, so a handle on an account with no UPI traffic is not flagged. Costs a missed R15 hit if the channel field is wrong in the source data.
+- Ruling: Identity findings come from R20 only. Duplicate-identity matching works on onboarding applications, not the account dataset, so it stays behind `/onboarding` and is not counted in the Command Center.
+- Ruling: the STR service linkage and the circular-flow signal listed for Transaction and AML are not wired; circular flow stays Planned in the registry.
 - Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
 
 ## Phase map

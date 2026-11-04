@@ -9,6 +9,15 @@ function Findings({ count }) {
     : <div className="shell-module__findings"><span className="data-value">{count}</span> findings</div>;
 }
 
+function SkippedSignals({ signals }) {
+  return (
+    <div className="shell-module__skipped">
+      <div className="meta-label">Signals that could not run</div>
+      <ul>{signals.map(s => <li key={s.rule_code}><span className="data-value">{s.rule_code}</span>: {s.reason}</li>)}</ul>
+    </div>
+  );
+}
+
 function Capabilities({ capabilities }) {
   return (
     <ul className="shell-caps">
@@ -24,7 +33,7 @@ function Capabilities({ capabilities }) {
 
 /** One fraud module: its honest status, what it has found, and a link only if it has a page. */
 export default function ModuleCard({ module, detailed = false }) {
-  const { name, purpose, status, workspace_path: path, findings, capabilities, data_requirements: needs } = module;
+  const { name, purpose, status, workspace_path: path, findings, skipped_signals: skipped, capabilities, data_requirements: needs } = module;
   return (
     <article className="premium-card shell-module">
       <header className="shell-module__head">
@@ -33,6 +42,7 @@ export default function ModuleCard({ module, detailed = false }) {
       </header>
       {purpose && <p className="shell-module__purpose">{purpose}</p>}
       {!detailed && <Findings count={findings} />}
+      {!detailed && skipped?.length > 0 && <SkippedSignals signals={skipped} />}
       {detailed && capabilities && <Capabilities capabilities={capabilities} />}
       {detailed && needs?.length > 0 && (
         <div className="shell-module__needs">

@@ -10,6 +10,7 @@ from core.exceptions import NotFoundError
 from core.response import success_response
 from fastapi import APIRouter, Depends, Request
 from fraud_modules.registry import MODULES, get_module, module_dict
+from fraud_modules.rule_modules import RULE_MODULES
 from middleware.auth import require_permission
 from services.alert_service import AlertService
 from services.detection_service import DetectionService
@@ -19,8 +20,8 @@ from slowapi import Limiter
 router = APIRouter(tags=["modules"])
 
 ALERT_LIMIT = 100_000
-# Only the mule pipeline produces alerts today; other modules report None until they have a findings source.
-MODULES_WITH_FINDINGS = {"mule"}
+# The mule pipeline produces alerts; rule modules run their share of the rules on the loaded dataset.
+# Any other module (Loan) has no findings source and reports None.
 
 
 def _alert_summary(alerts: list) -> Dict:
@@ -29,6 +30,18 @@ def _alert_summary(alerts: list) -> Dict:
         "by_severity": dict(Counter(a["severity"] for a in alerts)),
         "by_status": dict(Counter(a["status"] for a in alerts)),
     }
+
+
+def _module_summary(spec, alert_total: int, dataset: Dict) -> Dict:
+    base = {k: module_dict(spec)[k] for k in ("module_id", "name", "status", "workspace_path")}
+    if spec.module_id == "mule":
+        return {**base, "findings": alert_total}
+    rule_module = RULE_MODULES.get(spec.module_id)
+    if rule_module is None:
+        return {**base, "findings": None}
+    run = rule_module.run(dataset.get("accounts", []), dataset.get("transactions", []))
+    skipped = [{"rule_code": s.rule_code, "reason": s.reason} for s in run.signals_skipped]
+    return {**base, "findings": len(run.findings), "skipped_signals": skipped}
 
 
 def register_module_routes(r: APIRouter, limiter: Limiter) -> None:
@@ -63,13 +76,8 @@ def register_module_routes(r: APIRouter, limiter: Limiter) -> None:
         detection_svc.ensure_alerts()
         alerts = alert_svc.list_alerts(limit=ALERT_LIMIT)["alerts"]
         summary = _alert_summary(alerts)
-        modules = [
-            {
-                **{k: module_dict(m)[k] for k in ("module_id", "name", "status", "workspace_path")},
-                "findings": summary["total"] if m.module_id in MODULES_WITH_FINDINGS else None,
-            }
-            for m in MODULES
-        ]
+        dataset = detection_svc.get_or_generate_dataset()
+        modules = [_module_summary(m, summary["total"], dataset) for m in MODULES]
         return success_response(
             {
                 "data_source": detection_svc.data_source(),

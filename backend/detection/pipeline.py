@@ -29,7 +29,7 @@ import uuid
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import AbstractSet, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,14 @@ class RuleEngine:
     def __init__(self, thresholds: Optional[RuleThresholds] = None):
         self.thresholds = thresholds or RuleThresholds()
 
-    def evaluate(self, accounts: List[Dict], transactions: List[Dict]) -> Dict[str, List[str]]:
+    def evaluate(
+        self,
+        accounts: List[Dict],
+        transactions: List[Dict],
+        rule_codes: Optional[AbstractSet[str]] = None,
+    ) -> Dict[str, List[str]]:
+        """Run every rule, or only those in ``rule_codes`` when a module owns a subset."""
+        rules = [r for r in self.RULES if rule_codes is None or r[0] in rule_codes]
         # Every rule filters on the account's own id, so each account only needs
         # its own rows plus (for R18) rows from other accounts on its devices.
         # Indexing once makes this linear in transactions, not accounts x transactions.
@@ -261,7 +268,7 @@ class RuleEngine:
         results: Dict[str, List[str]] = {}
         for acc in accounts:
             view = self._account_view(acc["account_id"], own_rows, device_rows)
-            hits = [f"{code}: {desc}" for code, desc, fn in self.RULES if fn(acc, view, self.thresholds)]
+            hits = [f"{code}: {desc}" for code, desc, fn in rules if fn(acc, view, self.thresholds)]
             if hits:
                 results[acc["account_id"]] = hits
         return results

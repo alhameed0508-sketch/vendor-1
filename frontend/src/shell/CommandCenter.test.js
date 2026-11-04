@@ -8,7 +8,7 @@ jest.mock('../auth/api', () => ({ apiFetch: jest.fn() }));
 
 const MODULES = [
   { module_id: 'mule', name: 'Mule account detection', status: 'IMPLEMENTED', workspace_path: '/', findings: 4 },
-  { module_id: 'upi', name: 'UPI and digital payments', status: 'PARTIAL', workspace_path: null, findings: null },
+  { module_id: 'upi', name: 'UPI and digital payments', status: 'PARTIAL', workspace_path: null, findings: 0, skipped_signals: [{ rule_code: 'R18', reason: "no transaction in this data carries 'device_id'" }] },
   { module_id: 'loan', name: 'Loan and lending fraud', status: 'PLANNED', workspace_path: null, findings: null },
 ];
 
@@ -63,6 +63,16 @@ test('every module shows its status as text, and a module without findings says 
   const loan = screen.getByText('Loan and lending fraud').closest('article');
   expect(within(loan).getByText(/no findings source yet/i)).toBeInTheDocument();
   expect(within(loan).queryByText('0')).not.toBeInTheDocument();
+});
+
+test('a module with zero findings shows 0, and names the signals that could not run', async () => {
+  serve(payload());
+  renderPage();
+  await screen.findByText('Mule account detection');
+  const upi = screen.getByText('UPI and digital payments').closest('article');
+  expect(within(upi).getByText('0')).toBeInTheDocument();
+  expect(within(upi).getByText(/R18/)).toBeInTheDocument();
+  expect(within(upi).getByText(/device_id/)).toBeInTheDocument();
 });
 
 test('a failed request shows an error message, not a blank page', async () => {
