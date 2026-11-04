@@ -149,3 +149,72 @@ async def test_data_without_device_or_handle_lists_the_signals_that_could_not_ru
 async def test_command_center_reports_where_the_data_came_from(make_app, source):
     res = await _get(make_app([], source=source), "/api/v1/command-center")
     assert res.json()["data"]["data_source"] == source
+
+
+def _payment(i, src, dst, amount, channel="UPI", day=1):
+    return {
+        "txn_id": f"T{i}",
+        "from_account": src,
+        "to_account": dst,
+        "amount": amount,
+        "timestamp": f"2026-09-{day:02d}T10:{i % 60:02d}:00",
+        "channel": channel,
+    }
+
+
+@pytest.mark.asyncio
+async def test_module_findings_for_the_mule_module_rank_alerts_by_risk(make_app):
+    alerts = [
+        {
+            "alert_id": "A1",
+            "severity": "HIGH",
+            "status": "OPEN",
+            "risk_score": 0.7,
+            "account_count": 4,
+            "total_amount": 1000.0,
+            "reason_codes": ["CC01: Dense cluster"],
+        },
+        {
+            "alert_id": "A2",
+            "severity": "CRITICAL",
+            "status": "OPEN",
+            "risk_score": 0.95,
+            "account_count": 6,
+            "total_amount": 5000.0,
+            "reason_codes": ["RC05: Rapid consolidation", "R05: Fan-in"],
+        },
+    ]
+    app = make_app(alerts)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        data = (await c.get("/api/v1/modules/mule/findings")).json()["data"]
+    assert data["kind"] == "alerts" and data["findings_total"] == 2
+    assert [a["alert_id"] for a in data["top_alerts"]] == ["A2", "A1"]
+    assert data["top_alerts"][0]["reasons"] == ["RC05", "R05"]
+    assert data["alerts"]["by_severity"] == {"HIGH": 1, "CRITICAL": 1}
+    assert data["accounts_in_alerts"] == 10
+
+
+@pytest.mark.asyncio
+async def test_module_findings_for_a_rule_module_break_down_by_rule(make_app):
+    loop = [
+        _payment(1, "A", "B", 100_000, "NEFT"),
+        _payment(2, "B", "C", 97_000, "NEFT"),
+        _payment(3, "C", "A", 95_000, "NEFT"),
+    ]
+    app = make_app([], dataset={"accounts": [], "transactions": loop})
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        data = (await c.get("/api/v1/modules/transaction_aml/findings")).json()["data"]
+    assert data["kind"] == "rules"
+    cf01 = next(r for r in data["by_rule"] if r["rule_code"] == "CF01")
+    assert cf01["accounts"] == 3 and cf01["label"] == "Circular fund flow"
+    assert data["accounts_flagged"] >= 3 and "CF01" in data["signals_run"]
+
+
+@pytest.mark.asyncio
+async def test_module_findings_for_loan_say_there_is_no_source(make_app):
+    app = make_app([])
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+        data = (await c.get("/api/v1/modules/loan/findings")).json()["data"]
+        missing = await c.get("/api/v1/modules/nope/findings")
+    assert data["kind"] == "none" and data["findings_total"] is None
+    assert missing.status_code == 404

@@ -87,3 +87,18 @@ test('shows the stream error instead of a blank panel', () => {
   render(<LivePrevention />);
   expect(screen.getByRole('alert')).toHaveTextContent('Stream unavailable');
 });
+
+
+test('shows how much was authorised next to what was held and prevented', () => {
+  hook();
+  render(<LivePrevention />);
+  expect(within(tile('Payments authorised')).getByText('1 · ₹4K')).toBeInTheDocument();
+  const split = screen.getByRole('img', { name: /where the money went/i });
+  expect(split).toHaveAccessibleName(/Authorised ₹4K \(1.6%\), Awaiting review ₹0 \(0%\), Prevented ₹2.5L \(98.4%\)/);
+});
+
+test('with nothing confirmed yet, held money is shown as awaiting review, not prevented', () => {
+  hook({ ...STATE, counters: { ...STATE.counters, mule_amount_flagged: undefined } });
+  render(<LivePrevention />);
+  expect(screen.getByRole('img', { name: /where the money went/i })).toHaveAccessibleName(/Awaiting review ₹2.5L \(98.4%\), Prevented ₹0 \(0%\)/);
+});

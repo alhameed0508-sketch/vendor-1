@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import LivePrevention from './LivePrevention';
 import ModuleCard from './ModuleCard';
 import { fetchCommandCenter } from './shellApi';
 
@@ -25,8 +24,10 @@ export default function CommandCenter() {
     <div className="page">
       <div className="page-header">
         <h1>Command center</h1>
+        <div className="page-meta">
+          Counts come from the dataset loaded in this workspace. A module marked Planned or Partial has no findings source yet.
+        </div>
       </div>
-      <LivePrevention />
       {failed && <div role="alert" className="shell-error">Could not load the Command center. Check that the API is running.</div>}
       {data?.data_source === 'synthetic' && (
         <div role="status" className="shell-notice">

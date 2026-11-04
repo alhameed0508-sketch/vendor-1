@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import useScoreStream from '../live_stream/useScoreStream';
 import { confirmedAmount } from '../live_stream/streamReducer';
 import { formatAmount } from '../utils/formatAmount';
+import { SplitBar } from './Bars';
 import './shell.css';
 
 const TAPE_SIZE = 40;
@@ -44,6 +45,11 @@ export default function LivePrevention() {
   const prevented = counters.mule_amount_flagged ?? confirmedAmount(state);
   const cases = Object.values(rings).sort((a, b) => b.openedAt - a.openedAt).slice(0, CASE_ROWS);
   const running = status === 'live';
+  // Authorised = every payment that was not held. Held money splits into what a reviewer (or, on
+  // synthetic data, the ground truth) confirms as prevented and what is still waiting for review.
+  const authorisedAmount = Math.max(0, (amounts.scored || 0) - (amounts.held || 0));
+  const authorisedCount = Math.max(0, (counters.payments || 0) - (counters.flagged || 0));
+  const preventedShown = Math.min(prevented || 0, amounts.held || 0);
   // Starts once on mount so the panel is never empty; Pause and Resume stay with the user.
   useEffect(() => { start(); }, []);
 
@@ -66,6 +72,7 @@ export default function LivePrevention() {
       {status === 'error' && <div role="alert" className="shell-error">{error}</div>}
       <div className="shell-stats">
         <Tile label="Payments scored" value={counters.payments} />
+        <Tile label="Payments authorised" value={`${authorisedCount} · ${formatAmount(authorisedAmount)}`} tone="ok" />
         <Tile label="Money scored" value={formatAmount(amounts.scored)} />
         <Tile label="Held for review" value={formatAmount(amounts.held)} tone="alert" />
         <Tile label="Prevented (verified)" value={formatAmount(prevented)} tone="good" />
@@ -73,6 +80,15 @@ export default function LivePrevention() {
           <Tile label="Genuine money wrongly held" value={formatAmount(counters.genuine_amount_flagged)} />
         )}
       </div>
+      <SplitBar
+        label="Where the money went"
+        format={formatAmount}
+        segments={[
+          { label: 'Authorised', value: authorisedAmount, tone: 'ok' },
+          { label: 'Awaiting review', value: Math.max(0, (amounts.held || 0) - preventedShown), tone: 'held' },
+          { label: 'Prevented', value: preventedShown, tone: 'prevented' },
+        ]}
+      />
       <Tape log={log} />
       <table className="live-prev__table" aria-label="Open cases">
         <thead><tr><th>Case</th><th>Members</th><th>Held</th><th>Risk</th><th>Reviewer</th></tr></thead>

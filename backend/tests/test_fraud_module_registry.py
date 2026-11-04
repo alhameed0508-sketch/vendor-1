@@ -40,9 +40,10 @@ def test_registry_has_the_core_modules_with_unique_ids():
     assert len(set(ids)) == len(ids)
 
 
-def test_mule_module_is_the_only_one_with_a_workspace_today():
-    assert get_module("mule").workspace_path == "/modules/mule"
-    assert all(m.workspace_path is None for m in MODULES if m.module_id != "mule")
+def test_every_module_with_a_findings_source_has_a_workspace_and_loan_does_not():
+    for module_id in ("mule", "upi", "transaction_aml", "identity"):
+        assert get_module(module_id).workspace_path == f"/modules/{module_id}"
+    assert get_module("loan").workspace_path is None
 
 
 def test_loan_module_is_a_planned_shell():

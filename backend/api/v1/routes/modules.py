@@ -2,6 +2,7 @@
 Module registry and Command Center routes — /api/v1/modules, /api/v1/command-center
 """
 
+import re
 from collections import Counter
 from typing import Dict
 
@@ -44,6 +45,59 @@ def _module_summary(spec, alert_total: int, dataset: Dict) -> Dict:
     return {**base, "findings": len(run.findings), "skipped_signals": skipped}
 
 
+TOP_ROWS = 50
+
+
+def _rule_label(explanation: str) -> str:
+    """'R14: Rapid round-trip (12 payments)' -> 'Rapid round-trip'; 'CF01: Circular fund flow: A -> B' -> 'Circular fund flow'."""
+    text = explanation.split(":", 1)[1] if ":" in explanation else explanation
+    return re.split(r"[:(]| - ", text)[0].strip(" .") or explanation
+
+
+def _module_findings(spec, alerts: list, dataset: Dict) -> Dict:
+    """What one module has found in the loaded dataset, shaped for its workspace and its card."""
+    if spec.module_id == "mule":
+        ranked = sorted(alerts, key=lambda a: -float(a.get("risk_score") or 0))
+        return {
+            "kind": "alerts",
+            "findings_total": len(alerts),
+            "accounts_in_alerts": sum(int(a.get("account_count") or 0) for a in alerts),
+            "alerts": _alert_summary(alerts),
+            "top_alerts": [
+                {k: a.get(k) for k in ("alert_id", "severity", "status", "risk_score", "account_count", "total_amount")}
+                | {"reasons": [str(r).split(":")[0] for r in (a.get("reason_codes") or [])][:4]}
+                for a in ranked[:TOP_ROWS]
+            ],
+        }
+    rule_module = RULE_MODULES.get(spec.module_id)
+    if rule_module is None:
+        return {"kind": "none", "findings_total": None}
+    run = rule_module.run(dataset.get("accounts", []), dataset.get("transactions", []))
+    by_rule: Dict[str, Dict] = {}
+    for f in run.findings:
+        row = by_rule.setdefault(
+            f.rule_code,
+            {"rule_code": f.rule_code, "label": _rule_label(f.explanation), "findings": 0, "accounts": set()},
+        )
+        row["findings"] += 1
+        row["accounts"].add(f.account_id)
+    return {
+        "kind": "rules",
+        "findings_total": len(run.findings),
+        "accounts_flagged": len({f.account_id for f in run.findings}),
+        "rows_considered": run.rows_considered,
+        "signals_run": list(run.signals_run),
+        "signals_skipped": [{"rule_code": s.rule_code, "reason": s.reason} for s in run.signals_skipped],
+        "by_rule": sorted(
+            ({**row, "accounts": len(row["accounts"])} for row in by_rule.values()), key=lambda r: -r["findings"]
+        ),
+        "findings": [
+            {"account_id": f.account_id, "rule_code": f.rule_code, "explanation": f.explanation, "score": f.score}
+            for f in run.findings[:TOP_ROWS]
+        ],
+    }
+
+
 def register_module_routes(r: APIRouter, limiter: Limiter) -> None:
     """Register module registry and Command Center routes on the given router."""
 
@@ -63,6 +117,27 @@ def register_module_routes(r: APIRouter, limiter: Limiter) -> None:
             return success_response(module_dict(get_module(module_id)))
         except KeyError:
             raise NotFoundError("Module", module_id) from None
+
+    @r.get("/modules/{module_id}/findings")
+    @limiter.limit("100/minute")
+    def get_module_findings(
+        request: Request,
+        module_id: str,
+        user: dict = Depends(require_permission("alerts:read")),
+        detection_svc: DetectionService = Depends(get_detection_service),
+        alert_svc: AlertService = Depends(get_alert_service),
+    ):
+        """What this module has found in the loaded dataset: counts, a breakdown by rule and the top rows."""
+        try:
+            spec = get_module(module_id)
+        except KeyError:
+            raise NotFoundError("Module", module_id) from None
+        detection_svc.ensure_alerts()
+        alerts = alert_svc.list_alerts(limit=ALERT_LIMIT)["alerts"] if module_id == "mule" else []
+        data = _module_findings(spec, alerts, detection_svc.get_or_generate_dataset())
+        return success_response(
+            {"module_id": module_id, "status": spec.status.value, "data_source": detection_svc.data_source(), **data}
+        )
 
     @r.get("/command-center")
     @limiter.limit("100/minute")

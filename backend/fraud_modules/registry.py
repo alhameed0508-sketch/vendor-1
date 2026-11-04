@@ -93,6 +93,7 @@ MODULES: Tuple[ModuleSpec, ...] = (
             ),
         ),
         ("transactions with channel = UPI", "upi_id per account", "device_id per transaction"),
+        workspace_path="/modules/upi",
     ),
     ModuleSpec(
         "transaction_aml",
@@ -111,6 +112,7 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap("STR filing", PART, "The workflow and PDF are real; submission to the regulator is simulated."),
         ),
         ("transactions: from_account, to_account, amount, timestamp",),
+        workspace_path="/modules/transaction_aml",
     ),
     ModuleSpec(
         "identity",
@@ -124,6 +126,7 @@ MODULES: Tuple[ModuleSpec, ...] = (
             _cap("Document verification results", PLAN, "No document-verification feed."),
         ),
         ("applications: name, phone, email, address, government id hash", "KYC records"),
+        workspace_path="/modules/identity",
     ),
     ModuleSpec(
         "loan",
