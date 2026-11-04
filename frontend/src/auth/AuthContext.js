@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import {
+  attemptRefresh,
   getToken,
   setToken,
-  getRefreshToken,
   setRefreshToken,
   clearTokens,
   resolveUrl,
@@ -34,6 +34,22 @@ function decodeJwtPayload(token) {
   }
 }
 
+/**
+ * The signed-in user as the access token describes it, the same claims /auth/me returns.
+ * Login responses carry no user object, so without this the role stays unknown until a
+ * page reload, and role-gated controls (evidence pack, supervisor decision) stay hidden.
+ */
+function userFromToken(token, fallbackUser) {
+  const claims = decodeJwtPayload(token) || {};
+  const username = claims.sub || fallbackUser?.username;
+  return {
+    ...fallbackUser,
+    user_id: username,
+    username,
+    ...(claims.role ? { role: claims.role } : {}),
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,35 +58,9 @@ export function AuthProvider({ children }) {
   const refreshIntervalRef = useRef(null);
 
   /**
-   * Refresh the access token using the stored refresh token.
+   * Refresh the access token using the stored refresh token. True on success.
    */
-  const refreshToken = useCallback(async () => {
-    const currentRefresh = getRefreshToken();
-    if (!currentRefresh) return false;
-
-    try {
-      const res = await fetch(resolveUrl('/api/v1/auth/refresh'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: currentRefresh }),
-      });
-
-      if (!res.ok) return false;
-
-      const body = await res.json();
-      const data = body?.data || body;
-      if (data.access_token) {
-        setToken(data.access_token);
-        if (data.refresh_token) {
-          setRefreshToken(data.refresh_token);
-        }
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  }, []);
+  const refreshToken = useCallback(async () => Boolean(await attemptRefresh()), []);
 
   /**
    * Set up auto-refresh interval based on token expiry.
@@ -101,7 +91,7 @@ export function AuthProvider({ children }) {
     if (data.refresh_token) {
       setRefreshToken(data.refresh_token);
     }
-    setUser(data.user || fallbackUser);
+    setUser(data.user || userFromToken(data.access_token, fallbackUser));
     setIsAuthenticated(true);
     setAuthError(null);
     scheduleRefresh(data.access_token);

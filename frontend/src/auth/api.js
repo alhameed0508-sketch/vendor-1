@@ -55,8 +55,10 @@ export function clearTokens() {
 /**
  * Attempt to refresh the access token using the refresh token.
  * Returns the new access token on success, or null on failure.
+ * The only refresh call in the app: AuthContext reuses it, so the request body
+ * stays in step with RefreshRequest in backend/api/v1/schemas/auth.py ({ token }).
  */
-async function attemptRefresh() {
+export async function attemptRefresh() {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 
@@ -64,7 +66,7 @@ async function attemptRefresh() {
     const res = await fetch(resolveUrl('/api/v1/auth/refresh'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+      body: JSON.stringify({ token: refreshToken }),
     });
 
     if (!res.ok) return null;
