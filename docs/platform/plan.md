@@ -48,6 +48,10 @@
 - Ruling: UPI looks only at accounts that appear in UPI-channel rows, so a handle on an account with no UPI traffic is not flagged. Costs a missed R15 hit if the channel field is wrong in the source data.
 - Ruling: Identity findings come from R20 only. Duplicate-identity matching works on onboarding applications, not the account dataset, so it stays behind `/onboarding` and is not counted in the Command Center.
 - Ruling: the STR service linkage and the circular-flow signal listed for Transaction and AML are not wired; circular flow stays Planned in the registry.
+- Phase 6 (`platform/intelligence`): `backend/fraud_modules/intelligence/` (entities, correlate, collect), `GET /api/v1/intelligence/entities/{entity_id}`, and an `/entities/:entityId` page. The response lists each module's score and evidence side by side and has no combined score.
+- Ruling: links are VERIFIED only for a shared CIF_ID or device id. A holder-name match (ratio 0.9 or more, field `holder_name`) is POSSIBLE and never merges entities. PROBABLE is in the vocabulary but nothing produces it yet. Costs: the AMLworld sample has no names, so it shows VERIFIED links at most.
+- Ruling: the CRITICAL consolidated level from the Phase 6 plan is not built. Without a combined score there is nothing to grade, and adding one would break the no-averaging rule.
+- Ruling: `Finding` gained an optional `score`. Mule findings carry the alert's risk score; rule hits carry none and show "no score".
 - Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
 
 ## Phase map

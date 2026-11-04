@@ -16,3 +16,14 @@
 .status-badge--partial { color: var(--medium); border-color: var(--medium); }
 .status-badge--planned { color: var(--text-muted); border-style: dashed; }
 .shell-notice { padding: var(--space-3); border: 1px dashed var(--medium); color: var(--text-muted); border-radius: 6px; margin-bottom: var(--space-3); font-size: 13px; }
+.entity-module { margin-bottom: var(--space-3); }
+.entity-module__head { display: flex; justify-content: space-between; align-items: baseline; }
+.entity-module__name { font-size: 15px; text-transform: capitalize; margin: 0; }
+.entity-module ul { margin: var(--space-2) 0 0; padding-left: 18px; font-size: 13px; color: var(--text-muted); }
+.entity-links { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.entity-link { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; font-size: 13px; }
+.entity-link__confidence { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border-strong); font-size: 11px; font-weight: 600; }
+.entity-link__confidence--verified::before { content: "● "; }
+.entity-link__confidence--probable::before { content: "◐ "; }
+.entity-link__confidence--possible::before { content: "○ "; }
+.entity-link__basis { color: var(--text-muted); }

@@ -18,6 +18,8 @@ class Finding:
     account_id: str
     rule_code: str
     explanation: str
+    # A module's own score when it produces one (mule alerts do); rule hits carry none.
+    score: Optional[float] = None
 
 
 @dataclass(frozen=True)
