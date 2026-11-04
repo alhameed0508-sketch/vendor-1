@@ -3,7 +3,6 @@ Cache key builders — centralized key naming conventions.
 """
 
 
-
 def alert_key(alert_id: str) -> str:
     return f"alert:{alert_id}"
 
