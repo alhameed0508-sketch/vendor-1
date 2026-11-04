@@ -51,3 +51,18 @@ test('an unknown module shows a message, not a blank page', async () => {
   renderAt('nope');
   expect(await screen.findByRole('alert')).toHaveTextContent(/could not find/i);
 });
+
+test('the mule workspace has a visible way back and keeps its long text out of the way', async () => {
+  apiFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: MULE }) });
+  renderAt('mule');
+  await screen.findByRole('heading', { level: 1, name: 'Mule account detection' });
+  expect(screen.getByRole('link', { name: /command center/i })).toHaveAttribute('href', '/command-center');
+  expect(screen.getByText('What it can do').closest('details')).not.toHaveAttribute('open');
+});
+
+test('a planned module keeps its gaps open, since it has nothing else to show', async () => {
+  apiFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({ data: LOAN }) });
+  renderAt('loan');
+  await screen.findByRole('heading', { level: 1, name: 'Loan and lending fraud' });
+  expect(screen.getByText('What it can do').closest('details')).toHaveAttribute('open');
+});

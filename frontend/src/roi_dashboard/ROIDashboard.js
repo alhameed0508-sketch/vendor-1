@@ -117,8 +117,9 @@ export default function ROIDashboard() {
       </motion.div>
 
       {/* Primary KPI Cards */}
-      <div className="stat-grid stat-grid--3" style={{ marginBottom: 14 }}>
-        <StatCard label="Fraud Prevented"           value={formatAmount(kpi?.fraud_prevented_inr)} sub="In flagged clusters" />
+      <div className="stat-grid" style={{ marginBottom: 14 }}>
+        <StatCard label="Fraud Flagged"             value={formatAmount(kpi?.fraud_flagged_inr ?? kpi?.fraud_prevented_inr)} sub="In flagged clusters. Not verified" />
+        <StatCard label="Fraud Prevented (verified)" value={formatAmount(kpi?.fraud_prevented_verified_inr)} sub="Confirmed by investigators" />
         <StatCard label="Investigation Time Saved"  value={percentOr(kpi?.investigation_time_reduction_pct, '—')} sub="Per alert, against manual review" />
         <StatCard label="False Positive Reduction"  value={percentOr(kpi?.false_positive_reduction_pct, 'Not measured')} sub="Against rule-based AML" />
       </div>
@@ -137,7 +138,7 @@ export default function ROIDashboard() {
         transition={{ delay: 0.35, duration: 0.4 }}
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}
       >
-        <ChartPanel title="Fraud Prevention Trend (₹ Lakh)">
+        <ChartPanel title="Fraud Flagged Trend (₹ Lakh)">
           {monthlyTrend.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={monthlyTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>

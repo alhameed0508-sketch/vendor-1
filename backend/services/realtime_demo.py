@@ -66,6 +66,7 @@ class DemoReplay:
     def events(self, limit: Optional[int] = None, rate: float = 0.0) -> Iterator[dict]:
         """Yield one event per live payment, ``rate`` payments per second (0 = no delay)."""
         payments = flagged = mule_flagged = genuine_flagged = 0
+        mule_amount = genuine_amount = 0.0  # rupees flagged, split by the hidden ground truth
         genuine_accounts: frozenset = frozenset()
         for raw in self._live[:limit]:
             payment = strip_labels([raw])[0]
@@ -77,6 +78,8 @@ class DemoReplay:
             flagged += is_flag
             mule_flagged += is_flag and both_mule
             genuine_flagged += is_flag and both_genuine
+            mule_amount += payment["amount"] if is_flag and both_mule else 0.0
+            genuine_amount += payment["amount"] if is_flag and both_genuine else 0.0
             if is_flag and both_genuine:
                 genuine_accounts = genuine_accounts | {raw["from_account"], raw["to_account"]}
             yield {
@@ -92,6 +95,8 @@ class DemoReplay:
                     "flagged": flagged,
                     "mule_payments_flagged": mule_flagged,
                     "genuine_payments_flagged": genuine_flagged,
+                    "mule_amount_flagged": round(mule_amount, 2),
+                    "genuine_amount_flagged": round(genuine_amount, 2),
                     "genuine_accounts_flagged": len(genuine_accounts),
                 },
             }

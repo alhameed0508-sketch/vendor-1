@@ -332,7 +332,7 @@ def get_compliance_service() -> ComplianceService:
 
 @lru_cache(maxsize=1)
 def get_kpi_service() -> KPIService:
-    return KPIService(get_kpi_repo())
+    return KPIService(get_kpi_repo(), get_alert_repo())
 
 
 @lru_cache(maxsize=1)

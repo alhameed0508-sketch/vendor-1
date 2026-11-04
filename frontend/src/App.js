@@ -111,7 +111,7 @@ function AppContent() {
                   <Route path="/risk-operations" element={<ProtectedRoute><RiskOperationsPage /></ProtectedRoute>} />
                 </>
               )}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/command-center" replace />} />
             </Routes>
           </ErrorBoundary>
         </main>
