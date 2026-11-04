@@ -1,0 +1,45 @@
+.live-graph { position: relative; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+.live-graph svg { display: block; width: 100%; height: auto; }
+.live-graph__link { fill: none; stroke: var(--text-faint); opacity: 0.35; transition: opacity 200ms, stroke 200ms; }
+.live-graph__link--flag { stroke: var(--critical); opacity: 0.75; }
+.live-graph__link--active { stroke: var(--accent-primary); opacity: 1; }
+.live-graph__link--dim { opacity: 0.08; }
+.live-graph__node { cursor: pointer; transition: transform 600ms var(--ease-out, ease-out), opacity 200ms; }
+.live-graph__node circle { fill: var(--text-faint); stroke: var(--bg-card); stroke-width: 1.5; transition: r 300ms; }
+.live-graph__node--high circle { fill: var(--critical); }
+.live-graph__node--review circle { fill: var(--high); }
+.live-graph__node.is-selected circle { stroke: var(--accent-primary); stroke-width: 3; }
+.live-graph__node.is-dim { opacity: 0.25; }
+.live-graph__node:focus-visible { outline: none; }
+.live-graph__node:focus-visible circle { stroke: var(--accent-primary); stroke-width: 3; }
+.live-graph__node text { font-family: var(--font-mono); font-size: 9px; fill: var(--text-secondary); pointer-events: none; }
+.live-graph__legend { position: absolute; left: 12px; bottom: 12px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font-size: 12px; color: var(--text-secondary); display: grid; gap: 4px; }
+.live-graph__legend-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--critical); }
+.live-graph__legend-item { display: flex; align-items: center; gap: 6px; }
+.live-graph__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--text-faint); }
+.live-graph__dot--high { background: var(--critical); }
+.live-graph__dot--review { background: var(--high); }
+.live-graph__details { position: absolute; top: 12px; right: 12px; width: min(280px, calc(100% - 24px)); background: var(--bg-elevated); border: 1px solid var(--border-strong); border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); padding: 12px 14px; font-size: 13px; color: var(--text-secondary); }
+.live-graph__details-head { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-primary); }
+.live-graph__details-head button { margin-left: auto; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; min-width: 28px; min-height: 28px; }
+.live-graph__details dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0; }
+.live-graph__details dt { color: var(--text-muted); }
+.live-graph__details dd { margin: 0; color: var(--text-primary); overflow-wrap: anywhere; }
+.live-graph__muted { color: var(--text-muted); font-size: 12px; }
+.live-log { background: #0b0f0e; color: #cfd8d3; border-radius: var(--radius-lg); font-family: var(--font-mono); font-size: 12px; overflow: hidden; }
+.live-log__head { display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid #1f2a26; color: #7d8b85; text-transform: uppercase; letter-spacing: 0.6px; font-size: 10px; }
+.live-log__body { max-height: 180px; overflow-y: auto; padding: 8px 14px; }
+.live-log__line { display: grid; grid-template-columns: 56px minmax(0, 1.4fr) 90px minmax(0, 1.6fr) 56px; gap: 12px; padding: 2px 0; white-space: nowrap; }
+.live-log__line > span { overflow: hidden; text-overflow: ellipsis; }
+.live-log__line--flag { color: #ff8a80; }
+.live-log__seq { color: #5f6d67; }
+@media (max-width: 700px) { .live-log__line { grid-template-columns: 48px 1fr 80px; } .live-log__line > span:nth-child(n + 4) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .live-graph__node, .live-graph__node circle, .live-graph__link { transition: none; } }
+@media (max-width: 700px) {
+  .live-graph__details-head button { min-width: 44px; min-height: 44px; }
+  /* legend and details sit under the graph instead of covering it; labels are unreadable at this scale */
+  .live-graph__legend, .live-graph__details { position: static; width: auto; margin: 8px; }
+  .live-graph__legend { grid-auto-flow: column; grid-template-columns: none; gap: 4px 12px; flex-wrap: wrap; }
+  .live-graph__legend-title { display: none; }
+  .live-graph__node text { display: none; }
+}

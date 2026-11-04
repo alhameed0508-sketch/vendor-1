@@ -1,0 +1,50 @@
+{
+  "name": "mulecatch-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "cmdk": "^1.1.1",
+    "cytoscape": "^3.27.0",
+    "cytoscape-cola": "^2.5.1",
+    "d3": "^7.8.5",
+    "date-fns": "^3.2.0",
+    "framer-motion": "^12.38.0",
+    "gsap": "^3.14.2",
+    "lucide-react": "^1.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.30.4",
+    "recharts": "^2.10.3",
+    "sonner": "^2.0.7",
+    "topojson-client": "^3.1.0"
+  },
+  "scripts": {
+    "start": "craco start",
+    "build": "craco build",
+    "test": "craco test"
+  },
+  "proxy": "http://localhost:8000",
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(d3|d3-[^/]+|internmap|delaunator|robust-predicates)/)"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version"
+    ]
+  },
+  "devDependencies": {
+    "@craco/craco": "^7.1.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "react-scripts": "5.0.1"
+  }
+}

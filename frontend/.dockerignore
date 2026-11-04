@@ -1,0 +1,38 @@
+# Dependencies (installed in container)
+node_modules/
+
+# Build output (built in container)
+build/
+
+# Version control
+.git
+.gitignore
+
+# Tests
+src/**/*.test.js
+src/**/*.spec.js
+src/setupTests.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Environment
+.env
+.env.*
+
+# Debug logs
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

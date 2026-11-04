@@ -1,0 +1,77 @@
+# Environment & Secrets
+.env
+.env.local
+*.env.local
+backend/.env
+infra/certs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.tmp*/
+.tmp-*
+
+# Test coverage
+*.coverage
+.coverage
+coverage/
+htmlcov/
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/build/
+frontend/node_modules/
+frontend/coverage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+nul
+
+# Logs & Data
+audit_logs/
+*.log
+data/feedback_log.jsonl
+
+# Docker
+docker-compose.override.yml
+
+# Certificates (generated)
+infra/certs/*.pem
+infra/certs/*.key
+infra/certs/*.crt
+
+# Claude Code
+.claude/
+
+# Model artifacts
+models/gnn/checkpoints/
+*.pt
+*.pth
+.worktrees/
+
+# Vercel
+.vercel/
+.env*
+
+# Playwright e2e output
+e2e/report/
+e2e/results/
+
+# Third-party datasets (downloaded by scripts/evaluation, never committed)
+data/external/
+
+# pytest scratch dirs
+.tmp-pytest-*/

@@ -1,0 +1,32 @@
+# Vercel function dependencies only (Vercel's Python bundle limit is 500 MB).
+# The full stack is backend/requirements.txt (Docker). Left out here, each degrades
+# gracefully: pyod + shap (numba/llvmlite, ~300 MB: anomaly tier and SHAP skipped),
+# GenAI SDKs (GENAI_ENABLED stays false), pandas (scripts only), psycopg2 (no Postgres),
+# uvicorn (Vercel serves the ASGI app). Keep the pins in step with backend/requirements.txt.
+fastapi==0.139.2
+starlette==1.3.1
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-multipart==0.0.32
+PyJWT[crypto]==2.13.0
+bcrypt>=4.0.0
+ldap3==2.9.1
+neo4j==5.15.0
+kafka-python==2.3.2
+redis>=5.0.0
+httpx>=0.28.0
+python-dotenv==1.2.2
+sqlalchemy>=2.0.0
+numpy==1.26.3
+scikit-learn==1.9.0
+networkx==3.2.1
+python-louvain==0.16
+RapidFuzz==3.14.5
+structlog==24.1.0
+prometheus-client==0.19.0
+slowapi==0.1.9
+fpdf2==2.8.3
+apscheduler==3.10.4
+pypdf==6.21.4
+ImageHash==4.3.2
+PyWavelets==1.6.0  # newer releases need numpy>=1.26.4; numpy is pinned to 1.26.3
