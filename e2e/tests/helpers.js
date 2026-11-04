@@ -1,5 +1,8 @@
 const { expect } = require('@playwright/test');
 
+// E2E_API_URL points API calls at a backend other than the page's own origin (a local dev stack on other ports).
+const API = process.env.E2E_API_URL || '';
+
 // Passwords come from the environment only, never from this repo.
 function passwordFor(username) {
   const password = process.env[`E2E_${username.toUpperCase()}_PASSWORD`];
@@ -22,9 +25,9 @@ async function signIn(page, username) {
 }
 
 async function apiToken(request, username) {
-  const res = await request.post('/api/v1/auth/login', { data: { username, password: passwordFor(username) } });
+  const res = await request.post(`${API}/api/v1/auth/login`, { data: { username, password: passwordFor(username) } });
   expect(res.ok(), `API sign-in as ${username}`).toBeTruthy();
   return (await res.json()).data.access_token;
 }
 
-module.exports = { apiToken, signIn, signInAsGuest };
+module.exports = { API, apiToken, signIn, signInAsGuest };

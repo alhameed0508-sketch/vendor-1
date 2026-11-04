@@ -52,6 +52,12 @@
 - Ruling: links are VERIFIED only for a shared CIF_ID or device id. A holder-name match (ratio 0.9 or more, field `holder_name`) is POSSIBLE and never merges entities. PROBABLE is in the vocabulary but nothing produces it yet. Costs: the AMLworld sample has no names, so it shows VERIFIED links at most.
 - Ruling: the CRITICAL consolidated level from the Phase 6 plan is not built. Without a combined score there is nothing to grade, and adding one would break the no-averaging rule.
 - Ruling: `Finding` gained an optional `score`. Mule findings carry the alert's risk score; rule hits carry none and show "no score".
+- Phase 7 (`platform/investigation`): `InvestigationService` (NEW, UNDER_REVIEW, INVESTIGATING, ESCALATED, RESOLVED, CLOSED; outcomes CONFIRMED, FALSE_POSITIVE, UNRESOLVED), `/api/v1/investigations`, simulated intervention gateway (`SIMULATED: no bank system connected`, recorded in the audit chain), an Investigations page, and `e2e/tests/investigations-write.spec.js` (passed against a local stack with auth on).
+- Ruling: investigation state is kept in memory (a new `InvestigationRepository`, same pattern as escalations) because a Postgres table is a schema change that needs the owner's word. It resets on restart. The audit chain keeps the record of every move.
+- Ruling: the facade holds its own workflow state and points at the alert or complaint by id. It does not edit the alert or the complaint, so the old alert statuses and the complaint decision flow are unchanged. Cost: two status fields can disagree until they are merged in a later phase.
+- Ruling: investigation routes use `alerts:read` and `alerts:write`. Closing a case is not limited to supervisors yet. Cost: an investigator can close their own case.
+- Ruling: Mule Chat already requires `alerts:read`, so no new scoping was added. It does not filter by case ownership; that waits for Phase 3.
+- Ruling: `E2E_API_URL` added to the e2e helpers so tests can run against a local stack on other ports. Default behaviour is unchanged.
 - Correction: alert severity already includes CRITICAL; the earlier gap analysis said otherwise.
 
 ## Phase map
