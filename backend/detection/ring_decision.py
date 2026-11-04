@@ -56,9 +56,7 @@ def ring_is_pure(ring: Optional[Community], smurf: Mapping, merchants: frozenset
     if ring is None or not ring.accounts:
         return False
     with_evidence = sum(
-        1
-        for a in ring.accounts
-        if a not in merchants and a in smurf and smurf[a].smurf_score >= ENDPOINT_EVIDENCE_MIN
+        1 for a in ring.accounts if a not in merchants and a in smurf and smurf[a].smurf_score >= ENDPOINT_EVIDENCE_MIN
     )
     return with_evidence / len(ring.accounts) >= MIN_RING_PURITY
 

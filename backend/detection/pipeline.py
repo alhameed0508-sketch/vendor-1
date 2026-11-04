@@ -283,16 +283,6 @@ def _same_day_credit_debit(account_id: str, txns: List[Dict], th: RuleThresholds
     return len(overlap) >= th.same_day_overlap_days
 
 
-
-
-
-
-
-
-
-
-
-
 def _identical_amounts(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Same exact amount sent to multiple different recipients."""
     amounts_by_recipient = {}
@@ -330,8 +320,6 @@ def _high_risk_upi(a: Dict, th: RuleThresholds) -> bool:
     return digit_ratio > th.upi_digit_ratio and len(upi) > th.upi_min_length
 
 
-
-
 def _velocity_acceleration(account_id: str, txns: List[Dict], th: RuleThresholds) -> bool:
     """Transaction rate more than doubles compared to historical average."""
     current_count = sum(1 for t in txns if t["from_account"] == account_id)
@@ -350,8 +338,6 @@ def _shared_device(account_id: str, txns: List[Dict]) -> bool:
         if other_accounts:
             return True
     return False
-
-
 
 
 def _seventy_two_hour_anomaly(a: Dict, txns: List[Dict], th: RuleThresholds) -> bool:
@@ -603,9 +589,7 @@ class DetectionPipeline:
         evidence = multi_scale_evidence(transactions)
         merchants = frozenset(a["account_id"] for a in accounts if a.get("account_type") == MERCHANT_TYPE)
         flagged_communities = [
-            c
-            for c in communities
-            if ring_is_flaggable(c, with_ring_evidence(evidence, c, transactions), merchants)
+            c for c in communities if ring_is_flaggable(c, with_ring_evidence(evidence, c, transactions), merchants)
         ]
 
         for community in flagged_communities:
