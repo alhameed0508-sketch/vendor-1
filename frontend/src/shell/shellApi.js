@@ -8,7 +8,8 @@ const load = async url => {
 export const fetchCommandCenter = () => load('/api/v1/command-center');
 export const fetchModules = () => load('/api/v1/modules').then(data => data.modules);
 export const fetchEntity = id => load(`/api/v1/intelligence/entities/${encodeURIComponent(id)}`);
-export const fetchModuleFindings = id => load(`/api/v1/modules/${encodeURIComponent(id)}/findings`);
+export const fetchModuleFindings = (id, source) =>
+  load(`/api/v1/modules/${encodeURIComponent(id)}/findings${source ? `?source=${encodeURIComponent(source)}` : ''}`);
 
 const send = async (url, body) => {
   const res = await apiFetch(url, {

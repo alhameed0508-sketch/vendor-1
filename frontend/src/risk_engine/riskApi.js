@@ -28,7 +28,7 @@ export const BAND_META = {
 export const SOURCE_META = {
   synthetic: { label: 'Synthetic', title: 'Simulated customers and fraud journeys' },
   scenario: { label: 'Scenario', title: 'Worked scenario replayed on an isolated engine (synthetic)' },
-  live: { label: 'Real public payment', title: 'A real Bitcoin mempool payment (mempool.space)' },
+  live: { label: 'Real public payment', title: 'A real public payment (mempool.space)' },
   api: { label: 'What-if', title: 'Scored by staff, not committed' },
   ingest: { label: 'Ingested', title: 'Committed through the trusted ingest API' },
 };

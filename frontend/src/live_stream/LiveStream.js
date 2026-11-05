@@ -61,7 +61,7 @@ export default function LiveStream() {
             <span className="sr-only">Data source </span>
             <select value={source} onChange={(e) => setSource(e.target.value)} disabled={running}>
               <option value="demo">Synthetic replay</option>
-              <option value="live">Real Bitcoin payments</option>
+              <option value="live">Real public payments</option>
             </select>
           </label>
           <label>
@@ -132,7 +132,7 @@ export default function LiveStream() {
       </div>
       <p className="live-stream__note">
         {isLive
-          ? 'Real, unlabelled Bitcoin transactions from mempool.space, shown as payments between addresses and converted to rupees at the current rate. No one has marked these addresses as mules, so a flag is a lead for a reviewer, not a measured catch. The detector was built for UPI, not Bitcoin.'
+          ? 'Real, unlabelled public payments from the mempool.space network, shown between addresses and converted to rupees at the current rate. No one has marked these addresses as mules, so a flag is a lead for a reviewer, not a measured catch. The detector was built for UPI payments, not this network.'
           : 'Synthetic data only. Ground-truth labels stay on the server and are used only to count genuine accounts.'}
       </p>
     </section>

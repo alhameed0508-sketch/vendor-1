@@ -32,8 +32,10 @@ class LiveFeed:
         max_seconds: float = MAX_STREAM_SECONDS,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
+        sink: Optional[Callable[[dict], None]] = None,
     ):
         self._client = client or MempoolClient()
+        self._sink = sink  # sees every event, e.g. the buffer the Detection modules report on
         self._poll_interval = poll_interval
         self._max_fetch = max_fetch_per_poll
         self._max_seconds = max_seconds
@@ -74,7 +76,7 @@ class LiveFeed:
                     accounts |= {payment["from_account"], payment["to_account"]}
                     payments += 1
                     flagged += result.decision == "FLAG"
-                    yield {
+                    event = {
                         "source": SOURCE,
                         "payment": payment,
                         "decision": result.decision,
@@ -85,6 +87,9 @@ class LiveFeed:
                         "reasons": list(result.reasons),
                         "counters": {"payments": payments, "flagged": flagged, "accounts": len(accounts)},
                     }
+                    if self._sink is not None:
+                        self._sink(event)
+                    yield event
             self._sleep(self._poll_interval)
 
     def _rate_or_fail(self) -> float:

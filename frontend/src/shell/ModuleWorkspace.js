@@ -5,6 +5,7 @@ import { RankBars } from './Bars';
 import LivePrevention from './LivePrevention';
 import { Capabilities } from './ModuleCard';
 import { findingBars } from './ModuleSummary';
+import { REFRESH_MS } from './ModulesPage';
 import StatusBadge from './StatusBadge';
 import { fetchModule, fetchModuleFindings } from './shellApi';
 import './shell.css';
@@ -67,13 +68,16 @@ function MuleFindings({ findings }) {
 }
 
 function RuleFindings({ findings, moduleName }) {
+  const live = findings.data_source === 'live';
   return (
     <>
       <div className="shell-stats">
-        <Tile label="Payments considered" value={findings.rows_considered} />
-        <Tile label="Findings" value={findings.findings_total} />
+        <Tile label={live ? 'Live payments considered' : 'Payments considered'} value={findings.rows_considered} />
+        <Tile label={findings.cases != null ? 'Payments held' : 'Findings'} value={findings.findings_total} />
         <Tile label="Accounts flagged" value={findings.accounts_flagged} />
-        <Tile label="Signals run" value={(findings.signals_run || []).length} />
+        {findings.cases != null
+          ? <Tile label="Cases opened" value={findings.cases} />
+          : <Tile label="Signals run" value={(findings.signals_run || []).length} />}
       </div>
       {findings.signals_skipped?.length > 0 && (
         <div role="status" className="shell-notice">
@@ -86,7 +90,7 @@ function RuleFindings({ findings, moduleName }) {
           <div className="meta-label">Findings by rule</div>
           {findings.by_rule?.length
             ? <RankBars items={findingBars(findings)} label={`${moduleName}: findings by rule`} />
-            : <div className="mod-card__sub">Nothing found in the loaded data.</div>}
+            : <div className="mod-card__sub">{live ? 'Nothing found in the live payments yet.' : 'Nothing found in the loaded data.'}</div>}
         </section>
         <section className="premium-card shell-table__wrap" aria-label="Flagged accounts">
           <div className="meta-label">Flagged accounts</div>
@@ -95,7 +99,9 @@ function RuleFindings({ findings, moduleName }) {
             <tbody>
               {(findings.findings || []).slice(0, 12).map((f, i) => (
                 <tr key={`${f.account_id}-${f.rule_code}-${i}`}>
-                  <td><Link to={`/entities/${encodeURIComponent(f.account_id)}`}>{f.account_id}</Link></td>
+                  <td className="live-prev__id">
+                    {live ? f.account_id : <Link to={`/entities/${encodeURIComponent(f.account_id)}`}>{f.account_id}</Link>}
+                  </td>
                   <td>{f.rule_code}</td>
                   <td>{f.explanation}</td>
                 </tr>
@@ -121,8 +127,13 @@ export default function ModuleWorkspace() {
     setFindings(null);
     setFailed(false);
     fetchModule(moduleId).then(m => alive && setModule(m)).catch(() => alive && setFailed(true));
-    fetchModuleFindings(moduleId).then(f => alive && setFindings(f)).catch(() => alive && setFindings({ kind: 'error' }));
-    return () => { alive = false; };
+    // Live public payments only, refreshed while the workspace is open: no synthetic findings here.
+    const load = () => fetchModuleFindings(moduleId, 'live')
+      .then(f => alive && setFindings(f))
+      .catch(() => alive && setFindings(prev => prev || { kind: 'error' }));
+    load();
+    const timer = setInterval(load, REFRESH_MS);
+    return () => { alive = false; clearInterval(timer); };
   }, [moduleId]);
 
   const pages = PAGES[moduleId] || [];
@@ -144,8 +155,12 @@ export default function ModuleWorkspace() {
             </nav>
           )}
           {moduleId === 'mule' && <LivePrevention />}
-          {findings?.data_source === 'synthetic' && kind !== 'none' && (
-            <div role="status" className="shell-notice">Findings come from synthetic demonstration data, not from a bank.</div>
+          {findings?.data_source === 'live' && kind !== 'none' && (
+            <div role="status" className="shell-notice">
+              {findings.live_payments
+                ? `Findings come from the last ${findings.live_payments.toLocaleString('en-IN')} real public payments. No synthetic data.`
+                : 'Findings appear as real public payments stream in (open Detection modules to start the feed). No synthetic data.'}
+            </div>
           )}
           {kind === 'alerts' && <MuleFindings findings={findings} />}
           {kind === 'rules' && <RuleFindings findings={findings} moduleName={module.name} />}

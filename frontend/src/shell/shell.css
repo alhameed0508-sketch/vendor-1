@@ -101,3 +101,6 @@
 .shell-table .data-value { font-size: 13px; }
 .ws-grid { align-items: start; }
 .shell-module__skipped .data-value { font-size: 13px; }
+
+/* Live addresses and stock names: one line, cut with an ellipsis instead of stretching the table. */
+.live-prev__id { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

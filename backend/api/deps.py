@@ -120,13 +120,13 @@ def get_realtime_scorer() -> RealtimeScorer:
     return RealtimeScorer(strip_labels(data["accounts"]), strip_labels(data["transactions"]))
 
 
-def get_demo_replay(source: str = Query("demo", pattern="^(demo|live)$")):
+def get_demo_replay(source: str = Query("demo", pattern="^(demo|live|market)$")):
     """A fresh seeded replay per stream, so every viewer sees the same story from the start.
 
     Refuses outside demo mode before doing any work (the replay builds a dataset).
-    Returns None for ``source=live``, which has its own provider.
+    Returns None for the real sources (``live``, ``market``), which have their own providers.
     """
-    if source == "live":
+    if source != "demo":
         return None
     if not get_settings().demo_mode:
         raise ConflictError(
@@ -138,19 +138,41 @@ def get_demo_replay(source: str = Query("demo", pattern="^(demo|live)$")):
     return DemoReplay()
 
 
-def get_live_feed(source: str = Query("demo", pattern="^(demo|live)$")):
-    """A fresh feed of real public Bitcoin payments per stream (source=live). Demo mode, or LIVE_FEED_ENABLED."""
-    if source != "live":
-        return None
+def _require_live_feeds() -> None:
     settings = get_settings()
     if not (settings.demo_mode or getattr(settings, "live_feed_enabled", False)):
         raise ConflictError(
-            "Live payment feed is disabled",
-            "Set LIVE_FEED_ENABLED=true to stream public mempool.space transactions.",
+            "Live feeds are disabled",
+            "Set LIVE_FEED_ENABLED=true to stream public payments and stock-exchange trades.",
         )
+
+
+@lru_cache(maxsize=1)
+def get_live_buffer():
+    """Recent real public payments seen by any live stream: what the Detection modules report on."""
+    from services.live_buffer import LiveBuffer
+
+    return LiveBuffer()
+
+
+def get_live_feed(source: str = Query("demo", pattern="^(demo|live|market)$")):
+    """A fresh feed of real public payments per stream (source=live). Demo mode, or LIVE_FEED_ENABLED."""
+    if source != "live":
+        return None
+    _require_live_feeds()
     from services.live_feed import LiveFeed
 
-    return LiveFeed()
+    return LiveFeed(sink=get_live_buffer().add)
+
+
+def get_market_feed(source: str = Query("demo", pattern="^(demo|live|market)$")):
+    """A fresh feed of live stock-exchange trades per stream (source=market). Demo mode, or LIVE_FEED_ENABLED."""
+    if source != "market":
+        return None
+    _require_live_feeds()
+    from services.market_feed import MarketFeed
+
+    return MarketFeed()
 
 
 def _build_threshold_config() -> ThresholdConfig:

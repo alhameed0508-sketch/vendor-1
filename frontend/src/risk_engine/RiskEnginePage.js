@@ -301,7 +301,7 @@ export default function RiskEnginePage() {
         {state.status === 'failed' && <span className="re-bad">Feed stopped: {state.error}</span>}
         {state.status === 'connecting' && 'Connecting…'}
         {state.status === 'streaming' && source === 'live'
-          && `Scoring real Bitcoin payments from mempool.space on a private engine (${state.counters?.payments ?? 0} so far).`}
+          && `Scoring real public payments from mempool.space on a private engine (${state.counters?.payments ?? 0} so far).`}
         {state.status === 'streaming' && source === 'demo'
           && `Streaming synthetic decisions${traffic ? ` (demo traffic: ${traffic.state})` : ''}.`}
         {(state.status === 'idle' || state.status === 'stopped' || state.status === 'ended')

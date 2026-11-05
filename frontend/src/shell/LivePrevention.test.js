@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import LivePrevention from './LivePrevention';
 import useScoreStream from '../live_stream/useScoreStream';
 import { initialState } from '../live_stream/streamReducer';
@@ -14,7 +14,7 @@ const STATE = {
   ...initialState,
   status: 'live',
   events: 2,
-  counters: { ...initialState.counters, payments: 2, flagged: 1, mule_amount_flagged: 250000, genuine_amount_flagged: 4000 },
+  counters: { ...initialState.counters, payments: 2, flagged: 1 },
   amounts: { scored: 254000, held: 250000 },
   rings: { 'CASE-1': { caseId: 'CASE-1', held: 250000, risk: 0.91, members: ['MULE-1', 'MULE-2'], payments: [] } },
   reviews: {},
@@ -29,30 +29,50 @@ const tile = label => screen.getByText(label).closest('.live-prev__tile');
 
 afterEach(() => useScoreStream.mockReset());
 
-test('starts the stream on its own, so the page never opens empty', () => {
+test('starts on real public payments by its own, so the page never opens empty', () => {
   const api = hook();
   render(<LivePrevention />);
   expect(api.start).toHaveBeenCalledTimes(1);
+  expect(useScoreStream).toHaveBeenLastCalledWith(expect.objectContaining({ source: 'live' }));
+  expect(screen.getByText('Real data')).toBeInTheDocument();
 });
 
-test('shows money scored, held, prevented against the ground truth, and genuine money wrongly held', () => {
+test('offers only real sources: live public payments and live stock trades, with no synthetic or Bitcoin label', () => {
+  hook();
+  render(<LivePrevention />);
+  const options = within(screen.getByRole('combobox')).getAllByRole('option').map(o => o.textContent);
+  expect(options).toEqual(['Live public payments', 'Live stock trades']);
+  expect(screen.queryByText(/synthetic/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/bitcoin/i)).not.toBeInTheDocument();
+});
+
+test('switching to stock trades restarts the stream on the market source with trade wording', () => {
+  hook();
+  render(<LivePrevention />);
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'market' } });
+  expect(useScoreStream).toHaveBeenLastCalledWith(expect.objectContaining({ source: 'market' }));
+  expect(tile('Trades checked')).toHaveTextContent('2');
+  expect(tile('Value traded')).toBeInTheDocument();
+  expect(tile('Confirmed by a reviewer')).toBeInTheDocument();
+  expect(screen.getByRole('table', { name: 'Latest trades' })).toHaveTextContent('Stock');
+});
+
+test('shows money scored and held; prevented is only what a reviewer has confirmed', () => {
   hook();
   render(<LivePrevention />);
   expect(within(tile('Payments scored')).getByText('2')).toBeInTheDocument();
   expect(within(tile('Money scored')).getByText('₹2.5L')).toBeInTheDocument();
   expect(within(tile('Held for review')).getByText('₹2.5L')).toBeInTheDocument();
-  expect(within(tile('Prevented (verified)')).getByText('₹2.5L')).toBeInTheDocument();
-  expect(within(tile('Genuine money wrongly held')).getByText('₹4K')).toBeInTheDocument();
-});
-
-test('without ground truth, prevented is only what a reviewer has confirmed', () => {
-  const { mule_amount_flagged, genuine_amount_flagged, ...counters } = STATE.counters;
-  hook({ ...STATE, counters });
-  render(<LivePrevention />);
   expect(within(tile('Prevented (verified)')).getByText('₹0')).toBeInTheDocument();
-  hook({ ...STATE, counters, reviews: { 'CASE-1': 'confirmed' } });
+  hook({ ...STATE, reviews: { 'CASE-1': 'confirmed' } });
   render(<LivePrevention />);
   expect(within(screen.getAllByText('Prevented (verified)')[1].closest('.live-prev__tile')).getByText('₹2.5L')).toBeInTheDocument();
+});
+
+test('never shows the synthetic-only tile for genuine money wrongly held', () => {
+  hook({ ...STATE, counters: { ...STATE.counters, genuine_amount_flagged: 4000 } });
+  render(<LivePrevention />);
+  expect(screen.queryByText('Genuine money wrongly held')).not.toBeInTheDocument();
 });
 
 test('lists open cases with their held money, and lets a reviewer confirm one in place', () => {
@@ -74,10 +94,9 @@ test('lists the latest payments newest first and marks held ones', () => {
   expect(rows[1]).toHaveTextContent('Passed');
 });
 
-test('says the data is synthetic and can be paused', () => {
+test('can be paused', () => {
   const api = hook();
   render(<LivePrevention />);
-  expect(screen.getByText('Synthetic data')).toBeInTheDocument();
   screen.getByRole('button', { name: 'Pause' }).click();
   expect(api.stop).toHaveBeenCalled();
 });
@@ -88,9 +107,14 @@ test('shows the stream error instead of a blank panel', () => {
   expect(screen.getByRole('alert')).toHaveTextContent('Stream unavailable');
 });
 
+test('shows the feed\'s own notice, such as no exchange trading right now', () => {
+  hook({ ...initialState, status: 'ended', notice: 'No exchange on the watchlist is trading right now.' });
+  render(<LivePrevention />);
+  expect(screen.getByRole('status')).toHaveTextContent('No exchange on the watchlist is trading right now.');
+});
 
 test('shows how much was authorised next to what was held and prevented', () => {
-  hook();
+  hook({ ...STATE, reviews: { 'CASE-1': 'confirmed' } });
   render(<LivePrevention />);
   expect(within(tile('Payments authorised')).getByText('1 · ₹4K')).toBeInTheDocument();
   const split = screen.getByRole('img', { name: /where the money went/i });
@@ -98,7 +122,7 @@ test('shows how much was authorised next to what was held and prevented', () => 
 });
 
 test('with nothing confirmed yet, held money is shown as awaiting review, not prevented', () => {
-  hook({ ...STATE, counters: { ...STATE.counters, mule_amount_flagged: undefined } });
+  hook();
   render(<LivePrevention />);
   expect(screen.getByRole('img', { name: /where the money went/i })).toHaveAccessibleName(/Awaiting review ₹2.5L \(98.4%\), Prevented ₹0 \(0%\)/);
 });

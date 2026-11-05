@@ -24,28 +24,26 @@ const AML = {
 };
 const FINDINGS = {
   mule: {
-    kind: 'alerts', data_source: 'synthetic', findings_total: 2, accounts_in_alerts: 10,
-    alerts: { total: 2, by_severity: { CRITICAL: 1, HIGH: 1 }, by_status: { OPEN: 2 } },
-    top_alerts: [
-      { alert_id: 'ALT_1', severity: 'CRITICAL', status: 'OPEN', risk_score: 0.95, account_count: 6, total_amount: 500000, reasons: ['RC05'] },
-      { alert_id: 'ALT_2', severity: 'HIGH', status: 'OPEN', risk_score: 0.7, account_count: 4, total_amount: 90000, reasons: ['CC01'] },
-    ],
+    kind: 'rules', data_source: 'live', live_payments: 400, findings_total: 9, accounts_flagged: 12, rows_considered: 400,
+    cases: 2, signals_run: [], signals_skipped: [],
+    by_rule: [{ rule_code: 'CC01', label: 'Dense transaction cluster', findings: 9, accounts: 12 }],
+    findings: [{ account_id: 'bc1qmule', rule_code: 'CC01', explanation: 'CC01: Dense transaction cluster', score: null }],
   },
-  loan: { kind: 'none', findings_total: null, data_source: 'synthetic' },
+  loan: { kind: 'none', findings_total: null, data_source: 'live', live_payments: 400 },
   transaction_aml: {
-    kind: 'rules', data_source: 'loaded', findings_total: 4, accounts_flagged: 3, rows_considered: 50,
+    kind: 'rules', data_source: 'live', live_payments: 400, findings_total: 4, accounts_flagged: 3, rows_considered: 400,
     signals_run: ['R06', 'R12', 'R14', 'CF01'], signals_skipped: [],
     by_rule: [{ rule_code: 'CF01', label: 'Circular fund flow', findings: 3, accounts: 3 }, { rule_code: 'R06', label: 'Structuring', findings: 1, accounts: 1 }],
-    findings: [{ account_id: 'ACC 9', rule_code: 'CF01', explanation: 'CF01: Circular fund flow: A -> B -> C -> A within 9.0 h', score: null }],
+    findings: [{ account_id: 'bc1qloop', rule_code: 'CF01', explanation: 'CF01: Circular fund flow: A -> B -> C -> A within 9.0 h', score: null }],
   },
 };
 const SPECS = { mule: MULE, loan: LOAN, transaction_aml: AML };
 
-function serve(found = true) {
+function serve(found = true, findings = FINDINGS) {
   apiFetch.mockImplementation(url => {
-    const m = url.match(/\/api\/v1\/modules\/([^/]+)(\/findings)?$/);
+    const m = url.match(/\/api\/v1\/modules\/([^/?]+)(\/findings)?(\?.*)?$/);
     if (!found) return Promise.resolve({ ok: false, json: () => Promise.resolve({ error: { message: 'not found' } }) });
-    const data = m[2] ? FINDINGS[m[1]] : SPECS[m[1]];
+    const data = m[2] ? findings[m[1]] : SPECS[m[1]];
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ data }) });
   });
 }
@@ -59,16 +57,23 @@ const renderAt = id =>
 
 beforeEach(() => apiFetch.mockReset());
 
-test('the mule workspace shows live prevention, alerts by severity and the riskiest alerts', async () => {
+test('workspaces ask for live findings only', async () => {
+  serve();
+  renderAt('transaction_aml');
+  await screen.findByRole('region', { name: 'Findings by rule' });
+  expect(apiFetch).toHaveBeenCalledWith('/api/v1/modules/transaction_aml/findings?source=live');
+  expect(screen.getByText(/last 400 real public payments\. No synthetic data\./)).toBeInTheDocument();
+});
+
+test('the mule workspace shows the live panel, what the live scorer held by reason, and the cases opened', async () => {
   serve();
   renderAt('mule');
   expect(await screen.findByRole('heading', { level: 1, name: 'Mule account detection' })).toBeInTheDocument();
   expect(screen.getByTestId('live-prevention')).toBeInTheDocument();
-  const top = await screen.findByRole('region', { name: 'Riskiest alerts' });
-  expect(within(top).getByRole('link', { name: 'ALT_1' })).toHaveAttribute('href', '/alert/ALT_1');
-  expect(within(top).getByText('95%')).toBeInTheDocument();
-  expect(within(screen.getByRole('region', { name: 'Alerts by severity' })).getByText('Critical')).toBeInTheDocument();
-  expect(screen.getByText('10')).toBeInTheDocument(); // accounts in alerts
+  const byRule = await screen.findByRole('region', { name: 'Findings by rule' });
+  expect(within(byRule).getByText('CC01 Dense transaction cluster')).toBeInTheDocument();
+  expect(screen.getByText('Cases opened').closest('.premium-card')).toHaveTextContent('2');
+  expect(screen.getByText('Payments held').closest('.premium-card')).toHaveTextContent('9');
 });
 
 test('the mule workspace keeps its existing pages one click away', async () => {
@@ -81,14 +86,22 @@ test('the mule workspace keeps its existing pages one click away', async () => {
   expect(screen.getByRole('link', { name: 'Live stream' })).toHaveAttribute('href', '/live');
 });
 
-test('a rule module shows findings by rule and the flagged accounts, each linked to its entity view', async () => {
+test('a rule module shows findings by rule and the flagged live accounts, which have no bank entity page', async () => {
   serve();
   renderAt('transaction_aml');
   const byRule = await screen.findByRole('region', { name: 'Findings by rule' });
   expect(within(byRule).getByText('CF01 Circular fund flow')).toBeInTheDocument();
   const table = screen.getByRole('region', { name: 'Flagged accounts' });
-  expect(within(table).getByRole('link', { name: 'ACC 9' })).toHaveAttribute('href', '/entities/ACC%209');
+  expect(within(table).getByText('bc1qloop')).toBeInTheDocument();
+  expect(within(table).queryByRole('link')).not.toBeInTheDocument();
+  expect(screen.getByText('Live payments considered')).toBeInTheDocument();
   expect(screen.queryByTestId('live-prevention')).not.toBeInTheDocument();
+});
+
+test('before live payments arrive, a workspace says how to start the feed', async () => {
+  serve(true, { ...FINDINGS, transaction_aml: { ...FINDINGS.transaction_aml, live_payments: 0, rows_considered: 0, by_rule: [], findings: [] } });
+  renderAt('transaction_aml');
+  expect(await screen.findByText(/open Detection modules to start the feed/)).toBeInTheDocument();
 });
 
 test('a planned module shows its status, its gaps and no working links', async () => {

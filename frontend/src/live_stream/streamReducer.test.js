@@ -78,6 +78,18 @@ describe('streamReducer', () => {
   });
 });
 
+describe('notice', () => {
+  it('keeps a message from the feed (no payment in it) and ends quietly instead of erroring', () => {
+    const live = streamReducer(initialState, { type: 'open' });
+    const noticed = streamReducer(live, { type: 'event', event: { source: 'market', notice: 'No exchange is trading right now.' } });
+    expect(noticed.notice).toBe('No exchange is trading right now.');
+    expect(noticed.events).toBe(0);
+    const closed = streamReducer(noticed, { type: 'closed' });
+    expect(closed.status).toBe('ended');
+    expect(closed.error).toBeNull();
+  });
+});
+
 describe('failed', () => {
   it('shows why the stream could not be read instead of a silent empty state', () => {
     const live = streamReducer(initialState, { type: 'open' });

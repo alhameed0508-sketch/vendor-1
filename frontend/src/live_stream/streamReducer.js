@@ -20,6 +20,7 @@ export const initialState = {
   accountStats: {},
   log: [],
   error: null,
+  notice: null, // a message from the feed itself, e.g. no exchange is trading right now
 };
 
 export function p95(values) {
@@ -99,7 +100,9 @@ export function streamReducer(state, action) {
     case 'open':
       return { ...initialState, status: 'live' };
     case 'event':
-      return applyEvent(state, action.event);
+      return action.event && action.event.payment
+        ? applyEvent(state, action.event)
+        : { ...state, notice: (action.event && action.event.notice) || state.notice };
     case 'review':
       return REVIEW_DECISIONS.includes(action.decision) && state.rings[action.caseId]
         ? { ...state, reviews: { ...state.reviews, [action.caseId]: action.decision } }
@@ -109,7 +112,7 @@ export function streamReducer(state, action) {
     case 'stopped':
       return state.status === 'live' ? { ...state, status: 'ended' } : state;
     case 'closed':
-      return state.events > 0
+      return state.events > 0 || state.notice
         ? { ...state, status: 'ended' }
         : { ...state, status: 'error', error: 'Stream unavailable. No payments received.' };
     default:

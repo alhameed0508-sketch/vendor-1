@@ -21,6 +21,17 @@ export function findingBars(findings) {
   return [];
 }
 
+/** The line under a rule module's count: how much data it looked at, live or loaded. */
+export function rulesSub(findings) {
+  const live = findings.data_source === 'live';
+  if (live && !findings.live_payments) return 'waiting for live payments';
+  if (!findings.rows_considered) {
+    return live ? 'nothing in its scope in the live payments yet' : 'no payments in its scope in the loaded data';
+  }
+  const cases = findings.cases != null ? `${findings.cases} cases · ` : '';
+  return `${cases}${findings.accounts_flagged} accounts across ${findings.rows_considered} ${live ? 'live ' : ''}payments`;
+}
+
 function CapabilityTally({ capabilities }) {
   const count = s => capabilities.filter(c => c.status === s).length;
   return (
@@ -37,11 +48,7 @@ export default function ModuleSummary({ module, findings }) {
   const { name, purpose, status, workspace_path: path, capabilities = [], data_requirements: needs = [] } = module;
   const bars = findingBars(findings).slice(0, 5);
   const none = findings?.kind === 'none';
-  const sub = findings?.kind === 'rules'
-    ? (findings.rows_considered
-      ? `${findings.accounts_flagged} accounts across ${findings.rows_considered} payments`
-      : 'no payments in its scope in the loaded data')
-    : findings?.kind === 'alerts' ? 'mule-ring alerts' : '';
+  const sub = findings?.kind === 'rules' ? rulesSub(findings) : findings?.kind === 'alerts' ? 'mule-ring alerts' : '';
   return (
     <article className="premium-card shell-module" aria-label={name}>
       <header className="shell-module__head">
@@ -58,7 +65,7 @@ export default function ModuleSummary({ module, findings }) {
           </div>
           {bars.length > 0
             ? <RankBars items={bars} label={`${name}: findings breakdown`} />
-            : <div className="mod-card__sub">Nothing found in the loaded data.</div>}
+            : <div className="mod-card__sub">{findings.data_source === 'live' ? 'Nothing found in the live payments yet.' : 'Nothing found in the loaded data.'}</div>}
           {findings.signals_skipped?.length > 0 && (
             <div className="mod-card__sub">
               {findings.signals_skipped.length} signal{findings.signals_skipped.length > 1 ? 's' : ''} could not run on this data
