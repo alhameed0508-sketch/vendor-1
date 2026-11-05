@@ -118,28 +118,42 @@ def _live_findings(spec, events: List[Dict]) -> Dict:
             members = e.get("ring_members") or [e["payment"]["from_account"]]
             for reason in e.get("reasons") or ["Held by the network scorer"]:
                 code = str(reason).split(":", 1)[0].strip()
-                row = by_rule.setdefault(code, {"rule_code": code, "label": _rule_label(str(reason)), "findings": 0, "accounts": set()})
+                row = by_rule.setdefault(
+                    code, {"rule_code": code, "label": _rule_label(str(reason)), "findings": 0, "accounts": set()}
+                )
                 row["findings"] += 1
                 row["accounts"].update(members)
             first = (e.get("reasons") or ["Held by the network scorer"])[0]
-            rows.append({"account_id": e["payment"]["from_account"], "rule_code": str(first).split(":", 1)[0],
-                         "explanation": str(first), "score": None})
+            rows.append(
+                {
+                    "account_id": e["payment"]["from_account"],
+                    "rule_code": str(first).split(":", 1)[0],
+                    "explanation": str(first),
+                    "score": None,
+                }
+            )
         return {
             **base,
             "kind": "rules",
             "findings_total": len(held),
-            "accounts_flagged": len({m for e in held for m in (e.get("ring_members") or [e["payment"]["from_account"]])}),
+            "accounts_flagged": len(
+                {m for e in held for m in (e.get("ring_members") or [e["payment"]["from_account"]])}
+            ),
             "rows_considered": len(payments),
             "cases": len({e.get("case_id") for e in held if e.get("case_id")}),
             "signals_run": [],
             "signals_skipped": [],
-            "by_rule": sorted(({**r, "accounts": len(r["accounts"])} for r in by_rule.values()), key=lambda r: -r["findings"]),
+            "by_rule": sorted(
+                ({**r, "accounts": len(r["accounts"])} for r in by_rule.values()), key=lambda r: -r["findings"]
+            ),
             "findings": rows[-TOP_ROWS:][::-1],
         }
     rule_module = RULE_MODULES.get(spec.module_id)
     if rule_module is None:
         return {**base, "kind": "none", "findings_total": None}
-    accounts = [{"account_id": a} for a in dict.fromkeys(x for p in payments for x in (p["from_account"], p["to_account"]))]
+    accounts = [
+        {"account_id": a} for a in dict.fromkeys(x for p in payments for x in (p["from_account"], p["to_account"]))
+    ]
     return {**base, **_rule_findings(rule_module.run(accounts, payments))}
 
 
@@ -181,7 +195,9 @@ def register_module_routes(r: APIRouter, limiter: Limiter) -> None:
             raise NotFoundError("Module", module_id) from None
         if source == "live":
             data = _live_findings(spec, get_live_buffer().snapshot())
-            return success_response({"module_id": module_id, "status": spec.status.value, "data_source": "live", **data})
+            return success_response(
+                {"module_id": module_id, "status": spec.status.value, "data_source": "live", **data}
+            )
         detection_svc.ensure_alerts()
         alerts = alert_svc.list_alerts(limit=ALERT_LIMIT)["alerts"] if module_id == "mule" else []
         data = _module_findings(spec, alerts, detection_svc.get_or_generate_dataset())

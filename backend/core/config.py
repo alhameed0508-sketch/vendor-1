@@ -122,6 +122,8 @@ class Settings(BaseSettings):
 
     # Live payment feed (public Bitcoin mempool). Always on in demo mode; opt-in elsewhere.
     live_feed_enabled: bool = Field(False, alias="LIVE_FEED_ENABLED")
+    # Optional free Finnhub key: US stocks on the live stock-trade feed then come from Finnhub's trade stream.
+    finnhub_api_key: str = Field("", alias="FINNHUB_API_KEY")
 
     # Unified risk engine (backend/intelligence; docs/SYSTEM_DESIGN.md). Bands: APPROVE < step-up <= STEP_UP < review.
     risk_step_up_at: int = Field(40, ge=1, le=98, alias="RISK_STEP_UP_AT")

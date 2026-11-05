@@ -10,7 +10,7 @@ from core.config import get_settings
 from httpx import ASGITransport, AsyncClient
 from services.market_feed import CLOSED_NOTICE, MIN_HISTORY, SIZE_MULTIPLE, MarketFeed, MarketScorer
 
-from data.adapters.market_adapter import BY_SYMBOL, TickTape, Trade, decode_pricing, parse_frame
+from data.adapters.market_adapter import BY_SYMBOL, MarketClient, TickTape, Trade, decode_pricing, parse_frame
 
 # Two frames captured from the live streamer on 2026-11-05 (crypto with volume; Apple after hours, no volume).
 BTC_FRAME = (
@@ -39,10 +39,15 @@ def _frame(symbol: str, price: float, day_volume: int, time_ms: int) -> str:
     """A PricingData message as the streamer sends it (id, price, time, day_volume)."""
     sym = symbol.encode()
     body = (
-        b"\x0a" + _varint(len(sym)) + sym
-        + b"\x15" + struct.pack("<f", price)
-        + b"\x18" + _varint(_zigzag(time_ms))
-        + b"\x48" + _varint(_zigzag(day_volume))
+        b"\x0a"
+        + _varint(len(sym))
+        + sym
+        + b"\x15"
+        + struct.pack("<f", price)
+        + b"\x18"
+        + _varint(_zigzag(time_ms))
+        + b"\x48"
+        + _varint(_zigzag(day_volume))
     )
     return json.dumps({"type": "pricing", "message": base64.b64encode(body).decode()})
 
@@ -102,8 +107,11 @@ def test_sharp_price_move_within_a_minute_is_flagged_and_an_old_one_is_not():
     assert calm.score(_trade("ITC.NS", 10_000.0, price=100.8, t_ms=121_000))[0] == "PASS"
 
 
-class _Client:
+class _Client(MarketClient):
+    """The real client (no Finnhub key, so every stock goes through Yahoo's ticks) fed recorded frames."""
+
     def __init__(self, frames, fx=FX):
+        super().__init__()
         self._frames, self._fx = frames, fx
 
     def inr_per_unit(self):

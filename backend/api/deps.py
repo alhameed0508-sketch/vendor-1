@@ -172,7 +172,9 @@ def get_market_feed(source: str = Query("demo", pattern="^(demo|live|market)$"))
     _require_live_feeds()
     from services.market_feed import MarketFeed
 
-    return MarketFeed()
+    from data.adapters.market_adapter import MarketClient
+
+    return MarketFeed(MarketClient(finnhub_token=get_settings().finnhub_api_key))
 
 
 def _build_threshold_config() -> ThresholdConfig:

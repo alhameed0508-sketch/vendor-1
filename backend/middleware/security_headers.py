@@ -7,7 +7,6 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-
 CSP = (
     "default-src 'self'; "
     "script-src 'self' 'unsafe-inline'; "

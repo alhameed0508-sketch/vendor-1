@@ -12,7 +12,9 @@ Calibrated on two minutes of live Tokyo, Seoul and Sydney trading on 2026-11-05 
 (2.4%) were flagged, all by MK01, two of them also by MK02. There are no labels, so a flag is a lead
 for a person, never a catch.
 Events have the same shape as the payment feeds, with the stock as ``from_account`` and the
-exchange as ``to_account``, plus a ``trade`` block.
+exchange as ``to_account``, plus a ``trade`` block. With ``FINNHUB_API_KEY`` set, the US stocks are
+one-second sums of Finnhub's individual trades (``trade.provider`` is ``finnhub``, ``trade.trades``
+counts them); everything else comes from Yahoo, as before.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ import time
 from collections import defaultdict, deque
 from typing import Callable, Deque, Dict, Iterator, List, Optional, Tuple
 
-from data.adapters.market_adapter import WATCHLIST, MarketClient, TickTape, Trade
+from data.adapters.market_adapter import MarketClient, Trade
 
 SOURCE = "market"
 SIZE_MULTIPLE = 10.0
@@ -105,16 +107,15 @@ class MarketFeed:
             fx = self._client.inr_per_unit()
         except OSError as exc:
             raise RuntimeError(f"exchange rates unavailable: {exc}") from exc
-        tape, scorer = TickTape(fx), MarketScorer()
+        scorer = MarketScorer()
         started = last_trade = self._clock()
         trades = flagged = 0
         stocks: set = set()
         try:
-            for tick in self._client.ticks([item.symbol for item in WATCHLIST], idle_timeout=IDLE_POLL_S):
+            for trade in self._client.trades(fx, idle_timeout=IDLE_POLL_S):
                 now = self._clock()
                 if now - started >= self._max_seconds or (limit is not None and trades >= limit):
                     return
-                trade = tape.observe(tick) if tick is not None else None
                 if trade is None:
                     if now - last_trade >= self._quiet:
                         yield {"source": SOURCE, "notice": CLOSED_NOTICE if trades == 0 else "Trading has gone quiet."}
@@ -143,6 +144,8 @@ class MarketFeed:
                         "shares": trade.shares,
                         "price": trade.price,
                         "currency": trade.listing.currency,
+                        "trades": trade.trades,
+                        "provider": trade.provider,
                     },
                     "decision": decision,
                     "case_id": f"MKT-{trade.listing.symbol}" if decision == "FLAG" else None,

@@ -34,6 +34,7 @@ demo data, and a sleeping service loses its data when it wakes.
 | `DEMO_ADMIN_PASSWORD` | 12+ characters | Required. Password for the `admin` login |
 | `ENV` | leave unset | Unset means demo mode: synthetic data, demo logins and the live Bitcoin feed |
 | `LIVE_FEED_ENABLED` | `true` (optional) | The live feed is already on in demo mode; this keeps it on if `ENV` ever changes |
+| `FINNHUB_API_KEY` | your free Finnhub key (optional) | US stocks on the live stock-trade feed then come from Finnhub's trade stream (every individual trade). Without it they come from Yahoo, like the other exchanges. Never commit it |
 | `RISK_DEMO_TRAFFIC` | leave unset (`true`) | Synthetic payments flow through the risk engine while someone has the Risk engine page open; it pauses after 10 minutes without viewers. Set `false` to switch it off |
 | `RISK_DEMO_RATE` | leave unset (`2`) | Synthetic payments per second for that traffic |
 | `THREAT_FEEDS_ENABLED` | leave unset (`true`) | Downloads the Tor exit list and Spamhaus DROP every 6 hours; the last good copy is kept in `data/` if a download fails |

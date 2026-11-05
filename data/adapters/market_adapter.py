@@ -13,17 +13,25 @@ trade was abusive, so a flag is a lead for a person and no accuracy can be claim
 
 The watchlist follows the sun (Tokyo, Seoul, Hong Kong, Sydney, NSE, Frankfurt, New York), so on a
 weekday at least one exchange is usually open. Weekends and the gap after the US close are quiet.
+
+With ``FINNHUB_API_KEY`` set, the US stocks come from Finnhub's trade stream instead
+(``finnhub_adapter.py``), read on a second thread and merged with Yahoo's stream.
 """
 
 from __future__ import annotations
 
 import base64
 import json
+import logging
+import queue
 import struct
+import threading
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Iterator, List, Mapping, Optional, Tuple
+from typing import Callable, Dict, Iterator, List, Mapping, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 STREAMER_URL = "wss://streamer.finance.yahoo.com/?version=2"
 FX_URL = "https://api.frankfurter.dev/v1/latest?base=INR&symbols=USD,EUR,JPY,KRW,HKD,AUD"
@@ -37,6 +45,7 @@ class Listing:
     name: str  # short display name
     exchange: str  # display name of the exchange
     currency: str
+    finnhub: bool = False  # on Finnhub's free trade stream (US stocks), used when FINNHUB_API_KEY is set
 
 
 WATCHLIST: Tuple[Listing, ...] = (
@@ -58,11 +67,11 @@ WATCHLIST: Tuple[Listing, ...] = (
     Listing("CBA.AX", "CommBank", "Sydney", "AUD"),
     Listing("SAP.DE", "SAP", "Frankfurt", "EUR"),
     Listing("SIE.DE", "Siemens", "Frankfurt", "EUR"),
-    Listing("AAPL", "Apple", "Nasdaq", "USD"),
-    Listing("MSFT", "Microsoft", "Nasdaq", "USD"),
-    Listing("NVDA", "Nvidia", "Nasdaq", "USD"),
-    Listing("AMZN", "Amazon", "Nasdaq", "USD"),
-    Listing("JPM", "JPMorgan", "NYSE", "USD"),
+    Listing("AAPL", "Apple", "Nasdaq", "USD", finnhub=True),
+    Listing("MSFT", "Microsoft", "Nasdaq", "USD", finnhub=True),
+    Listing("NVDA", "Nvidia", "Nasdaq", "USD", finnhub=True),
+    Listing("AMZN", "Amazon", "Nasdaq", "USD", finnhub=True),
+    Listing("JPM", "JPMorgan", "NYSE", "USD", finnhub=True),
 )
 BY_SYMBOL: Dict[str, Listing] = {item.symbol: item for item in WATCHLIST}
 
@@ -141,6 +150,8 @@ class Trade:
     value_inr: float
     timestamp: str
     time_ms: int
+    trades: Optional[int] = None  # individual trades summed into this print, when the source says
+    provider: str = "yahoo"
 
 
 class TickTape:
@@ -182,11 +193,112 @@ def inr_per_unit() -> Dict[str, float]:
     return out
 
 
+_END = object()
+
+
+def _pump(name: str, factory: Callable[[], Iterator], out: "queue.Queue", stop: threading.Event) -> None:
+    source = None
+    try:
+        source = factory()
+        for item in source:
+            if stop.is_set():
+                return
+            if item is not None:
+                out.put((name, item))
+    except OSError as exc:
+        out.put((name, exc))
+    finally:
+        if source is not None and hasattr(source, "close"):
+            source.close()
+        out.put((name, _END))
+
+
+def merge_sources(
+    sources: Mapping[str, Callable[[], Iterator]],
+    fallbacks: Mapping[str, Callable[[], Iterator]],
+    idle_timeout: float,
+) -> Iterator[Optional["Trade"]]:
+    """Trades from several streams at once, each read on its own thread; None after ``idle_timeout`` quiet.
+
+    A stream that fails is replaced by its fallback, if it has one, and the others carry on. Fails
+    only when every stream has failed. Closing the generator stops the threads within one poll.
+    """
+    out: "queue.Queue" = queue.Queue()
+    stop = threading.Event()
+    pending = dict(fallbacks)
+    running = launched = 0
+    errors: List[OSError] = []
+
+    def launch(name: str, factory: Callable[[], Iterator]) -> None:
+        nonlocal running, launched
+        running += 1
+        launched += 1
+        threading.Thread(target=_pump, args=(name, factory, out, stop), name=f"market-{name}", daemon=True).start()
+
+    for name, factory in sources.items():
+        launch(name, factory)
+    try:
+        while running:
+            try:
+                name, item = out.get(timeout=idle_timeout)
+            except queue.Empty:
+                yield None
+                continue
+            if item is _END:
+                running -= 1
+            elif isinstance(item, OSError):
+                errors.append(item)
+                fallback = pending.pop(name, None)
+                logger.warning("market stream %s failed (%s)%s", name, item, "; falling back" if fallback else "")
+                if fallback:
+                    launch(name, fallback)
+            else:
+                yield item
+        if errors and len(errors) == launched:
+            raise errors[0]
+    finally:
+        stop.set()
+
+
 class MarketClient:
-    """Read-only client: FX rates, and the decoded ticks for the watchlist."""
+    """Read-only client: FX rates, and the trades for the watchlist.
+
+    Without a Finnhub key every stock comes from Yahoo. With one, the US stocks come from Finnhub's
+    trade stream (``finnhub_adapter.py``) and the rest from Yahoo; if Finnhub fails, the US stocks
+    go back to Yahoo for the rest of that stream.
+    """
+
+    def __init__(self, finnhub_token: str = ""):
+        self._finnhub_token = (finnhub_token or "").strip()
 
     def inr_per_unit(self) -> Dict[str, float]:
         return inr_per_unit()
+
+    def trades(self, inr_per_unit: Mapping[str, float], idle_timeout: float) -> Iterator[Optional[Trade]]:
+        """Trades for the whole watchlist, with None after ``idle_timeout`` seconds without one."""
+        symbols = [item.symbol for item in WATCHLIST]
+        if not self._finnhub_token:
+            yield from self.yahoo_trades(symbols, inr_per_unit, idle_timeout)
+            return
+        from data.adapters.finnhub_adapter import finnhub_trades
+
+        us = [item.symbol for item in WATCHLIST if item.finnhub]
+        rest = [symbol for symbol in symbols if symbol not in us]
+        yield from merge_sources(
+            {
+                "yahoo": lambda: self.yahoo_trades(rest, inr_per_unit, idle_timeout),
+                "finnhub": lambda: finnhub_trades(self._finnhub_token, us, inr_per_unit, idle_timeout),
+            },
+            fallbacks={"finnhub": lambda: self.yahoo_trades(us, inr_per_unit, idle_timeout)},
+            idle_timeout=idle_timeout,
+        )
+
+    def yahoo_trades(
+        self, symbols: List[str], inr_per_unit: Mapping[str, float], idle_timeout: float
+    ) -> Iterator[Optional[Trade]]:
+        tape = TickTape(inr_per_unit)
+        for tick in self.ticks(symbols, idle_timeout):
+            yield None if tick is None else tape.observe(tick)
 
     def ticks(self, symbols: List[str], idle_timeout: float) -> Iterator[Optional[Dict]]:
         """Decoded ticks; yields None after ``idle_timeout`` seconds without a frame so the caller can stop."""
