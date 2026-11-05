@@ -36,6 +36,8 @@ CHANNEL_TYPE_MAP = {
 }
 
 CBS_DATE_FORMAT = "%d/%m/%Y %H:%M"
+# Some extracts carry ACCT_OPN_DATE without a time of day.
+CBS_DAY_FORMAT = "%d/%m/%Y"
 REQUIRED_CBS_COLUMNS = {
     "TRAN_DATE",
     "TRAN_ID",
@@ -113,15 +115,17 @@ class MuleCSVAdapter:
 
     @staticmethod
     def _parse_date(date_str: str) -> datetime:
-        """Parse CBS date format DD/MM/YYYY HH:MM.
+        """Parse CBS date format DD/MM/YYYY HH:MM, or DD/MM/YYYY when the extract has no time.
 
         Falls back to epoch on invalid input to avoid crashing the upload.
         """
-        try:
-            return datetime.strptime(date_str.strip(), CBS_DATE_FORMAT)
-        except (ValueError, TypeError):
-            logger.warning("Invalid CBS date format: %r, using epoch", date_str[:20])
-            return datetime(2000, 1, 1)
+        for fmt in (CBS_DATE_FORMAT, CBS_DAY_FORMAT):
+            try:
+                return datetime.strptime(date_str.strip(), fmt)
+            except (ValueError, TypeError, AttributeError):
+                continue
+        logger.warning("Invalid CBS date format: %r, using epoch", str(date_str)[:20])
+        return datetime(2000, 1, 1)
 
     def _map_transactions(self, rows: List[Dict]) -> Tuple[List[Dict], str]:
         """Map CBS rows to MuleCatch transaction format.
