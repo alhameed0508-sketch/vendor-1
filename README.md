@@ -50,8 +50,6 @@ React (4 screens) ──HTTPS/JSON──> FastAPI  intentlock/api
 - **Audit trail.** Append-only and hash-chained; every row carries the hash of the one before it.
 - Every table has a `tenant_id`, and payments go through a provider interface, so more merchants and providers can be added without a rewrite.
 
-The earlier MuleCatch code is still in this repository under `backend/`, `models/` and `infra/`. IntentLock does not import it and the IntentLock container does not include it.
-
 ## Run it locally
 
 Requires Python 3.12 and Node 20.
@@ -91,21 +89,22 @@ See `.env.example`. The ones that matter:
 ## Tests
 
 ```bash
-.venv/Scripts/python -m pytest -c intentlock/pytest.ini intentlock/tests
+.venv/Scripts/python -m pytest
 ```
 
-77 tests: every policy rule, the purchase flow, order tampering, lost capture responses, duplicate requests, webhook verification and ordering, mandate immutability, access control, and the limits on the AI. They run against an in-memory database and a fake payment provider that behaves like PayPal Orders v2.
+78 tests: every policy rule, the purchase flow, order tampering, lost capture responses, duplicate requests, webhook verification and ordering, mandate immutability, access control, and the limits on the AI. They run against an in-memory database and a fake payment provider that behaves like PayPal Orders v2.
 
 ### What has been run against the real PayPal Sandbox
 
-| Verified live | Not yet verified live |
+| Verified live | |
 |---|---|
-| OAuth token | Buyer approval followed by capture (needs a person to log in as the Sandbox buyer) |
-| Order creation from the stored quote | Webhook delivery and signature verification (needs a public URL and a webhook ID) |
-| Same request ID returns the same order |  |
-| Order retrieval; payee and amount read back |  |
-| Capture before buyer approval is refused by PayPal (`ORDER_NOT_APPROVED`) |  |
-| Changing an order's amount after creation (used by Scenario C) |  |
+| OAuth token | |
+| Order creation from the stored quote | |
+| Same request ID returns the same order | |
+| Order retrieval; payee and amount read back | |
+| Capture before buyer approval is refused by PayPal (`ORDER_NOT_APPROVED`) | |
+| Changing an order's amount after creation (used by Scenario C) | |
+| Buyer approval, capture and a signature-verified webhook on the deployed site (done by hand by the team) | |
 
 ## Demo scenarios
 
@@ -129,7 +128,7 @@ See `.env.example`. The ones that matter:
 
 ## Licence
 
-No licence file has been added yet. The repository owners need to choose one and confirm they hold the rights to all included code.
+MIT. See `LICENSE`.
 
 ## More
 

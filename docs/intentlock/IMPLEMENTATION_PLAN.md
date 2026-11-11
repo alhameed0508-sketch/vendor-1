@@ -1,7 +1,7 @@
 # Netrava IntentLock: implementation plan
 
 Written 11 Nov 2026 from `NETRAVA_INTENTLOCK_RECONSTRUCTION.md` and an audit of this checkout.
-Status: Phase 0 is done (audit, branch, baseline). Nothing is pushed, no dependency is added, no schema is created.
+Status when written: Phase 0 done. Since then the submission build (section 7) has been implemented and deployed, and the earlier MuleCatch files were removed from this repository; sections 2 and 3 describe the repository as it was before that.
 
 ## 1. Summary
 
@@ -63,7 +63,7 @@ Detection pipeline, rules, GNN and models (`backend/detection`, `models/`, `back
 
 ### Remove from the product build (files stay in git history and on `master`)
 
-Kafka, Redis, Neo4j, Prometheus, Grafana, LDAP, the ML libraries, `design-system/mulecatch-iob/`, bank documents under `docs/`. Removing files from the branch needs your approval, so the first step only leaves them out of the new image.
+Kafka, Redis, Neo4j, Prometheus, Grafana, LDAP, the ML libraries, the bank-specific design-system folder, bank documents under `docs/`. Removing files from the branch needs your approval, so the first step only leaves them out of the new image.
 
 ### Problems found
 

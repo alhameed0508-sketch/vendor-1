@@ -1,8 +1,0 @@
-frontend/node_modules
-frontend/build
-**/__pycache__
-.playwright-mcp
-.pytest_cache
-.env
-*.env.local
-e2e

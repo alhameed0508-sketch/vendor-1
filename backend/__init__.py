@@ -1,1 +1,0 @@
-# MuleCatch backend package

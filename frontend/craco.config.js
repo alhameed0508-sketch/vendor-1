@@ -1,4 +1,2 @@
-// The dev proxy gzips text/event-stream and holds the first chunk back, so the live stream looks frozen.
-module.exports = {
-  devServer: { compress: false },
-};
+// Create React App through craco, so build settings can be adjusted without ejecting.
+module.exports = {};
