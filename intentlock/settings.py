@@ -60,8 +60,10 @@ class Settings(BaseSettings):
         url = self.database_url.strip()
         if not url:
             return "sqlite:///./intentlock.db"
-        if url.startswith("postgres://"):  # Railway and Heroku style
-            url = "postgresql://" + url[len("postgres://") :]
+        # Name the installed driver explicitly: newer SQLAlchemy defaults "postgresql://" to psycopg 3, which is not installed.
+        for prefix in ("postgres://", "postgresql://"):
+            if url.startswith(prefix):
+                return "postgresql+psycopg2://" + url[len(prefix) :]
         return url
 
     @property

@@ -205,3 +205,15 @@ def test_write_calls_need_the_client_header_and_health_hides_secrets(h: Harness)
     health = bare.get("/health").json()
     assert health["status"] == "ok" and health["database_kind"] == "sqlite" and "test-secret" not in json.dumps(health)
     assert "test-secret" not in json.dumps(bare.get("/api/v1/config").json())
+
+
+def test_postgres_urls_use_the_installed_driver():
+    from sqlalchemy.engine import make_url
+
+    from intentlock.tests.conftest import settings
+
+    for raw in ("postgres://u:p@db.internal:5432/railway", "postgresql://u:p@db.internal:5432/railway"):
+        st = settings(database_url=raw)
+        assert st.resolved_database_url == "postgresql+psycopg2://u:p@db.internal:5432/railway" and st.database_kind == "postgresql"
+        assert make_url(st.resolved_database_url).get_dialect().import_dbapi().__name__ == "psycopg2"  # the driver really imports
+    assert settings(database_url="").resolved_database_url.startswith("sqlite")
