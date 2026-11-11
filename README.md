@@ -1,174 +1,136 @@
-# MuleCatch
+# Netrava IntentLock
 
-MuleCatch is an explainable graph-intelligence platform for detecting and
-investigating mule accounts. It combines deterministic AML indicators,
-behavioral and temporal profiling, device intelligence, graph-community
-detection, optional learned scoring, sanctions screening, investigation
-workflows, and Suspicious Transaction Report preparation.
+**Purchase intent integrity for AI commerce.** An AI assistant may recommend and prepare a purchase. IntentLock checks that the final order stays inside what the buyer confirmed, and the backend asks PayPal to capture only if it does.
 
-## Readiness statement
+Built for the PayPal AI Hackathon 2026. PayPal runs in **Sandbox**: no real money moves. The product catalogue is **synthetic**.
 
-The repository is engineered as a production candidate, not a certified
-bank-production release. Deployment is blocked by startup validation until
-durable services, strong secrets, authentication, streaming ingestion, and
-approved model/rule versions are configured. Final go-live additionally
-requires bank-labelled validation data, security testing, FIU-IND filing
-validation, and institutional approvals.
+## The problem
 
-See:
+A payment can be technically valid and still not be what the buyer asked an AI agent to do. The agent can pick a different model, go over budget once tax and shipping are added, choose a seller the buyer did not approve, or be steered by text hidden in a product description. Today the merchant cannot show what the buyer actually authorised.
 
-- [Production readiness and external gates](docs/PRODUCTION_READINESS.md)
-- [Deployment runbook](docs/DEPLOYMENT_RUNBOOK.md)
-- [Model card](docs/MODEL_CARD.md)
-- [Regulatory control matrix](docs/REGULATORY_CONTROL_MATRIX.md)
+## What IntentLock does
+
+1. The buyer describes a purchase. The AI turns it into a **draft mandate**: product, condition, quantity, specifications, budget, seller rule, expiry.
+2. The buyer reviews the exact terms and **confirms**. The confirmed version is hashed (SHA-256) and can never be edited; a change makes a new version that must be confirmed again.
+3. A product is proposed, by the buyer or by the AI assistant. The server builds the **quote** and a **deterministic policy engine** checks it rule by rule: `ALLOW`, `BLOCK`, `REAUTHORISE` or `REVIEW`.
+4. Only on `ALLOW` does the server create a **PayPal order** from the stored quote.
+5. The buyer approves in PayPal. The server then **fetches the order from PayPal again** and re-checks order ID, approval status, payee, currency, amount, line item, mandate status and the full policy.
+6. Only if every check passes does the server **capture**. Otherwise nothing is captured and the failed rule is shown.
+7. A verified **PayPal webhook** is reconciled against the capture, and a **receipt** links instruction, mandate, checks, PayPal order, capture and audit trail.
+
+## What the AI does, and does not do
+
+| The AI may | The AI may not |
+|---|---|
+| Draft a mandate from the buyer's words | Confirm or change a mandate |
+| Ask for missing information | Decide or override a policy result |
+| Propose a product from the catalogue | Set an amount, currency or payee |
+| Explain stored records in plain language | Call PayPal, capture, refund, or mark anything paid |
+
+Model output is validated by code before use. Catalogue descriptions are passed to the model as quoted, untrusted data and are never passed to the explanation step. If the model is unavailable the buyer fills in the same form by hand; there is no mock AI. These measures reduce the risk of prompt injection; they do not make a model immune to it. The payment decision does not depend on the model at all.
 
 ## Architecture
 
+A modular monolith: one FastAPI process that also serves the React build.
+
 ```text
-CBS / UPI / approved batch feeds
-             |
-             v
-      Kafka ingest layer
-   (manual offset commit, replay guard)
-             |
-             v
-  Rules + temporal + behavioral + device
-             |
-             v
-   Louvain graph communities + optional GNN
-             |
-             v
- Explainable, versioned alert and subgraph
-             |
-      +------+------+
-      |             |
- Investigator    STR workflow
- workflow        and audit chain
+React (4 screens) ──HTTPS/JSON──> FastAPI  intentlock/api
+                                   ├─ services/   mandates, catalogue, purchases, checkout, webhooks, receipts, audit
+                                   ├─ policy/     pure rule engine (no I/O, versioned)
+                                   ├─ payments/   provider interface + PayPal adapter
+                                   ├─ ai/         model client, intent parser, proposer, explainer
+                                   └─ db/         SQLAlchemy models + Alembic migrations
+                                          │
+                              PostgreSQL (source of truth)        PayPal REST (OAuth, Orders v2, webhooks)
 ```
 
-Runtime services:
+- **PostgreSQL is the source of truth.** The provenance graph is derived from its rows; there is no separate graph database.
+- **Fail closed.** If the order cannot be retrieved, a rule cannot be evaluated or the engine errors, nothing is captured.
+- **Idempotency.** Order creation and capture each use a stored `PayPal-Request-Id`. A lost capture response is reconciled with PayPal before any retry.
+- **Audit trail.** Append-only and hash-chained; every row carries the hash of the one before it.
+- Every table has a `tenant_id`, and payments go through a provider interface, so more merchants and providers can be added without a rewrite.
 
-- FastAPI API
-- React investigator interface
-- PostgreSQL operational persistence
-- Neo4j investigation graph
-- Redis cache/state
-- Kafka transaction ingestion
-- Prometheus and Grafana monitoring
+The earlier MuleCatch code is still in this repository under `backend/`, `models/` and `infra/`. IntentLock does not import it and the IntentLock container does not include it.
 
-## Unified real-time risk engine
+## Run it locally
 
-Every payment gets one 0–100 score and a band (APPROVE · STEP_UP · REVIEW) with plain-language reasons. Mule
-detection stays at the centre: its ring map is one of four engines, and its alert queue and complaint register
-feed the other three.
-
-| Engine | Looks at |
-|---|---|
-| Mule network (core) | ring membership and smurf evidence from the existing detector, read in O(1) from a ring map rebuilt every 2 s |
-| Session & device trust | new or shared devices, takeover sequences, remote access, Tor exit nodes and Spamhaus DROP networks |
-| Payment intent & payee | known-fraud and mule-linked payees, payees added minutes ago, coached payments and scam notes, UN sanctions |
-| Behaviour & false-positive control | the customer's own baseline; familiar payees, phones and hours calm the other engines |
-
-One unusual thing never interrupts a customer. Holding a payment needs fraud evidence and two engines in
-agreement, or a confirmed fact. Accounts that only paid into a ring (victims) are never treated as ring
-members.
-
-- Page: **Risk engine** (`/risk-engine`): live decision feed (synthetic demo, or real public Bitcoin payments),
-  the four engines, an explanation for every decision, analyst feedback, worked scenarios, model performance
-  and data-source provenance.
-- API: [docs/API_RISK_ENGINE.md](docs/API_RISK_ENGINE.md) · Design: [docs/SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md)
-  · Evaluation (synthetic, time-separated, targets kept apart from results):
-  [docs/RISK_ENGINE_EVALUATION.md](docs/RISK_ENGINE_EVALUATION.md).
-- Re-run the evaluation: `python scripts/evaluation/evaluate_unified.py` (about 8 minutes; `--quick` for a smoke run).
-
-## Implemented controls
-
-- Onboarding mule-risk assessment
-- UNSC watchlist screening with controlled refresh
-- Twenty deterministic behavioral indicators
-- Smurf/structuring and rapid-consolidation scoring
-- Behavioral baseline and Markov lifecycle analysis
-- Device and shared-infrastructure risk
-- Louvain community detection and centrality
-- Optional GraphSAGE or lightweight fallback scoring
-- SHAP-style feature explanations and reason codes
-- Alert triage, escalation, notes, and subgraph investigation
-- STR draft/approval/submission-state workflow
-- Role-based access and rate limiting
-- Tamper-evident audit hash chain
-- Strict production readiness and secret validation
-- Model and rule version attribution on alerts
-
-## Local development
+Requires Python 3.12 and Node 20.
 
 ```bash
-cp .env.example .env
-docker compose up -d --build
-docker compose --profile seed run --rm seed
+python -m venv .venv
+.venv/Scripts/pip install -r intentlock/requirements-dev.txt      # macOS/Linux: .venv/bin/pip
+cp .env.example .env                                              # then fill in the values
+cd frontend && npm ci --legacy-peer-deps && npm run build && cd ..
+.venv/Scripts/python -m uvicorn intentlock.main:app --port 8000
 ```
 
-Open:
+Open http://localhost:8000. Migrations run at start-up. With `DATABASE_URL` empty a local SQLite file is used and the app says so on every page; that is for trying it out only.
 
-- Application: `http://localhost:3000`
-- API documentation: `http://localhost:8000/docs`
-- Liveness: `http://localhost:8000/health`
-- Readiness: `http://localhost:8000/ready`
+Docker: `docker build -f intentlock/Dockerfile -t intentlock . && docker run --env-file .env -p 8000:8000 intentlock`
 
-Development mode intentionally supports synthetic data and in-memory
-fallbacks. These behaviors are rejected or disabled in production mode.
+### Settings
+
+See `.env.example`. The ones that matter:
+
+| Variable | Purpose |
+|---|---|
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | REST app credentials from a Sandbox business account. Required; the app refuses to start without them. |
+| `PAYPAL_ENV` | `sandbox` (default) or `live` |
+| `PAYPAL_WEBHOOK_ID` | Needed to verify webhooks. Without it webhooks are refused. |
+| `DATABASE_URL` | PostgreSQL URL. Required when `APP_ENV=production`. |
+| `SESSION_SECRET` | 32+ characters. Required when `APP_ENV=production`. |
+| `GENAI_PROVIDER`, `GENAI_API_KEY`, `GENAI_MODEL` | AI drafting. Gemini is the implemented provider. Optional: without a key the manual form is used. |
+| `DEMO_TOOLS` | `true` shows the "change the PayPal order" button for Scenario C. Off by default. |
+
+### PayPal Sandbox setup
+
+1. At developer.paypal.com, open **Apps & Credentials** in Sandbox mode and create a REST app. Copy the client ID and secret into `.env`.
+2. Under **Testing Tools → Sandbox Accounts**, note the email and password of a **Personal** (buyer) account. Use it to approve payments in the checkout.
+3. After deploying to a public HTTPS address, add a webhook on the app with the URL `https://<your-host>/api/v1/paypal/webhooks` and these events: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `PAYMENT.CAPTURE.DENIED`, `PAYMENT.CAPTURE.PENDING`, `PAYMENT.CAPTURE.REFUNDED`. Put the webhook ID in `PAYPAL_WEBHOOK_ID`.
 
 ## Tests
 
 ```bash
-python -m pytest backend/tests -q
-cd frontend
-npm test -- --watchAll=false
-npm run build
+.venv/Scripts/python -m pytest -c intentlock/pytest.ini intentlock/tests
 ```
 
-CI performs linting, backend/frontend tests, builds, dependency audits,
-container builds, and a Compose smoke test. High-severity dependency findings
-are build-blocking.
+77 tests: every policy rule, the purchase flow, order tampering, lost capture responses, duplicate requests, webhook verification and ordering, mandate immutability, access control, and the limits on the AI. They run against an in-memory database and a fake payment provider that behaves like PayPal Orders v2.
 
-## Production deployment
+### What has been run against the real PayPal Sandbox
 
-Do not deploy from the example configuration unchanged.
+| Verified live | Not yet verified live |
+|---|---|
+| OAuth token | Buyer approval followed by capture (needs a person to log in as the Sandbox buyer) |
+| Order creation from the stored quote | Webhook delivery and signature verification (needs a public URL and a webhook ID) |
+| Same request ID returns the same order |  |
+| Order retrieval; payee and amount read back |  |
+| Capture before buyer approval is refused by PayPal (`ORDER_NOT_APPROVED`) |  |
+| Changing an order's amount after creation (used by Scenario C) |  |
 
-Required minimum actions:
+## Demo scenarios
 
-1. Provision `mulecatch-secrets` using the institution's secret manager.
-2. Set an approved `MODEL_VERSION` and governed `RULE_VERSION`.
-3. Configure PostgreSQL, Neo4j, Redis, Kafka, TLS, CORS, and authentication.
-4. Load approved model artifacts and watchlists.
-5. Execute the validation and rollback procedures in the runbook.
-6. Complete every external gate in `docs/PRODUCTION_READINESS.md`.
+| | Steps | Expected |
+|---|---|---|
+| **A. Valid purchase** | Use the first example request, confirm, select *Aster Book 14*, pay with the Sandbox buyer | Captured; receipt issued |
+| **B. Policy violation** | Same mandate; check *Orion 14 Pro* or *Vega 15* | `BLOCK` with the failed rule; no PayPal order is created |
+| **C. Order changed after approval** | Set `DEMO_TOOLS=true`; on the checkout press the demo button, then approve in PayPal | Final verification fails on `ORDER_AMOUNT`; nothing is captured |
+| **D. Prompt injection** | *Orion 14 Pro*'s description tells AI assistants to ignore the budget | The mandate is unchanged and the decision is still `BLOCK` |
+| **E. Duplicates** | Press "Check now" twice; PayPal retries a webhook | One capture, one processed event |
 
-Kubernetes intentionally does not create the application Secret. The
-`infra/k8s/base/secrets.yaml` file is an unapplied example only.
+## Known limitations
 
-## Important limitations
+- IntentLock controls only purchases routed through an application that integrates it. It cannot intercept other PayPal payments or agents working outside this integration.
+- One merchant, one purchase unit per order, USD, and a controlled demo catalogue. No marketplace payouts.
+- PayPal is the payment record. Product specifications are verified against the catalogue and the stored quote, not against PayPal.
+- A receipt hash is a tamper-evident fingerprint and an HMAC signature from this service. It is not a legal digital signature or proof of the buyer's identity.
+- The buyer session is a signed cookie created on first visit. There are no user accounts yet.
+- Rate limiting is in-process, so it assumes one server instance.
+- Not production-certified. No claims are made about fraud detection or dispute outcomes.
 
-- FRI integration has a safe interface but the live government API adapter is
-  not implemented without an institutional endpoint and credentials.
-- FIU/FINGate submission is represented as a controlled workflow; actual
-  portal submission and acknowledgement exchange require reporting-entity
-  credentials and schema acceptance testing.
-- Synthetic and PaySim results are development evidence, not proof of bank
-  production effectiveness.
-- The `/benchmarks` workspace provides five executable evaluation programs:
-  synthetic, adversarial holdout, deterministic cross-validation,
-  configuration comparison, and a combined full evaluation. See
-  [Model benchmark programs](docs/MODEL_BENCHMARKS.md).
-- No automated model decision should directly freeze or close an account
-  without the bank's approved policy, human review, and applicable legal
-  process.
+## Licence
 
-## Technology
+No licence file has been added yet. The repository owners need to choose one and confirm they hold the rights to all included code.
 
-Python, FastAPI, React, Neo4j, PostgreSQL, Redis, Kafka, NetworkX,
-PyTorch/PyTorch Geometric, PyOD, RapidFuzz, Docker, Kubernetes, Prometheus,
-and Grafana.
+## More
 
-See [open-source integrations](docs/OPEN_SOURCE_INTEGRATIONS.md) for adopted
-GitHub projects, license/decision guardrails, and deliberately deferred
-bank-scale components.
+The implementation plan, migration report and product roadmap are in `docs/intentlock/IMPLEMENTATION_PLAN.md`.
