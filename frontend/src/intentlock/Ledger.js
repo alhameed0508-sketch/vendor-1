@@ -44,13 +44,13 @@ export default function Ledger() {
             <div className="empty"><h2>No entries</h2><p>{scope === 'mine' ? <>You have not proposed a purchase yet. <Link to="/new">Start one</Link>.</> : 'Nothing matches this filter.'}</p></div>
           ) : (
             <div className="table-wrap">
-              <table className="ledger">
+              <table className="ledger entries">
                 <thead>{LEDGER_HEAD}</thead>
                 <tbody><LedgerRows rows={rows} /></tbody>
                 <tfoot><tr>
-                  <td colSpan="5">Totals for the entries shown: captured, and refused (in red)</td>
-                  <td className="amt"><span className="cap">{ledgerAmount(capturedTotal, cur, false)}</span><br /><span className="neg">{ledgerAmount(stoppedTotal, cur, true)}</span></td>
-                  <td>{cur}</td>
+                  <td colSpan="5" className="c-foot">Totals for the entries shown: captured, and refused (in red)</td>
+                  <td className="amt c-amt"><span className="cap">{ledgerAmount(capturedTotal, cur, false)}</span><br /><span className="neg">{ledgerAmount(stoppedTotal, cur, true)}</span></td>
+                  <td className="c-cur">{cur}</td>
                 </tr></tfoot>
               </table>
             </div>

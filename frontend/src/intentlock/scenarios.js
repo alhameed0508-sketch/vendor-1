@@ -49,7 +49,7 @@ export function Guide({ page }) {
   if (!scenario || !scenario.steps[page]) return null;
   return (
     <div className="guide" role="note">
-      <div><span className="eyebrow">Guided demo · {scenario.title}</span><p>{scenario.steps[page]}</p></div>
+      <p><b>{scenario.title}.</b> {scenario.steps[page]}</p>
       <button className="btn small" onClick={() => { endDemo(); setId(null); }}>End guide</button>
     </div>
   );

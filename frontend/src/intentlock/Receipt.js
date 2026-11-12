@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, money, requirementText, shortId, when } from './api';
+import { api, DECISION_TEXT, money, requirementText, sentence, shortId, when } from './api';
 import { ErrorNote, Graph, Price, Spinner, Timeline, pathFor } from './parts';
 
 export default function Receipt() {
@@ -69,7 +69,7 @@ export default function Receipt() {
           <Price quote={rc.quote} />
           <dl className="dl">
             <dt>PayPal order</dt><dd className="mono">{rc.payment.order_id}</dd>
-            <dt>PayPal capture</dt><dd><span className="mono">{rc.payment.capture_id}</span> <span className={`badge ${rc.payment.status === 'COMPLETED' ? 'ok' : 'warn'}`}>{rc.payment.status}</span></dd>
+            <dt>PayPal capture</dt><dd><span className="mono">{rc.payment.capture_id}</span> <span className={`badge ${rc.payment.status === 'COMPLETED' ? 'ok' : 'warn'}`}>{sentence(rc.payment.status)}</span></dd>
             <dt>Captured</dt><dd className="num">{money(rc.payment.amount_minor, rc.payment.currency)}</dd>
             <dt>Paid to</dt><dd className="mono">{(rc.payment.payee && (rc.payment.payee.merchant_id || rc.payment.payee.email)) || 'not recorded'}</dd>
           </dl>
@@ -83,7 +83,7 @@ export default function Receipt() {
             <div key={p.evaluation_id} className="row between" style={{ flexWrap: 'nowrap', alignItems: 'flex-start' }}>
               <span>{p.stage === 'PRE_CAPTURE' ? 'Final verification against the PayPal order' : 'Before the order was created'}
                 <span className="muted small"> · {p.checks.length} checks · <span className="mono">{shortId(p.evaluation_id)}</span></span></span>
-              <span className={`badge ${p.decision}`}>{p.decision}</span>
+              <span className={`badge ${p.decision}`}>{DECISION_TEXT[p.decision]}</span>
             </div>
           ))}
           <p className="small muted">Policy version <span className="mono">{rc.policy[0] && rc.policy[0].policy_version}</span>. Rules are fixed code. The AI did not make these decisions.</p>

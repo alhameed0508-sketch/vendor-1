@@ -77,6 +77,11 @@ export function fromMinor(minor, currency = 'USD') {
   return exp ? `${s.slice(0, -exp)}.${s.slice(-exp)}` : s;
 }
 
+export const WEBHOOK_TEXT = { PENDING: 'Waiting for PayPal', VERIFIED: 'Verified', MISMATCH: 'Does not match' };
+export const WEBHOOK_TONE = { PENDING: 'plain', VERIFIED: 'ok', MISMATCH: 'bad' };
+export const sentence = (s) => (s ? s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, ' ') : '');
+// Rule codes may wrap only at underscores.
+export const codeBreaks = (code) => String(code).replace(/_/g, '_\u200b');
 export const shortId = (id) => (id ? String(id).slice(0, 8) : '');
 export const when = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '');
 

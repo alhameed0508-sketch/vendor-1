@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import Icon from './icons';
 import { ErrorNote, Spinner } from './parts';
@@ -29,6 +29,9 @@ const TITLES = [
   [/^\/checkouts/, 'Checkouts'], [/^\/checkout\//, 'Checkout'], [/^\/receipts/, 'Receipts'], [/^\/receipt\//, 'Receipt'], [/^\/rules/, 'Policy rules'],
   [/^\/integrations/, 'Integrations'], [/^\/demo/, 'Demo scenarios'],
 ];
+// Which rail item a page belongs to; flow pages light the place the visitor came through.
+const SECTION = [[/^\/$/, '/'], [/^\/ledger/, '/ledger'], [/^\/new/, '/new'], [/^\/mandates?\/./, '/new'], [/^\/mandates/, '/mandates'],
+  [/^\/checkout/, '/checkouts'], [/^\/receipt/, '/receipts'], [/^\/rules/, '/rules'], [/^\/integrations/, '/integrations'], [/^\/demo/, '/demo']];
 const FLOW = [['/new', 'Terms'], ['/mandates/', 'Product'], ['/checkout/', 'PayPal'], ['/receipt/', 'Receipt']];
 
 function FlowBar({ pathname }) {
@@ -48,6 +51,7 @@ function Shell({ config, children }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   useEffect(() => { setOpen(false); }, [pathname]);
+  const section = (SECTION.find(([re]) => re.test(pathname)) || [null, null])[1];
   const title = (TITLES.find(([re]) => re.test(pathname)) || [null, 'IntentLock'])[1];
   return (
     <div className={`il ${open ? 'open' : ''}`}>
@@ -61,7 +65,7 @@ function Shell({ config, children }) {
             <div key={group}>
               <div className="rail-group">{group}</div>
               {items.map(([to, label, icon]) => (
-                <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav ${isActive ? 'on' : ''}`}><Icon name={icon} />{label}</NavLink>
+                <Link key={to} to={to} className={`nav ${section === to ? 'on' : ''}`} aria-current={section === to ? 'page' : undefined}><Icon name={icon} />{label}</Link>
               ))}
             </div>
           ))}
@@ -79,11 +83,11 @@ function Shell({ config, children }) {
           <h1>{title}</h1>
           <span className="spacer" />
           {config && (
-            <span className={`status hide-sm ${config.database_durable ? '' : 'warn'}`} title={config.database_durable ? 'Records are stored in PostgreSQL' : 'Records are lost when the server restarts'}>
-              <i />PayPal {config.paypal_env} · {config.database_durable ? 'PostgreSQL' : 'temporary database'}
+            <span className={`status ${config.database_durable ? '' : 'warn'}`} title={config.database_durable ? 'Records are stored in PostgreSQL' : 'Records are lost when the server restarts'}>
+              <i />PayPal {config.paypal_env}<span className="hide-sm"> · {config.database_durable ? 'PostgreSQL' : 'temporary database'}</span>
             </span>
           )}
-          {!pathname.startsWith('/new') && <button className="btn primary" onClick={() => navigate('/new')}><Icon name="plus" size={16} />New purchase</button>}
+          {!pathname.startsWith('/new') && <button className="btn primary" aria-label="New purchase" onClick={() => navigate('/new')}><Icon name="plus" size={16} /><span className="hide-xs">New purchase</span></button>}
         </header>
         <FlowBar pathname={pathname} />
         <main className="content" id="main">{children}</main>

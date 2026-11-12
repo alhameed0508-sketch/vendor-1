@@ -5,6 +5,7 @@ import { useConfig } from './IntentLockApp';
 import { Guide } from './scenarios';
 import { Checks, DecisionBadge, ErrorNote, MandateSummary, Price, Spinner } from './parts';
 import ProductArt from './ProductArt';
+import Icon from './icons';
 
 function compare(requirements, attributes) {
   return Object.entries(requirements || {}).map(([key, wanted]) => {
@@ -169,7 +170,7 @@ export default function Discovery() {
                     <ul className="attrs">
                       {compare(reqs, p.attributes).map((r) => (
                         <li key={r.key}>
-                          <span className={`tick ${r.ok === null ? 'q' : r.ok ? 'y' : 'n'}`} aria-hidden="true">{r.ok === null ? '?' : r.ok ? '✓' : '✕'}</span>
+                          <span className={`tick ${r.ok === null ? 'q' : r.ok ? 'y' : 'n'}`} aria-hidden="true"><Icon name={r.ok === null ? 'unknown' : r.ok ? 'check' : 'cross'} size={15} /></span>
                           <span>{r.label}: <b>{r.shown}</b><span className="sr"> {r.ok === null ? '(unknown)' : r.ok ? '(meets your requirement)' : '(does not meet your requirement)'}</span></span>
                         </li>
                       ))}

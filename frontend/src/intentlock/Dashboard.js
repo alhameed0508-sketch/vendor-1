@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, ledgerAmount, money, when } from './api';
+import { api, codeBreaks, ledgerAmount, money, when } from './api';
 import { LEDGER_HEAD, LedgerRows } from './ledgerParts';
 import { ErrorNote, Spinner } from './parts';
 
@@ -37,15 +37,25 @@ function Statement({ st, currency }) {
 }
 
 function PerDay({ days }) {
-  const W = 560, H = 190, L = 26, B = 22, T = 8;
+  // Drawn at the container's real width so the 11px labels stay 11px on every screen.
+  const box = useRef(null);
+  const [W, setW] = useState(560);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(260, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const H = 190, L = 26, B = 22, T = 8;
   const max = Math.max(1, ...days.map((d) => d.ALLOW + d.BLOCK + d.REAUTHORISE + d.REVIEW));
   const step = Math.max(1, Math.ceil(max / 4));
   const top = step * Math.ceil(max / step);
   const bw = (W - L) / days.length;
   const y = (v) => T + (H - T - B) * (1 - v / top);
-  const every = days.length > 16 ? 6 : days.length > 8 ? 3 : 1;
+  const every = Math.max(1, Math.ceil(46 / ((W - L) / days.length)));
   return (
-    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Proposals per day, split by the rules' decision">
+    <div ref={box}><svg className="chart" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Proposals per day, split by the rules' decision">
       {Array.from({ length: top / step + 1 }, (_, i) => i * step).map((v) => (
         <g key={v}><line className={v ? 'grid' : 'base'} x1={L} x2={W} y1={y(v)} y2={y(v)} /><text x={L - 6} y={y(v) + 4} textAnchor="end">{v}</text></g>
       ))}
@@ -65,7 +75,7 @@ function PerDay({ days }) {
           </g>
         );
       })}
-    </svg>
+    </svg></div>
   );
 }
 
@@ -105,7 +115,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="split lead">
+          <div className="seams lead">
             <section className="panel" aria-labelledby="rec">
               <div className="panel-head"><h2 id="rec">Reconciliation</h2><span className="small">{period} · {cur} · store-wide</span></div>
               <Statement st={st} currency={cur} />
@@ -116,7 +126,7 @@ export default function Dashboard() {
                 <ul className="rulebars">
                   {data.by_rule.slice(0, 7).map((r) => (
                     <li key={r.rule_id}>
-                      <span className="t">{r.reason}<span className="mono">{r.rule_id}</span></span><span className="c num">{r.count}</span>
+                      <span className="t">{r.reason}<span className="mono code">{codeBreaks(r.rule_id)}</span></span><span className="c num">{r.count}</span>
                       <span className="track"><span style={{ width: `${(r.count / ruleMax) * 100}%` }} /></span>
                     </li>
                   ))}
@@ -126,7 +136,7 @@ export default function Dashboard() {
             </section>
           </div>
 
-          <div className="split three">
+          <div className="seams three">
             <section className="panel" aria-labelledby="perday">
               <div className="panel-head"><h2 id="perday">Decisions per day</h2>
                 <div className="legend">{SERIES.map(([k, label, c]) => <span key={k}><i style={{ background: c }} />{label}</span>)}</div>
@@ -164,7 +174,7 @@ export default function Dashboard() {
           <section className="panel" aria-labelledby="latest">
             <div className="panel-head"><h2 id="latest">Latest entries</h2><Link className="small" to="/ledger">Open the ledger</Link></div>
             <div className="table-wrap">
-              <table className="ledger"><thead>{LEDGER_HEAD}</thead><tbody><LedgerRows rows={data.recent} /></tbody></table>
+              <table className="ledger entries"><thead>{LEDGER_HEAD}</thead><tbody><LedgerRows rows={data.recent} /></tbody></table>
             </div>
             <p className="small muted" style={{ marginTop: 10 }}>Store-wide: entries from every visitor, without their typed requests. Only your own entries open.</p>
           </section>

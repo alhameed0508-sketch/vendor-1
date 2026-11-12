@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, money, shortId, when } from './api';
+import { api, money, sentence, shortId, WEBHOOK_TEXT, WEBHOOK_TONE, when } from './api';
 import { outcomeOf } from './ledgerParts';
 import { ErrorNote, Spinner } from './parts';
 
@@ -38,7 +38,7 @@ export function Mandates() {
             <td style={{ maxWidth: 320 }}>{m.request ? `“${m.request}”` : <span className="muted">entered by hand</span>}<div className="small muted">{m.source === 'ai' ? 'drafted by AI, confirmed by you' : 'entered by hand'}</div></td>
             <td>{m.quantity} × {m.condition} {m.category}</td>
             <td className="amt">{money(m.budget_minor, m.currency)}</td>
-            <td><span className={`badge ${STATUS_TONE[m.status] || 'plain'}`}>{m.status.toLowerCase()}</span></td>
+            <td><span className={`badge ${STATUS_TONE[m.status] || 'plain'}`}>{sentence(m.status)}</span></td>
             <td className="r num">{m.proposals}{m.paid ? <span className="small muted"> · {m.paid} paid</span> : ''}</td>
             <td className="nowrap small">{when(m.expires_at)}</td>
             <td className="nowrap">{m.status === 'CONFIRMED' ? <Link className="btn small" to={`/mandates/${m.mandate_id}`}>Choose a product</Link> : <Link className="btn small" to={`/new?m=${m.mandate_id}`}>Review</Link>}</td>
@@ -49,7 +49,7 @@ export function Mandates() {
   );
 }
 
-const WEBHOOK = { VERIFIED: ['verified', 'ok'], MISMATCH: ['mismatch', 'bad'], PENDING: ['waiting', 'plain'] };
+const WEBHOOK = Object.fromEntries(Object.keys(WEBHOOK_TEXT).map((k) => [k, [WEBHOOK_TEXT[k], WEBHOOK_TONE[k]]]));
 
 export function Checkouts() {
   const [rows, error, load] = useList(api.checkouts, 'checkouts');
@@ -59,7 +59,7 @@ export function Checkouts() {
       <table className="ledger">
         <thead><tr><th>Checkout</th><th>Item</th><th className="r">Total</th><th>State</th><th>PayPal order</th><th>Capture</th><th>Webhook</th><th>Updated</th></tr></thead>
         <tbody>{rows && rows.map((c) => {
-          const [label, tone] = outcomeOf(c.state);
+          const [label, tone] = outcomeOf(c.state, c.paypal_order_id ? 'PRE_CAPTURE' : null);
           const [wl, wt] = WEBHOOK[c.reconciliation] || [c.reconciliation, 'plain'];
           return (
             <tr key={c.checkout_id}>

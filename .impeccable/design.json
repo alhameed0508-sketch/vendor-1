@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T17:47:54+00:00",
+  "title": "Design System: Netrava IntentLock",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Ledger Paper",
+        "canonical": "#f1f4ef",
+        "tonalRamp": [
+          "oklch(15% 0.007 132)",
+          "oklch(27% 0.007 132)",
+          "oklch(39% 0.007 132)",
+          "oklch(51% 0.007 132)",
+          "oklch(63% 0.007 132)",
+          "oklch(75% 0.007 132)",
+          "oklch(85% 0.007 132)",
+          "oklch(95% 0.007 132)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Clean Sheet",
+        "canonical": "#fbfcfa",
+        "tonalRamp": [
+          "oklch(15% 0.003 128)",
+          "oklch(27% 0.003 128)",
+          "oklch(39% 0.003 128)",
+          "oklch(51% 0.003 128)",
+          "oklch(63% 0.003 128)",
+          "oklch(75% 0.003 128)",
+          "oklch(85% 0.003 128)",
+          "oklch(95% 0.003 128)"
+        ]
+      },
+      "sunken": {
+        "role": "neutral",
+        "displayName": "Sunken Leaf",
+        "canonical": "#e8ede6",
+        "tonalRamp": [
+          "oklch(15% 0.011 137)",
+          "oklch(27% 0.011 137)",
+          "oklch(39% 0.011 137)",
+          "oklch(51% 0.011 137)",
+          "oklch(63% 0.011 137)",
+          "oklch(75% 0.011 137)",
+          "oklch(85% 0.011 137)",
+          "oklch(95% 0.011 137)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#d3dcd0",
+        "tonalRamp": [
+          "oklch(15% 0.019 138)",
+          "oklch(27% 0.019 138)",
+          "oklch(39% 0.019 138)",
+          "oklch(51% 0.019 138)",
+          "oklch(63% 0.019 138)",
+          "oklch(75% 0.019 138)",
+          "oklch(85% 0.019 138)",
+          "oklch(95% 0.019 138)"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Strong Rule",
+        "canonical": "#b3c1b0",
+        "tonalRamp": [
+          "oklch(15% 0.028 140)",
+          "oklch(27% 0.028 140)",
+          "oklch(39% 0.028 140)",
+          "oklch(51% 0.028 140)",
+          "oklch(63% 0.028 140)",
+          "oklch(75% 0.028 140)",
+          "oklch(85% 0.028 140)",
+          "oklch(95% 0.028 140)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Blue-black Ink",
+        "canonical": "#14202a",
+        "tonalRamp": [
+          "oklch(15% 0.026 244)",
+          "oklch(27% 0.026 244)",
+          "oklch(39% 0.026 244)",
+          "oklch(51% 0.026 244)",
+          "oklch(63% 0.026 244)",
+          "oklch(75% 0.026 244)",
+          "oklch(85% 0.026 244)",
+          "oklch(95% 0.026 244)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Second Ink",
+        "canonical": "#3c4a52",
+        "tonalRamp": [
+          "oklch(15% 0.022 233)",
+          "oklch(27% 0.022 233)",
+          "oklch(39% 0.022 233)",
+          "oklch(51% 0.022 233)",
+          "oklch(63% 0.022 233)",
+          "oklch(75% 0.022 233)",
+          "oklch(85% 0.022 233)",
+          "oklch(95% 0.022 233)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Pencil",
+        "canonical": "#5d6b72",
+        "tonalRamp": [
+          "oklch(15% 0.020 229)",
+          "oklch(27% 0.020 229)",
+          "oklch(39% 0.020 229)",
+          "oklch(51% 0.020 229)",
+          "oklch(63% 0.020 229)",
+          "oklch(75% 0.020 229)",
+          "oklch(85% 0.020 229)",
+          "oklch(95% 0.020 229)"
+        ]
+      },
+      "cloth": {
+        "role": "primary",
+        "displayName": "Bookcloth Green",
+        "canonical": "#15392d",
+        "tonalRamp": [
+          "oklch(15% 0.047 169)",
+          "oklch(27% 0.047 169)",
+          "oklch(39% 0.047 169)",
+          "oklch(51% 0.047 169)",
+          "oklch(63% 0.047 169)",
+          "oklch(75% 0.047 169)",
+          "oklch(85% 0.047 169)",
+          "oklch(95% 0.047 169)"
+        ]
+      },
+      "cloth-2": {
+        "role": "primary",
+        "displayName": "Deep Bookcloth",
+        "canonical": "#1d4a3b",
+        "tonalRamp": [
+          "oklch(15% 0.056 169)",
+          "oklch(27% 0.056 169)",
+          "oklch(39% 0.056 169)",
+          "oklch(51% 0.056 169)",
+          "oklch(63% 0.056 169)",
+          "oklch(75% 0.056 169)",
+          "oklch(85% 0.056 169)",
+          "oklch(95% 0.056 169)"
+        ]
+      },
+      "cloth-ink": {
+        "role": "primary",
+        "displayName": "Pale Cloth Ink",
+        "canonical": "#e4eee8",
+        "tonalRamp": [
+          "oklch(15% 0.013 160)",
+          "oklch(27% 0.013 160)",
+          "oklch(39% 0.013 160)",
+          "oklch(51% 0.013 160)",
+          "oklch(63% 0.013 160)",
+          "oklch(75% 0.013 160)",
+          "oklch(85% 0.013 160)",
+          "oklch(95% 0.013 160)"
+        ]
+      },
+      "cloth-muted": {
+        "role": "primary",
+        "displayName": "Faded Cloth",
+        "canonical": "#9bb6a8",
+        "tonalRamp": [
+          "oklch(15% 0.036 163)",
+          "oklch(27% 0.036 163)",
+          "oklch(39% 0.036 163)",
+          "oklch(51% 0.036 163)",
+          "oklch(63% 0.036 163)",
+          "oklch(75% 0.036 163)",
+          "oklch(85% 0.036 163)",
+          "oklch(95% 0.036 163)"
+        ]
+      },
+      "cloth-line": {
+        "role": "primary",
+        "displayName": "Cloth Seam",
+        "canonical": "#2a5646",
+        "tonalRamp": [
+          "oklch(15% 0.056 168)",
+          "oklch(27% 0.056 168)",
+          "oklch(39% 0.056 168)",
+          "oklch(51% 0.056 168)",
+          "oklch(63% 0.056 168)",
+          "oklch(75% 0.056 168)",
+          "oklch(85% 0.056 168)",
+          "oklch(95% 0.056 168)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Ledger Green",
+        "canonical": "#1d6a4d",
+        "tonalRamp": [
+          "oklch(15% 0.088 164)",
+          "oklch(27% 0.088 164)",
+          "oklch(39% 0.088 164)",
+          "oklch(51% 0.088 164)",
+          "oklch(63% 0.088 164)",
+          "oklch(75% 0.088 164)",
+          "oklch(85% 0.088 164)",
+          "oklch(95% 0.088 164)"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.000 90)",
+          "oklch(27% 0.000 90)",
+          "oklch(39% 0.000 90)",
+          "oklch(51% 0.000 90)",
+          "oklch(63% 0.000 90)",
+          "oklch(75% 0.000 90)",
+          "oklch(85% 0.000 90)",
+          "oklch(95% 0.000 90)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Ledger Green Tint",
+        "canonical": "#dcebe2",
+        "tonalRamp": [
+          "oklch(15% 0.020 160)",
+          "oklch(27% 0.020 160)",
+          "oklch(39% 0.020 160)",
+          "oklch(51% 0.020 160)",
+          "oklch(63% 0.020 160)",
+          "oklch(75% 0.020 160)",
+          "oklch(85% 0.020 160)",
+          "oklch(95% 0.020 160)"
+        ]
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "Focus Blue",
+        "canonical": "#2563a8",
+        "tonalRamp": [
+          "oklch(15% 0.120 254)",
+          "oklch(27% 0.120 254)",
+          "oklch(39% 0.120 254)",
+          "oklch(51% 0.120 254)",
+          "oklch(63% 0.120 254)",
+          "oklch(75% 0.120 254)",
+          "oklch(85% 0.120 254)",
+          "oklch(95% 0.120 254)"
+        ]
+      },
+      "allow": {
+        "role": "secondary",
+        "displayName": "Allow Green",
+        "canonical": "#1c6a45",
+        "tonalRamp": [
+          "oklch(15% 0.096 158)",
+          "oklch(27% 0.096 158)",
+          "oklch(39% 0.096 158)",
+          "oklch(51% 0.096 158)",
+          "oklch(63% 0.096 158)",
+          "oklch(75% 0.096 158)",
+          "oklch(85% 0.096 158)",
+          "oklch(95% 0.096 158)"
+        ]
+      },
+      "allow-bg": {
+        "role": "secondary",
+        "displayName": "Allow Ground",
+        "canonical": "#e1f0e6",
+        "tonalRamp": [
+          "oklch(15% 0.021 157)",
+          "oklch(27% 0.021 157)",
+          "oklch(39% 0.021 157)",
+          "oklch(51% 0.021 157)",
+          "oklch(63% 0.021 157)",
+          "oklch(75% 0.021 157)",
+          "oklch(85% 0.021 157)",
+          "oklch(95% 0.021 157)"
+        ]
+      },
+      "block": {
+        "role": "secondary",
+        "displayName": "Red Ink",
+        "canonical": "#b42318",
+        "tonalRamp": [
+          "oklch(15% 0.120 30)",
+          "oklch(27% 0.120 30)",
+          "oklch(39% 0.120 30)",
+          "oklch(51% 0.120 30)",
+          "oklch(63% 0.120 30)",
+          "oklch(75% 0.120 30)",
+          "oklch(85% 0.120 30)",
+          "oklch(95% 0.120 30)"
+        ]
+      },
+      "block-bg": {
+        "role": "secondary",
+        "displayName": "Refusal Ground",
+        "canonical": "#fbe8e5",
+        "tonalRamp": [
+          "oklch(15% 0.021 28)",
+          "oklch(27% 0.021 28)",
+          "oklch(39% 0.021 28)",
+          "oklch(51% 0.021 28)",
+          "oklch(63% 0.021 28)",
+          "oklch(75% 0.021 28)",
+          "oklch(85% 0.021 28)",
+          "oklch(95% 0.021 28)"
+        ]
+      },
+      "reauth": {
+        "role": "secondary",
+        "displayName": "Reauthorise Amber",
+        "canonical": "#935600",
+        "tonalRamp": [
+          "oklch(15% 0.115 65)",
+          "oklch(27% 0.115 65)",
+          "oklch(39% 0.115 65)",
+          "oklch(51% 0.115 65)",
+          "oklch(63% 0.115 65)",
+          "oklch(75% 0.115 65)",
+          "oklch(85% 0.115 65)",
+          "oklch(95% 0.115 65)"
+        ]
+      },
+      "reauth-bg": {
+        "role": "secondary",
+        "displayName": "Amber Ground",
+        "canonical": "#fbefd8",
+        "tonalRamp": [
+          "oklch(15% 0.033 84)",
+          "oklch(27% 0.033 84)",
+          "oklch(39% 0.033 84)",
+          "oklch(51% 0.033 84)",
+          "oklch(63% 0.033 84)",
+          "oklch(75% 0.033 84)",
+          "oklch(85% 0.033 84)",
+          "oklch(95% 0.033 84)"
+        ]
+      },
+      "review": {
+        "role": "secondary",
+        "displayName": "Review Blue",
+        "canonical": "#1f5a99",
+        "tonalRamp": [
+          "oklch(15% 0.119 253)",
+          "oklch(27% 0.119 253)",
+          "oklch(39% 0.119 253)",
+          "oklch(51% 0.119 253)",
+          "oklch(63% 0.119 253)",
+          "oklch(75% 0.119 253)",
+          "oklch(85% 0.119 253)",
+          "oklch(95% 0.119 253)"
+        ]
+      },
+      "review-bg": {
+        "role": "secondary",
+        "displayName": "Review Ground",
+        "canonical": "#e3edf8",
+        "tonalRamp": [
+          "oklch(15% 0.018 251)",
+          "oklch(27% 0.018 251)",
+          "oklch(39% 0.018 251)",
+          "oklch(51% 0.018 251)",
+          "oklch(63% 0.018 251)",
+          "oklch(75% 0.018 251)",
+          "oklch(85% 0.018 251)",
+          "oklch(95% 0.018 251)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page h1; 1.25rem in the top bar."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Dashboard verdict sentence."
+      },
+      "title-serif": {
+        "displayName": "Serif Title",
+        "purpose": "Flow-page question or outcome heading."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel and section headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All running text and figures."
+      },
+      "label": {
+        "displayName": "Column Head",
+        "purpose": "Ledger column heads, uppercase tracked."
+      },
+      "mono": {
+        "displayName": "Reference",
+        "purpose": "Entry refs, rule codes, IDs, policy version."
+      }
+    },
+    "shadows": [
+      {
+        "name": "rail-active-ring",
+        "value": "inset 0 0 0 1px var(--cloth-line)",
+        "purpose": "Border ring on the active rail item; the only shadow in the system."
+      }
+    ],
+    "motion": [
+      {
+        "name": "rail-slide",
+        "value": "transform .22s cubic-bezier(.2, .7, .2, 1)",
+        "purpose": "Mobile rail drawer; off under reduced motion."
+      },
+      {
+        "name": "spin",
+        "value": "rotate 360deg .8s linear infinite",
+        "purpose": "Pending spinner; 2.4s under reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact",
+        "value": "600px"
+      },
+      {
+        "name": "splits-stack",
+        "value": "880px"
+      },
+      {
+        "name": "rail-drawer",
+        "value": "960px"
+      },
+      {
+        "name": "three-up-to-two",
+        "value": "1100px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action per view, e.g. New purchase.",
+      "html": "<button class=\"ds-btn-primary\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>New purchase</button>",
+      "css": ".ds-btn-primary{font-family:\"Source Sans 3\",system-ui,sans-serif;font-weight:600;font-size:.92rem;border-radius:5px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:7px 14px;cursor:pointer;display:inline-flex;gap:8px;align-items:center;white-space:nowrap}.ds-btn-primary:hover{background:color-mix(in oklab,var(--accent) 88%,black)}.ds-btn-primary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral action on paper.",
+      "html": "<button class=\"ds-btn2\">Open receipt</button>",
+      "css": ".ds-btn2{font-family:\"Source Sans 3\",system-ui,sans-serif;font-weight:600;font-size:.92rem;border-radius:5px;border:1px solid var(--rule-strong);background:var(--panel);color:var(--ink);padding:7px 14px;cursor:pointer}.ds-btn2:hover{border-color:var(--ink-2)}.ds-btn2:focus-visible{outline:2px solid var(--focus);outline-offset:2px}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labelled field; error state switches to block ink and ground.",
+      "html": "<label class=\"ds-lbl\">Budget (USD)<input class=\"ds-input\" type=\"text\" value=\"1,200.00\"></label>",
+      "css": ".ds-lbl{font-family:\"Source Sans 3\",system-ui,sans-serif;font-size:.8rem;font-weight:600;color:var(--ink-2);display:block}.ds-input{display:block;margin-top:4px;width:240px;font:15px/1.5 \"Source Sans 3\",system-ui,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--rule-strong);border-radius:5px;padding:8px 10px}.ds-input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Bookcloth rail with group label and icon items.",
+      "html": "<nav class=\"ds-rail\"><div class=\"ds-rail-group\">Monitor</div><a class=\"ds-nav on\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"5\" rx=\"1\"/><rect x=\"14\" y=\"12\" width=\"7\" height=\"9\" rx=\"1\"/><rect x=\"3\" y=\"16\" width=\"7\" height=\"5\" rx=\"1\"/></svg>Dashboard</a><a class=\"ds-nav\" href=\"#\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z\"/><path d=\"M5 17a3 3 0 0 1 3-3h11\"/><path d=\"M9 8h6\"/></svg>Ledger</a></nav>",
+      "css": ".ds-rail{background:var(--cloth);color:var(--cloth-ink);width:236px;padding:8px 10px 16px;font-family:\"Source Sans 3\",system-ui,sans-serif;}.ds-rail-group{font-size:.72rem;font-weight:650;letter-spacing:.09em;text-transform:uppercase;color:var(--cloth-muted);padding:16px 10px 6px}.ds-nav{display:flex;gap:10px;align-items:center;padding:7px 10px;border-radius:5px;color:var(--cloth-ink);text-decoration:none;font-size:.93rem}.ds-nav svg{opacity:.8}.ds-nav:hover{background:var(--cloth-2)}.ds-nav.on{background:var(--cloth-2);box-shadow:inset 0 0 0 1px var(--cloth-line);font-weight:600}.ds-nav:focus-visible{outline:2px solid var(--focus);outline-offset:2px}"
+    },
+    {
+      "name": "Outcome Badges",
+      "kind": "chip",
+      "refersTo": "badge-block",
+      "description": "State tag: ink on tinted ground with a dot.",
+      "html": "<span class=\"ds-badge ds-ok\">Paid</span> <span class=\"ds-badge ds-bad\">Refused</span> <span class=\"ds-badge ds-warn\">Needs approval</span> <span class=\"ds-badge ds-info\">Unverified</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:6px;font-family:\"Source Sans 3\",system-ui,sans-serif;font-size:.76rem;font-weight:650;padding:2px 8px;border-radius:3px}.ds-badge::before{content:\"\";width:6px;height:6px;border-radius:50%;background:currentColor}.ds-ok{color:var(--allow);background:var(--allow-bg)}.ds-bad{color:var(--block);background:var(--block-bg)}.ds-warn{color:var(--reauth);background:var(--reauth-bg)}.ds-info{color:var(--review);background:var(--review-bg)}"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat sheet on a hairline seam.",
+      "html": "<section class=\"ds-panel\"><div class=\"ds-ph\"><h2>Integrity</h2><span>store-wide</span></div><p>Audit chain intact, 63 events.</p></section>",
+      "css": ".ds-panel{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:18px 20px;color:var(--ink);font-family:\"Source Sans 3\",system-ui,sans-serif;font-size:15px;max-width:360px}.ds-ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.ds-ph h2{margin:0;font-size:.98rem;font-weight:650}.ds-ph span{font-size:.875rem;color:var(--muted)}.ds-panel p{margin:0}"
+    },
+    {
+      "name": "Ledger Rows",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "One entry per proposal; refusals post in red with the rule as memo; total on a double rule.",
+      "html": "<table class=\"ds-ledger\"><thead><tr><th>Ref</th><th>Memo</th><th class=\"ds-r\">Amount</th></tr></thead><tbody><tr><td class=\"ds-ref\">IL-0012</td><td><span class=\"ds-memo\">MAXIMUM_TOTAL</span></td><td class=\"ds-r ds-neg\">(986.00)</td></tr><tr><td class=\"ds-ref\">IL-0011</td><td>captured</td><td class=\"ds-r ds-cap\">1,972.00</td></tr></tbody><tfoot><tr><td colspan=\"2\">Captured</td><td class=\"ds-r\">1,972.00</td></tr></tfoot></table>",
+      "css": ".ds-ledger{border-collapse:collapse;font-family:\"Source Sans 3\",system-ui,sans-serif;font-size:.9rem;color:var(--ink);font-variant-numeric:tabular-nums;min-width:380px}.ds-ledger th{text-align:left;font-weight:650;color:var(--muted);font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border-bottom:1px solid var(--rule-strong)}.ds-ledger td{padding:9px 10px;border-bottom:1px solid var(--rule)}.ds-ledger td+td,.ds-ledger th+th{border-left:1px solid color-mix(in oklab,var(--rule) 60%,transparent)}.ds-ledger tbody tr:hover{background:color-mix(in oklab,var(--accent-soft) 40%,transparent)}.ds-r{text-align:right}.ds-ref{font-family:\"Source Code Pro\",monospace;font-size:.82rem;color:var(--ink-2)}.ds-memo{font-family:\"Source Code Pro\",monospace;font-size:.78rem;color:var(--block)}.ds-neg{color:var(--block)}.ds-cap{color:var(--allow);font-weight:600}.ds-ledger tfoot td{border-top:1px solid var(--ink);border-bottom:3px double var(--ink);font-weight:650}"
+    },
+    {
+      "name": "Segmented Period",
+      "kind": "custom",
+      "refersTo": "segmented-on",
+      "description": "Period picker; pressed option inverts to ink.",
+      "html": "<div class=\"ds-seg\"><button>7 days</button><button aria-pressed=\"true\">14 days</button><button>30 days</button></div>",
+      "css": ".ds-seg{display:inline-flex;border:1px solid var(--rule-strong);border-radius:5px;overflow:hidden;background:var(--panel)}.ds-seg button{border:0;border-right:1px solid var(--rule);background:transparent;color:var(--ink-2);padding:6px 12px;font-family:\"Source Sans 3\",system-ui,sans-serif;font-size:.86rem;cursor:pointer}.ds-seg button:last-child{border-right:0}.ds-seg button[aria-pressed=true]{background:var(--ink);color:var(--panel);font-weight:600}.ds-seg button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Reconciliation Book",
+    "overview": "The console is kept like a merchant's account book. A bookcloth-green rail binds the left edge; the page is pale ruled ledger paper; text is blue-black ink; refusals post in red ink with parenthesised amounts and the rule code as the memo; totals close on a double rule. Every surface reads as an entry, a statement or a column of figures, never as a grid of KPI tiles.\n\nDensity is working-office density: 15px body, tight table rows, hairline seams between panels, and figures set tabular everywhere so columns add up by eye. Serif carries the statement voice (page titles, the dashboard headline sentence, flow-page questions); a workhorse sans carries every control and label; mono carries references, rule codes and version strings.\n\nLight and dark share one token set: a `prefers-color-scheme: dark` block swaps every value, so components only ever reference tokens.",
+    "keyCharacteristics": [
+      "Bookcloth rail, ruled paper ground, hairline seams, no drop shadows.",
+      "Four state inks (green allow, red block, amber reauthorise, blue review), each with a tinted ground.",
+      "Ledger tables with uppercase tracked column heads, faint vertical column rules and a double-ruled total.",
+      "Serif for statements, sans for operation, mono for references.",
+      "Tabular lining figures on the body element, not opt-in."
+    ],
+    "rules": [
+      {
+        "name": "The Red Ink Rule",
+        "body": "Red (`block`) means refused and nothing else: refused amounts in parentheses, rule-code memos, the \"stopped\" count in the headline, failed fields. Never use it for decoration or emphasis.",
+        "section": "colors"
+      },
+      {
+        "name": "The State Pair Rule",
+        "body": "Every state colour ships as an ink plus its tinted ground; a badge or notice uses both, never the ink on paper alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Voices Rule",
+        "body": "Serif states, sans operates, mono cites. A rule code or reference in sans, or a button in serif, is off-system.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Figures are tabular and lining everywhere; amounts right-align and never wrap.",
+        "section": "typography"
+      },
+      {
+        "name": "The Seam Rule",
+        "body": "Separate surfaces with a hairline seam or a change of ground, never with a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reference tokens only; the dark scheme works by swapping them.",
+      "Do post refusals in red ink with parenthesised amounts and the rule code as a mono memo.",
+      "Do close totals with a 1px ink rule above and a 3px double rule below.",
+      "Do give every entry its sequential mono reference (IL-0001) and name the range in view in table heads.",
+      "Do draw icons from the authored set (18px, 1.6 stroke, round joins) and charts in SVG with the state inks."
+    ],
+    "donts": [
+      "Don't build dashboards from KPI tile grids; state figures as a reconciliation statement or ledger.",
+      "Don't add drop shadows; separate with hairline seams and tonal grounds.",
+      "Don't use red for anything but a refusal.",
+      "Don't set references, rule codes or IDs in anything but mono, or amounts in anything but right-aligned tabular figures."
+    ]
+  }
+}

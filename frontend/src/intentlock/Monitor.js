@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, money, shortId } from './api';
+import { api, money, sentence, shortId, WEBHOOK_TEXT, WEBHOOK_TONE } from './api';
 import { useConfig } from './IntentLockApp';
 import { Guide } from './scenarios';
 import { Checks, DecisionBadge, ErrorNote, Price, Spinner, Timeline } from './parts';
@@ -127,8 +127,8 @@ export default function Monitor() {
           <dl className="dl small">
             <dt>Mandate</dt><dd>v{co.mandate.version} · <span className="mono">{shortId(co.mandate.canonical_hash)}…</span></dd>
             <dt>PayPal order</dt><dd className="mono">{co.paypal_order_id || 'not created'}</dd>
-            <dt>Capture</dt><dd className="mono">{co.payment ? `${co.payment.capture_id} (${co.payment.status})` : 'none'}</dd>
-            <dt>Webhook</dt><dd><span className={`badge ${co.reconciliation_status === 'VERIFIED' ? 'ok' : co.reconciliation_status === 'MISMATCH' ? 'bad' : 'plain'}`}>{co.reconciliation_status.toLowerCase()}</span></dd>
+            <dt>Capture</dt><dd className="mono">{co.payment ? `${co.payment.capture_id} (${sentence(co.payment.status)})` : 'none'}</dd>
+            <dt>Webhook</dt><dd><span className={`badge ${WEBHOOK_TONE[co.reconciliation_status] || 'plain'}`}>{WEBHOOK_TEXT[co.reconciliation_status] || co.reconciliation_status}</span></dd>
           </dl>
         </aside>
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from './api';
-import { DECISION_TEXT } from './api';
+import { DECISION_TEXT, api, codeBreaks } from './api';
 import { ErrorNote, Spinner } from './parts';
 
 const STAGES = [
@@ -29,7 +28,7 @@ export default function Rules() {
               <thead><tr><th>Rule</th><th>What it checks</th><th>If it fails</th><th className="r">Times it stopped a purchase</th></tr></thead>
               <tbody>{data.rules.filter((r) => r.stage === stage).map((r) => (
                 <tr key={r.rule_id}>
-                  <td style={{ minWidth: 200 }}><b>{r.title}</b><div className="mono muted">{r.rule_id}</div></td>
+                  <td style={{ minWidth: 200 }}><b>{r.title}</b><div className="mono code muted">{codeBreaks(r.rule_id)}</div></td>
                   <td style={{ maxWidth: 520 }}>{r.checks}</td>
                   <td><span className={`badge ${r.on_fail}`}>{DECISION_TEXT[r.on_fail]}</span></td>
                   <td className={`amt ${r.fired ? 'neg' : 'muted'}`}>{r.fired}</td>

@@ -14,6 +14,9 @@ const PATHS = {
   menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
   lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>,
   arrow: <><path d="M5 12h14M13 6l6 6-6 6" /></>,
+  check: <><path d="m5 12.5 4.5 4.5L19 7.5" /></>,
+  cross: <><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></>,
+  unknown: <><circle cx="12" cy="12" r="8.5" /><path d="M9.8 9.6a2.3 2.3 0 0 1 4.4.9c0 1.6-2.2 1.9-2.2 3.3" /><path d="M12 17h.01" /></>,
 };
 
 export default function Icon({ name, size = 18 }) {

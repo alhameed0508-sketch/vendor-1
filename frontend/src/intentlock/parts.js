@@ -1,5 +1,5 @@
 import React from 'react';
-import { DECISION_TEXT, money, requirementText, shortId, when } from './api';
+import { DECISION_TEXT, money, requirementText, sentence, shortId, when } from './api';
 
 export const Spinner = ({ label }) => (
   <span className="row small muted" role="status"><span className="spin" aria-hidden="true" />{label}</span>
@@ -57,7 +57,7 @@ export function MandateSummary({ view, compact }) {
       <dt>Expires</dt>
       <dd>{when(m.expires_at)}</dd>
       {!compact && (<>
-        <dt>Version</dt><dd>v{view.version} · <span className={`badge ${view.status === 'CONFIRMED' ? 'ok' : view.status === 'DRAFT' ? 'warn' : 'bad'}`}>{view.status}</span></dd>
+        <dt>Version</dt><dd>v{view.version} · <span className={`badge ${view.status === 'CONFIRMED' ? 'ok' : view.status === 'DRAFT' ? 'warn' : 'bad'}`}>{sentence(view.status)}</span></dd>
         <dt>Fingerprint</dt><dd className="mono" title="SHA-256 of the mandate terms">{view.canonical_hash}</dd>
       </>)}
     </dl>
@@ -118,7 +118,7 @@ export function Timeline({ events }) {
   return (
     <ol className="tl">
       {events.map((t) => (
-        <li key={t.seq} className={BAD.test(t.action) ? 'bad' : ''}>
+        <li key={t.seq} className={BAD.test(t.action) || (t.data && t.data.decision && t.data.decision !== 'ALLOW') ? 'bad' : ''}>
           <div><b>{ACTIONS[t.action] || t.action}</b> <span className="muted">{detail(t)}</span></div>
           <div className="muted small">{when(t.at)} · {t.actor_type} · <span className="mono" title="Audit chain hash">{shortId(t.hash)}</span></div>
         </li>
