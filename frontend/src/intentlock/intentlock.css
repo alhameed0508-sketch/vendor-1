@@ -78,6 +78,8 @@ body { background: var(--bg); color: var(--ink); font: 16px/1.5 var(--sans); -we
 .il input:focus-visible, .il select:focus-visible, .il textarea:focus-visible, .il button:focus-visible, .il a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .il input.bad, .il select.bad { border-color: var(--block); background: var(--block-bg); }
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.field-grid.basics { grid-template-columns: minmax(120px, 1fr) max-content 96px; }
+@media (max-width: 600px) { .field-grid.basics { grid-template-columns: minmax(0, 1fr); } }
 .check { display: flex; gap: 8px; align-items: flex-start; font-size: .92rem; color: var(--ink); font-weight: 400; margin: 0; }
 .check input { margin-top: 4px; accent-color: var(--accent); }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }

@@ -18,6 +18,13 @@ A payment can be technically valid and still not be what the buyer asked an AI a
 6. Only if every check passes does the server **capture**. Otherwise nothing is captured and the failed rule is shown.
 7. A verified **PayPal webhook** is reconciled against the capture, and a **receipt** links instruction, mandate, checks, PayPal order, capture and audit trail.
 
+Around that core flow:
+
+- **Agent run with feedback.** The assistant proposes a product; if the rules refuse it, the refusal is sent back and it tries again, up to three times. A labelled simulation of a manipulated agent shows the rules refusing a pick that follows an instruction hidden in a product description.
+- **Shared receipt.** The owner of a receipt can copy a read-only link. Anyone with the link sees the receipt and its integrity check, without contact details and without logging in.
+- **Activity.** Every proposal made under your mandates, what the rules decided, which rule refused it, and what was captured.
+- **Guided demo.** The home page sets up three scenarios in one click each.
+
 ## What the AI does, and does not do
 
 | The AI may | The AI may not |
@@ -79,6 +86,7 @@ See `.env.example`. The ones that matter:
 | `SESSION_SECRET` | 32+ characters. Required when `APP_ENV=production`. |
 | `GENAI_PROVIDER`, `GENAI_API_KEY`, `GENAI_MODEL` | AI drafting. Gemini is the implemented provider. Optional: without a key the manual form is used. |
 | `DEMO_TOOLS` | `true` shows the "change the PayPal order" button for Scenario C. Off by default. |
+| `FEATURED_RECEIPT` | Optional. A receipt share link to show on the home page as "See a real receipt". |
 
 ### PayPal Sandbox setup
 
@@ -92,7 +100,7 @@ See `.env.example`. The ones that matter:
 .venv/Scripts/python -m pytest
 ```
 
-78 tests: every policy rule, the purchase flow, order tampering, lost capture responses, duplicate requests, webhook verification and ordering, mandate immutability, access control, and the limits on the AI. They run against an in-memory database and a fake payment provider that behaves like PayPal Orders v2.
+85 tests: every policy rule, the purchase flow, order tampering, lost capture responses, duplicate requests, webhook verification and ordering, mandate immutability, access control, shared receipt links, agent runs, the activity ledger, and the limits on the AI. They run against an in-memory database and a fake payment provider that behaves like PayPal Orders v2.
 
 ### What has been run against the real PayPal Sandbox
 
@@ -113,7 +121,7 @@ See `.env.example`. The ones that matter:
 | **A. Valid purchase** | Use the first example request, confirm, select *Aster Book 14*, pay with the Sandbox buyer | Captured; receipt issued |
 | **B. Policy violation** | Same mandate; check *Orion 14 Pro* or *Vega 15* | `BLOCK` with the failed rule; no PayPal order is created |
 | **C. Order changed after approval** | Set `DEMO_TOOLS=true`; on the checkout press the demo button, then approve in PayPal | Final verification fails on `ORDER_AMOUNT`; nothing is captured |
-| **D. Prompt injection** | *Orion 14 Pro*'s description tells AI assistants to ignore the budget | The mandate is unchanged and the decision is still `BLOCK` |
+| **D. Prompt injection** | On the product page press "Simulate a manipulated agent". It picks *Orion 14 Pro*, whose description tells AI assistants to ignore the budget | The mandate is unchanged, the pick is refused with `BLOCK`, and the assistant's next proposal is one the rules allow |
 | **E. Duplicates** | Press "Check now" twice; PayPal retries a webhook | One capture, one processed event |
 
 ## Known limitations

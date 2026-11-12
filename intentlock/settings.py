@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     genai_timeout_seconds: float = Field(15.0, validation_alias=AliasChoices("GENAI_TIMEOUT_SECONDS"))
 
     demo_tools: bool = Field(False, validation_alias=AliasChoices("DEMO_TOOLS"))
+    featured_receipt: str = Field("", validation_alias=AliasChoices("FEATURED_RECEIPT"))
     quote_ttl_minutes: int = Field(30, ge=1, le=1440, validation_alias=AliasChoices("QUOTE_TTL_MINUTES"))
     frontend_build_dir: str = Field("frontend/build", validation_alias=AliasChoices("FRONTEND_BUILD_DIR"))
 

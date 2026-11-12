@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, attrValue, humanise, money } from './api';
 import { useConfig } from './IntentLockApp';
+import { Guide } from './demo';
 import { Checks, DecisionBadge, ErrorNote, MandateSummary, Price, Spinner } from './parts';
+import ProductArt from './ProductArt';
 
 function compare(requirements, attributes) {
   return Object.entries(requirements || {}).map(([key, wanted]) => {
@@ -28,6 +30,33 @@ const WHAT_NEXT = {
   REVIEW: 'Something needed to check this product is missing or out of date, so it is not allowed. Nothing is assumed.',
 };
 
+function AgentRun({ run }) {
+  return (
+    <div className="stack-s">
+      <h3>{run.mode === 'manipulated' ? 'What the manipulated agent did, and what the rules did' : 'What the assistant did'}</h3>
+      <ol className="run">
+        {run.steps.map((st) => (st.stopped ? <li key={st.attempt} className="muted">{st.note}</li> : (
+          <li key={st.attempt}>
+            <div className="row between">
+              <span><b>Attempt {st.attempt}:</b> proposed <b>{st.title}</b>{st.simulated && <span className="badge warn" style={{ marginLeft: 8 }}>Simulated</span>}</span>
+              <DecisionBadge decision={st.decision} />
+            </div>
+            <p className="small"><span className="muted">Its reason:</span> {st.rationale}</p>
+            {st.failed.length > 0 && (
+              <p className="small"><span className="muted">Rule engine:</span> {st.failed.map((f) => <span key={f.rule_id}><b>{f.rule_id}</b> {f.reason} </span>)}
+                {st.attempt < run.steps.length && <span className="muted">This refusal was sent back to the assistant.</span>}</p>
+            )}
+          </li>
+        )))}
+      </ol>
+      <p className="small muted">
+        {run.outcome === 'ALLOW' ? 'The assistant ended on a product the rules allow.' : `The assistant did not find an allowed product in ${run.max_attempts} attempts, so there is nothing to pay for.`}
+        {' '}The assistant only proposes. Every decision above was made by fixed rules.
+      </p>
+    </div>
+  );
+}
+
 export default function Discovery() {
   const { mandateId } = useParams();
   const config = useConfig();
@@ -46,7 +75,7 @@ export default function Discovery() {
       .catch(setError);
   }, [mandateId]);
   useEffect(load, [load]);
-  useEffect(() => { if (result && panel.current) panel.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [result]);
+  useEffect(() => { if (result && panel.current) panel.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [result]);
 
   const run = async (key, fn) => {
     setBusy(key); setError(null);
@@ -68,10 +97,12 @@ export default function Discovery() {
     );
   }
   const reqs = mandate.mandate.product.requirements;
+  const qty = mandate.mandate.product.quantity;
   const decision = result && result.evaluation.decision;
 
   return (
     <div className="stack">
+      <Guide page="discovery" />
       <div>
         <p className="eyebrow">Step 2</p>
         <h1>Choose a product</h1>
@@ -83,24 +114,30 @@ export default function Discovery() {
           <MandateSummary view={mandate} compact />
           <p className="mono muted" title="Mandate fingerprint (SHA-256)">{mandate.canonical_hash.slice(0, 24)}…</p>
           <Link className="btn small" to={`/?m=${mandate.mandate_id}`}>Change the mandate</Link>
-          <hr style={{ border: 0, borderTop: '1px solid var(--line)', width: '100%' }} />
-          <h3>Let the assistant choose</h3>
-          <p className="small muted">The AI reads the catalogue and proposes one product. Catalogue text is treated as data, never as an instruction.</p>
-          <button className="btn primary" disabled={!!busy || !config.ai_enabled} onClick={() => run('agent', () => api.agentPropose(mandate.mandate_id))}>
+          <hr className="rule" />
+          <h3>Let an assistant choose</h3>
+          <p className="small muted">The AI reads the catalogue and proposes a product. If the rules refuse it, the refusal is sent back and it tries again, up to three times.</p>
+          <button className="btn primary" disabled={!!busy || !config.ai_enabled} onClick={() => run('agent', () => api.agentRun(mandate.mandate_id, 'assistant'))}>
             {busy === 'agent' ? <Spinner label="The assistant is choosing" /> : 'Ask the assistant to propose'}
           </button>
           {!config.ai_enabled && <p className="small muted">The AI assistant is not configured on this instance. Choose a product yourself.</p>}
+          <button className="btn" disabled={!!busy} onClick={() => run('bad-agent', () => api.agentRun(mandate.mandate_id, 'manipulated'))}>
+            {busy === 'bad-agent' ? <Spinner label="Running the simulation" /> : 'Simulate a manipulated agent'}
+          </button>
+          <p className="small muted">A simulation: this agent obeys the instruction hidden in one product's description. See what the rules do.</p>
         </aside>
 
         <div className="stack">
           <ErrorNote error={error} />
           {result && (
-            <section className="card stack" ref={panel} aria-live="polite" aria-labelledby="res">
+            <section className="card stack anchor" ref={panel} aria-live="polite" aria-labelledby="res">
+              {result.run && <AgentRun run={result.run} />}
+              {result.run && <hr className="rule" />}
               <div className="row between">
-                <h2 id="res">{result.proposed_by === 'agent' ? 'The assistant proposed' : 'You selected'}: {result.quote.product.title}</h2>
+                <h2 id="res">{result.proposed_by === 'agent' ? 'Final proposal' : 'You selected'}: {result.quote.product.title}</h2>
                 <DecisionBadge decision={decision} />
               </div>
-              {result.agent && <p className="small"><b>Assistant's reason:</b> {result.agent.rationale} <span className="muted">({result.agent.model})</span></p>}
+              {!result.run && result.agent && <p className="small"><b>Assistant's reason:</b> {result.agent.rationale} <span className="muted">({result.agent.model})</span></p>}
               {decision === 'ALLOW'
                 ? <div className="notice ok">Every rule passes. You can pay with PayPal; the order is checked again after you approve it and before any money is captured.</div>
                 : <div className={`notice ${decision === 'BLOCK' ? 'err' : 'info'}`}>{WHAT_NEXT[decision]}</div>}
@@ -111,7 +148,7 @@ export default function Discovery() {
                   {decision === 'REAUTHORISE' && <Link className="btn" to={`/?m=${mandate.mandate_id}`}>Change the mandate</Link>}
                 </div>
               </div>
-              <details open={decision !== 'ALLOW'}>
+              <details open={decision !== 'ALLOW' && !result.run}>
                 <summary className="small" style={{ cursor: 'pointer', fontWeight: 600 }}>Rule-by-rule result ({result.evaluation.checks.length} checks, {result.evaluation.policy_version})</summary>
                 <Checks evaluation={result.evaluation} />
               </details>
@@ -125,8 +162,10 @@ export default function Discovery() {
               {products.map((p) => {
                 const pre = p.policy_preview;
                 const within = pre && pre.decision === 'ALLOW';
+                const total = p.total_for_one_minor === null ? null : p.unit_amount_minor * qty + p.shipping_amount_minor + p.tax_amount_minor * qty;
                 return (
                   <article key={p.product_id} className={`card product ${within ? '' : 'out'}`}>
+                    <ProductArt category={p.category} seed={p.product_id} />
                     <div className="row between"><h3>{p.title}</h3>{pre && <DecisionBadge decision={pre.decision} />}</div>
                     <p className="small muted">{p.condition} · sold by {p.seller_name} ({p.seller_id}){p.merchant_checkout_eligible ? '' : ' · not payable through this store'}</p>
                     <ul className="attrs">
@@ -137,8 +176,7 @@ export default function Discovery() {
                         </li>
                       ))}
                     </ul>
-                    <Price quote={{ ...p, quantity: mandate.mandate.product.quantity, total_amount_minor: p.total_for_one_minor === null ? null
-                      : p.unit_amount_minor * mandate.mandate.product.quantity + p.shipping_amount_minor + p.tax_amount_minor * mandate.mandate.product.quantity }} />
+                    <Price quote={{ ...p, quantity: qty, total_amount_minor: total }} />
                     {pre && pre.failed.length > 0 && <p className="small"><b>{pre.failed[0].rule_id}:</b> {pre.failed[0].reason}{pre.failed.length > 1 ? ` (+${pre.failed.length - 1} more)` : ''}</p>}
                     <div className="untrusted"><b>Seller's text · not trusted</b>{p.description}</div>
                     <button className={`btn ${within ? 'primary' : ''}`} disabled={!!busy} onClick={() => run(p.product_id, () => api.evaluate(mandate.mandate_id, p.product_id))}>

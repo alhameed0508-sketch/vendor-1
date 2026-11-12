@@ -4,15 +4,24 @@ import { api, money, requirementText, shortId, when } from './api';
 import { ErrorNote, Graph, Price, Spinner, Timeline, pathFor } from './parts';
 
 export default function Receipt() {
-  const { receiptId } = useParams();
+  const { receiptId, token } = useParams(); // `token` is set on a shared, read-only link
   const [r, setR] = useState(null);
   const [graph, setGraph] = useState(null);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
-  const load = useCallback(() => api.receipt(receiptId).then((v) => {
+  const load = useCallback(() => (token ? api.publicReceipt(token) : api.receipt(receiptId)).then((v) => {
     setR(v);
+    if (v.graph) return setGraph(pathFor(v.graph, v.receipt.checkout_id)); // a shared receipt carries its own graph
     return api.graph(v.receipt.mandate.mandate_id).then((g) => setGraph(pathFor(g, v.receipt.checkout_id)));
-  }).catch(setError), [receiptId]);
+  }).catch(setError), [receiptId, token]);
+
+  const copyLink = () => {
+    const url = window.location.origin + r.share_path;
+    const done = () => { setCopied(true); setTimeout(() => setCopied(false), 2500); };
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(done, () => window.prompt('Copy this link', url));
+    else window.prompt('Copy this link', url);
+  };
   useEffect(() => { load(); }, [load]);
 
   // The webhook arrives after the capture, so keep checking for a while.
@@ -33,8 +42,9 @@ export default function Receipt() {
 
   return (
     <div className="stack">
+      {r.shared && <div className="notice info">Shared receipt, read-only. It shows a real PayPal Sandbox purchase. Contact details are left out.</div>}
       <div>
-        <p className="eyebrow">Step 4 · Receipt {shortId(r.receipt_id)}</p>
+        <p className="eyebrow">{r.shared ? 'Shared receipt' : 'Step 4 · Receipt'} {shortId(r.receipt_id)}</p>
         <h1>{r.checkout_state === 'REFUNDED' ? 'Purchase refunded' : 'Purchase complete, and it matches what you asked for'}</h1>
         <p className="lede">This receipt links your instruction, the mandate you confirmed, the rule checks and the PayPal payment. Every value comes from stored records.</p>
       </div>
@@ -105,7 +115,12 @@ export default function Receipt() {
       </section>
 
       <section className="card stack" aria-labelledby="audit"><h2 id="audit">Audit trail</h2><Timeline events={r.timeline} /></section>
-      <div className="row"><Link className="btn primary" to="/">Start another purchase</Link><Link className="btn" to={`/checkout/${rc.checkout_id}`}>Back to the checkout</Link></div>
+      <div className="row">
+        <Link className="btn primary" to="/">{r.shared ? 'Try IntentLock yourself' : 'Start another purchase'}</Link>
+        {!r.shared && <Link className="btn" to={`/checkout/${rc.checkout_id}`}>Back to the checkout</Link>}
+        {r.share_path && <button className="btn" onClick={copyLink}>{copied ? 'Link copied' : 'Copy a share link'}</button>}
+        {r.share_path && <span className="small muted">Anyone with the link can view this receipt, read-only.</span>}
+      </div>
     </div>
   );
 }

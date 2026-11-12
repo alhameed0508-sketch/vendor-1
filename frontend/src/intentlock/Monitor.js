@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, money, shortId } from './api';
 import { useConfig } from './IntentLockApp';
+import { Guide } from './demo';
 import { Checks, DecisionBadge, ErrorNote, Price, Spinner, Timeline } from './parts';
 
 const STEPS = ['Mandate confirmed', 'Product and server quote', 'Policy check passed', 'PayPal order created by the server',
@@ -102,6 +103,7 @@ export default function Monitor() {
 
   return (
     <div className="stack">
+      <Guide page="monitor" />
       <div>
         <p className="eyebrow">Step 3 · Checkout {shortId(co.checkout_id)}</p>
         <h1>{headline}</h1>

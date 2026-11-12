@@ -6,7 +6,9 @@ import IntentStudio from './IntentStudio';
 import Discovery from './Discovery';
 import Monitor from './Monitor';
 import Receipt from './Receipt';
+import Activity from './Activity';
 import './intentlock.css';
+import './intentlock-more.css';
 
 const ConfigContext = createContext(null);
 export const useConfig = () => useContext(ConfigContext);
@@ -15,12 +17,12 @@ const STEPS = [
   { label: 'Your instructions', match: /^\/$/ },
   { label: 'Choose a product', match: /^\/mandate\// },
   { label: 'Pay with PayPal', match: /^\/checkout\// },
-  { label: 'Receipt', match: /^\/receipt\// },
+  { label: 'Receipt', match: /^\/(receipt|r)\// },
 ];
 
 function Shell({ children, config }) {
   const { pathname } = useLocation();
-  const current = Math.max(0, STEPS.findIndex((s) => s.match.test(pathname)));
+  const current = STEPS.findIndex((s) => s.match.test(pathname)); // -1 on pages outside the purchase flow
   return (
     <div className="il">
       <header className="il-top">
@@ -42,6 +44,7 @@ function Shell({ children, config }) {
               ))}
             </ol>
           </nav>
+          <Link to="/activity" className={`nav-link ${pathname === '/activity' ? 'on' : ''}`}>Activity</Link>
         </div>
       </header>
       <main className="il-main">
@@ -78,6 +81,8 @@ function Loaded() {
             <Route path="/mandate/:mandateId" element={<Discovery />} />
             <Route path="/checkout/:checkoutId" element={<Monitor />} />
             <Route path="/receipt/:receiptId" element={<Receipt />} />
+            <Route path="/r/:token" element={<Receipt />} />
+            <Route path="/activity" element={<Activity />} />
             <Route path="*" element={<div className="card"><h2>Page not found</h2><p className="lede"><Link to="/">Start a new purchase</Link></p></div>} />
           </Routes>
         )}

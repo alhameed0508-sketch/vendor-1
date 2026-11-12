@@ -98,9 +98,10 @@ class ScriptedLLM:
 
     def generate_json(self, system: str, user: str, schema: dict) -> dict:
         self.prompts.append((system, user))
-        if isinstance(self.reply, Exception):
-            raise self.reply
-        return self.reply
+        reply = self.reply.pop(0) if isinstance(self.reply, list) else self.reply  # a list is played back in order
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
 
 
 def settings(**overrides) -> Settings:

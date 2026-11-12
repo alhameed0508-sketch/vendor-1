@@ -111,3 +111,47 @@ export function requirementText(key, value) {
   if (key.endsWith('_max')) return `${base}: at most ${shown}`;
   return `${base}: ${shown}`;
 }
+
+// ── additions: shared receipts, agent runs, activity ────────────────────────
+api.publicReceipt = (token) => call('GET', `/public/receipts/${token}`);
+api.agentRun = (mandate_id, mode) => call('POST', '/agent/run', { mandate_id, mode });
+api.activity = () => call('GET', '/activity');
+
+// Requirements a buyer can pick in plain words. `key` is what the rule engine stores.
+export const SPECS = [
+  { key: 'ram_gb_min', label: 'Memory', phrase: 'at least', unit: 'GB', kind: 'number' },
+  { key: 'storage_gb_min', label: 'Storage', phrase: 'at least', unit: 'GB', kind: 'number' },
+  { key: 'screen_in_tenths_min', label: 'Screen size', phrase: 'at least', unit: 'inches', kind: 'tenths' },
+  { key: 'screen_in_tenths_max', label: 'Screen size', phrase: 'at most', unit: 'inches', kind: 'tenths' },
+  { key: 'battery_hours_min', label: 'Battery life', phrase: 'at least', unit: 'hours', kind: 'number' },
+  { key: 'noise_cancelling', label: 'Noise cancelling', phrase: 'required', unit: '', kind: 'flag' },
+];
+const specOf = (key) => SPECS.find((s) => s.key === key);
+
+// Stored requirement -> form row.
+export function requirementRow(name, stored) {
+  const spec = specOf(name);
+  if (!spec) return { key: 'custom', name, value: String(stored) };
+  if (spec.kind === 'tenths') return { key: name, name: '', value: String(stored / 10) };
+  if (spec.kind === 'flag') return { key: name, name: '', value: 'true' };
+  return { key: name, name: '', value: String(stored) };
+}
+
+// Form row -> [name, value] for the mandate, or { error }. An empty custom row returns null.
+export function requirementEntry(row) {
+  const spec = specOf(row.key);
+  const raw = String(row.value || '').trim();
+  if (!spec) {
+    const name = String(row.name || '').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+    if (!name && !raw) return null;
+    if (!name || !raw) return { error: 'Each custom requirement needs a name and a value.' };
+    return [name, /^\d+$/.test(raw) ? Number(raw) : /^(true|yes)$/i.test(raw) ? true : /^(false|no)$/i.test(raw) ? false : raw];
+  }
+  if (spec.kind === 'flag') return [spec.key, true];
+  if (spec.kind === 'tenths') {
+    if (!/^\d+(\.\d)?$/.test(raw)) return { error: `${spec.label} must be a size in inches, such as 14 or 13.3.` };
+    return [spec.key, Math.round(parseFloat(raw) * 10)];
+  }
+  if (!/^\d+$/.test(raw)) return { error: `${spec.label} must be a whole number of ${spec.unit}.` };
+  return [spec.key, Number(raw)];
+}

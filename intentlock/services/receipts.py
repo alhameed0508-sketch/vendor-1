@@ -77,6 +77,31 @@ def issue(s: Session, co: CheckoutSession, payment: PaymentRecord, signing_key: 
     return receipt
 
 
+def share_token(receipt_id, signing_key: str) -> str:
+    """A link token only the receipt's owner can obtain: the receipt id plus a keyed hash of it."""
+    tag = hmac.new(signing_key.encode("utf-8"), f"share:{receipt_id}".encode("utf-8"), hashlib.sha256).hexdigest()[:32]
+    return f"{receipt_id}.{tag}"
+
+
+def receipt_id_from_token(token: str, signing_key: str) -> uuid.UUID | None:
+    rid, _, _tag = token.partition(".")
+    try:
+        parsed = uuid.UUID(rid)
+    except ValueError:
+        return None
+    return parsed if hmac.compare_digest(share_token(parsed, signing_key), token) else None
+
+
+def public_view(s: Session, receipt: PurchaseReceipt, signing_key: str) -> dict:
+    """The receipt as shown to anyone holding its share link: read-only, with contact details removed."""
+    v = view(s, receipt, signing_key)
+    snapshot = {**v["receipt"], "payment": {**v["receipt"]["payment"]}}
+    payee = snapshot["payment"].get("payee") or {}
+    snapshot["payment"]["payee"] = {"merchant_id": payee.get("merchant_id")}  # no email on a shared page
+    mandate = s.get(PurchaseMandate, uuid.UUID(snapshot["mandate"]["mandate_id"]))
+    return {**v, "receipt": snapshot, "shared": True, "share_path": None, "graph": graph(s, mandate)}
+
+
 def view(s: Session, receipt: PurchaseReceipt, signing_key: str) -> dict:
     co = s.get(CheckoutSession, receipt.checkout_session_id)
     recomputed = sha256_hex(canonical_json(receipt.receipt_snapshot))
@@ -84,6 +109,8 @@ def view(s: Session, receipt: PurchaseReceipt, signing_key: str) -> dict:
     mandate_id = receipt.receipt_snapshot["mandate"]["mandate_id"]
     return {
         "receipt_id": str(receipt.id),
+        "shared": False,
+        "share_path": f"/r/{share_token(receipt.id, signing_key)}",
         "receipt": receipt.receipt_snapshot,
         "receipt_hash": receipt.receipt_hash,
         "signature": receipt.signature,

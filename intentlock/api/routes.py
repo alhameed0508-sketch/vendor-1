@@ -21,7 +21,7 @@ from intentlock.db.models import Buyer, CheckoutSession, MandateVersion, Purchas
 from intentlock.domain import MandateSpec
 from intentlock.payments.base import PaymentProvider
 from intentlock.policy.engine import POLICY_VERSION
-from intentlock.services import catalog, checkout, mandates, purchases, receipts, webhooks
+from intentlock.services import activity, agent, catalog, checkout, mandates, purchases, receipts, webhooks
 from intentlock.settings import Settings
 
 SESSION_COOKIE = "il_buyer"
@@ -169,6 +169,20 @@ class ExplainBody(BaseModel):
     checkout_id: str
 
 
+class AgentRunBody(BaseModel):
+    mandate_id: str
+    mode: Literal["assistant", "manipulated"] = "assistant"
+
+
+def _featured_path(st: Settings) -> str | None:
+    """FEATURED_RECEIPT may hold a share token, a /r/ path or a full share link. Returns the /r/ path if it is valid."""
+    raw = st.featured_receipt.strip()
+    if not raw:
+        return None
+    token = raw.rsplit("/r/", 1)[-1].strip("/")
+    return f"/r/{token}" if receipts.receipt_id_from_token(token, st.resolved_receipt_key) else None
+
+
 def build_router() -> APIRouter:
     r = APIRouter(prefix="/api/v1")
     write = [Depends(csrf)]
@@ -181,7 +195,7 @@ def build_router() -> APIRouter:
             "ai_enabled": c.llm is not None, "ai_model": c.llm.model if c.llm else None, "database": st.database_kind,
             "database_durable": st.database_kind == "postgresql", "webhook_configured": bool(st.paypal_webhook_id),
             "policy_version": POLICY_VERSION, "demo_tools": st.demo_tools, "default_seller_ids": ["SELLER_001"],
-            "catalogue": "synthetic demo catalogue",
+            "catalogue": "synthetic demo catalogue", "featured_receipt_path": _featured_path(st),
         })  # fmt: skip
 
     # ── intents ──────────────────────────────────────────────────────────────
@@ -265,6 +279,16 @@ def build_router() -> APIRouter:
                                ttl_minutes=c.settings.quote_ttl_minutes)  # fmt: skip
         return ok({**purchases.session_view(s, ps), "agent": {**choice, "agent_session_ref": ref}})
 
+    @r.post("/agent/run", dependencies=[*write, Depends(limit("agent", 20))])
+    def agent_run(body: AgentRunBody, s: Session = Depends(db), who: Buyer = Depends(buyer), c: Container = Depends(container)):
+        """The assistant proposes; a refusal is fed back and it may try again. 'manipulated' starts with a simulated bad pick."""
+        m = _confirmed(s, body.mandate_id, who)
+        return ok(agent.run(s, llm=c.llm, mandate=m, mode=body.mode, ttl_minutes=c.settings.quote_ttl_minutes))
+
+    @r.get("/activity")
+    def get_activity(s: Session = Depends(db), who: Buyer = Depends(buyer)):
+        return ok(activity.for_buyer(s, who.id))
+
     # ── checkout ─────────────────────────────────────────────────────────────
     @r.post("/checkout", dependencies=write)
     def create_checkout(body: CheckoutBody, s: Session = Depends(db), who: Buyer = Depends(buyer)):
@@ -328,6 +352,17 @@ def build_router() -> APIRouter:
     @r.get("/receipts/{receipt_id}")
     def get_receipt(receipt_id: str, s: Session = Depends(db), who: Buyer = Depends(buyer), c: Container = Depends(container)):
         return ok(receipts.view(s, _receipt(s, receipt_id, who), c.settings.resolved_receipt_key))
+
+    @r.get("/public/receipts/{token}", dependencies=[Depends(limit("public_receipt", 60))])
+    def shared_receipt(token: str, c: Container = Depends(container)):
+        """Read-only receipt for anyone holding its share link. No session is created and no contact details are returned."""
+        key = c.settings.resolved_receipt_key
+        receipt_id = receipts.receipt_id_from_token(token, key)
+        with c.sessions() as s:
+            rc = s.get(PurchaseReceipt, receipt_id) if receipt_id else None
+            if rc is None:
+                raise ApiError(404, "NOT_FOUND", "This receipt link is not valid")
+            return ok(receipts.public_view(s, rc, key))
 
     @r.get("/graph/{mandate_id}")
     def graph(mandate_id: str, s: Session = Depends(db), who: Buyer = Depends(buyer)):
