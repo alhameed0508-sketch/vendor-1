@@ -30,6 +30,55 @@ from intentlock.domain import (
 from intentlock.money import display
 
 POLICY_VERSION = "intentlock-policy-2026.11.1"
+
+# The rule register: every rule the engine can apply, in evaluation order. SPEC_* stands for one rule per must-have.
+# Fields: rule_id, stage, decision when it fails, short title, what it checks.
+RULES = (
+    ("MANDATE_ACTIVE", "PRE_ORDER", "BLOCK", "Mandate is active", "The mandate is confirmed, is the current version, and has not been revoked or expired."),
+    ("PRODUCT_CATEGORY", "PRE_ORDER", "BLOCK", "Right kind of product", "The product is the kind of item the mandate is for."),
+    ("PRODUCT_CONDITION", "PRE_ORDER", "BLOCK", "Right condition", "The product is new, used or refurbished, as the mandate requires."),
+    ("SPEC_*", "PRE_ORDER", "BLOCK", "Must-haves are met", "Each must-have is met, such as memory of at least 16 GB. If the catalogue does not state the value, the result is REVIEW."),
+    ("SUBSTITUTION", "PRE_ORDER", "REAUTHORISE", "No unapproved substitute", "If the buyer named a model, a different one needs the buyer's approval unless substitutes are allowed."),
+    ("QUANTITY", "PRE_ORDER", "REAUTHORISE", "Right quantity", "The quote is for the quantity in the mandate."),
+    ("APPROVED_SELLER", "PRE_ORDER", "BLOCK", "Approved seller", "The seller is on the buyer's approved list, unless any seller is allowed."),
+    ("MERCHANT_CHECKOUT_ELIGIBLE", "PRE_ORDER", "BLOCK", "Payable through this store", "This merchant is authorised to take payment for the product."),
+    ("AVAILABILITY", "PRE_ORDER", "REVIEW", "In stock", "The product is in stock."),
+    ("CURRENCY", "PRE_ORDER", "REAUTHORISE", "Mandate currency", "The quote is in the mandate's currency."),
+    ("MAXIMUM_TOTAL", "PRE_ORDER", "BLOCK", "Within budget", "The total, with shipping and tax when the budget covers them, is within the budget. Unknown shipping or tax gives REVIEW; it is never taken as zero."),
+    ("QUOTE_FRESH", "PRE_ORDER", "REVIEW", "Quote still valid", "The server's quote has not expired."),
+    ("ORDER_ID", "PRE_CAPTURE", "BLOCK", "Same PayPal order", "PayPal returned the order this checkout created."),
+    ("ORDER_APPROVED_BY_BUYER", "PRE_CAPTURE", "REVIEW", "Buyer approved in PayPal", "PayPal reports the order as approved by the buyer."),
+    ("PAYEE", "PRE_CAPTURE", "BLOCK", "Right payee", "The payee on the PayPal order is the merchant recorded when the order was created."),
+    ("ORDER_CURRENCY", "PRE_CAPTURE", "REAUTHORISE", "Order currency unchanged", "The PayPal order is in the quote's currency."),
+    ("ORDER_AMOUNT", "PRE_CAPTURE", "REAUTHORISE", "Order total unchanged", "The PayPal order total equals the quote the buyer approved."),
+    ("ORDER_ITEMS", "PRE_CAPTURE", "REAUTHORISE", "Order items unchanged", "One purchase unit with the approved product, quantity, unit price and checkout reference."),
+    ("NOT_ALREADY_CAPTURED", "PRE_CAPTURE", "BLOCK", "Not captured twice", "PayPal holds no capture for this order yet."),
+    ("ENGINE_AVAILABLE", "ANY", "REVIEW", "Check completed", "The evaluation itself finished. If the engine fails, the purchase is never allowed."),
+)
+RULE_TITLES = {r[0]: r[3] for r in RULES}
+# How a failure reads to a merchant ("why was this stopped?").
+RULE_FAILS = {
+    "MANDATE_ACTIVE": "Mandate not active", "PRODUCT_CATEGORY": "Wrong kind of product", "PRODUCT_CONDITION": "Wrong condition",
+    "SUBSTITUTION": "Unapproved substitute", "QUANTITY": "Wrong quantity", "APPROVED_SELLER": "Seller not approved",
+    "MERCHANT_CHECKOUT_ELIGIBLE": "Not payable through this store", "AVAILABILITY": "Availability unknown", "CURRENCY": "Wrong currency",
+    "MAXIMUM_TOTAL": "Total over budget or unknown", "QUOTE_FRESH": "Quote expired", "ORDER_ID": "Different PayPal order",
+    "ORDER_APPROVED_BY_BUYER": "Not approved in PayPal", "PAYEE": "Wrong payee", "ORDER_CURRENCY": "Order currency changed",
+    "ORDER_AMOUNT": "Order total changed", "ORDER_ITEMS": "Order items changed", "NOT_ALREADY_CAPTURED": "Already captured",
+    "ENGINE_AVAILABLE": "Check could not complete",
+}
+SPEC_NAMES = {"RAM_GB": "memory", "STORAGE_GB": "storage", "SCREEN_IN_TENTHS": "screen size", "BATTERY_HOURS": "battery life", "NOISE_CANCELLING": "noise cancelling"}
+
+
+def fail_phrase(rule_id: str) -> str:
+    if rule_id.startswith("SPEC_"):
+        name = rule_id[5:].removesuffix("_MIN").removesuffix("_MAX")
+        return f"Must-have not met: {SPEC_NAMES.get(name, name.replace('_', ' ').lower())}"
+    return RULE_FAILS.get(rule_id, rule_id)
+
+
+def rule_key(rule_id: str) -> str:
+    """Map a reported rule id to its register entry (SPEC_RAM_GB_MIN -> SPEC_*)."""
+    return "SPEC_*" if rule_id.startswith("SPEC_") else rule_id
 PRECEDENCE = (Decision.BLOCK, Decision.REAUTHORISE, Decision.REVIEW)
 APPROVED_ORDER_STATUS = "APPROVED"
 

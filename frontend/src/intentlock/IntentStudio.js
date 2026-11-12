@@ -1,19 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SPECS, api, fromMinor, requirementEntry, requirementRow, toMinor } from './api';
 import { useConfig } from './IntentLockApp';
-import { DEMO_REQUEST, DEMO_TERMS, Guide, SCENARIOS, endDemo, startDemo } from './demo';
+import { DEMO_REQUEST, DEMO_TERMS, Guide, SCENARIOS, endDemo, startDemo } from './scenarios';
 import { ErrorNote, MandateSummary, Spinner } from './parts';
 
 const EXAMPLES = [
   'Buy me a new laptop with at least 16GB RAM and 512GB storage, under $1,000 including shipping and tax.',
   'A pair of new noise-cancelling headphones, at least 30 hours of battery, no more than $250 all in.',
   'I need a laptop.',
-];
-const HOW = [
-  ['You set the terms', 'Say what to buy and your limits. You review the exact terms and lock them.'],
-  ['The assistant proposes', 'An AI picks a product. Fixed rules, not the AI, decide whether it fits.'],
-  ['PayPal captures only on a match', 'After you approve, the server checks the real PayPal order again before any money is taken.'],
 ];
 
 const localInput = (date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -142,11 +137,21 @@ export default function IntentStudio() {
     submit(terms, DEMO_REQUEST, 'manual', `demo-${scenario.id}`);
   };
 
+  // A scenario from the Demo page arrives as ?demo=<id>: fill in the known request and go to the review step once.
+  const demoId = params.get('demo');
+  const ranDemo = useRef(null);
+  useEffect(() => {
+    const sc = SCENARIOS.find((s) => s.id === demoId);
+    if (!sc || ranDemo.current === demoId) return;
+    ranDemo.current = demoId;
+    runDemo(sc);
+  }, [demoId]); // runs once per scenario id; runDemo reads the latest state
+
   const confirm = async () => {
     setBusy('confirm'); setError(null);
     try {
       const view = await api.confirmIntent(saved.mandate_id, saved.canonical_hash);
-      navigate(`/mandate/${view.mandate_id}`);
+      navigate(`/mandates/${view.mandate_id}`);
     } catch (e) { setError(e); setBusy(''); }
   };
 
@@ -158,8 +163,7 @@ export default function IntentStudio() {
       <div className="stack" style={{ maxWidth: 760 }}>
         <Guide page="review" />
         <div>
-          <p className="eyebrow">Review before you confirm</p>
-          <h1>Is this exactly what the assistant may buy?</h1>
+          <h2 className="h-large">Is this exactly what the assistant may buy?</h2>
           <p className="lede">Once you confirm, these terms are locked. The assistant cannot change them, and nothing is captured unless the final PayPal order matches them.</p>
         </div>
         <div className="card stack">
@@ -175,46 +179,10 @@ export default function IntentStudio() {
     );
   }
 
-  const scenarios = SCENARIOS.filter((s) => !s.needsDemoTools || config.demo_tools);
   return (
     <div className="stack">
-      {!editingId && (
-        <>
-          <section className="hero">
-            <p className="eyebrow">Purchase intent integrity for AI commerce</p>
-            <h1>Let an AI shop for you. Pay only for what you approved.</h1>
-            <p className="lede">An AI assistant can pick the wrong product, overspend, or be misled by a product page. IntentLock checks every purchase against the terms you confirmed, before PayPal captures anything.</p>
-            <ol className="how">
-              {HOW.map(([title, body], i) => <li key={title}><b>{i + 1}</b><div><h3>{title}</h3><p className="small muted">{body}</p></div></li>)}
-            </ol>
-          </section>
-
-          <section className="stack-s" aria-labelledby="try">
-            <h2 id="try">Try it in one minute</h2>
-            <div className="scenario-grid">
-              {scenarios.map((sc) => (
-                <button key={sc.id} type="button" className="scenario" disabled={!!busy} onClick={() => runDemo(sc)}>
-                  <span className="scenario-title">{busy === `demo-${sc.id}` ? <Spinner label="Setting up" /> : sc.title}</span>
-                  <span className="small muted">{sc.blurb}</span>
-                  <span className="scenario-go">Start this demo →</span>
-                </button>
-              ))}
-              {config.featured_receipt_path && (
-                <Link className="scenario" to={config.featured_receipt_path}>
-                  <span className="scenario-title">See a real receipt</span>
-                  <span className="small muted">A completed PayPal Sandbox purchase: the instruction, every rule check, the capture and the verified webhook. No login needed.</span>
-                  <span className="scenario-go">Open the receipt →</span>
-                </Link>
-              )}
-            </div>
-            <p className="small muted">Each demo fills in the same request for a laptop and takes you to the review step. You confirm it yourself.</p>
-          </section>
-        </>
-      )}
-
       <div ref={formRef}>
-        <p className="eyebrow">{editingId ? 'Change your mandate' : 'Or write your own'}</p>
-        <h2 className="h-large">Tell the assistant what it may buy</h2>
+        <h2 className="h-large">{editingId ? 'Change your mandate' : 'Tell the assistant what it may buy'}</h2>
         <p className="lede">Describe the purchase in your own words. The AI turns it into a draft; you check every line and confirm it. The AI never approves a payment.</p>
       </div>
       <div className="split">

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, attrValue, humanise, money } from './api';
 import { useConfig } from './IntentLockApp';
-import { Guide } from './demo';
+import { Guide } from './scenarios';
 import { Checks, DecisionBadge, ErrorNote, MandateSummary, Price, Spinner } from './parts';
 import ProductArt from './ProductArt';
 
@@ -92,7 +92,7 @@ export default function Discovery() {
     return (
       <div className="card stack">
         <h2>This mandate is {mandate.status.toLowerCase()}</h2>
-        <p className="muted">Only a confirmed, unexpired mandate can be used to buy. <Link to={`/?m=${mandate.mandate_id}`}>Review and confirm it</Link>.</p>
+        <p className="muted">Only a confirmed, unexpired mandate can be used to buy. <Link to={`/new?m=${mandate.mandate_id}`}>Review and confirm it</Link>.</p>
       </div>
     );
   }
@@ -104,16 +104,14 @@ export default function Discovery() {
     <div className="stack">
       <Guide page="discovery" />
       <div>
-        <p className="eyebrow">Step 2</p>
-        <h1>Choose a product</h1>
-        <p className="lede">Every product is checked against your confirmed mandate by fixed rules. The assistant can suggest one, but the rules decide whether it can be bought.</p>
+        <p className="lede" style={{ margin: 0 }}>Every product is checked against your confirmed mandate by fixed rules. The assistant can suggest one, but the rules decide whether it can be bought.</p>
       </div>
       <div className="split wide-right">
         <aside className="card flat stack" aria-labelledby="locked">
           <div className="row between"><h2 id="locked">Your mandate</h2><span className="badge ok">Locked · v{mandate.version}</span></div>
           <MandateSummary view={mandate} compact />
           <p className="mono muted" title="Mandate fingerprint (SHA-256)">{mandate.canonical_hash.slice(0, 24)}…</p>
-          <Link className="btn small" to={`/?m=${mandate.mandate_id}`}>Change the mandate</Link>
+          <Link className="btn small" to={`/new?m=${mandate.mandate_id}`}>Change the mandate</Link>
           <hr className="rule" />
           <h3>Let an assistant choose</h3>
           <p className="small muted">The AI reads the catalogue and proposes a product. If the rules refuse it, the refusal is sent back and it tries again, up to three times.</p>
@@ -145,7 +143,7 @@ export default function Discovery() {
                 <Price quote={result.quote} />
                 <div className="row" style={{ alignSelf: 'end', justifyContent: 'flex-end' }}>
                   {decision === 'ALLOW' && <button className="btn primary" onClick={toCheckout} disabled={!!busy}>{busy === 'checkout' ? <Spinner label="Opening checkout" /> : 'Continue to PayPal'}</button>}
-                  {decision === 'REAUTHORISE' && <Link className="btn" to={`/?m=${mandate.mandate_id}`}>Change the mandate</Link>}
+                  {decision === 'REAUTHORISE' && <Link className="btn" to={`/new?m=${mandate.mandate_id}`}>Change the mandate</Link>}
                 </div>
               </div>
               <details open={decision !== 'ALLOW' && !result.run}>
@@ -156,7 +154,7 @@ export default function Discovery() {
           )}
 
           {products.length === 0 ? (
-            <div className="card"><h2>No products in this category</h2><p className="lede">The demo catalogue has no {mandate.mandate.product.category}. <Link to={`/?m=${mandate.mandate_id}`}>Change the mandate</Link> to try laptops or headphones.</p></div>
+            <div className="card"><h2>No products in this category</h2><p className="lede">The demo catalogue has no {mandate.mandate.product.category}. <Link to={`/new?m=${mandate.mandate_id}`}>Change the mandate</Link> to try laptops or headphones.</p></div>
           ) : (
             <div className="grid">
               {products.map((p) => {

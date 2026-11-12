@@ -155,3 +155,19 @@ export function requirementEntry(row) {
   if (!/^\d+$/.test(raw)) return { error: `${spec.label} must be a whole number of ${spec.unit}.` };
   return [spec.key, Number(raw)];
 }
+
+// ── console ──────────────────────────────────────────────────────────────────
+api.overview = (days) => call('GET', `/console/overview?days=${days}`);
+api.ledger = (scope) => call('GET', `/console/ledger?scope=${scope}`);
+api.rules = () => call('GET', '/policy/rules');
+api.mandates = () => call('GET', '/mandates');
+api.checkouts = () => call('GET', '/checkouts');
+api.receipts = () => call('GET', '/receipts');
+api.health = () => fetch('/health', { credentials: 'same-origin' }).then((r) => r.json());
+
+// Ledger amounts: refusals in red parentheses, the accounting convention for an amount that did not go through.
+export function ledgerAmount(minor, currency, negative) {
+  if (minor === null || minor === undefined) return 'not priced';
+  const text = money(minor, currency).replace(`${currency} `, '');
+  return negative ? `(${text})` : text;
+}

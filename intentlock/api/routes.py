@@ -21,7 +21,7 @@ from intentlock.db.models import Buyer, CheckoutSession, MandateVersion, Purchas
 from intentlock.domain import MandateSpec
 from intentlock.payments.base import PaymentProvider
 from intentlock.policy.engine import POLICY_VERSION
-from intentlock.services import activity, agent, catalog, checkout, mandates, purchases, receipts, webhooks
+from intentlock.services import activity, agent, catalog, checkout, console, mandates, purchases, receipts, webhooks
 from intentlock.settings import Settings
 
 SESSION_COOKIE = "il_buyer"
@@ -288,6 +288,33 @@ def build_router() -> APIRouter:
     @r.get("/activity")
     def get_activity(s: Session = Depends(db), who: Buyer = Depends(buyer)):
         return ok(activity.for_buyer(s, who.id))
+
+    # ── merchant console (store-wide; no typed request text or contact details) ──
+    @r.get("/console/overview", dependencies=[Depends(limit("console", 120))])
+    def console_overview(days: int = 14, s: Session = Depends(db), who: Buyer = Depends(buyer), c: Container = Depends(container)):
+        if days not in (0, 7, 14, 30):
+            raise ApiError(422, "VALIDATION_ERROR", "days must be 7, 14, 30 or 0 for all time")
+        return ok(console.overview(s, who.id, days, c.settings.paypal_currency.upper()))
+
+    @r.get("/console/ledger", dependencies=[Depends(limit("console", 120))])
+    def console_ledger(scope: Literal["all", "mine"] = "all", s: Session = Depends(db), who: Buyer = Depends(buyer)):
+        return ok(console.ledger(s, who.id, mine_only=scope == "mine"))
+
+    @r.get("/policy/rules")
+    def policy_rules(s: Session = Depends(db), _who: Buyer = Depends(buyer)):
+        return ok({**console.rule_register(s), "policy_version": POLICY_VERSION})
+
+    @r.get("/mandates")
+    def list_mandates(s: Session = Depends(db), who: Buyer = Depends(buyer)):
+        return ok({"mandates": console.my_mandates(s, who.id)})
+
+    @r.get("/checkouts")
+    def list_checkouts(s: Session = Depends(db), who: Buyer = Depends(buyer)):
+        return ok({"checkouts": console.my_checkouts(s, who.id)})
+
+    @r.get("/receipts")
+    def list_receipts(s: Session = Depends(db), who: Buyer = Depends(buyer), c: Container = Depends(container)):
+        return ok({"receipts": console.my_receipts(s, who.id, c.settings.resolved_receipt_key)})
 
     # ── checkout ─────────────────────────────────────────────────────────────
     @r.post("/checkout", dependencies=write)

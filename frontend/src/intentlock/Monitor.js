@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, money, shortId } from './api';
 import { useConfig } from './IntentLockApp';
-import { Guide } from './demo';
+import { Guide } from './scenarios';
 import { Checks, DecisionBadge, ErrorNote, Price, Spinner, Timeline } from './parts';
 
 const STEPS = ['Mandate confirmed', 'Product and server quote', 'Policy check passed', 'PayPal order created by the server',
@@ -105,8 +105,8 @@ export default function Monitor() {
     <div className="stack">
       <Guide page="monitor" />
       <div>
-        <p className="eyebrow">Step 3 · Checkout {shortId(co.checkout_id)}</p>
-        <h1>{headline}</h1>
+        <h2 className="h-large">{headline}</h2>
+        <p className="small muted">Checkout <span className="mono">{shortId(co.checkout_id)}</span></p>
         <p className="lede">
           {refused ? 'No money was taken. The reason and the rule that failed are below.'
             : 'The amount and payee come from the server\'s stored quote. After you approve, the server fetches the order from PayPal again and captures only if it still matches your mandate.'}
@@ -159,8 +159,8 @@ export default function Monitor() {
                   </button>
                 )}
                 {co.receipt_id && <Link className="btn primary" to={`/receipt/${co.receipt_id}`}>View the purchase receipt</Link>}
-                {refused && <Link className="btn" to={`/mandate/${co.mandate.mandate_id}`}>Choose another product</Link>}
-                {co.state === 'REAUTHORISATION_REQUIRED' && <Link className="btn" to={`/?m=${co.mandate.mandate_id}`}>Change the mandate</Link>}
+                {refused && <Link className="btn" to={`/mandates/${co.mandate.mandate_id}`}>Choose another product</Link>}
+                {co.state === 'REAUTHORISATION_REQUIRED' && <Link className="btn" to={`/new?m=${co.mandate.mandate_id}`}>Change the mandate</Link>}
               </div>
             </div>
           </section>
